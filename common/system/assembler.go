@@ -1,0 +1,182 @@
+//  Copyright (c) 2025 Metaform Systems, Inc
+//
+//  This program and the accompanying materials are made available under the
+//  terms of the Apache License, Version 2.0 which is available at
+//  https://www.apache.org/licenses/LICENSE-2.0
+//
+//  SPDX-License-Identifier: Apache-2.0
+//
+//  Contributors:
+//       Metaform Systems, Inc. - initial API and implementation
+//
+
+package system
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+	"strings"
+)
+
+const (
+	DebugMode       = "debug"
+	DevelopmentMode = "development"
+	ProductionMode  = "production"
+)
+
+// ServiceType is used to specify a key for a service in the ServiceRegistry.
+type ServiceType string
+
+// ServiceRegistry manages a collection of service instances that can be resolved by dependent systems.
+type ServiceRegistry struct {
+	services map[ServiceType]any
+}
+
+func NewServiceRegistry() *ServiceRegistry {
+	return &ServiceRegistry{
+		services: make(map[ServiceType]any),
+	}
+}
+
+// Register registers a service instance by type.
+func (r *ServiceRegistry) Register(serviceType ServiceType, service any) {
+	r.services[serviceType] = service
+}
+
+// Resolve retrieves a service instance by its type, returning the service and a boolean indicating its existence.
+func (r *ServiceRegistry) Resolve(serviceType ServiceType) (any, bool) {
+	if service, exists := r.services[serviceType]; exists {
+		return service, true
+	}
+	return nil, false
+}
+
+type RuntimeMode string
+
+func (m RuntimeMode) IsValid() bool {
+	switch m {
+	case DebugMode, DevelopmentMode, ProductionMode:
+		return true
+	}
+	return false
+}
+
+func ParseRuntimeMode(mode string) (RuntimeMode, error) {
+	switch strings.ToLower(mode) {
+	case "production", "prod":
+		return ProductionMode, nil
+	case "development", "dev":
+		return DevelopmentMode, nil
+	case "debug":
+		return DebugMode, nil
+	default:
+		return "", fmt.Errorf("invalid runtime mode: %s", mode)
+	}
+}
+
+// ServiceAssembly is a subsystem that contributes services to a runtime.
+// The assembly provides zero or more services that may be resolved by other assemblies and requires 0 or more services.
+type ServiceAssembly interface {
+	ID() string
+	Name() string
+	Provides() []ServiceType
+	Requires() []ServiceType
+	Init(*InitContext) error
+	Destroy(logger *zap.Logger) error
+}
+
+type InitContext struct {
+	Registry *ServiceRegistry
+	Logger   *zap.Logger
+	Viper    *viper.Viper
+	Mode     RuntimeMode
+}
+
+// ServiceAssembler manages the registration, dependency resolution, and initialization of service assemblies in a runtime.
+type ServiceAssembler struct {
+	assemblies []ServiceAssembly
+	logger     *zap.Logger
+	mode       RuntimeMode
+	viper      *viper.Viper
+	registry   *ServiceRegistry
+}
+
+func NewServiceAssembler(logger *zap.Logger, viper *viper.Viper, mode RuntimeMode) *ServiceAssembler {
+	return &ServiceAssembler{
+		assemblies: make([]ServiceAssembly, 0),
+		logger:     logger,
+		mode:       mode,
+		viper:      viper,
+		registry:   NewServiceRegistry(),
+	}
+}
+
+func (a *ServiceAssembler) Resolve(serviceType ServiceType) (any, bool) {
+	return a.registry.Resolve(serviceType)
+}
+
+func (a *ServiceAssembler) Register(assembly ServiceAssembly) {
+	a.assemblies = append(a.assemblies, assembly)
+}
+
+func (a *ServiceAssembler) Assemble() error {
+	graph := NewGraph[ServiceAssembly]()
+	mappedAssemblies := make(map[ServiceType]ServiceAssembly)
+	for _, assembly := range a.assemblies {
+		// use a new variable in the loop to avoid pointer issues
+		assembly := assembly
+		graph.AddVertex(assembly.ID(), &assembly)
+		for _, provided := range assembly.Provides() {
+			mappedAssemblies[provided] = assembly
+		}
+	}
+	for _, assembly := range a.assemblies {
+		for _, required := range assembly.Requires() {
+			requiredService, exists := mappedAssemblies[required]
+			if !exists {
+				return fmt.Errorf("required assembly not found for assembly %s: %s", assembly.Name(), required)
+			}
+			graph.AddEdge(assembly.ID(), requiredService.ID())
+		}
+	}
+	sorted, cycle := graph.TopologicalSort()
+	if cycle {
+		return fmt.Errorf("cycle detected in assembly graph")
+	}
+
+	reverse(sorted)
+
+	ctx := &InitContext{
+		Registry: a.registry,
+		Logger:   a.logger,
+		Viper:    a.viper,
+		Mode:     a.mode,
+	}
+
+	for _, v := range sorted {
+		e := v.Value.Init(ctx)
+		a.logger.Debug("Initialized assembly: " + v.Value.Name())
+		if e != nil {
+			return fmt.Errorf("error initializing assembly %s: %w", v.Value.Name(), e)
+		}
+	}
+
+	a.assemblies = mapToAssemblies(sorted)
+
+	return nil
+}
+
+func mapToAssemblies(sorted []*Vertex[ServiceAssembly]) []ServiceAssembly {
+	result := make([]ServiceAssembly, len(sorted))
+	for i, vertex := range sorted {
+		result[i] = vertex.Value
+	}
+	return result
+}
+
+func reverse[T any](s []T) {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+}
