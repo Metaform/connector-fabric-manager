@@ -11,6 +11,7 @@ import (
 
 const appName = "testapp"
 
+//nolint:errcheck
 func TestLoadConfigFromEnvironment(t *testing.T) {
 	// setup
 	os.Setenv("TESTAPP_FOO", "foo_value")
@@ -26,6 +27,7 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	assert.Equal(t, "bar_value", v.GetString("bar"))
 }
 
+//nolint:errcheck
 func TestLoadConfigFromFile(t *testing.T) {
 	// setup
 	tmpDir := t.TempDir()
@@ -49,6 +51,7 @@ bar: "bar_value"
 	assert.Equal(t, "bar_value", v.GetString("bar"))
 }
 
+//nolint:errcheck
 func TestLoadConfigEnvPriorityOverFile(t *testing.T) {
 	// create the config file
 	tmpDir := t.TempDir()
