@@ -14,10 +14,9 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"github.com/metaform/connector-fabric-manager/common/config"
-	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmcore"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmrouter"
 	"github.com/spf13/viper"
@@ -34,14 +33,13 @@ const (
 	defaultPort  = 8080
 	configPrefix = "tmconfig"
 	key          = "httpPort"
-	mode         = "mode"
 )
 
 // The entry point for the Tenant Manager runtime.
 func main() {
-	mode := loadMode()
+	mode := runtime.LoadMode()
 
-	logger := loadLogger(mode)
+	logger := runtime.LoadLogger(mode)
 	//goland:noinspection GoUnhandledErrorResult
 	defer logger.Sync()
 
@@ -100,29 +98,4 @@ func main() {
 	}
 
 	logger.Info("Tenant Manager shutdown")
-}
-
-func loadLogger(mode system.RuntimeMode) *zap.Logger {
-	var logger *zap.Logger
-	var err error
-	if mode == system.DevelopmentMode || mode == system.DebugMode {
-		logger, err = zap.NewDevelopment(zap.WithCaller(false))
-	} else {
-		logger, err = zap.NewProduction(zap.WithCaller(false))
-	}
-	if err != nil {
-		panic(fmt.Errorf("failed to initialize logger: %w", err))
-	}
-	return logger
-}
-
-func loadMode() system.RuntimeMode {
-	modeFlag := flag.String(mode, system.ProductionMode, "Runtime mode: development, production, or debug")
-	flag.Parse()
-
-	mode, err := system.ParseRuntimeMode(*modeFlag)
-	if err != nil {
-		panic(fmt.Errorf("error parsing runtime mode: %w", err))
-	}
-	return mode
 }
