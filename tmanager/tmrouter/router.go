@@ -43,24 +43,24 @@ func (r RouterServiceAssembly) Init(ctx *system.InitContext) error {
 	return nil
 }
 
-func (m RouterServiceAssembly) Prepare() error {
+func (r RouterServiceAssembly) Prepare() error {
 	return nil
 }
 
-func (m RouterServiceAssembly) Start() error {
+func (r RouterServiceAssembly) Start() error {
 	return nil
 }
 
-func (m RouterServiceAssembly) Shutdown() error {
+func (r RouterServiceAssembly) Shutdown() error {
 	return nil
 }
 
-func (r *RouterServiceAssembly) Destroy() error {
+func (r RouterServiceAssembly) Destroy() error {
 	return nil
 }
 
 // SetupRouter configures and returns the HTTP router
-func (r *RouterServiceAssembly) setupRouter(logMonitor monitor.LogMonitor, mode system.RuntimeMode) *chi.Mux {
+func (r RouterServiceAssembly) setupRouter(logMonitor monitor.LogMonitor, mode system.RuntimeMode) *chi.Mux {
 	router := chi.NewRouter()
 
 	if mode == system.DebugMode {
