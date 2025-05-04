@@ -83,7 +83,10 @@ type ServiceAssembly interface {
 	Provides() []ServiceType
 	Requires() []ServiceType
 	Init(*InitContext) error
-	Destroy(logMonitor monitor.LogMonitor) error
+	Prepare() error
+	Start() error
+	Destroy() error
+	Shutdown() error
 }
 
 type InitContext struct {
@@ -162,8 +165,42 @@ func (a *ServiceAssembler) Assemble() error {
 		}
 	}
 
+	for _, v := range sorted {
+		e := v.Value.Prepare()
+		a.logMonitor.Debugf("Prepared assembly: " + v.Value.Name())
+		if e != nil {
+			return fmt.Errorf("error preparing assembly %s: %w", v.Value.Name(), e)
+		}
+	}
+
+	for _, v := range sorted {
+		e := v.Value.Start()
+		a.logMonitor.Debugf("Started assembly: " + v.Value.Name())
+		if e != nil {
+			return fmt.Errorf("error starting assembly %s: %w", v.Value.Name(), e)
+		}
+	}
+
 	a.assemblies = mapToAssemblies(sorted)
 
+	return nil
+}
+
+func (a *ServiceAssembler) Shutdown() error {
+	for _, v := range a.assemblies {
+		e := v.Destroy()
+		a.logMonitor.Debugf("Destroyed assembly: " + v.Name())
+		if e != nil {
+			return fmt.Errorf("error destroying assembly %s: %w", v.Name(), e)
+		}
+	}
+	for _, v := range a.assemblies {
+		e := v.Shutdown()
+		a.logMonitor.Debugf("Shutdown assembly: " + v.Name())
+		if e != nil {
+			return fmt.Errorf("error shutting down assembly %s: %w", v.Name(), e)
+		}
+	}
 	return nil
 }
 

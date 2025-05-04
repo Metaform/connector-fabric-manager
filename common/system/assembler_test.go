@@ -39,8 +39,20 @@ func (m *MockServiceAssembly) Init(ctx *InitContext) error {
 	}
 	return nil
 }
-func (m *MockServiceAssembly) Destroy(monitor monitor.LogMonitor) error {
+func (m *MockServiceAssembly) Destroy() error {
 	m.destroyed = true
+	return nil
+}
+
+func (m *MockServiceAssembly) Prepare() error {
+	return nil
+}
+
+func (m *MockServiceAssembly) Start() error {
+	return nil
+}
+
+func (m *MockServiceAssembly) Shutdown() error {
 	return nil
 }
 

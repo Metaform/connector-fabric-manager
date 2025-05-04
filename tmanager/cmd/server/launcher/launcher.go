@@ -55,7 +55,7 @@ func Launch() {
 	vConfig.SetDefault(key, defaultPort)
 
 	tManager := tmcore.NewTenantManager(logMonitor, vConfig, mode)
-	tManager.ServiceAssembler.Register(tmrouter.RouterServiceAssembly{})
+	tManager.ServiceAssembler.Register(&tmrouter.RouterServiceAssembly{})
 	err = tManager.ServiceAssembler.Assemble()
 	if err != nil {
 		panic(fmt.Errorf("error assembling runtime: %w", err))
@@ -90,6 +90,10 @@ func Launch() {
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
+		logMonitor.Severew("Error attempting server shutdown", "error", err)
+	}
+
+	if err := tManager.ServiceAssembler.Shutdown(); err != nil {
 		logMonitor.Severew("Error attempting shutdown", "error", err)
 	}
 
