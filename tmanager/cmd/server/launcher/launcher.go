@@ -79,7 +79,7 @@ func Launch() {
 	go func() {
 		logMonitor.Infof("Tenant Manager starting [%d]", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logMonitor.Severef("Tenant Manager failed to start", "error", err)
+			logMonitor.Severew("Tenant Manager failed to start", "error", err)
 		}
 	}()
 
@@ -90,7 +90,7 @@ func Launch() {
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		logMonitor.Severef("Error attempting shutdown", "error", err)
+		logMonitor.Severew("Error attempting shutdown", "error", err)
 	}
 
 	logMonitor.Infof("Tenant Manager shutdown")
