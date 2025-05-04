@@ -17,16 +17,20 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
 	"testing"
+	"time"
 )
 
 // MockServiceAssembly implements ServiceAssembly interface for testing
 type MockServiceAssembly struct {
-	id        string
-	name      string
-	provides  []ServiceType
-	requires  []ServiceType
-	initFunc  func(*ServiceRegistry) error
-	destroyed bool
+	id           string
+	name         string
+	provides     []ServiceType
+	requires     []ServiceType
+	initFunc     func(*ServiceRegistry) error
+	prepareFunc  func() error
+	startFunc    func() error
+	shutdownFunc func() error
+	destroyed    bool
 }
 
 func (m *MockServiceAssembly) ID() string              { return m.id }
@@ -45,14 +49,23 @@ func (m *MockServiceAssembly) Destroy() error {
 }
 
 func (m *MockServiceAssembly) Prepare() error {
+	if m.prepareFunc != nil {
+		return m.prepareFunc()
+	}
 	return nil
 }
 
 func (m *MockServiceAssembly) Start() error {
+	if m.startFunc != nil {
+		return m.startFunc()
+	}
 	return nil
 }
 
 func (m *MockServiceAssembly) Shutdown() error {
+	if m.shutdownFunc != nil {
+		return m.shutdownFunc()
+	}
 	return nil
 }
 
@@ -178,5 +191,72 @@ func TestServiceAssembler_Assemble_InitializationError(t *testing.T) {
 	err := assembler.Assemble()
 	if err == nil {
 		t.Error("Expected initialization error, got nil")
+	}
+}
+
+func TestServiceAssembler_LifecycleMethods(t *testing.T) {
+	logMonitor := monitor.NoopMonitor{}
+	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
+
+	// Create channels to track method calls
+	preparedCh := make(chan bool, 1)
+	startedCh := make(chan bool, 1)
+	shutdownCh := make(chan bool, 1)
+
+	mock := &MockServiceAssembly{
+		id:       "test",
+		name:     "Test Assembly",
+		provides: []ServiceType{"service1"},
+		// Add function fields for lifecycle methods
+		prepareFunc: func() error {
+			preparedCh <- true
+			return nil
+		},
+		startFunc: func() error {
+			startedCh <- true
+			return nil
+		},
+		shutdownFunc: func() error {
+			shutdownCh <- true
+			return nil
+		},
+	}
+
+	assembler.Register(mock)
+
+	// Test assembly process
+	err := assembler.Assemble()
+	if err != nil {
+		t.Errorf("Expected no error during assembly, got %v", err)
+	}
+
+	// Verify Prepare was called
+	select {
+	case <-preparedCh:
+		// Success
+	case <-time.After(time.Second):
+		t.Error("Prepare method was not called")
+	}
+
+	// Verify Start was called
+	select {
+	case <-startedCh:
+		// Success
+	case <-time.After(time.Second):
+		t.Error("Start method was not called")
+	}
+
+	// Test shutdown process
+	err = assembler.Shutdown()
+	if err != nil {
+		t.Errorf("Expected no error during shutdown, got %v", err)
+	}
+
+	// Verify Shutdown was called
+	select {
+	case <-shutdownCh:
+		// Success
+	case <-time.After(time.Second):
+		t.Error("Shutdown method was not called")
 	}
 }
