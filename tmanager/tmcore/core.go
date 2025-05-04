@@ -13,17 +13,17 @@
 package tmcore
 
 import (
+	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 type TManager struct {
 	ServiceAssembler system.ServiceAssembler
 }
 
-func NewTenantManager(logger *zap.Logger, viper *viper.Viper, mode system.RuntimeMode) *TManager {
+func NewTenantManager(logMonitor monitor.LogMonitor, viper *viper.Viper, mode system.RuntimeMode) *TManager {
 	return &TManager{
-		ServiceAssembler: *system.NewServiceAssembler(logger, viper, mode),
+		ServiceAssembler: *system.NewServiceAssembler(logMonitor, viper, mode),
 	}
 }

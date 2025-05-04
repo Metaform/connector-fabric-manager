@@ -20,7 +20,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/tmanager/tmcore"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmrouter"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
@@ -39,9 +38,9 @@ const (
 func main() {
 	mode := runtime.LoadMode()
 
-	logger := runtime.LoadLogger(mode)
+	logMonitor := runtime.LoadLogMonitor(mode)
 	//goland:noinspection GoUnhandledErrorResult
-	defer logger.Sync()
+	defer logMonitor.Sync()
 
 	vConfig, err := config.LoadConfig(configPrefix)
 	if err != nil {
@@ -56,9 +55,7 @@ func main() {
 	//goland:noinspection GoDfaErrorMayBeNotNil
 	vConfig.SetDefault(key, defaultPort)
 
-	sLogger := logger.Sugar()
-
-	tManager := tmcore.NewTenantManager(logger, vConfig, mode)
+	tManager := tmcore.NewTenantManager(logMonitor, vConfig, mode)
 	tManager.ServiceAssembler.Register(tmrouter.RouterServiceAssembly{})
 	err = tManager.ServiceAssembler.Assemble()
 	if err != nil {
@@ -81,9 +78,9 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		sLogger.Infof("Tenant Manager starting [%d]", port)
+		logMonitor.Infof("Tenant Manager starting [%d]", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			sLogger.Fatal("Tenant Manager failed to start", zap.Error(err))
+			logMonitor.Severef("Tenant Manager failed to start", "error", err)
 		}
 	}()
 
@@ -94,8 +91,8 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		sLogger.Fatal("Error attempting shutdown", zap.Error(err))
+		logMonitor.Severef("Error attempting shutdown", "error", err)
 	}
 
-	logger.Info("Tenant Manager shutdown")
+	logMonitor.Infof("Tenant Manager shutdown")
 }

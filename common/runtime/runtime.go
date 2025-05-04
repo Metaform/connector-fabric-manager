@@ -15,13 +15,14 @@ package runtime
 import (
 	"flag"
 	"fmt"
+	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"go.uber.org/zap"
 )
 
 const mode = "mode"
 
-func LoadLogger(mode system.RuntimeMode) *zap.Logger {
+func LoadLogMonitor(mode system.RuntimeMode) monitor.LogMonitor {
 	var logger *zap.Logger
 	var err error
 	if mode == system.DevelopmentMode || mode == system.DebugMode {
@@ -32,7 +33,7 @@ func LoadLogger(mode system.RuntimeMode) *zap.Logger {
 	if err != nil {
 		panic(fmt.Errorf("failed to initialize logger: %w", err))
 	}
-	return logger
+	return NewSugaredLogMonitor(logger.Sugar())
 }
 
 func LoadMode() system.RuntimeMode {
@@ -44,4 +45,54 @@ func LoadMode() system.RuntimeMode {
 		panic(fmt.Errorf("error parsing runtime mode: %w", err))
 	}
 	return mode
+}
+
+// SugaredLogMonitor implements LogMonitor by wrapping a zap.SugaredLogger
+type SugaredLogMonitor struct {
+	logger *zap.SugaredLogger
+}
+
+// NewSugaredLogMonitor creates a new LogMonitor that wraps a zap.SugaredLogger
+func NewSugaredLogMonitor(logger *zap.SugaredLogger) monitor.LogMonitor {
+	return &SugaredLogMonitor{logger: logger}
+}
+
+func (s *SugaredLogMonitor) Named(name string) monitor.LogMonitor {
+	return &SugaredLogMonitor{logger: s.logger.Named(name)}
+}
+
+func (s *SugaredLogMonitor) Severef(message string, args ...any) {
+	s.logger.Errorf(message, args...)
+}
+
+func (s *SugaredLogMonitor) Warnf(message string, args ...any) {
+	s.logger.Warnf(message, args...)
+}
+
+func (s *SugaredLogMonitor) Infof(message string, args ...any) {
+	s.logger.Infof(message, args...)
+}
+
+func (s *SugaredLogMonitor) Debugf(message string, args ...any) {
+	s.logger.Debugf(message, args...)
+}
+
+func (s *SugaredLogMonitor) Severew(message string, keysValues ...any) {
+	s.logger.Errorw(message, keysValues...)
+}
+
+func (s *SugaredLogMonitor) Warnw(message string, keysValues ...any) {
+	s.logger.Warnw(message, keysValues...)
+}
+
+func (s *SugaredLogMonitor) Infow(message string, keysValues ...any) {
+	s.logger.Infow(message, keysValues...)
+}
+
+func (s *SugaredLogMonitor) Debugw(message string, keysValues ...any) {
+	s.logger.Debugw(message, keysValues...)
+}
+
+func (s *SugaredLogMonitor) Sync() error {
+	return s.logger.Sync()
 }

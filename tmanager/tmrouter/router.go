@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
@@ -38,21 +38,21 @@ func (r RouterServiceAssembly) Requires() []system.ServiceType {
 }
 
 func (r RouterServiceAssembly) Init(ctx *system.InitContext) error {
-	router := r.setupRouter(ctx.Logger, ctx.Mode)
+	router := r.setupRouter(ctx.LogMonitor, ctx.Mode)
 	ctx.Registry.Register(RouterKey, router)
 	return nil
 }
 
-func (r RouterServiceAssembly) Destroy(logger *zap.Logger) error {
+func (r RouterServiceAssembly) Destroy(logMonitor monitor.LogMonitor) error {
 	return nil
 }
 
 // SetupRouter configures and returns the HTTP router
-func (r RouterServiceAssembly) setupRouter(logger *zap.Logger, mode system.RuntimeMode) *chi.Mux {
+func (r RouterServiceAssembly) setupRouter(logMonitor monitor.LogMonitor, mode system.RuntimeMode) *chi.Mux {
 	router := chi.NewRouter()
 
 	if mode == system.DebugMode {
-		router.Use(createLoggerHandler(logger))
+		router.Use(createLoggerHandler(logMonitor))
 	}
 	router.Use(middleware.Recoverer)
 
@@ -71,20 +71,20 @@ func (r RouterServiceAssembly) setupRouter(logger *zap.Logger, mode system.Runti
 	return router
 }
 
-func createLoggerHandler(log *zap.Logger) func(next http.Handler) http.Handler {
+func createLoggerHandler(logMonitor monitor.LogMonitor) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 			defer func() {
-				log.Debug("http",
-					zap.String("method", r.Method),
-					zap.String("path", r.URL.Path),
-					zap.Int("status", ww.Status()),
-					zap.Int("bytes", ww.BytesWritten()),
-					zap.Duration("duration", time.Since(start)),
-					zap.String("reqId", middleware.GetReqID(r.Context())),
+				logMonitor.Debugw("http",
+					"method", r.Method,
+					"path", r.URL.Path,
+					"status", ww.Status(),
+					"bytes", ww.BytesWritten(),
+					"duration", time.Since(start),
+					"reqId", middleware.GetReqID(r.Context()),
 				)
 			}()
 

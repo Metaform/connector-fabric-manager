@@ -14,8 +14,8 @@ package system
 
 import (
 	"fmt"
+	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 	"strings"
 )
 
@@ -83,29 +83,29 @@ type ServiceAssembly interface {
 	Provides() []ServiceType
 	Requires() []ServiceType
 	Init(*InitContext) error
-	Destroy(logger *zap.Logger) error
+	Destroy(logMonitor monitor.LogMonitor) error
 }
 
 type InitContext struct {
-	Registry *ServiceRegistry
-	Logger   *zap.Logger
-	Viper    *viper.Viper
-	Mode     RuntimeMode
+	Registry   *ServiceRegistry
+	LogMonitor monitor.LogMonitor
+	Viper      *viper.Viper
+	Mode       RuntimeMode
 }
 
 // ServiceAssembler manages the registration, dependency resolution, and initialization of service assemblies in a runtime.
 type ServiceAssembler struct {
 	assemblies []ServiceAssembly
-	logger     *zap.Logger
+	logMonitor monitor.LogMonitor
 	mode       RuntimeMode
 	viper      *viper.Viper
 	registry   *ServiceRegistry
 }
 
-func NewServiceAssembler(logger *zap.Logger, viper *viper.Viper, mode RuntimeMode) *ServiceAssembler {
+func NewServiceAssembler(logMonitor monitor.LogMonitor, viper *viper.Viper, mode RuntimeMode) *ServiceAssembler {
 	return &ServiceAssembler{
 		assemblies: make([]ServiceAssembly, 0),
-		logger:     logger,
+		logMonitor: logMonitor,
 		mode:       mode,
 		viper:      viper,
 		registry:   NewServiceRegistry(),
@@ -148,15 +148,15 @@ func (a *ServiceAssembler) Assemble() error {
 	reverse(sorted)
 
 	ctx := &InitContext{
-		Registry: a.registry,
-		Logger:   a.logger,
-		Viper:    a.viper,
-		Mode:     a.mode,
+		Registry:   a.registry,
+		LogMonitor: a.logMonitor,
+		Viper:      a.viper,
+		Mode:       a.mode,
 	}
 
 	for _, v := range sorted {
 		e := v.Value.Init(ctx)
-		a.logger.Debug("Initialized assembly: " + v.Value.Name())
+		a.logMonitor.Debugf("Initialized assembly: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error initializing assembly %s: %w", v.Value.Name(), e)
 		}

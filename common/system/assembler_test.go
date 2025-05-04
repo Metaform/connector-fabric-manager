@@ -14,8 +14,8 @@ package system
 
 import (
 	"errors"
+	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 	"testing"
 )
 
@@ -39,14 +39,14 @@ func (m *MockServiceAssembly) Init(ctx *InitContext) error {
 	}
 	return nil
 }
-func (m *MockServiceAssembly) Destroy(logger *zap.Logger) error {
+func (m *MockServiceAssembly) Destroy(monitor monitor.LogMonitor) error {
 	m.destroyed = true
 	return nil
 }
 
 func TestServiceAssembler_Register(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
-	assembler := NewServiceAssembler(logger, viper.New(), DebugMode)
+	logMonitor := monitor.NoopMonitor{}
+	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 	mock := &MockServiceAssembly{id: "test", name: "Test Assembly"}
 
 	assembler.Register(mock)
@@ -60,8 +60,8 @@ func TestServiceAssembler_Register(t *testing.T) {
 }
 
 func TestServiceAssembler_Assemble_Simple(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
-	assembler := NewServiceAssembler(logger, viper.New(), DebugMode)
+	logMonitor := monitor.NoopMonitor{}
+	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 	mock := &MockServiceAssembly{
 		id:       "test",
 		name:     "Test Assembly",
@@ -77,8 +77,8 @@ func TestServiceAssembler_Assemble_Simple(t *testing.T) {
 }
 
 func TestServiceAssembler_Assemble_WithDependencies(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
-	assembler := NewServiceAssembler(logger, viper.New(), DebugMode)
+	logMonitor := monitor.NoopMonitor{}
+	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 	mock1 := &MockServiceAssembly{
 		id:       "test1",
@@ -103,8 +103,8 @@ func TestServiceAssembler_Assemble_WithDependencies(t *testing.T) {
 }
 
 func TestServiceAssembler_Assemble_MissingDependency(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
-	assembler := NewServiceAssembler(logger, viper.New(), DebugMode)
+	logMonitor := monitor.NoopMonitor{}
+	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 	mock := &MockServiceAssembly{
 		id:       "test",
@@ -121,8 +121,8 @@ func TestServiceAssembler_Assemble_MissingDependency(t *testing.T) {
 }
 
 func TestServiceAssembler_Assemble_CyclicDependency(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
-	assembler := NewServiceAssembler(logger, viper.New(), DebugMode)
+	logMonitor := monitor.NoopMonitor{}
+	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 	mock1 := &MockServiceAssembly{
 		id:       "test1",
@@ -148,8 +148,8 @@ func TestServiceAssembler_Assemble_CyclicDependency(t *testing.T) {
 }
 
 func TestServiceAssembler_Assemble_InitializationError(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
-	assembler := NewServiceAssembler(logger, viper.New(), DebugMode)
+	logMonitor := monitor.NoopMonitor{}
+	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 	expectedError := errors.New("initialization failed")
 	mock := &MockServiceAssembly{
