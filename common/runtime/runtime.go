@@ -18,21 +18,36 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const mode = "mode"
 
 func LoadLogMonitor(mode system.RuntimeMode) monitor.LogMonitor {
-	var logger *zap.Logger
-	var err error
-	if mode == system.DevelopmentMode || mode == system.DebugMode {
-		logger, err = zap.NewDevelopment(zap.WithCaller(false))
-	} else {
-		logger, err = zap.NewProduction(zap.WithCaller(false))
+	var config zap.Config
+	var options []zap.Option
+
+	switch mode {
+	case system.DebugMode, system.DevelopmentMode:
+		config = zap.NewDevelopmentConfig()
+		config.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+		config.EncoderConfig.StacktraceKey = "stacktrace"
+		options = append(options, zap.AddStacktrace(zapcore.ErrorLevel))
+	default:
+		config = zap.NewProductionConfig()
+		config.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+		// Disable stacktrace in production
+		config.EncoderConfig.StacktraceKey = ""
 	}
+
+	// Add caller skip for accurate source locations
+	options = append(options, zap.AddCallerSkip(1))
+
+	logger, err := config.Build(options...)
 	if err != nil {
 		panic(fmt.Errorf("failed to initialize logger: %w", err))
 	}
+
 	return NewSugaredLogMonitor(logger.Sugar())
 }
 
