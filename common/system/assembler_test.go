@@ -43,7 +43,7 @@ func (m *MockServiceAssembly) Init(ctx *InitContext) error {
 	}
 	return nil
 }
-func (m *MockServiceAssembly) Destroy() error {
+func (m *MockServiceAssembly) Finalize() error {
 	m.destroyed = true
 	return nil
 }

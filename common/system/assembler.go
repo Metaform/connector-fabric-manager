@@ -85,7 +85,7 @@ type ServiceAssembly interface {
 	Init(*InitContext) error
 	Prepare() error
 	Start() error
-	Destroy() error
+	Finalize() error
 	Shutdown() error
 }
 
@@ -188,10 +188,10 @@ func (a *ServiceAssembler) Assemble() error {
 
 func (a *ServiceAssembler) Shutdown() error {
 	for _, v := range a.assemblies {
-		e := v.Destroy()
-		a.logMonitor.Debugf("Destroyed assembly: " + v.Name())
+		e := v.Finalize()
+		a.logMonitor.Debugf("Finalized assembly: " + v.Name())
 		if e != nil {
-			return fmt.Errorf("error destroying assembly %s: %w", v.Name(), e)
+			return fmt.Errorf("error finalizing assembly %s: %w", v.Name(), e)
 		}
 	}
 	for _, v := range a.assemblies {

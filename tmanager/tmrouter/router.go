@@ -55,7 +55,7 @@ func (r RouterServiceAssembly) Shutdown() error {
 	return nil
 }
 
-func (r RouterServiceAssembly) Destroy() error {
+func (r RouterServiceAssembly) Finalize() error {
 	return nil
 }
 
