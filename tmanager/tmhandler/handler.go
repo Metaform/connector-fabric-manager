@@ -33,7 +33,7 @@ func (h *HandlerServiceAssembly) ID() string {
 }
 
 func (h *HandlerServiceAssembly) Name() string {
-	return "Handers"
+	return "Handlers"
 }
 
 func (h *HandlerServiceAssembly) Provides() []system.ServiceType {
