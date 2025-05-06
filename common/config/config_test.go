@@ -21,7 +21,7 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 		os.Unsetenv("BAR")
 	}()
 
-	v, _ := LoadConfig(appName)
+	v := LoadConfigOrPanic(appName)
 
 	assert.Equal(t, "foo_value", v.GetString("FOO"))
 	assert.Equal(t, "bar_value", v.GetString("bar"))
@@ -44,9 +44,8 @@ bar: "bar_value"
 	require.NoError(t, err)
 	defer os.Remove("./testapp.yaml")
 
-	v, err := LoadConfig(appName)
+	v := LoadConfigOrPanic(appName)
 
-	require.NoError(t, err)
 	assert.Equal(t, "foo_value", v.GetString("foo"))
 	assert.Equal(t, "bar_value", v.GetString("bar"))
 }
@@ -76,9 +75,8 @@ bar: "bar_value_file"
 		os.Unsetenv("TESTAPP_BAR")
 	}()
 
-	v, err := LoadConfig(appName)
+	v := LoadConfigOrPanic(appName)
 
-	require.NoError(t, err)
 	assert.Equal(t, "foo_value_file", v.GetString("foo"))
 	assert.Equal(t, "bar_value_env", v.GetString("bar"))
 }

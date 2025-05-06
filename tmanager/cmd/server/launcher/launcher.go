@@ -13,13 +13,11 @@
 package launcher
 
 import (
-	"fmt"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmcore"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -35,23 +33,13 @@ func Launch() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer logMonitor.Sync()
 
-	vConfig, err := config.LoadConfig(configPrefix)
-	if err != nil {
-		// ignore not found error, otherwise panic
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			panic(fmt.Errorf("error reading config file: %w", err))
-		}
-	} else if vConfig == nil {
-		panic(fmt.Errorf("error loading config: %w", err))
-	}
-
-	//goland:noinspection GoDfaErrorMayBeNotNil
+	vConfig := config.LoadConfigOrPanic(configPrefix)
 	vConfig.SetDefault(key, defaultPort)
 
 	tManager := tmcore.NewTenantManager(logMonitor, vConfig, mode)
 	tManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})
 	tManager.ServiceAssembler.Register(&tmhandler.HandlerServiceAssembly{})
 
-	runtime.AssembleLaunch(&tManager.ServiceAssembler, "Tenant Manager", vConfig, logMonitor)
+	runtime.AssembleAndLaunch(&tManager.ServiceAssembler, "Tenant Manager", vConfig, logMonitor)
 
 }

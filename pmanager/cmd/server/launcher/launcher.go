@@ -13,13 +13,11 @@
 package launcher
 
 import (
-	"fmt"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/pmanager/pmcore"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -35,22 +33,12 @@ func Launch() {
 	//goland:noinspection GoUnhandledErrorResult
 	defer logMonitor.Sync()
 
-	vConfig, err := config.LoadConfig(configPrefix)
-	if err != nil {
-		// ignore not found error, otherwise panic
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			panic(fmt.Errorf("error reading config file: %w", err))
-		}
-	} else if vConfig == nil {
-		panic(fmt.Errorf("error loading config: %w", err))
-	}
-
-	//goland:noinspection GoDfaErrorMayBeNotNil
+	vConfig := config.LoadConfigOrPanic(configPrefix)
 	vConfig.SetDefault(key, defaultPort)
 
 	pManager := pmcore.NewProvisioningManager(logMonitor, vConfig, mode)
 	pManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})
 	pManager.ServiceAssembler.Register(&tmhandler.HandlerServiceAssembly{})
 
-	runtime.AssembleLaunch(&pManager.ServiceAssembler, "Provisioning Manager", vConfig, logMonitor)
+	runtime.AssembleAndLaunch(&pManager.ServiceAssembler, "Provisioning Manager", vConfig, logMonitor)
 }

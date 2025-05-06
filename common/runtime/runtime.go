@@ -126,9 +126,9 @@ func (s *SugaredLogMonitor) Sync() error {
 	return s.logger.Sync()
 }
 
-// AssembleLaunch assembles and launches the runtime with the given name and configuration.
+// AssembleAndLaunch assembles and launches the runtime with the given name and configuration.
 // The runtime will be shutdown when the program is terminated.
-func AssembleLaunch(assembler *system.ServiceAssembler, name string, vConfig *viper.Viper, logMonitor monitor.LogMonitor) {
+func AssembleAndLaunch(assembler *system.ServiceAssembler, name string, vConfig *viper.Viper, logMonitor monitor.LogMonitor) {
 
 	err := assembler.Assemble()
 	if err != nil {
