@@ -15,10 +15,11 @@ package launcher
 import (
 	"context"
 	"fmt"
+	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmcore"
-	"github.com/metaform/connector-fabric-manager/tmanager/tmrouter"
+	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
 	"github.com/spf13/viper"
 	"net/http"
 	"os"
@@ -55,21 +56,20 @@ func Launch() {
 	vConfig.SetDefault(key, defaultPort)
 
 	tManager := tmcore.NewTenantManager(logMonitor, vConfig, mode)
-	tManager.ServiceAssembler.Register(&tmrouter.RouterServiceAssembly{})
+	tManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})
+	tManager.ServiceAssembler.Register(&tmhandler.HandlerServiceAssembly{})
+
 	err = tManager.ServiceAssembler.Assemble()
 	if err != nil {
 		panic(fmt.Errorf("error assembling runtime: %w", err))
 	}
 
-	router, found := tManager.ServiceAssembler.Resolve(tmrouter.RouterKey)
-	if !found {
-		panic("Router not configured")
-	}
+	router := tManager.ServiceAssembler.Resolve(routing.RouterKey).(http.Handler)
 
 	port := vConfig.GetInt(key)
 	server := &http.Server{
 		Addr:    ":" + strconv.Itoa(port),
-		Handler: router.(http.Handler),
+		Handler: router,
 	}
 
 	// channel for shutdown

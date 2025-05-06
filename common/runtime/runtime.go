@@ -40,6 +40,8 @@ func LoadLogMonitor(mode system.RuntimeMode) monitor.LogMonitor {
 		config.EncoderConfig.StacktraceKey = ""
 	}
 
+	config.DisableCaller = true
+
 	// Add caller skip for accurate source locations
 	options = append(options, zap.AddCallerSkip(1))
 

@@ -44,8 +44,16 @@ func (r *ServiceRegistry) Register(serviceType ServiceType, service any) {
 	r.services[serviceType] = service
 }
 
+// Resolve retrieves a service instance by its type, returning the service or panicing if it does not exist.
+func (r *ServiceRegistry) Resolve(serviceType ServiceType) any {
+	if service, exists := r.services[serviceType]; exists {
+		return service
+	}
+	panic(fmt.Errorf("service not found: %s", serviceType))
+}
+
 // Resolve retrieves a service instance by its type, returning the service and a boolean indicating its existence.
-func (r *ServiceRegistry) Resolve(serviceType ServiceType) (any, bool) {
+func (r *ServiceRegistry) ResolveOptional(serviceType ServiceType) (any, bool) {
 	if service, exists := r.services[serviceType]; exists {
 		return service, true
 	}
@@ -115,7 +123,7 @@ func NewServiceAssembler(logMonitor monitor.LogMonitor, viper *viper.Viper, mode
 	}
 }
 
-func (a *ServiceAssembler) Resolve(serviceType ServiceType) (any, bool) {
+func (a *ServiceAssembler) Resolve(serviceType ServiceType) any {
 	return a.registry.Resolve(serviceType)
 }
 

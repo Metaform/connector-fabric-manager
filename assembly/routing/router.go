@@ -1,7 +1,18 @@
-package tmrouter
+//  Copyright (c) 2025 Metaform Systems, Inc
+//
+//  This program and the accompanying materials are made available under the
+//  terms of the Apache License, Version 2.0 which is available at
+//  https://www.apache.org/licenses/LICENSE-2.0
+//
+//  SPDX-License-Identifier: Apache-2.0
+//
+//  Contributors:
+//       Metaform Systems, Inc. - initial API and implementation
+//
+
+package routing
 
 import (
-	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
@@ -11,74 +22,58 @@ import (
 )
 
 const (
-	RouterKey system.ServiceType = "tmrouter:Router"
+	RouterKey system.ServiceType = "router:Router"
 )
-
-type response struct {
-	Message string `json:"message"`
-}
 
 type RouterServiceAssembly struct {
 }
 
-func (r RouterServiceAssembly) ID() string {
-	return "tmanager:RouterServiceAssembly"
+func (r *RouterServiceAssembly) ID() string {
+	return "common:RouterServiceAssembly"
 }
 
-func (r RouterServiceAssembly) Name() string {
+func (r *RouterServiceAssembly) Name() string {
 	return "Router"
 }
 
-func (r RouterServiceAssembly) Provides() []system.ServiceType {
+func (r *RouterServiceAssembly) Provides() []system.ServiceType {
 	return []system.ServiceType{RouterKey}
 }
 
-func (r RouterServiceAssembly) Requires() []system.ServiceType {
+func (r *RouterServiceAssembly) Requires() []system.ServiceType {
 	return []system.ServiceType{}
 }
 
-func (r RouterServiceAssembly) Init(ctx *system.InitContext) error {
+func (r *RouterServiceAssembly) Init(ctx *system.InitContext) error {
 	router := r.setupRouter(ctx.LogMonitor, ctx.Mode)
 	ctx.Registry.Register(RouterKey, router)
 	return nil
 }
 
-func (r RouterServiceAssembly) Prepare() error {
+func (r *RouterServiceAssembly) Prepare() error {
 	return nil
 }
 
-func (r RouterServiceAssembly) Start() error {
+func (r *RouterServiceAssembly) Start() error {
 	return nil
 }
 
-func (r RouterServiceAssembly) Shutdown() error {
+func (r *RouterServiceAssembly) Shutdown() error {
 	return nil
 }
 
-func (r RouterServiceAssembly) Finalize() error {
+func (r *RouterServiceAssembly) Finalize() error {
 	return nil
 }
 
 // SetupRouter configures and returns the HTTP router
-func (r RouterServiceAssembly) setupRouter(logMonitor monitor.LogMonitor, mode system.RuntimeMode) *chi.Mux {
+func (r *RouterServiceAssembly) setupRouter(logMonitor monitor.LogMonitor, mode system.RuntimeMode) *chi.Mux {
 	router := chi.NewRouter()
 
 	if mode == system.DebugMode {
 		router.Use(createLoggerHandler(logMonitor))
 	}
 	router.Use(middleware.Recoverer)
-
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		response := response{Message: "OK"}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
-
-	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		response := response{Message: "OK"}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
 
 	return router
 }
