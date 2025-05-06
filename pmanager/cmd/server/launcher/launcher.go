@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	defaultPort  = 8080
+	defaultPort  = 8181
 	configPrefix = "pmconfig"
 	key          = "httpPort"
 )
@@ -44,6 +44,9 @@ func Launch() {
 	} else if vConfig == nil {
 		panic(fmt.Errorf("error loading config: %w", err))
 	}
+
+	//goland:noinspection GoDfaErrorMayBeNotNil
+	vConfig.SetDefault(key, defaultPort)
 
 	pManager := pmcore.NewProvisioningManager(logMonitor, vConfig, mode)
 	pManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})

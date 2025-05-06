@@ -31,9 +31,8 @@ import (
 )
 
 const (
-	defaultPort = 8080
-	key         = "httpPort"
-	mode        = "mode"
+	key  = "httpPort"
+	mode = "mode"
 )
 
 func LoadLogMonitor(mode system.RuntimeMode) monitor.LogMonitor {
@@ -130,9 +129,6 @@ func (s *SugaredLogMonitor) Sync() error {
 // AssembleLaunch assembles and launches the runtime with the given name and configuration.
 // The runtime will be shutdown when the program is terminated.
 func AssembleLaunch(assembler *system.ServiceAssembler, name string, vConfig *viper.Viper, logMonitor monitor.LogMonitor) {
-
-	//goland:noinspection GoDfaErrorMayBeNotNil
-	vConfig.SetDefault(key, defaultPort)
 
 	err := assembler.Assemble()
 	if err != nil {

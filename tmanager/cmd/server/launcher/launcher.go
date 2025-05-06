@@ -45,6 +45,9 @@ func Launch() {
 		panic(fmt.Errorf("error loading config: %w", err))
 	}
 
+	//goland:noinspection GoDfaErrorMayBeNotNil
+	vConfig.SetDefault(key, defaultPort)
+
 	tManager := tmcore.NewTenantManager(logMonitor, vConfig, mode)
 	tManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})
 	tManager.ServiceAssembler.Register(&tmhandler.HandlerServiceAssembly{})
