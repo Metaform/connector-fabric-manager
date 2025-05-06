@@ -13,15 +13,28 @@
 package runtime
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+	"time"
 )
 
-const mode = "mode"
+const (
+	defaultPort = 8080
+	key         = "httpPort"
+	mode        = "mode"
+)
 
 func LoadLogMonitor(mode system.RuntimeMode) monitor.LogMonitor {
 	var config zap.Config
@@ -112,4 +125,52 @@ func (s *SugaredLogMonitor) Debugw(message string, keysValues ...any) {
 
 func (s *SugaredLogMonitor) Sync() error {
 	return s.logger.Sync()
+}
+
+// AssembleLaunch assembles and launches the runtime with the given name and configuration.
+// The runtime will be shutdown when the program is terminated.
+func AssembleLaunch(assembler *system.ServiceAssembler, name string, vConfig *viper.Viper, logMonitor monitor.LogMonitor) {
+
+	//goland:noinspection GoDfaErrorMayBeNotNil
+	vConfig.SetDefault(key, defaultPort)
+
+	err := assembler.Assemble()
+	if err != nil {
+		panic(fmt.Errorf("error assembling runtime: %w", err))
+	}
+
+	router := assembler.Resolve(routing.RouterKey).(http.Handler)
+
+	port := vConfig.GetInt(key)
+	server := &http.Server{
+		Addr:    ":" + strconv.Itoa(port),
+		Handler: router,
+	}
+
+	// channel for shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		logMonitor.Infof("%s starting [%d]", name, port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logMonitor.Severew("failed to start", "error", err)
+		}
+	}()
+
+	// wait for interrupt signal
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		logMonitor.Severew("Error attempting server shutdown", "error", err)
+	}
+
+	if err := assembler.Shutdown(); err != nil {
+		logMonitor.Severew("Error attempting shutdown", "error", err)
+	}
+
+	logMonitor.Infof("%s shutdown", name)
 }

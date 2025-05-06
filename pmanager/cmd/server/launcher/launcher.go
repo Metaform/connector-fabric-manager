@@ -17,14 +17,14 @@ import (
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
-	"github.com/metaform/connector-fabric-manager/tmanager/tmcore"
+	"github.com/metaform/connector-fabric-manager/pmanager/pmcore"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
 	"github.com/spf13/viper"
 )
 
 const (
 	defaultPort  = 8080
-	configPrefix = "tmconfig"
+	configPrefix = "pmconfig"
 	key          = "httpPort"
 )
 
@@ -45,10 +45,9 @@ func Launch() {
 		panic(fmt.Errorf("error loading config: %w", err))
 	}
 
-	tManager := tmcore.NewTenantManager(logMonitor, vConfig, mode)
-	tManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})
-	tManager.ServiceAssembler.Register(&tmhandler.HandlerServiceAssembly{})
+	pManager := pmcore.NewProvisioningManager(logMonitor, vConfig, mode)
+	pManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})
+	pManager.ServiceAssembler.Register(&tmhandler.HandlerServiceAssembly{})
 
-	runtime.AssembleLaunch(&tManager.ServiceAssembler, "Tenant Manager", vConfig, logMonitor)
-
+	runtime.AssembleLaunch(&pManager.ServiceAssembler, "Provisioning Manager", vConfig, logMonitor)
 }
