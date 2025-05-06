@@ -12,7 +12,7 @@
 
 package monitor
 
-// LogMonitor is a sync for sending log messages to a destination where they can be monitored.
+// LogMonitor is a sink for sending log messages to a destination where they can be monitored.
 type LogMonitor interface {
 	Named(name string) LogMonitor
 
