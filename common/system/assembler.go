@@ -109,16 +109,16 @@ type ServiceAssembler struct {
 	assemblies []ServiceAssembly
 	logMonitor monitor.LogMonitor
 	mode       RuntimeMode
-	viper      *viper.Viper
+	vConfig    *viper.Viper
 	registry   *ServiceRegistry
 }
 
-func NewServiceAssembler(logMonitor monitor.LogMonitor, viper *viper.Viper, mode RuntimeMode) *ServiceAssembler {
+func NewServiceAssembler(logMonitor monitor.LogMonitor, vConfig *viper.Viper, mode RuntimeMode) *ServiceAssembler {
 	return &ServiceAssembler{
 		assemblies: make([]ServiceAssembly, 0),
 		logMonitor: logMonitor,
 		mode:       mode,
-		viper:      viper,
+		vConfig:    vConfig,
 		registry:   NewServiceRegistry(),
 	}
 }
@@ -161,7 +161,7 @@ func (a *ServiceAssembler) Assemble() error {
 	ctx := &InitContext{
 		Registry:   a.registry,
 		LogMonitor: a.logMonitor,
-		Viper:      a.viper,
+		Viper:      a.vConfig,
 		Mode:       a.mode,
 	}
 

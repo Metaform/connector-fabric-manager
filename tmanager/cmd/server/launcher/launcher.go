@@ -16,7 +16,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
-	"github.com/metaform/connector-fabric-manager/tmanager/tmcore"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
 )
 
@@ -36,10 +36,10 @@ func Launch() {
 	vConfig := config.LoadConfigOrPanic(configPrefix)
 	vConfig.SetDefault(key, defaultPort)
 
-	tManager := tmcore.NewTenantManager(logMonitor, vConfig, mode)
-	tManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})
-	tManager.ServiceAssembler.Register(&tmhandler.HandlerServiceAssembly{})
+	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
+	assembler.Register(&routing.RouterServiceAssembly{})
+	assembler.Register(&tmhandler.HandlerServiceAssembly{})
 
-	runtime.AssembleAndLaunch(&tManager.ServiceAssembler, "Tenant Manager", vConfig, logMonitor)
+	runtime.AssembleAndLaunch(assembler, "Tenant Manager", vConfig, logMonitor)
 
 }

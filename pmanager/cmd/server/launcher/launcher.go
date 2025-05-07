@@ -16,7 +16,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
-	"github.com/metaform/connector-fabric-manager/pmanager/pmcore"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
 )
 
@@ -36,9 +36,9 @@ func Launch() {
 	vConfig := config.LoadConfigOrPanic(configPrefix)
 	vConfig.SetDefault(key, defaultPort)
 
-	pManager := pmcore.NewProvisioningManager(logMonitor, vConfig, mode)
-	pManager.ServiceAssembler.Register(&routing.RouterServiceAssembly{})
-	pManager.ServiceAssembler.Register(&tmhandler.HandlerServiceAssembly{})
+	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
+	assembler.Register(&routing.RouterServiceAssembly{})
+	assembler.Register(&tmhandler.HandlerServiceAssembly{})
 
-	runtime.AssembleAndLaunch(&pManager.ServiceAssembler, "Provisioning Manager", vConfig, logMonitor)
+	runtime.AssembleAndLaunch(assembler, "Provisioning Manager", vConfig, logMonitor)
 }
