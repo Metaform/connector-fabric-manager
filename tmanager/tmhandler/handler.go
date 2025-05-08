@@ -28,12 +28,8 @@ type response struct {
 type HandlerServiceAssembly struct {
 }
 
-func (h *HandlerServiceAssembly) ID() string {
-	return "tmanager:HandlerServiceAssembly"
-}
-
 func (h *HandlerServiceAssembly) Name() string {
-	return "Handlers"
+	return "Provision Handlers"
 }
 
 func (h *HandlerServiceAssembly) Provides() []system.ServiceType {

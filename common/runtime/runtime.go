@@ -148,7 +148,7 @@ func AssembleAndLaunch(assembler *system.ServiceAssembler, name string, vConfig 
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logMonitor.Infof("%s starting [%d]", name, port)
+		logMonitor.Infof("%s listening [%d]", name, port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logMonitor.Severew("failed to start", "error", err)
 		}

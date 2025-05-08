@@ -33,7 +33,6 @@ type MockServiceAssembly struct {
 	destroyed    bool
 }
 
-func (m *MockServiceAssembly) ID() string              { return m.id }
 func (m *MockServiceAssembly) Name() string            { return m.name }
 func (m *MockServiceAssembly) Provides() []ServiceType { return m.provides }
 func (m *MockServiceAssembly) Requires() []ServiceType { return m.requires }

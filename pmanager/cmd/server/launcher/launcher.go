@@ -13,6 +13,7 @@
 package launcher
 
 import (
+	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
@@ -37,8 +38,9 @@ func Launch() {
 	vConfig.SetDefault(key, defaultPort)
 
 	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
+	assembler.Register(&httpclient.HttpClientServiceAssembly{})
 	assembler.Register(&routing.RouterServiceAssembly{})
 	assembler.Register(&tmhandler.HandlerServiceAssembly{})
 
-	runtime.AssembleAndLaunch(assembler, "Provisioning Manager", vConfig, logMonitor)
+	runtime.AssembleAndLaunch(assembler, "Provision Manager", vConfig, logMonitor)
 }

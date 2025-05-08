@@ -28,10 +28,6 @@ const (
 type RouterServiceAssembly struct {
 }
 
-func (r *RouterServiceAssembly) ID() string {
-	return "common:RouterServiceAssembly"
-}
-
 func (r *RouterServiceAssembly) Name() string {
 	return "Router"
 }

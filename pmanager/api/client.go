@@ -10,11 +10,14 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package main
+package api
 
-import "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
+import "github.com/metaform/connector-fabric-manager/common/system"
 
-// The entry point for the Provision Manager runtime.
-func main() {
-	launcher.Launch()
+const (
+	ProvisionManagerClientKey system.ServiceType = "pmclient:ProvisionManagerClient"
+)
+
+type ProvisionManagerClient interface {
+	Provision(manifest *DeploymentManifest) error
 }

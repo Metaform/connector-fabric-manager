@@ -10,11 +10,10 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package main
+package api
 
-import "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
-
-// The entry point for the Provision Manager runtime.
-func main() {
-	launcher.Launch()
+type DeploymentManifest struct {
+	Type    string                 `json:"type"`
+	ID      string                 `json:"id"`
+	Payload map[string]interface{} `json:"payload"`
 }

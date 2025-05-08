@@ -15,9 +15,10 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	"strings"
 )
 
-// LoadConfigOrPanic initializes a Viper instance with the specified configuration name.
+// LoadConfigOrPanic initializes a Config instance with the specified configuration name.
 // Configuration will be read from a file (if it exists) and can be overridden using environment variables.
 func LoadConfigOrPanic(name string) *viper.Viper {
 	v := viper.New()
@@ -25,6 +26,7 @@ func LoadConfigOrPanic(name string) *viper.Viper {
 	v.AddConfigPath("/etc/appname/")
 	v.AddConfigPath("$HOME/.appname")
 	v.AddConfigPath(".")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 	v.SetEnvPrefix(name)
 	err := v.ReadInConfig()

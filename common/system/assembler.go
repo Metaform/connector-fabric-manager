@@ -52,7 +52,7 @@ func (r *ServiceRegistry) Resolve(serviceType ServiceType) any {
 	panic(fmt.Errorf("service not found: %s", serviceType))
 }
 
-// Resolve retrieves a service instance by its type, returning the service and a boolean indicating its existence.
+// ResolveOptional retrieves a service instance by its type, returning the service and a boolean indicating its existence.
 func (r *ServiceRegistry) ResolveOptional(serviceType ServiceType) (any, bool) {
 	if service, exists := r.services[serviceType]; exists {
 		return service, true
@@ -86,7 +86,6 @@ func ParseRuntimeMode(mode string) (RuntimeMode, error) {
 // ServiceAssembly is a subsystem that contributes services to a runtime.
 // The assembly provides zero or more services that may be resolved by other assemblies and requires 0 or more services.
 type ServiceAssembly interface {
-	ID() string
 	Name() string
 	Provides() []ServiceType
 	Requires() []ServiceType
@@ -100,8 +99,24 @@ type ServiceAssembly interface {
 type InitContext struct {
 	Registry   *ServiceRegistry
 	LogMonitor monitor.LogMonitor
-	Viper      *viper.Viper
+	Config     *viper.Viper
 	Mode       RuntimeMode
+}
+
+// GetConfigIntOrDefault retrieves an integer config value by key or returns the provided defaultValue if the key is not set.
+func (c InitContext) GetConfigIntOrDefault(key string, defaultValue int) int {
+	if !c.Config.IsSet(key) {
+		return defaultValue
+	}
+	return c.Config.GetInt(key)
+}
+
+// GetConfigIntOrDefault retrieves a string config value by key or returns the provided defaultValue if the key is not set.
+func (c InitContext) GetConfigStrOrDefault(key string, defaultValue string) string {
+	if !c.Config.IsSet(key) {
+		return defaultValue
+	}
+	return c.Config.GetString(key)
 }
 
 // ServiceAssembler manages the registration, dependency resolution, and initialization of service assemblies in a runtime.
@@ -137,7 +152,7 @@ func (a *ServiceAssembler) Assemble() error {
 	for _, assembly := range a.assemblies {
 		// use a new variable in the loop to avoid pointer issues
 		assembly := assembly
-		graph.AddVertex(assembly.ID(), &assembly)
+		graph.AddVertex(assembly.Name(), &assembly)
 		for _, provided := range assembly.Provides() {
 			mappedAssemblies[provided] = assembly
 		}
@@ -148,7 +163,7 @@ func (a *ServiceAssembler) Assemble() error {
 			if !exists {
 				return fmt.Errorf("required assembly not found for assembly %s: %s", assembly.Name(), required)
 			}
-			graph.AddEdge(assembly.ID(), requiredService.ID())
+			graph.AddEdge(assembly.Name(), requiredService.Name())
 		}
 	}
 	sorted, cycle := graph.TopologicalSort()
@@ -161,13 +176,13 @@ func (a *ServiceAssembler) Assemble() error {
 	ctx := &InitContext{
 		Registry:   a.registry,
 		LogMonitor: a.logMonitor,
-		Viper:      a.vConfig,
+		Config:     a.vConfig,
 		Mode:       a.mode,
 	}
 
 	for _, v := range sorted {
 		e := v.Value.Init(ctx)
-		a.logMonitor.Debugf("Initialized assembly: " + v.Value.Name())
+		a.logMonitor.Debugf("Initialized: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error initializing assembly %s: %w", v.Value.Name(), e)
 		}
@@ -175,7 +190,7 @@ func (a *ServiceAssembler) Assemble() error {
 
 	for _, v := range sorted {
 		e := v.Value.Prepare()
-		a.logMonitor.Debugf("Prepared assembly: " + v.Value.Name())
+		a.logMonitor.Debugf("Prepared: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error preparing assembly %s: %w", v.Value.Name(), e)
 		}
@@ -183,7 +198,7 @@ func (a *ServiceAssembler) Assemble() error {
 
 	for _, v := range sorted {
 		e := v.Value.Start()
-		a.logMonitor.Debugf("Started assembly: " + v.Value.Name())
+		a.logMonitor.Debugf("Started: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error starting assembly %s: %w", v.Value.Name(), e)
 		}
@@ -197,14 +212,14 @@ func (a *ServiceAssembler) Assemble() error {
 func (a *ServiceAssembler) Shutdown() error {
 	for _, v := range a.assemblies {
 		e := v.Finalize()
-		a.logMonitor.Debugf("Finalized assembly: " + v.Name())
+		a.logMonitor.Debugf("Finalized: " + v.Name())
 		if e != nil {
 			return fmt.Errorf("error finalizing assembly %s: %w", v.Name(), e)
 		}
 	}
 	for _, v := range a.assemblies {
 		e := v.Shutdown()
-		a.logMonitor.Debugf("Shutdown assembly: " + v.Name())
+		a.logMonitor.Debugf("Shutdown: " + v.Name())
 		if e != nil {
 			return fmt.Errorf("error shutting down assembly %s: %w", v.Name(), e)
 		}
