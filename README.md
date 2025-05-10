@@ -4,5 +4,6 @@ Connector Fabric Manager provides infrastructure for managing virtualized datasp
 following components:
 
 - **Tenant Manager** - Responsible for tenant management and deployment
+- **Provision Manager** - Responsible for resource provisioning and orchestration
 
 
