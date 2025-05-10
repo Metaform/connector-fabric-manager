@@ -17,7 +17,7 @@ the following sections:
 | 2025-05-08 | [Configuration](2025-05-08-02-configuration/README.md) | Configuration management                                                          |
 | 2025-05-08 | [Logging](2025-05-08-04-logging/README.md)             | Logging library and conventions                                                   |
 | 2025-05-08 | [HTTP Client](2025-05-08-06-http-client/README.md)     | HTTP client library                                                               |
-| 2025-05-08 | [HTTP Routing](2025-05-08-7-routing/README.md)         | THTTP router library                                                              |
+| 2025-05-08 | [HTTP Routing](2025-05-08-7-routing/README.md)         | HTTP router library                                                               |
 | 2025-05-08 | [Storage](2025-05-08-8-storage)                        | Storage extensibility                                                             |
 | 2025-05-08 | [Core Subsystems](2025-05-09-core-subsystems)          | Core subsystems, including the Tenant Manager, Provision Manager and Provisioners |
 
