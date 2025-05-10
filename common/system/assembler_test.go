@@ -22,7 +22,6 @@ import (
 
 // MockServiceAssembly implements ServiceAssembly interface for testing
 type MockServiceAssembly struct {
-	id           string
 	name         string
 	provides     []ServiceType
 	requires     []ServiceType
@@ -71,7 +70,7 @@ func (m *MockServiceAssembly) Shutdown() error {
 func TestServiceAssembler_Register(t *testing.T) {
 	logMonitor := monitor.NoopMonitor{}
 	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
-	mock := &MockServiceAssembly{id: "test", name: "Test Assembly"}
+	mock := &MockServiceAssembly{name: "Test Assembly"}
 
 	assembler.Register(mock)
 
@@ -87,7 +86,6 @@ func TestServiceAssembler_Assemble_Simple(t *testing.T) {
 	logMonitor := monitor.NoopMonitor{}
 	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 	mock := &MockServiceAssembly{
-		id:       "test",
 		name:     "Test Assembly",
 		provides: []ServiceType{"service1"},
 	}
@@ -105,13 +103,11 @@ func TestServiceAssembler_Assemble_WithDependencies(t *testing.T) {
 	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 	mock1 := &MockServiceAssembly{
-		id:       "test1",
 		name:     "Test Assembly 1",
 		provides: []ServiceType{"service1"},
 	}
 
 	mock2 := &MockServiceAssembly{
-		id:       "test2",
 		name:     "Test Assembly 2",
 		provides: []ServiceType{"service2"},
 		requires: []ServiceType{"service1"},
@@ -131,7 +127,6 @@ func TestServiceAssembler_Assemble_MissingDependency(t *testing.T) {
 	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 	mock := &MockServiceAssembly{
-		id:       "test",
 		name:     "Test Assembly",
 		requires: []ServiceType{"missing-service"},
 	}
@@ -149,14 +144,12 @@ func TestServiceAssembler_Assemble_CyclicDependency(t *testing.T) {
 	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 	mock1 := &MockServiceAssembly{
-		id:       "test1",
 		name:     "Test Assembly 1",
 		provides: []ServiceType{"service1"},
 		requires: []ServiceType{"service2"},
 	}
 
 	mock2 := &MockServiceAssembly{
-		id:       "test2",
 		name:     "Test Assembly 2",
 		provides: []ServiceType{"service2"},
 		requires: []ServiceType{"service1"},
@@ -177,7 +170,6 @@ func TestServiceAssembler_Assemble_InitializationError(t *testing.T) {
 
 	expectedError := errors.New("initialization failed")
 	mock := &MockServiceAssembly{
-		id:       "test",
 		name:     "Test Assembly",
 		provides: []ServiceType{"service1"},
 		initFunc: func(*ServiceRegistry) error {
@@ -203,7 +195,6 @@ func TestServiceAssembler_LifecycleMethods(t *testing.T) {
 	shutdownCh := make(chan bool, 1)
 
 	mock := &MockServiceAssembly{
-		id:       "test",
 		name:     "Test Assembly",
 		provides: []ServiceType{"service1"},
 		// Add function fields for lifecycle methods

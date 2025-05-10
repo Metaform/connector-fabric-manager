@@ -51,7 +51,7 @@ func (h HttpClientServiceAssembly) Init(context *system.InitContext) error {
 	retryClient.RetryWaitMax = time.Duration(context.GetConfigIntOrDefault(ConfigKeyRetryWaitMax, DefaultRetryWaitMax)) * time.Second
 
 	standardClient := retryClient.StandardClient()
-	context.Registry.Register(HttpClientKey, standardClient)
+	context.Registry.Register(HttpClientKey, *standardClient)
 
 	return nil
 }
