@@ -1,11 +1,9 @@
-<img src=./docs/logo/cfm.logo.svg" width="150">
+![](./docs/logo/cfm.small.logo.svg)
 
-# Connector Fabric Manager (CFM)
-
-Connector Fabric Manager provides infrastructure for managing virtualized dataspace connectors. The CFM consists of the
+Connector Fabric Manager (CFM) provides infrastructure for managing virtualized dataspace connectors. The CFM consists of the
 following components:
 
-- **Tenant Manager** - Responsible for tenant management and deployment
-- **Provision Manager** - Responsible for resource provisioning and orchestration
+- **Tenant Manager** - Tenant management and deployment
+- **Provision Manager** - Resource provisioning and orchestration
 
 
