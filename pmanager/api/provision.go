@@ -12,7 +12,10 @@
 
 package api
 
-import "github.com/metaform/connector-fabric-manager/common/system"
+import (
+	"context"
+	"github.com/metaform/connector-fabric-manager/common/system"
+)
 
 const (
 	ProvisionManagerKey    system.ServiceType = "pmapi:ProvisionManager"
@@ -35,4 +38,16 @@ type ProvisionManager interface {
 type Provisioner interface {
 	CanProcess(manifest *DeploymentManifest) bool
 	ProvisionerBase
+}
+
+type ActivityProcessor interface {
+	Process(activityContext ActivityContext) (bool, error)
+}
+
+type ActivityContext interface {
+	OID() string
+	ID() string
+	SetValue(key string, value any)
+	Value(key string) any
+	Context() context.Context
 }

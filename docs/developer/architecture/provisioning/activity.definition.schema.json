@@ -1,0 +1,38 @@
+{
+  "$id": "https://https://github.com/Metaform/connector-fabric-manager/deployment.definition.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ActivityDefinitionSchema",
+  "description": "Defines an Activity Definition",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "#/definitions/ActivityDefinitionType"
+    }
+  ],
+  "definitions": {
+    "ActivityDefinitionType": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "inputSchema": {
+          "type": "object"
+        },
+        "outputSchema": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "provider"
+      ]
+    }
+  }
+}
