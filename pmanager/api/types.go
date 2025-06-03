@@ -28,7 +28,7 @@ type DeploymentManifest struct {
 type Orchestration struct {
 	ID             string `json:"id"`
 	Steps          []OrchestrationStep
-	Data           map[string]any
+	Inputs         map[string]any
 	ProcessingData map[string]any
 	Completed      map[string]struct{}
 }
@@ -88,14 +88,19 @@ func (o *Orchestration) GetNextActivities(current string) ([]Activity, bool) {
 }
 
 type OrchestrationStep struct {
-	ID         string     `json:"id"`
 	Parallel   bool       `json:"parallel"`
 	Activities []Activity `json:"activities"`
 }
 
 type Activity struct {
-	ID string `json:"id"`
-	ActivityDefinition
+	ID     string         `json:"id"`
+	Type   string         `json:"type"`
+	Inputs []MappingEntry `json:"inputs"`
+}
+
+type MappingEntry struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
 }
 
 type DeploymentDefinition struct {
@@ -115,6 +120,7 @@ type Resource struct {
 type Version struct {
 	Version                 string                  `json:"version"`
 	Active                  bool                    `json:"active"`
+	Schema                  string                  `json:"schema"`
 	OrchestrationDefinition OrchestrationDefinition `json:"orchestration"`
 }
 
@@ -128,8 +134,11 @@ type OrchestrationStepDefinition struct {
 
 // ActivityDefinition represents a single activity in the orchestration
 type ActivityDefinition struct {
-	Type        string   `json:"type"`
-	DataMapping []string `json:"dataMapping"`
+	Type         string `json:"type"`
+	Provider     string `json:"provider"`
+	Description  string `json:"description"`
+	InputSchema  string `json:"inputSchema"`
+	OutputSchema string `json:"outputSchema"`
 }
 
 func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
@@ -146,7 +155,7 @@ func InstantiateOrchestration(definition OrchestrationDefinition, data map[strin
 	orchestration := &Orchestration{
 		ID:             uuid.New().String(),
 		Steps:          make([]OrchestrationStep, len(definition)),
-		Data:           data,
+		Inputs:         data,
 		ProcessingData: make(map[string]any),
 		Completed:      make(map[string]struct{}),
 	}
@@ -154,16 +163,15 @@ func InstantiateOrchestration(definition OrchestrationDefinition, data map[strin
 	// Create steps
 	for i, stepDef := range definition {
 		step := OrchestrationStep{
-			ID:         uuid.New().String(),
 			Parallel:   stepDef.Parallel,
 			Activities: make([]Activity, len(stepDef.Activities)),
 		}
 
 		// Create activities
-		for j, actDef := range stepDef.Activities {
+		for j, _ := range stepDef.Activities {
 			step.Activities[j] = Activity{
-				ID:                 uuid.New().String(),
-				ActivityDefinition: actDef,
+				ID:     uuid.New().String(),
+				Inputs: make([]MappingEntry, 0),
 			}
 		}
 
