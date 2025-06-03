@@ -18,26 +18,18 @@ import (
 )
 
 const (
-	ProvisionManagerKey    system.ServiceType = "pmapi:ProvisionManager"
-	ProvisionerRegistryKey system.ServiceType = "pmapi:ProvisionerRegistry"
+	ProvisionManagerKey          system.ServiceType = "pmapi:ProvisionManager"
+	ActivityProcessorRegistryKey system.ServiceType = "pmapi:ActivityProcessorRegistry"
 )
 
-type ProvisionerRegistry interface {
-	RegisterProvisioner(provisioner Provisioner)
-}
-
-type ProvisionerBase interface {
+// ProvisionManager handles deployments to the system.
+type ProvisionManager interface {
 	Start(manifest *DeploymentManifest) (string, error)
 	Cancel(id string) error
 }
 
-type ProvisionManager interface {
-	ProvisionerBase
-}
-
-type Provisioner interface {
-	CanProcess(manifest *DeploymentManifest) bool
-	ProvisionerBase
+type ActivityProcessorRegistry interface {
+	RegisterProcessor(processor *ActivityProcessor)
 }
 
 type ActivityProcessor interface {

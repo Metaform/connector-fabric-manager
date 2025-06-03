@@ -13,32 +13,136 @@
 package api
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/assert"
 	"testing"
 )
 
+func TestMappingEntry_UnmarshalJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		json    string
+		want    MappingEntry
+		wantErr bool
+	}{
+		{
+			name: "string input",
+			json: `"test_value"`,
+			want: MappingEntry{
+				Source: "test_value",
+				Target: "test_value",
+			},
+			wantErr: false,
+		},
+		{
+			name: "object input",
+			json: `{"source": "src_value", "target": "tgt_value"}`,
+			want: MappingEntry{
+				Source: "src_value",
+				Target: "tgt_value",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "invalid json",
+			json:    `{"invalid`,
+			want:    MappingEntry{},
+			wantErr: true,
+		},
+		{
+			name:    "invalid type",
+			json:    `42`,
+			want:    MappingEntry{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got MappingEntry
+			err := json.Unmarshal([]byte(tt.json), &got)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MappingEntry.UnmarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			assert.DeepEqual(t, got, tt.want)
+		})
+	}
+}
+
 func TestParseDeploymentDefinition(t *testing.T) {
 	result, err := ParseDeploymentDefinition([]byte(testDefinition))
 	require.NoError(t, err)
-	assert.Equal(t, result.Type, "tenant.example.com")
-	assert.Equal(t, result.ApiVersion, "1.0")
 
-	assert.Equal(t, result.Resource.Group, "example.com")
-	assert.Equal(t, result.Resource.Singular, "tenant")
-	assert.Equal(t, result.Resource.Plural, "tenants")
-	assert.Equal(t, result.Resource.Description, "Deploys infrastructure and configuration required to support a tenant")
+	expected := &DeploymentDefinition{
+		Type:       "tenant.example.com",
+		ApiVersion: "1.0",
+		Resource: Resource{
+			Group:       "example.com",
+			Singular:    "tenant",
+			Plural:      "tenants",
+			Description: "Deploys infrastructure and configuration required to support a tenant",
+		},
+		Versions: []Version{
+			{
+				Version: "1.0.0",
+				Active:  true,
+				Schema: map[string]any{
+					"openAPIV3Schema": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"cell": map[string]any{
+								"type": "string",
+							},
+						},
+						"required": []any{"cell"},
+					},
+				},
+				OrchestrationDefinition: OrchestrationDefinition{
+					{
+						Parallel: false,
+						Activities: []Activity{
+							{
+								Type: "dns.example.com",
+								Inputs: []MappingEntry{
+									MappingEntry{
+										Source: "cell",
+										Target: "cell",
+									},
+									MappingEntry{
+										Source: "baseUrl",
+										Target: "baseUrl",
+									},
+								},
+							},
+							{
+								Type: "ihtenant.example.com",
+								Inputs: []MappingEntry{
+									MappingEntry{
+										Source: "cell",
+										Target: "cell",
+									}, MappingEntry{
+										Source: "test.dataspaces",
+										Target: "dataspaces",
+									},
+								},
+							},
+						},
+					},
 
-	assert.Equal(t, len(result.Versions), 1)
-	assert.Equal(t, result.Versions[0].Version, "1.0.0")
-	assert.Equal(t, result.Versions[0].Active, true)
+					{
+						Parallel:   true,
+						Activities: []Activity{},
+					},
+				},
+			},
+		},
+	}
 
-	orchestrationDefinition := result.Versions[0].OrchestrationDefinition
-	assert.Equal(t, len(orchestrationDefinition), 2)
-	assert.Equal(t, orchestrationDefinition[0].Parallel, false)
-	assert.Equal(t, len(orchestrationDefinition[0].Activities), 5)
-	assert.Equal(t, orchestrationDefinition[1].Parallel, true)
-	assert.Equal(t, len(orchestrationDefinition[1].Activities), 0)
+	assert.DeepEqual(t, result, expected)
 }
 
 const testDefinition = `{
@@ -60,27 +164,10 @@ const testDefinition = `{
           "properties": {
             "cell": {
               "type": "string"
-            },
-            "did": {
-              "type": "string",
-              "format": "uri"
-            },
-            "baseUrl": {
-              "type": "string",
-              "format": "uri"
-            },
-            "dataspaces": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
             }
           },
           "required": [
-            "cell",
-            "did",
-            "baseUrl",
-            "dataspaces"
+            "cell"
           ]
         }
       },
@@ -90,41 +177,19 @@ const testDefinition = `{
           "activities": [
             {
               "type": "dns.example.com",
-              "dataMapping": [
+              "inputs": [
                 "cell",
                 "baseUrl"
               ]
             },
             {
               "type": "ihtenant.example.com",
-              "dataMapping": [
+              "inputs": [
                 "cell",
-                "did",
-                "dataspaces"
-              ]
-            },
-            {
-              "type": "edctenant.example.com",
-              "dataMapping": [
-                "cell",
-                "did",
-                "dataspaces"
-              ]
-            },
-            {
-              "type": "ingress.example.com",
-              "dataMapping": [
-                "cell",
-                "baseUrl",
-                "did"
-              ]
-            },
-            {
-              "type": "onboard.example.com",
-              "dataMapping": [
-                "cell",
-                "did",
-                "dataspaces"
+                {
+                  "source": "test.dataspaces",
+                  "target": "dataspaces"
+                }
               ]
             }
           ]
