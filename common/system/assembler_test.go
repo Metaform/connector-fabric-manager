@@ -20,6 +20,187 @@ import (
 	"time"
 )
 
+func TestServiceAssembler(t *testing.T) {
+	t.Run("Register", func(t *testing.T) {
+		logMonitor := monitor.NoopMonitor{}
+		assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
+		mock := &MockServiceAssembly{name: "Test Assembly"}
+
+		assembler.Register(mock)
+
+		if len(assembler.assemblies) != 1 {
+			t.Errorf("Expected 1 assembly, got %d", len(assembler.assemblies))
+		}
+		if assembler.assemblies[0] != mock {
+			t.Error("Registered assembly does not match mock")
+		}
+	})
+
+	t.Run("Assemble", func(t *testing.T) {
+		t.Run("Simple", func(t *testing.T) {
+			logMonitor := monitor.NoopMonitor{}
+			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
+			mock := &MockServiceAssembly{
+				name:     "Test Assembly",
+				provides: []ServiceType{"service1"},
+			}
+
+			assembler.Register(mock)
+
+			err := assembler.Assemble()
+			if err != nil {
+				t.Errorf("Expected no error, got %v", err)
+			}
+		})
+
+		t.Run("WithDependencies", func(t *testing.T) {
+			logMonitor := monitor.NoopMonitor{}
+			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
+
+			mock1 := &MockServiceAssembly{
+				name:     "Test Assembly 1",
+				provides: []ServiceType{"service1"},
+			}
+
+			mock2 := &MockServiceAssembly{
+				name:     "Test Assembly 2",
+				provides: []ServiceType{"service2"},
+				requires: []ServiceType{"service1"},
+			}
+
+			assembler.Register(mock2)
+			assembler.Register(mock1)
+
+			err := assembler.Assemble()
+			if err != nil {
+				t.Errorf("Expected no error, got %v", err)
+			}
+		})
+
+		t.Run("MissingDependency", func(t *testing.T) {
+			logMonitor := monitor.NoopMonitor{}
+			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
+
+			mock := &MockServiceAssembly{
+				name:     "Test Assembly",
+				requires: []ServiceType{"missing-service"},
+			}
+
+			assembler.Register(mock)
+
+			err := assembler.Assemble()
+			if err == nil {
+				t.Error("Expected error for missing dependency, got nil")
+			}
+		})
+
+		t.Run("CyclicDependency", func(t *testing.T) {
+			logMonitor := monitor.NoopMonitor{}
+			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
+
+			mock1 := &MockServiceAssembly{
+				name:     "Test Assembly 1",
+				provides: []ServiceType{"service1"},
+				requires: []ServiceType{"service2"},
+			}
+
+			mock2 := &MockServiceAssembly{
+				name:     "Test Assembly 2",
+				provides: []ServiceType{"service2"},
+				requires: []ServiceType{"service1"},
+			}
+
+			assembler.Register(mock1)
+			assembler.Register(mock2)
+
+			err := assembler.Assemble()
+			if err == nil {
+				t.Error("Expected error for cyclic dependency, got nil")
+			}
+		})
+
+		t.Run("InitializationError", func(t *testing.T) {
+			logMonitor := monitor.NoopMonitor{}
+			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
+
+			expectedError := errors.New("initialization failed")
+			mock := &MockServiceAssembly{
+				name:     "Test Assembly",
+				provides: []ServiceType{"service1"},
+				initFunc: func(*ServiceRegistry) error {
+					return expectedError
+				},
+			}
+
+			assembler.Register(mock)
+
+			err := assembler.Assemble()
+			if err == nil {
+				t.Error("Expected initialization error, got nil")
+			}
+		})
+	})
+
+	t.Run("LifecycleMethods", func(t *testing.T) {
+		logMonitor := monitor.NoopMonitor{}
+		assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
+
+		preparedCh := make(chan bool, 1)
+		startedCh := make(chan bool, 1)
+		shutdownCh := make(chan bool, 1)
+
+		mock := &MockServiceAssembly{
+			name:     "Test Assembly",
+			provides: []ServiceType{"service1"},
+			prepareFunc: func() error {
+				preparedCh <- true
+				return nil
+			},
+			startFunc: func() error {
+				startedCh <- true
+				return nil
+			},
+			shutdownFunc: func() error {
+				shutdownCh <- true
+				return nil
+			},
+		}
+
+		assembler.Register(mock)
+
+		err := assembler.Assemble()
+		if err != nil {
+			t.Errorf("Expected no error during assembly, got %v", err)
+		}
+
+		select {
+		case <-preparedCh:
+			// Success
+		case <-time.After(time.Second):
+			t.Error("Prepare method was not called")
+		}
+
+		select {
+		case <-startedCh:
+			// Success
+		case <-time.After(time.Second):
+			t.Error("Start method was not called")
+		}
+
+		err = assembler.Shutdown()
+		if err != nil {
+			t.Errorf("Expected no error during shutdown, got %v", err)
+		}
+
+		select {
+		case <-shutdownCh:
+			// Success
+		case <-time.After(time.Second):
+			t.Error("Shutdown method was not called")
+		}
+	})
+}
+
 // MockServiceAssembly implements ServiceAssembly interface for testing
 type MockServiceAssembly struct {
 	name         string
@@ -65,188 +246,4 @@ func (m *MockServiceAssembly) Shutdown() error {
 		return m.shutdownFunc()
 	}
 	return nil
-}
-
-func TestServiceAssembler_Register(t *testing.T) {
-	logMonitor := monitor.NoopMonitor{}
-	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
-	mock := &MockServiceAssembly{name: "Test Assembly"}
-
-	assembler.Register(mock)
-
-	if len(assembler.assemblies) != 1 {
-		t.Errorf("Expected 1 assembly, got %d", len(assembler.assemblies))
-	}
-	if assembler.assemblies[0] != mock {
-		t.Error("Registered assembly does not match mock")
-	}
-}
-
-func TestServiceAssembler_Assemble_Simple(t *testing.T) {
-	logMonitor := monitor.NoopMonitor{}
-	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
-	mock := &MockServiceAssembly{
-		name:     "Test Assembly",
-		provides: []ServiceType{"service1"},
-	}
-
-	assembler.Register(mock)
-
-	err := assembler.Assemble()
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-}
-
-func TestServiceAssembler_Assemble_WithDependencies(t *testing.T) {
-	logMonitor := monitor.NoopMonitor{}
-	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
-
-	mock1 := &MockServiceAssembly{
-		name:     "Test Assembly 1",
-		provides: []ServiceType{"service1"},
-	}
-
-	mock2 := &MockServiceAssembly{
-		name:     "Test Assembly 2",
-		provides: []ServiceType{"service2"},
-		requires: []ServiceType{"service1"},
-	}
-
-	assembler.Register(mock2)
-	assembler.Register(mock1)
-
-	err := assembler.Assemble()
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-}
-
-func TestServiceAssembler_Assemble_MissingDependency(t *testing.T) {
-	logMonitor := monitor.NoopMonitor{}
-	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
-
-	mock := &MockServiceAssembly{
-		name:     "Test Assembly",
-		requires: []ServiceType{"missing-service"},
-	}
-
-	assembler.Register(mock)
-
-	err := assembler.Assemble()
-	if err == nil {
-		t.Error("Expected error for missing dependency, got nil")
-	}
-}
-
-func TestServiceAssembler_Assemble_CyclicDependency(t *testing.T) {
-	logMonitor := monitor.NoopMonitor{}
-	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
-
-	mock1 := &MockServiceAssembly{
-		name:     "Test Assembly 1",
-		provides: []ServiceType{"service1"},
-		requires: []ServiceType{"service2"},
-	}
-
-	mock2 := &MockServiceAssembly{
-		name:     "Test Assembly 2",
-		provides: []ServiceType{"service2"},
-		requires: []ServiceType{"service1"},
-	}
-
-	assembler.Register(mock1)
-	assembler.Register(mock2)
-
-	err := assembler.Assemble()
-	if err == nil {
-		t.Error("Expected error for cyclic dependency, got nil")
-	}
-}
-
-func TestServiceAssembler_Assemble_InitializationError(t *testing.T) {
-	logMonitor := monitor.NoopMonitor{}
-	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
-
-	expectedError := errors.New("initialization failed")
-	mock := &MockServiceAssembly{
-		name:     "Test Assembly",
-		provides: []ServiceType{"service1"},
-		initFunc: func(*ServiceRegistry) error {
-			return expectedError
-		},
-	}
-
-	assembler.Register(mock)
-
-	err := assembler.Assemble()
-	if err == nil {
-		t.Error("Expected initialization error, got nil")
-	}
-}
-
-func TestServiceAssembler_LifecycleMethods(t *testing.T) {
-	logMonitor := monitor.NoopMonitor{}
-	assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
-
-	// Create channels to track method calls
-	preparedCh := make(chan bool, 1)
-	startedCh := make(chan bool, 1)
-	shutdownCh := make(chan bool, 1)
-
-	mock := &MockServiceAssembly{
-		name:     "Test Assembly",
-		provides: []ServiceType{"service1"},
-		// Add function fields for lifecycle methods
-		prepareFunc: func() error {
-			preparedCh <- true
-			return nil
-		},
-		startFunc: func() error {
-			startedCh <- true
-			return nil
-		},
-		shutdownFunc: func() error {
-			shutdownCh <- true
-			return nil
-		},
-	}
-
-	assembler.Register(mock)
-
-	// Test assembly process
-	err := assembler.Assemble()
-	if err != nil {
-		t.Errorf("Expected no error during assembly, got %v", err)
-	}
-
-	// Verify Prepare was called
-	select {
-	case <-preparedCh:
-		// Success
-	case <-time.After(time.Second):
-		t.Error("Prepare method was not called")
-	}
-
-	// Verify Start was called
-	select {
-	case <-startedCh:
-		// Success
-	case <-time.After(time.Second):
-		t.Error("Start method was not called")
-	}
-
-	// Test shutdown process
-	err = assembler.Shutdown()
-	if err != nil {
-		t.Errorf("Expected no error during shutdown, got %v", err)
-	}
-
-	// Verify Shutdown was called
-	select {
-	case <-shutdownCh:
-		// Success
-	case <-time.After(time.Second):
-		t.Error("Shutdown method was not called")
-	}
 }
