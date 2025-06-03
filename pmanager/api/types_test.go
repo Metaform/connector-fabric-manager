@@ -19,6 +19,404 @@ import (
 	"testing"
 )
 
+func TestOrchestration_CanProceedToNextActivity(t *testing.T) {
+	tests := []struct {
+		name          string
+		orchestration *Orchestration
+		activityID    string
+		validator     func([]string) bool
+		want          bool
+		wantErr       bool
+	}{
+		{
+			name: "single step sequential orchestration",
+			orchestration: &Orchestration{
+				Steps: []OrchestrationStep{
+					{
+						Parallel: false,
+						Activities: []Activity{
+							{ID: "act1", Type: "test"},
+						},
+					},
+				},
+			},
+			activityID: "act1",
+			validator:  func([]string) bool { return true },
+			want:       true,
+			wantErr:    false,
+		},
+		{
+			name: "multiple sequential steps",
+			orchestration: &Orchestration{
+				Steps: []OrchestrationStep{
+					{
+						Parallel: false,
+						Activities: []Activity{
+							{ID: "act1", Type: "test"},
+							{ID: "act2", Type: "test"},
+						},
+					},
+					{
+						Parallel: false,
+						Activities: []Activity{
+							{ID: "act3", Type: "test"},
+						},
+					},
+				},
+			},
+			activityID: "act2",
+			validator:  func([]string) bool { return true },
+			want:       true,
+			wantErr:    false,
+		},
+		{
+			name: "parallel step with all activities completed",
+			orchestration: &Orchestration{
+				Steps: []OrchestrationStep{
+					{
+						Parallel: true,
+						Activities: []Activity{
+							{ID: "act1", Type: "test"},
+							{ID: "act2", Type: "test"},
+							{ID: "act3", Type: "test"},
+						},
+					},
+				},
+			},
+			activityID: "act2",
+			validator:  func([]string) bool { return true },
+			want:       true,
+			wantErr:    false,
+		},
+		{
+			name: "parallel step with pending activities",
+			orchestration: &Orchestration{
+				Steps: []OrchestrationStep{
+					{
+						Parallel: true,
+						Activities: []Activity{
+							{ID: "act1", Type: "test"},
+							{ID: "act2", Type: "test"},
+							{ID: "act3", Type: "test"},
+						},
+					},
+				},
+			},
+			activityID: "act2",
+			validator:  func([]string) bool { return false },
+			want:       false,
+			wantErr:    false,
+		},
+		{
+			name: "activity not found",
+			orchestration: &Orchestration{
+				Steps: []OrchestrationStep{
+					{
+						Parallel: false,
+						Activities: []Activity{
+							{ID: "act1", Type: "test"},
+						},
+					},
+				},
+			},
+			activityID: "non-existent",
+			validator:  func([]string) bool { return true },
+			want:       true,
+			wantErr:    true,
+		},
+		{
+			name: "mixed parallel and sequential steps",
+			orchestration: &Orchestration{
+				Steps: []OrchestrationStep{
+					{
+						Parallel: false,
+						Activities: []Activity{
+							{ID: "act1", Type: "test"},
+						},
+					},
+					{
+						Parallel: true,
+						Activities: []Activity{
+							{ID: "act2", Type: "test"},
+							{ID: "act3", Type: "test"},
+							{ID: "act4", Type: "test"},
+						},
+					},
+					{
+						Parallel: false,
+						Activities: []Activity{
+							{ID: "act5", Type: "test"},
+						},
+					},
+				},
+			},
+			activityID: "act3",
+			validator:  func([]string) bool { return false },
+			want:       false,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.orchestration.CanProceedToNextActivity(tt.activityID, tt.validator)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("%v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("%v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetStepForActivity(t *testing.T) {
+	t.Run("single step orchestration - activity found", func(t *testing.T) {
+		// Setup
+		activity := Activity{ID: "activity1"}
+		orchestration := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Activities: []Activity{activity},
+				},
+			},
+		}
+
+		step, err := orchestration.GetStepForActivity("activity1")
+
+		require.NoError(t, err)
+		require.NotNil(t, step)
+		require.Equal(t, activity, step.Activities[0])
+	})
+
+	t.Run("two step orchestration - activity found in second step", func(t *testing.T) {
+		// Setup
+		activity1 := Activity{ID: "activity1"}
+		activity2 := Activity{ID: "activity2"}
+		orchestration := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Activities: []Activity{activity1},
+				},
+				{
+					Activities: []Activity{activity2},
+				},
+			},
+		}
+
+		step, err := orchestration.GetStepForActivity("activity2")
+
+		// Assert
+		require.NoError(t, err)
+		require.NotNil(t, step)
+		require.Equal(t, activity2, step.Activities[0])
+	})
+
+	t.Run("activity not found", func(t *testing.T) {
+		// Setup
+		activity := Activity{ID: "activity1"}
+		orchestration := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Activities: []Activity{activity},
+				},
+			},
+		}
+
+		step, err := orchestration.GetStepForActivity("nonexistent")
+
+		require.Error(t, err)
+		require.Nil(t, step)
+		require.Contains(t, err.Error(), "step not found for activity: nonexistent")
+	})
+
+	t.Run("empty orchestration", func(t *testing.T) {
+		// Setup
+		orchestration := &Orchestration{
+			Steps: []OrchestrationStep{},
+		}
+
+		step, err := orchestration.GetStepForActivity("activity1")
+
+		require.Error(t, err)
+		require.Nil(t, step)
+		require.Contains(t, err.Error(), "step not found for activity: activity1")
+	})
+}
+
+func TestGetNextActivities(t *testing.T) {
+	t.Run("single step with sequential activities", func(t *testing.T) {
+		orch := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Parallel: false,
+					Activities: []Activity{
+						{ID: "a1"},
+						{ID: "a2"},
+						{ID: "a3"},
+					},
+				},
+			},
+		}
+
+		activities, next := orch.GetNextActivities("a1")
+		require.Equal(t, 1, len(activities))
+		require.Equal(t, "a2", activities[0].ID)
+		require.False(t, next)
+
+		activities, next = orch.GetNextActivities("a2")
+		require.Equal(t, 1, len(activities))
+		require.Equal(t, "a3", activities[0].ID)
+		require.False(t, next)
+
+		activities, next = orch.GetNextActivities("a3")
+		require.Empty(t, activities)
+		require.False(t, next)
+	})
+
+	t.Run("single step with parallel activities", func(t *testing.T) {
+		orch := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Parallel: true,
+					Activities: []Activity{
+						{ID: "a1"},
+						{ID: "a2"},
+						{ID: "a3"},
+					},
+				},
+			},
+		}
+
+		activities, next := orch.GetNextActivities("a1")
+		require.Equal(t, 0, len(activities))
+		require.False(t, next)
+	})
+
+	t.Run("multiple steps - sequential to parallel", func(t *testing.T) {
+		orch := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Parallel: false,
+					Activities: []Activity{
+						{ID: "a1"},
+						{ID: "a2"},
+					},
+				},
+				{
+					Parallel: true,
+					Activities: []Activity{
+						{ID: "b1"},
+						{ID: "b2"},
+						{ID: "b3"},
+					},
+				},
+			},
+		}
+
+		activities, next := orch.GetNextActivities("a1")
+		require.Equal(t, 1, len(activities))
+		require.Equal(t, "a2", activities[0].ID)
+		require.False(t, next)
+
+		activities, next = orch.GetNextActivities("a2")
+		require.Equal(t, 2, len(activities))
+		require.Equal(t, "b1", activities[0].ID)
+		require.Equal(t, "b2", activities[1].ID)
+		require.True(t, next)
+	})
+
+	t.Run("multiple steps - parallel to sequential", func(t *testing.T) {
+		orch := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Parallel: true,
+					Activities: []Activity{
+						{ID: "a1"},
+						{ID: "a2"},
+					},
+				},
+				{
+					Parallel: false,
+					Activities: []Activity{
+						{ID: "b1"},
+						{ID: "b2"},
+					},
+				},
+			},
+		}
+
+		activities, next := orch.GetNextActivities("a2")
+		require.Equal(t, 1, len(activities))
+		require.Equal(t, "b1", activities[0].ID)
+		require.False(t, next)
+	})
+
+	t.Run("empty step in between", func(t *testing.T) {
+		orch := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Parallel: false,
+					Activities: []Activity{
+						{ID: "a1"},
+					},
+				},
+				{
+					Parallel:   false,
+					Activities: []Activity{},
+				},
+				{
+					Parallel: false,
+					Activities: []Activity{
+						{ID: "c1"},
+					},
+				},
+			},
+		}
+
+		activities, next := orch.GetNextActivities("a1")
+		require.Empty(t, activities)
+		require.False(t, next)
+	})
+
+	t.Run("non-existent activity", func(t *testing.T) {
+		orch := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Parallel: false,
+					Activities: []Activity{
+						{ID: "a1"},
+					},
+				},
+			},
+		}
+
+		activities, next := orch.GetNextActivities("non-existent")
+		require.Empty(t, activities)
+		require.False(t, next)
+	})
+
+	t.Run("last activity in parallel step", func(t *testing.T) {
+		orch := &Orchestration{
+			Steps: []OrchestrationStep{
+				{
+					Parallel: true,
+					Activities: []Activity{
+						{ID: "a1"},
+						{ID: "a2"},
+						{ID: "a3"},
+					},
+				},
+			},
+		}
+
+		activities, next := orch.GetNextActivities("a3")
+		require.Empty(t, activities)
+		require.False(t, next)
+	})
+}
+
 func TestMappingEntry_UnmarshalJSON(t *testing.T) {
 	tests := []struct {
 		name    string
