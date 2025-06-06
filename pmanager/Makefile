@@ -9,9 +9,22 @@ BUILD_DIR=bin
 MAIN_PATH=./cmd/main.go
 SERVER_PATH=./cmd/server/main.go
 
+MOCKERY_CMD=$(GOPATH)/bin/mockery
+
 # Environment variables
 export GO111MODULE=on
 export CGO_ENABLED=0
+
+# Install development tools
+install-tools: install-mockery
+
+install-mockery:
+	go get github.com/vektra/mockery/v2@latest
+
+# Generate mocks
+generate-mocks: install-mockery
+	$(MOCKERY_CMD) --case underscore --dir ./natsorchestration --all --output ./natsorchestration/mocks --outpkg mocks --with-expecter
+
 
 # Build the application
 build: build-server
@@ -45,8 +58,3 @@ build-all:
 	GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(SERVER_BINARY)-darwin-arm64 $(SERVER_PATH)
 	GOOS=windows GOARCH=amd64 go build -o $(BUILD_DIR)/$(SERVER_BINARY)-windows-amd64.exe $(SERVER_PATH)
 	
-	# CLI binaries
-	GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
-	GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
-	GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
-	GOOS=windows GOARCH=amd64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)

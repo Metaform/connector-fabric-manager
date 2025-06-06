@@ -30,13 +30,23 @@ type DeploymentManifest struct {
 	Payload        map[string]any `json:"payload"`
 }
 
+type OrchestrationState uint
+
+const (
+	OrchestrationStateStateInitialized OrchestrationState = 0
+	OrchestrationStateStateRunning     OrchestrationState = 1
+	OrchestrationStateStateCompleted   OrchestrationState = 2
+	OrchestrationStateStateErrored     OrchestrationState = 3
+)
+
 // Orchestration is a collection of activities that are executed to effect a deployment.
 //
 // The DeploymentID is a reference to the original DeploymentManifest. As actions are completed, the orchestration
 // system will update the Completed map.
 type Orchestration struct {
-	ID             string `json:"id"`
-	DeploymentID   string `json:"deploymentId"`
+	ID             string             `json:"id"`
+	DeploymentID   string             `json:"deploymentId"`
+	State          OrchestrationState `json:"state"`
 	Steps          []OrchestrationStep
 	Inputs         map[string]any
 	ProcessingData map[string]any
@@ -126,7 +136,7 @@ func (m *MappingEntry) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// If string unmarshal fails, try as object
+	// If string unmarshal fails, try as an object
 	var objMap struct {
 		Source string `json:"source"`
 		Target string `json:"target"`
@@ -188,9 +198,11 @@ func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
 	return &definition, nil
 }
 
-func InstantiateOrchestration(definition OrchestrationDefinition, data map[string]any) *Orchestration {
+func InstantiateOrchestration(deploymentID string, definition OrchestrationDefinition, data map[string]any) *Orchestration {
 	orchestration := &Orchestration{
 		ID:             uuid.New().String(),
+		DeploymentID:   deploymentID,
+		State:          OrchestrationStateStateInitialized,
 		Steps:          make([]OrchestrationStep, len(definition)),
 		Inputs:         data,
 		ProcessingData: make(map[string]any),

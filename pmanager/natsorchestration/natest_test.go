@@ -1,4 +1,16 @@
-package natsactivity
+//  Copyright (c) 2025 Metaform Systems, Inc
+//
+//  This program and the accompanying materials are made available under the
+//  terms of the Apache License, Version 2.0 which is available at
+//  https://www.apache.org/licenses/LICENSE-2.0
+//
+//  SPDX-License-Identifier: Apache-2.0
+//
+//  Contributors:
+//       Metaform Systems, Inc. - initial API and implementation
+//
+
+package natsorchestration
 
 import (
 	"context"
@@ -22,7 +34,7 @@ func TestNewJetStreamPubSub(t *testing.T) {
 		Subjects:  []string{"event.*"},
 	}
 
-	stream, err := nt.natsConnection.jetStream.CreateOrUpdateStream(ctx, cfg)
+	stream, err := nt.client.jetStream.CreateOrUpdateStream(ctx, cfg)
 	require.NoError(t, err)
 
 	consumer, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
@@ -31,7 +43,7 @@ func TestNewJetStreamPubSub(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = nt.natsConnection.jetStream.Publish(ctx, "event.foo", []byte("Test message"))
+	_, err = nt.client.jetStream.Publish(ctx, "event.foo", []byte("Test message"))
 	require.NoError(t, err)
 
 	msg, err := consumer.Next(jetstream.FetchMaxWait(100 * time.Millisecond))
