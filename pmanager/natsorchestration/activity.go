@@ -10,152 +10,21 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-//go:generate mockery --name msgClient --filename msg_client_mock.go --with-expecter --outpkg mocks --dir . --output ./mocks
-
-// Package natsorchestration provides a NATS-based deployment orchestrator.
 package natsorchestration
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
-	"strings"
 	"time"
 )
 
 const (
 	streamName = "cfm-activity"
 )
-
-// MsgClient is an interface for interacting with NATS. This interface is used to allow for mocking in unit tests that
-// verify correct behavior in response to error conditions (i.e., negative tests).
-type MsgClient interface {
-	Update(ctx context.Context, key string, value []byte, version uint64) (uint64, error)
-	Stream(ctx context.Context, streamName string) (jetstream.Stream, error)
-	Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error)
-	Publish(ctx context.Context, subject string, payload []byte, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error)
-}
-
-// Wraps the natsClient to satisfy the MsgClient interface.
-type natsClientAdapter struct {
-	client *natsClient
-}
-
-func (a natsClientAdapter) Update(ctx context.Context, key string, value []byte, version uint64) (uint64, error) {
-	return a.client.kvStore.Update(ctx, key, value, version)
-}
-
-func (a natsClientAdapter) Stream(ctx context.Context, streamName string) (jetstream.Stream, error) {
-	return a.client.jetStream.Stream(ctx, streamName)
-}
-
-func (a natsClientAdapter) Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error) {
-	return a.client.kvStore.Get(ctx, key)
-}
-
-func (a natsClientAdapter) Publish(ctx context.Context, subject string, payload []byte, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
-	return a.client.jetStream.Publish(ctx, subject, payload, opts...)
-}
-
-// NatsDeploymentOrchestrator is responsible for executing an orchestration using NATS for reliable messaging. For each
-// activity, a message is published to a durable queue based on the activity type. Activity messages are then dequeued
-// and reliably processed by a NatsActivityExecutor that handles the activity type.
-type NatsDeploymentOrchestrator struct {
-	client  MsgClient
-	monitor monitor.LogMonitor
-}
-
-// ExecuteOrchestration asynchronously executes the given orchestration by dispatching messages to durable activity
-// queues, where they can be dequeued and reliably processed by NatsActivityExecutors.
-//
-// A Jetstream KV entry is used to maintain durable state and is updated as the orchestration progresses. This
-// state is passed to the executors, which access and update it.
-
-func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration api.Orchestration) error {
-	// TODO validate orchestration - this should include a check to see if there are no steps or steps with no activities
-
-	serializedOrchestration, err := json.Marshal(orchestration)
-	if err != nil {
-		return fmt.Errorf("error marshalling orchestration: %w", err)
-	}
-
-	// Use update to check if the orchestration already exists
-	_, err = o.client.Update(ctx, orchestration.ID, serializedOrchestration, 0)
-	if err != nil {
-		var jsErr *jetstream.APIError
-		if errors.As(err, &jsErr) {
-			if jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
-				// Orchestration already exists, return
-				return nil
-			}
-		}
-		return fmt.Errorf("error storing orchestration: %w", err)
-	}
-
-	activities, parallel := getInitialActivities(orchestration)
-	err = enqueueActivityMessages(ctx, orchestration.ID, activities, parallel, o.client)
-	if err != nil {
-		return err
-	}
-	return nil
-
-}
-
-// Enqueues the given activities for processing.
-//
-// Messages are sent to a named durable queue corresponding to the activity type. For example, messages for the
-// 'test-activity' type will be routed to the 'event.test-activity' queue.
-func enqueueActivityMessages(ctx context.Context, orchestrationID string, activities []api.Activity, parallel bool, client MsgClient) error {
-	for _, activity := range activities {
-		// route to queue
-		payload, err := json.Marshal(activityMessage{
-			OrchestrationID: orchestrationID,
-			Activity:        activity,
-			Parallel:        parallel,
-		})
-		if err != nil {
-			return fmt.Errorf("error marshalling activity payload: %w", err)
-		}
-
-		// Strip out periods since they denote a subject hierarchy for NATS
-		subject := "event." + strings.ReplaceAll(activity.Type, ".", "-")
-		_, err = client.Publish(ctx, subject, payload)
-		if err != nil {
-			return fmt.Errorf("error publishing to stream: %w", err)
-		}
-	}
-	return nil
-}
-
-// Returns the initial activities for the given orchestration.
-//
-// If the orchestration's first step is parallel, all contained activities are returned. Otherwise, the first activity is
-// returned. If the orchestration has no activities, an empty list is returned.
-func getInitialActivities(orchestration api.Orchestration) ([]api.Activity, bool) {
-	for _, step := range orchestration.Steps {
-		if step.Parallel {
-			if len(step.Activities) > 0 {
-				return step.Activities, true
-			}
-		} else {
-			if len(step.Activities) > 0 {
-				return step.Activities[0:1], false
-			}
-		}
-	}
-	return []api.Activity{}, false
-}
-
-// Message sent to the activity queue.
-type activityMessage struct {
-	OrchestrationID string       `json:"orchestrationID"`
-	Activity        api.Activity `json:"activity"`
-	Parallel        bool         `json:"parallel"`
-}
 
 type NatsActivityExecutor struct {
 	id                string
@@ -215,7 +84,7 @@ func (e *NatsActivityExecutor) processLoop(ctx context.Context, consumer jetstre
 //
 // Returns an error if message processing fails.
 func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetstream.Msg) error {
-	var oMessage activityMessage
+	var oMessage api.ActivityMessage
 	if err := json.Unmarshal(message.Data(), &oMessage); err != nil {
 		// TODO pass to DLQ
 		return fmt.Errorf("failed to unmarshal orchestration message: %w", err)
@@ -274,7 +143,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		}
 		return nil
 	}
-	err = enqueueActivityMessages(ctx, orchestration.ID, next, parallel, e.client)
+	err = EnqueueActivityMessages(ctx, orchestration.ID, next, parallel, e.client)
 	if err != nil {
 		return fmt.Errorf("failed to enqueue next orchestration activities %s: %w", oMessage.OrchestrationID, err)
 	}

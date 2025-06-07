@@ -120,7 +120,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 					if call.Method == "Publish" {
 						publishCalls++
 						payload := call.Arguments[2].([]byte)
-						var msg activityMessage
+						var msg api.ActivityMessage
 						err := json.Unmarshal(payload, &msg)
 						require.NoError(t, err)
 						assert.Equal(t, tt.orchestration.ID, msg.OrchestrationID)
@@ -160,7 +160,7 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 			mockClient := mocks.NewMsgClient(t)
 			tt.setupMock(mockClient)
 
-			err := enqueueActivityMessages(context.Background(), "test-oid", tt.activities, tt.parallel, mockClient)
+			err := EnqueueActivityMessages(context.Background(), "test-oid", tt.activities, tt.parallel, mockClient)
 
 			if tt.wantErr {
 				assert.Error(t, err)

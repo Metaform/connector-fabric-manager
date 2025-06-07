@@ -120,6 +120,13 @@ type Activity struct {
 	Inputs []MappingEntry `json:"inputs"`
 }
 
+// ActivityMessage used to enqueue an activity for processing.
+type ActivityMessage struct {
+	OrchestrationID string   `json:"orchestrationID"`
+	Activity        Activity `json:"activity"`
+	Parallel        bool     `json:"parallel"`
+}
+
 type MappingEntry struct {
 	Source string `json:"source"`
 	Target string `json:"target"`

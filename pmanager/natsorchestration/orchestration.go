@@ -1,0 +1,87 @@
+//  Copyright (c) 2025 Metaform Systems, Inc
+//
+//  This program and the accompanying materials are made available under the
+//  terms of the Apache License, Version 2.0 which is available at
+//  https://www.apache.org/licenses/LICENSE-2.0
+//
+//  SPDX-License-Identifier: Apache-2.0
+//
+//  Contributors:
+//       Metaform Systems, Inc. - initial API and implementation
+//
+
+// Package natsorchestration implements a NATS-based deployment orchestrator.
+package natsorchestration
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/nats-io/nats.go/jetstream"
+)
+
+// NatsDeploymentOrchestrator is responsible for executing an orchestration using NATS for reliable messaging. For each
+// activity, a message is published to a durable queue based on the activity type. Activity messages are then dequeued
+// and reliably processed by a NatsActivityExecutor that handles the activity type.
+type NatsDeploymentOrchestrator struct {
+	client  MsgClient
+	monitor monitor.LogMonitor
+}
+
+// ExecuteOrchestration asynchronously executes the given orchestration by dispatching messages to durable activity
+// queues, where they can be dequeued and reliably processed by NatsActivityExecutors.
+//
+// A Jetstream KV entry is used to maintain durable state and is updated as the orchestration progresses. This
+// state is passed to the executors, which access and update it.
+
+func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration api.Orchestration) error {
+	// TODO validate orchestration - this should include a check to see if there are no steps or steps with no activities
+
+	serializedOrchestration, err := json.Marshal(orchestration)
+	if err != nil {
+		return fmt.Errorf("error marshalling orchestration: %w", err)
+	}
+
+	// Use update to check if the orchestration already exists
+	_, err = o.client.Update(ctx, orchestration.ID, serializedOrchestration, 0)
+	if err != nil {
+		var jsErr *jetstream.APIError
+		if errors.As(err, &jsErr) {
+			if jsErr.APIError().ErrorCode == jetstream.JSErrCodeStreamWrongLastSequence {
+				// Orchestration already exists, return
+				return nil
+			}
+		}
+		return fmt.Errorf("error storing orchestration: %w", err)
+	}
+
+	activities, parallel := getInitialActivities(orchestration)
+	err = EnqueueActivityMessages(ctx, orchestration.ID, activities, parallel, o.client)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
+// Returns the initial activities for the given orchestration.
+//
+// If the orchestration's first step is parallel, all contained activities are returned. Otherwise, the first activity is
+// returned. If the orchestration has no activities, an empty list is returned.
+func getInitialActivities(orchestration api.Orchestration) ([]api.Activity, bool) {
+	for _, step := range orchestration.Steps {
+		if step.Parallel {
+			if len(step.Activities) > 0 {
+				return step.Activities, true
+			}
+		} else {
+			if len(step.Activities) > 0 {
+				return step.Activities[0:1], false
+			}
+		}
+	}
+	return []api.Activity{}, false
+}
