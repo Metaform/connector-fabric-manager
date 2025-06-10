@@ -29,9 +29,17 @@ type ProvisionManager interface {
 }
 
 type ActivityProcessorRegistry interface {
-	RegisterProcessor(processor *ActivityProcessor)
+	RegisterProcessor(processor ActivityProcessor)
 }
 
+// ActivityProcessor executes activities for a given type. If the execution completes successfully, the processor
+// returns true.
+//
+// If the process requires time to complete, the processor should return false to indicate that the orchestration should
+// wait for the activity to complete. At that point, the processor is responsible for signaling completion of the
+// activity.
+//
+// If the processor encounters an error, it returns an error to indicate that the orchestration should fail.
 type ActivityProcessor interface {
 	Process(activityContext ActivityContext) (bool, error)
 }
