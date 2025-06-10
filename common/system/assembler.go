@@ -14,6 +14,7 @@ package system
 
 import (
 	"fmt"
+	"github.com/metaform/connector-fabric-manager/common/dag"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
 	"strings"
@@ -147,12 +148,12 @@ func (a *ServiceAssembler) Register(assembly ServiceAssembly) {
 }
 
 func (a *ServiceAssembler) Assemble() error {
-	graph := NewGraph[ServiceAssembly]()
+	assemblyGraph := dag.NewGraph[ServiceAssembly]()
 	mappedAssemblies := make(map[ServiceType]ServiceAssembly)
 	for _, assembly := range a.assemblies {
 		// use a new variable in the loop to avoid pointer issues
 		assembly := assembly
-		graph.AddVertex(assembly.Name(), &assembly)
+		assemblyGraph.AddVertex(assembly.Name(), &assembly)
 		for _, provided := range assembly.Provides() {
 			mappedAssemblies[provided] = assembly
 		}
@@ -163,15 +164,17 @@ func (a *ServiceAssembler) Assemble() error {
 			if !exists {
 				return fmt.Errorf("required assembly not found for assembly %s: %s", assembly.Name(), required)
 			}
-			graph.AddEdge(assembly.Name(), requiredService.Name())
+			assemblyGraph.AddEdge(assembly.Name(), requiredService.Name())
 		}
 	}
-	sorted, cycle := graph.TopologicalSort()
-	if cycle {
-		return fmt.Errorf("cycle detected in assembly graph")
+	sorted := assemblyGraph.TopologicalSort()
+	if sorted.HasCycle {
+		return fmt.Errorf("cycle detected in assembly assemblyGraph")
 	}
 
-	reverse(sorted)
+	reverseOrder := make([]*dag.Vertex[ServiceAssembly], len(sorted.SortedOrder))
+	copy(reverseOrder, sorted.SortedOrder)
+	reverse(reverseOrder)
 
 	ctx := &InitContext{
 		Registry:   a.registry,
@@ -180,7 +183,7 @@ func (a *ServiceAssembler) Assemble() error {
 		Mode:       a.mode,
 	}
 
-	for _, v := range sorted {
+	for _, v := range reverseOrder {
 		e := v.Value.Init(ctx)
 		a.logMonitor.Debugf("Initialized: " + v.Value.Name())
 		if e != nil {
@@ -188,7 +191,7 @@ func (a *ServiceAssembler) Assemble() error {
 		}
 	}
 
-	for _, v := range sorted {
+	for _, v := range reverseOrder {
 		e := v.Value.Prepare()
 		a.logMonitor.Debugf("Prepared: " + v.Value.Name())
 		if e != nil {
@@ -196,7 +199,7 @@ func (a *ServiceAssembler) Assemble() error {
 		}
 	}
 
-	for _, v := range sorted {
+	for _, v := range reverseOrder {
 		e := v.Value.Start()
 		a.logMonitor.Debugf("Started: " + v.Value.Name())
 		if e != nil {
@@ -204,7 +207,7 @@ func (a *ServiceAssembler) Assemble() error {
 		}
 	}
 
-	a.assemblies = mapToAssemblies(sorted)
+	a.assemblies = mapToAssemblies(reverseOrder)
 
 	return nil
 }
@@ -227,7 +230,7 @@ func (a *ServiceAssembler) Shutdown() error {
 	return nil
 }
 
-func mapToAssemblies(sorted []*Vertex[ServiceAssembly]) []ServiceAssembly {
+func mapToAssemblies(sorted []*dag.Vertex[ServiceAssembly]) []ServiceAssembly {
 	result := make([]ServiceAssembly, len(sorted))
 	for i, vertex := range sorted {
 		result[i] = vertex.Value

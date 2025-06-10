@@ -16,6 +16,8 @@ import (
 	"errors"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -28,12 +30,8 @@ func TestServiceAssembler(t *testing.T) {
 
 		assembler.Register(mock)
 
-		if len(assembler.assemblies) != 1 {
-			t.Errorf("Expected 1 assembly, got %d", len(assembler.assemblies))
-		}
-		if assembler.assemblies[0] != mock {
-			t.Error("Registered assembly does not match mock")
-		}
+		assert.Len(t, assembler.assemblies, 1)
+		assert.Equal(t, mock, assembler.assemblies[0])
 	})
 
 	t.Run("Assemble", func(t *testing.T) {
@@ -48,9 +46,7 @@ func TestServiceAssembler(t *testing.T) {
 			assembler.Register(mock)
 
 			err := assembler.Assemble()
-			if err != nil {
-				t.Errorf("Expected no error, got %v", err)
-			}
+			assert.NoError(t, err)
 		})
 
 		t.Run("WithDependencies", func(t *testing.T) {
@@ -72,9 +68,7 @@ func TestServiceAssembler(t *testing.T) {
 			assembler.Register(mock1)
 
 			err := assembler.Assemble()
-			if err != nil {
-				t.Errorf("Expected no error, got %v", err)
-			}
+			assert.NoError(t, err)
 		})
 
 		t.Run("MissingDependency", func(t *testing.T) {
@@ -89,9 +83,7 @@ func TestServiceAssembler(t *testing.T) {
 			assembler.Register(mock)
 
 			err := assembler.Assemble()
-			if err == nil {
-				t.Error("Expected error for missing dependency, got nil")
-			}
+			assert.Error(t, err)
 		})
 
 		t.Run("CyclicDependency", func(t *testing.T) {
@@ -114,9 +106,7 @@ func TestServiceAssembler(t *testing.T) {
 			assembler.Register(mock2)
 
 			err := assembler.Assemble()
-			if err == nil {
-				t.Error("Expected error for cyclic dependency, got nil")
-			}
+			assert.Error(t, err)
 		})
 
 		t.Run("InitializationError", func(t *testing.T) {
@@ -135,9 +125,7 @@ func TestServiceAssembler(t *testing.T) {
 			assembler.Register(mock)
 
 			err := assembler.Assemble()
-			if err == nil {
-				t.Error("Expected initialization error, got nil")
-			}
+			assert.Error(t, err)
 		})
 	})
 
@@ -169,34 +157,30 @@ func TestServiceAssembler(t *testing.T) {
 		assembler.Register(mock)
 
 		err := assembler.Assemble()
-		if err != nil {
-			t.Errorf("Expected no error during assembly, got %v", err)
-		}
+		require.NoError(t, err)
 
 		select {
 		case <-preparedCh:
 			// Success
 		case <-time.After(time.Second):
-			t.Error("Prepare method was not called")
+			assert.Fail(t, "Prepare method was not called")
 		}
 
 		select {
 		case <-startedCh:
 			// Success
 		case <-time.After(time.Second):
-			t.Error("Start method was not called")
+			assert.Fail(t, "Start method was not called")
 		}
 
 		err = assembler.Shutdown()
-		if err != nil {
-			t.Errorf("Expected no error during shutdown, got %v", err)
-		}
+		require.NoError(t, err)
 
 		select {
 		case <-shutdownCh:
 			// Success
 		case <-time.After(time.Second):
-			t.Error("Shutdown method was not called")
+			assert.Fail(t, "Shutdown method was not called")
 		}
 	})
 }
