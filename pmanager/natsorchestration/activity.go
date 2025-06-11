@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	streamName = "cfm-activity"
+	streamName      = "cfm-activity"
+	durableConsumer = "cfm-durable-activity"
 )
 
 type NatsActivityExecutor struct {
@@ -41,7 +42,7 @@ func (e *NatsActivityExecutor) Execute(ctx context.Context) error {
 		return fmt.Errorf("error opening stream: %w", err)
 	}
 
-	consumer, err := stream.Consumer(ctx, "cfm-durable-activity")
+	consumer, err := stream.Consumer(ctx, durableConsumer)
 	if err != nil {
 		return fmt.Errorf("error connecting to consumer: %w", err)
 	}
