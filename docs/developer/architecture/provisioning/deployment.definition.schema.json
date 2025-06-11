@@ -93,9 +93,6 @@
     "OrchestrationStepType": {
       "type": "object",
       "properties": {
-        "parallel": {
-          "type": "boolean"
-        },
         "activities": {
           "type": "array",
           "items": {
@@ -115,6 +112,12 @@
         },
         "type": {
           "type": "string"
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "inputs": {
           "type": "array",

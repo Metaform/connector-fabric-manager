@@ -124,7 +124,6 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 						err := json.Unmarshal(payload, &msg)
 						require.NoError(t, err)
 						assert.Equal(t, tt.orchestration.ID, msg.OrchestrationID)
-						assert.Equal(t, tt.parallelCheck, msg.Parallel)
 					}
 				}
 				assert.Equal(t, tt.expectedCalls, publishCalls)
@@ -160,7 +159,7 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 			mockClient := mocks.NewMsgClient(t)
 			tt.setupMock(mockClient)
 
-			err := EnqueueActivityMessages(context.Background(), "test-oid", tt.activities, tt.parallel, mockClient)
+			err := EnqueueActivityMessages(context.Background(), "test-oid", tt.activities, mockClient)
 
 			if tt.wantErr {
 				assert.Error(t, err)

@@ -58,8 +58,11 @@ func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, o
 		return fmt.Errorf("error storing orchestration: %w", err)
 	}
 
-	activities, parallel := getInitialActivities(orchestration)
-	err = EnqueueActivityMessages(ctx, orchestration.ID, activities, parallel, o.client)
+	activities := getInitialActivities(orchestration)
+	if len(activities) == 0 {
+		return fmt.Errorf("orchestration has no activities: %s", orchestration.ID)
+	}
+	err = EnqueueActivityMessages(ctx, orchestration.ID, activities, o.client)
 	if err != nil {
 		return err
 	}
@@ -68,20 +71,12 @@ func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, o
 }
 
 // Returns the initial activities for the given orchestration.
-//
-// If the orchestration's first step is parallel, all contained activities are returned. Otherwise, the first activity is
-// returned. If the orchestration has no activities, an empty list is returned.
-func getInitialActivities(orchestration api.Orchestration) ([]api.Activity, bool) {
+// If the orchestration has no activities, an empty list is returned.
+func getInitialActivities(orchestration api.Orchestration) []api.Activity {
 	for _, step := range orchestration.Steps {
-		if step.Parallel {
-			if len(step.Activities) > 0 {
-				return step.Activities, true
-			}
-		} else {
-			if len(step.Activities) > 0 {
-				return step.Activities[0:1], false
-			}
+		if len(step.Activities) > 0 {
+			return step.Activities
 		}
 	}
-	return []api.Activity{}, false
+	return []api.Activity{}
 }

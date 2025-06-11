@@ -270,7 +270,6 @@ func (g *Graph[T]) ParallelTopologicalSort() *ParallelSortResult[T] {
 
 		levelIndex++
 	}
-
 	return result
 }
 

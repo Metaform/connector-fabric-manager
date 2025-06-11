@@ -116,24 +116,15 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return err
 	}
 
-	if oMessage.Parallel {
-		canProceed, err := orchestration.CanProceedToNextActivity(oMessage.Activity.ID, func(completed []string) bool {
-			for _, id := range completed {
-				if _, exists := orchestration.Completed[id]; !exists {
-					return false
-				}
-			}
-			return true
-		})
-		if err != nil {
-			return fmt.Errorf("failed to proceed with orchestration %s: %w", oMessage.OrchestrationID, err)
-		}
-
-		if !canProceed {
-			return nil
-		}
+	canProceed, err := orchestration.CanProceedToNextStep(oMessage.Activity.ID)
+	if err != nil {
+		return fmt.Errorf("failed to proceed with orchestration %s: %w", oMessage.OrchestrationID, err)
 	}
-	next, parallel := orchestration.GetNextActivities(oMessage.Activity.ID)
+
+	if !canProceed {
+		return nil
+	}
+	next := orchestration.GetNextStepActivities(oMessage.Activity.ID)
 	if len(next) == 0 {
 		e.monitor.Debugf("Finished orchestration: %s", oMessage.OrchestrationID)
 		orchestration.State = api.OrchestrationStateStateCompleted
@@ -143,7 +134,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		}
 		return nil
 	}
-	err = EnqueueActivityMessages(ctx, orchestration.ID, next, parallel, e.client)
+	err = EnqueueActivityMessages(ctx, orchestration.ID, next, e.client)
 	if err != nil {
 		return fmt.Errorf("failed to enqueue next orchestration activities %s: %w", oMessage.OrchestrationID, err)
 	}

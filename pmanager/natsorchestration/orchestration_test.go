@@ -30,6 +30,27 @@ const (
 	processTimeout         = 5 * time.Second
 )
 
+func TestExecuteOrchestration_NoSteps(t *testing.T) {
+	orchestration := api.Orchestration{
+		ID:        "test",
+		Steps:     []api.OrchestrationStep{},
+		Completed: make(map[string]struct{}),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
+	defer cancel()
+
+	nt, err := setupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	require.NoError(t, err)
+	defer teardownNatsContainer(ctx, nt)
+
+	adapter := natsClientAdapter{client: nt.client}
+	orchestrator := NatsDeploymentOrchestrator{client: adapter}
+	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
+	require.Error(t, err)
+
+}
+
 func TestExecuteOrchestration(t *testing.T) {
 	type activityExecution struct {
 		id        string
@@ -48,7 +69,6 @@ func TestExecuteOrchestration(t *testing.T) {
 				ID: "O1",
 				Steps: []api.OrchestrationStep{
 					{
-						Parallel: true,
 						Activities: []api.Activity{
 							{ID: "A1", Type: "test.activity"},
 							{ID: "A2", Type: "test.activity"},
@@ -85,48 +105,17 @@ func TestExecuteOrchestration(t *testing.T) {
 			},
 		},
 		{
-			name: "4 sequential activities in one step",
+			name: "2 steps with 2 parallel activities each",
 			orchestration: api.Orchestration{
 				ID: "O2",
 				Steps: []api.OrchestrationStep{
 					{
-						Parallel: false,
-						Activities: []api.Activity{
-							{ID: "A1", Type: "test.activity"},
-							{ID: "A2", Type: "test.activity"},
-							{ID: "A3", Type: "test.activity"},
-							{ID: "A4", Type: "test.activity"},
-						},
-					},
-				},
-				Completed: make(map[string]struct{}),
-			},
-			validateFn: func(t *testing.T, executions []activityExecution) {
-				require.Len(t, executions, 4, "Should have 4 activities")
-
-				// Verify activities executed in sequence
-				expectedOrder := []string{"A1", "A2", "A3", "A4"}
-				for i := 0; i < len(executions)-1; i++ {
-					assert.Equal(t, expectedOrder[i], executions[i].id, "Activities should execute in order")
-					assert.True(t, executions[i+1].startTime.After(executions[i].endTime),
-						"Activity %s should start after activity %s ends", executions[i+1].id, executions[i].id)
-				}
-			},
-		},
-		{
-			name: "2 parallel followed by 2 sequential activities",
-			orchestration: api.Orchestration{
-				ID: "O3",
-				Steps: []api.OrchestrationStep{
-					{
-						Parallel: true,
 						Activities: []api.Activity{
 							{ID: "A1", Type: "test.activity"},
 							{ID: "A2", Type: "test.activity"},
 						},
 					},
 					{
-						Parallel: false,
 						Activities: []api.Activity{
 							{ID: "A3", Type: "test.activity"},
 							{ID: "A4", Type: "test.activity"},
@@ -138,44 +127,55 @@ func TestExecuteOrchestration(t *testing.T) {
 			validateFn: func(t *testing.T, executions []activityExecution) {
 				require.Len(t, executions, 4, "Should have 4 activities")
 
-				// Find parallel activities (A1 and A2)
-				var parallelActs, sequentialActs []activityExecution
+				// Group activities by step
+				step1Acts := make([]activityExecution, 0)
+				step2Acts := make([]activityExecution, 0)
+
 				for _, e := range executions {
 					if e.id == "A1" || e.id == "A2" {
-						parallelActs = append(parallelActs, e)
-					} else {
-						sequentialActs = append(sequentialActs, e)
+						step1Acts = append(step1Acts, e)
+					} else if e.id == "A3" || e.id == "A4" {
+						step2Acts = append(step2Acts, e)
 					}
 				}
 
-				// Verify parallel activities started together
-				require.Len(t, parallelActs, 2, "Should have 2 parallel activities")
-				timeDiff := parallelActs[1].startTime.Sub(parallelActs[0].startTime)
-				assert.Less(t, timeDiff, parallelActivityWindow, "Parallel activities should start almost simultaneously")
+				require.Len(t, step1Acts, 2, "Should have 2 activities in step 1")
+				require.Len(t, step2Acts, 2, "Should have 2 activities in step 2")
 
-				// Find the last completed parallel activity
-				lastParallelEnd := parallelActs[0].endTime
-				if parallelActs[1].endTime.After(lastParallelEnd) {
-					lastParallelEnd = parallelActs[1].endTime
+				// Verify step 1 activities started in parallel
+				timeDiff := step1Acts[1].startTime.Sub(step1Acts[0].startTime)
+				if timeDiff < 0 {
+					timeDiff = -timeDiff
+				}
+				assert.Less(t, timeDiff, parallelActivityWindow, "Step 1 activities should start almost simultaneously")
+
+				// Verify step 2 activities started in parallel
+				timeDiff = step2Acts[1].startTime.Sub(step2Acts[0].startTime)
+				if timeDiff < 0 {
+					timeDiff = -timeDiff
+				}
+				assert.Less(t, timeDiff, parallelActivityWindow, "Step 2 activities should start almost simultaneously")
+
+				// Find when step 1 completed (latest end time)
+				step1EndTime := step1Acts[0].endTime
+				if step1Acts[1].endTime.After(step1EndTime) {
+					step1EndTime = step1Acts[1].endTime
 				}
 
-				// Verify sequential activities started after parallel ones and in order
-				require.Len(t, sequentialActs, 2, "Should have 2 sequential activities")
-				assert.True(t, sequentialActs[0].startTime.After(lastParallelEnd),
-					"First sequential activity should start after parallel activities complete")
-				assert.True(t, sequentialActs[1].startTime.After(sequentialActs[0].endTime),
-					"Second sequential activity should start after first sequential activity completes")
-			},
-		},
-		{
-			name: "No steps",
-			orchestration: api.Orchestration{
-				ID:        "O4",
-				Steps:     []api.OrchestrationStep{},
-				Completed: make(map[string]struct{}),
-			},
-			validateFn: func(t *testing.T, executions []activityExecution) {
-				assert.Len(t, executions, 0, "Should have no executions")
+				// Verify step 2 started after step 1 completed
+				for _, step2Act := range step2Acts {
+					assert.True(t, step2Act.startTime.After(step1EndTime) || step2Act.startTime.Equal(step1EndTime),
+						"Step 2 activity %s should start after step 1 completes", step2Act.id)
+				}
+
+				// Verify all expected activities completed
+				expectedIDs := map[string]bool{"A1": false, "A2": false, "A3": false, "A4": false}
+				for _, e := range executions {
+					expectedIDs[e.id] = true
+				}
+				for id, completed := range expectedIDs {
+					assert.True(t, completed, "Activity %s should have completed", id)
+				}
 			},
 		},
 	}

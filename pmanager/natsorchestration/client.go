@@ -57,13 +57,12 @@ func (a natsClientAdapter) Publish(ctx context.Context, subject string, payload 
 //
 // Messages are sent to a named durable queue corresponding to the activity type. For example, messages for the
 // 'test-activity' type will be routed to the 'event.test-activity' queue.
-func EnqueueActivityMessages(ctx context.Context, orchestrationID string, activities []api.Activity, parallel bool, client MsgClient) error {
+func EnqueueActivityMessages(ctx context.Context, orchestrationID string, activities []api.Activity, client MsgClient) error {
 	for _, activity := range activities {
 		// route to queue
 		payload, err := json.Marshal(api.ActivityMessage{
 			OrchestrationID: orchestrationID,
 			Activity:        activity,
-			Parallel:        parallel,
 		})
 		if err != nil {
 			return fmt.Errorf("error marshalling activity payload: %w", err)

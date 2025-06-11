@@ -60,7 +60,6 @@ orchestration for a deployment. The following is an example of a `DeploymentDefi
       },
       "orchestration": [
         {
-          "parallel": false,
           "activities": [
             {
               "id": "activity1",
@@ -73,6 +72,7 @@ orchestration for a deployment. The following is an example of a `DeploymentDefi
             {
               "id": "activity2",
               "type": "activity2.example.com",
+              "dependsOn": "activity1",
               "inputs": [
                 {
                   "source": "activity1.resource",
@@ -105,18 +105,15 @@ Each version defines the following properties:
   `openAPIV3Schema` is the only supported schema type. Activities may reference input properties.
 - `orchestration`: Defines the sequence of activities that are executed to deploy the resource.
 
-The orchestration is an ordered collection of steps containing activities. The activities in each step are executed in
-sequence or in parallel. Steps are executed sequentially in the order they are defined. The following properties are
-defined for each step:
-
-- `parallel`: Indicates whether the activities in the step are executed in parallel. Default is false (sequential
-  execution).
-- `activities`: An array of activities to execute in the step.
+The orchestration is a collection of activities. Activities may form a Directed Acyclic Graph (DAG) by declaring
+dependencies using the `dependsOn` property. At deployment time, the activities will be ordered using a topological sort
+and grouping activities into tiers of parallel execution steps based on their dependencies.
 
 An activity has the following properties:
 
 - `id`: The activity identifier.
 - `type`: The activity type.
+- `dependsOn`: An array of activity ids the activity depends on.
 - `inputs`: An array of input properties. The input properties may include references to properties contained in the
   deployment input data or references to output data properties from a previous activity. References to activity output
   data are prefixed with the activity identifier followed by a '.'. Activity output data is defined in the activity

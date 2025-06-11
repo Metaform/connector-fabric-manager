@@ -17,6 +17,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/dag"
+	"slices"
 )
 
 // DeploymentManifest represents the configuration details for a system deployment. An Orchestration is instantiated
@@ -53,20 +55,23 @@ type Orchestration struct {
 	Completed      map[string]struct{}
 }
 
-// CanProceedToNextActivity returns if the orchestration is able to proceed to the next activity or must wait.
-func (o *Orchestration) CanProceedToNextActivity(activityId string, validator func([]string) bool) (bool, error) {
+// CanProceedToNextStep returns if the orchestration is able to proceed to the next step or must wait.
+func (o *Orchestration) CanProceedToNextStep(activityId string) (bool, error) {
 	step, err := o.GetStepForActivity(activityId)
 	if err != nil {
-		return true, err
+		return false, err // If the step can't be found, then, we shouldn't proceed
 	}
-	if !step.Parallel {
-		return true, nil
-	}
-	activityIds := make([]string, 0, len(step.Activities))
+
+	// Check completion
 	for _, activity := range step.Activities {
-		activityIds = append(activityIds, activity.ID)
+		if activity.ID == activityId {
+			continue // Skip current activity since it is completed but not yet tracked
+		}
+		if _, exists := o.Completed[activity.ID]; !exists {
+			return false, nil
+		}
 	}
-	return validator(activityIds), nil
+	return true, nil
 }
 
 // GetStepForActivity retrieves the orchestration step containing the specified activity ID. Returns an error if not found.
@@ -81,50 +86,40 @@ func (o *Orchestration) GetStepForActivity(activityId string) (*OrchestrationSte
 	return nil, errors.New("step not found for activity: " + activityId)
 }
 
-func (o *Orchestration) GetNextActivities(current string) ([]Activity, bool) {
-	reachedCurrent := false
-	for _, step := range o.Steps {
-		if reachedCurrent {
-			if step.Parallel {
-				return step.Activities[0 : len(step.Activities)-1], true
-			}
-			if len(step.Activities) == 0 {
-				return []Activity{}, false
-			}
-			return step.Activities[0:1], false
-		}
-
-		for i, activity := range step.Activities {
-			if activity.ID == current {
-				reachedCurrent = true
-				if (i + 1) < len(step.Activities) {
-					if step.Parallel {
-						continue
-					}
-					return step.Activities[i+1 : i+2], false
+// GetNextStepActivities retrieves activities from the step immediately following the one containing the specified activity.
+// Returns an empty slice if the specified activity is in the last step or not found.
+func (o *Orchestration) GetNextStepActivities(currentActivity string) []Activity {
+	for stepIndex, step := range o.Steps {
+		for _, activity := range step.Activities {
+			if activity.ID == currentActivity {
+				// Found the current activity, return the next step's activities
+				if stepIndex+1 < len(o.Steps) {
+					return o.Steps[stepIndex+1].Activities
 				}
+				// No next step available
+				return []Activity{}
 			}
 		}
 	}
-	return []Activity{}, false
+	// Current activity not found
+	return []Activity{}
 }
 
 type OrchestrationStep struct {
-	Parallel   bool       `json:"parallel"`
 	Activities []Activity `json:"activities"`
 }
 
 type Activity struct {
-	ID     string         `json:"id"`
-	Type   string         `json:"type"`
-	Inputs []MappingEntry `json:"inputs"`
+	ID        string         `json:"id"`
+	Type      string         `json:"type"`
+	Inputs    []MappingEntry `json:"inputs"`
+	DependsOn []string       `json:"dependsOn"`
 }
 
 // ActivityMessage used to enqueue an activity for processing.
 type ActivityMessage struct {
 	OrchestrationID string   `json:"orchestrationID"`
 	Activity        Activity `json:"activity"`
-	Parallel        bool     `json:"parallel"`
 }
 
 type MappingEntry struct {
@@ -172,19 +167,13 @@ type Resource struct {
 }
 
 type Version struct {
-	Version                 string                  `json:"version"`
-	Active                  bool                    `json:"active"`
-	Schema                  map[string]any          `json:"schema"`
-	OrchestrationDefinition OrchestrationDefinition `json:"orchestration"`
+	Version    string         `json:"version"`
+	Active     bool           `json:"active"`
+	Schema     map[string]any `json:"schema"`
+	Activities []Activity     `json:"activities"`
 }
 
-type OrchestrationDefinition []OrchestrationStepDefinition
-
-// OrchestrationStepDefinition represents a group of activities that can be executed in parallel or sequentially
-type OrchestrationStepDefinition struct {
-	Parallel   bool       `json:"parallel"`
-	Activities []Activity `json:"activities"`
-}
+type OrchestrationDefinition []Activity
 
 // ActivityDefinition represents a single activity in the orchestration
 type ActivityDefinition struct {
@@ -205,34 +194,47 @@ func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
 	return &definition, nil
 }
 
-func InstantiateOrchestration(deploymentID string, definition OrchestrationDefinition, data map[string]any) *Orchestration {
+func InstantiateOrchestration(deploymentID string, definition OrchestrationDefinition, data map[string]any) (*Orchestration, error) {
 	orchestration := &Orchestration{
 		ID:             uuid.New().String(),
 		DeploymentID:   deploymentID,
 		State:          OrchestrationStateStateInitialized,
-		Steps:          make([]OrchestrationStep, len(definition)),
+		Steps:          make([]OrchestrationStep, 0, len(definition)),
 		Inputs:         data,
 		ProcessingData: make(map[string]any),
 		Completed:      make(map[string]struct{}),
 	}
 
-	// Create steps
-	for i, stepDef := range definition {
-		step := OrchestrationStep{
-			Parallel:   stepDef.Parallel,
-			Activities: make([]Activity, len(stepDef.Activities)),
-		}
-
-		// Create activities
-		for j, _ := range stepDef.Activities {
-			step.Activities[j] = Activity{
-				ID:     uuid.New().String(),
-				Inputs: make([]MappingEntry, 0),
+	graph := dag.NewGraph[Activity]()
+	for _, activity := range definition {
+		graph.AddVertex(activity.ID, &activity)
+	}
+	for _, activity := range definition {
+		for _, dependency := range activity.DependsOn {
+			if _, exists := graph.Vertices[dependency]; !exists {
+				return nil, fmt.Errorf("dependency not found: %s", dependency)
 			}
+			graph.AddEdge(activity.ID, dependency)
 		}
-
-		orchestration.Steps[i] = step
+	}
+	sorted := graph.ParallelTopologicalSort()
+	if sorted.HasCycle {
+		return nil, fmt.Errorf("cycle detected in orchestration definition: %s", sorted.CyclePath)
 	}
 
-	return orchestration
+	// Reverse the iteration order because the sorted list starts with the activities that must be processed last
+	levels := slices.Clone(sorted.ParallelLevels)
+	slices.Reverse(levels)
+
+	for _, level := range levels {
+		step := OrchestrationStep{
+			Activities: make([]Activity, 0, len(level.Vertices)),
+		}
+		for _, vertex := range level.Vertices {
+			step.Activities = append(step.Activities, vertex.Value)
+		}
+		orchestration.Steps = append(orchestration.Steps, step)
+	}
+
+	return orchestration, nil
 }
