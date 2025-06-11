@@ -42,6 +42,7 @@ func TestExecuteOrchestration_NoSteps(t *testing.T) {
 
 	nt, err := setupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
+	//goland:noinspection GoUnhandledErrorResult
 	defer teardownNatsContainer(ctx, nt)
 
 	adapter := natsClientAdapter{client: nt.client}
@@ -189,20 +190,7 @@ func TestExecuteOrchestration(t *testing.T) {
 			require.NoError(t, err)
 			defer teardownNatsContainer(ctx, nt)
 
-			cfg := jetstream.StreamConfig{
-				Name:      "cfm-activity",
-				Retention: jetstream.WorkQueuePolicy,
-				Subjects:  []string{"event.*"},
-			}
-
-			stream, err := nt.client.jetStream.CreateOrUpdateStream(ctx, cfg)
-			require.NoError(t, err)
-
-			_, err = stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-				Durable:   "cfm-durable-activity",
-				AckPolicy: jetstream.AckExplicitPolicy,
-			})
-			require.NoError(t, err)
+			setupConsumer(t, ctx, nt)
 
 			var executions []activityExecution
 			executionsMutex := &sync.Mutex{}
@@ -275,14 +263,128 @@ func TestExecuteOrchestration(t *testing.T) {
 	}
 }
 
+func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
+	// Setup NATS test environment
+	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
+	defer cancel()
+
+	nt, err := setupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	require.NoError(t, err)
+	//goland:noinspection ALL
+	defer teardownNatsContainer(ctx, nt)
+
+	setupConsumer(t, ctx, nt)
+
+	// Create a processor that returns schedule first, then continue
+	var wg sync.WaitGroup
+	processor := &ScheduleThenContinueProcessor{
+		callCount: 0,
+		wg:        &wg,
+	}
+
+	// Create orchestration with single activity
+	orchestration := api.Orchestration{
+		ID:        "test-schedule-continue-1",
+		State:     api.OrchestrationStateStateRunning,
+		Completed: make(map[string]struct{}),
+		Steps: []api.OrchestrationStep{
+			{
+				Activities: []api.Activity{
+					{ID: "A1", Type: "test.schedule.continue"},
+				},
+			},
+		},
+	}
+
+	adapter := natsClientAdapter{client: nt.client}
+
+	// Create and start orchestrator
+	orchestrator := &NatsDeploymentOrchestrator{
+		client:  adapter,
+		monitor: monitor.NoopMonitor{},
+	}
+
+	// Execute orchestration to set up initial state
+	err = orchestrator.ExecuteOrchestration(context.Background(), orchestration)
+	require.NoError(t, err)
+
+	// Create activity executor with our test processor
+	executor := &NatsActivityExecutor{
+		id:                "test-executor-schedule-continue",
+		client:            adapter,
+		activityName:      "test.schedule.continue",
+		activityProcessor: processor,
+		monitor:           monitor.NoopMonitor{},
+	}
+
+	// Start executor
+	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err = executor.Execute(ctx)
+	require.NoError(t, err)
+
+	// Wait for both calls to complete
+	wg.Add(2) // Expecting 2 calls: schedule then continue
+	wg.Wait()
+
+	// Verify processor was called twice
+	assert.Equal(t, 2, processor.callCount, "Processor should have been called twice")
+}
+
+// ScheduleThenContinueProcessor implements ActivityProcessor
+// Returns ActivityResultSchedule on first call, ActivityResultContinue on subsequent calls
+type ScheduleThenContinueProcessor struct {
+	callCount int
+	wg        *sync.WaitGroup
+}
+
+func (p *ScheduleThenContinueProcessor) Process(_ api.ActivityContext) api.ActivityResult {
+	p.callCount++
+	defer p.wg.Done() // Signal completion of this call
+
+	if p.callCount == 1 {
+		// First call: return schedule result with 1 second delay for faster testing
+		return api.ActivityResult{
+			Result:     api.ActivityResultSchedule,
+			WaitMillis: 100 * time.Millisecond,
+			Error:      nil,
+		}
+	}
+
+	// Subsequent calls: return continue result
+	return api.ActivityResult{
+		Result:     api.ActivityResultContinue,
+		WaitMillis: 0,
+		Error:      nil,
+	}
+}
+
+func setupConsumer(t *testing.T, ctx context.Context, nt *natsTestContainer) {
+	cfg := jetstream.StreamConfig{
+		Name:      "cfm-activity",
+		Retention: jetstream.WorkQueuePolicy,
+		Subjects:  []string{"event.*"},
+	}
+
+	stream, err := nt.client.jetStream.CreateOrUpdateStream(ctx, cfg)
+	require.NoError(t, err)
+
+	_, err = stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
+		Durable:   "cfm-durable-activity",
+		AckPolicy: jetstream.AckExplicitPolicy,
+	})
+	require.NoError(t, err)
+}
+
 // TestActivityProcessor with timing information
 type TestActivityProcessor struct {
 	onProcess func(id string)
 }
 
-func (t TestActivityProcessor) Process(ctx api.ActivityContext) (bool, error) {
+func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
 	if t.onProcess != nil {
 		t.onProcess(ctx.ID())
 	}
-	return true, nil
+	return api.ActivityResult{Result: api.ActivityResultContinue}
 }

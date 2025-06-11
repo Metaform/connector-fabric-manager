@@ -97,15 +97,29 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 
 	activityContext := newActivityContext(ctx, orchestration.ID, oMessage.Activity)
 	e.monitor.Debugf("Received message: %s\n", e.id)
-	advance, err := e.activityProcessor.Process(activityContext)
-	if err != nil {
-		return fmt.Errorf("failed to process activity %s: %w", oMessage.OrchestrationID, err)
-	}
-	if !advance {
+	result := e.activityProcessor.Process(activityContext)
+	if result.Result == api.ActivityResultError {
+		err := message.Nak()
+		if err != nil {
+			return fmt.Errorf("failed to execute activity message and NAK response %s (errors: %w, %v)",
+				oMessage.OrchestrationID, result.Error, err)
+		}
+		return fmt.Errorf("failed to execute activity %s: %w", oMessage.OrchestrationID, result.Error)
+	} else if result.Result == api.ActivityResultWait {
+		err := message.Ack()
+		if err != nil {
+			return fmt.Errorf("failed to ACK activity message %s: %w", oMessage.OrchestrationID, err)
+		}
+		return err
+	} else if result.Result == api.ActivityResultSchedule {
+		err := message.NakWithDelay(result.WaitMillis)
+		if err != nil {
+			return fmt.Errorf("failed to reschedule schedule activity %s: %w", oMessage.OrchestrationID, err)
+		}
 		return nil
 	}
 
-	//re-read the orchestration and update it
+	// Completed activity execution, re-read the orchestration and update it
 	orchestration, oRevision, err = e.readOrchestration(ctx, oMessage.OrchestrationID)
 	if err != nil {
 		return fmt.Errorf("failed to read orchestration data for update: %w", err)

@@ -15,6 +15,7 @@ package api
 import (
 	"context"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"time"
 )
 
 const (
@@ -41,7 +42,22 @@ type ActivityProcessorRegistry interface {
 //
 // If the processor encounters an error, it returns an error to indicate that the orchestration should fail.
 type ActivityProcessor interface {
-	Process(activityContext ActivityContext) (bool, error)
+	Process(activityContext ActivityContext) ActivityResult
+}
+
+type ActivityResultType int
+
+const (
+	ActivityResultWait     = 0
+	ActivityResultContinue = 1
+	ActivityResultSchedule = 2
+	ActivityResultError    = -1
+)
+
+type ActivityResult struct {
+	Result     ActivityResultType
+	WaitMillis time.Duration
+	Error      error
 }
 
 type ActivityContext interface {

@@ -67,7 +67,6 @@ func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, o
 		return err
 	}
 	return nil
-
 }
 
 // Returns the initial activities for the given orchestration.
