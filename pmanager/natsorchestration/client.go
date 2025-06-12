@@ -77,3 +77,44 @@ func EnqueueActivityMessages(ctx context.Context, orchestrationID string, activi
 	}
 	return nil
 }
+
+// ReadOrchestration reads the orchestration state from the KV store.
+func ReadOrchestration(ctx context.Context, orchestrationID string, client MsgClient) (api.Orchestration, uint64, error) {
+	oEntry, err := client.Get(ctx, orchestrationID)
+	if err != nil {
+		return api.Orchestration{}, 0, fmt.Errorf("failed to get orchestration state %s: %w", orchestrationID, err)
+	}
+
+	var orchestration api.Orchestration
+	if err = json.Unmarshal(oEntry.Value(), &orchestration); err != nil {
+		return api.Orchestration{}, 0, fmt.Errorf("failed to unmarshal orchestration %s: %w", orchestrationID, err)
+	}
+
+	return orchestration, oEntry.Revision(), nil
+}
+
+// SaveOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the last known revision.
+func SaveOrchestration(
+	ctx context.Context,
+	orchestration api.Orchestration,
+	completedActivityID string,
+	revision uint64,
+	client MsgClient) (api.Orchestration, uint64, error) {
+	for {
+		// TODO break after number of retries using exponential backoff
+		serialized, err := json.Marshal(orchestration)
+		if err != nil {
+			return api.Orchestration{}, 0, fmt.Errorf("failed to marshal orchestration %s: %w", orchestration.ID, err)
+		}
+		_, err = client.Update(ctx, orchestration.ID, serialized, revision)
+		if err == nil {
+			break
+		}
+		orchestration, revision, err = ReadOrchestration(ctx, orchestration.ID, client)
+		if err != nil {
+			return api.Orchestration{}, 0, fmt.Errorf("failed to read orchestration data for update: %w", err)
+		}
+		orchestration.Completed[completedActivityID] = struct{}{}
+	}
+	return orchestration, revision, nil
+}

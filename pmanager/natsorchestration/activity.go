@@ -91,7 +91,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return fmt.Errorf("failed to unmarshal orchestration message: %w", err)
 	}
 
-	orchestration, oRevision, err := e.readOrchestration(ctx, oMessage.OrchestrationID)
+	orchestration, oRevision, err := ReadOrchestration(ctx, oMessage.OrchestrationID, e.client)
 	if err != nil {
 		return fmt.Errorf("failed to read orchestration data: %w", err)
 	}
@@ -121,12 +121,12 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 	}
 
 	// Completed activity execution, re-read the orchestration and update it
-	orchestration, oRevision, err = e.readOrchestration(ctx, oMessage.OrchestrationID)
+	orchestration, oRevision, err = ReadOrchestration(ctx, oMessage.OrchestrationID, e.client)
 	if err != nil {
 		return fmt.Errorf("failed to read orchestration data for update: %w", err)
 	}
 	orchestration.Completed[oMessage.Activity.ID] = struct{}{}
-	orchestration, oRevision, err = e.saveOrchestration(ctx, orchestration, oMessage.Activity.ID, oMessage.OrchestrationID, oRevision)
+	orchestration, oRevision, err = SaveOrchestration(ctx, orchestration, oMessage.Activity.ID, oRevision, e.client)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 	if len(next) == 0 {
 		e.monitor.Debugf("Finished orchestration: %s", oMessage.OrchestrationID)
 		orchestration.State = api.OrchestrationStateStateCompleted
-		orchestration, oRevision, err = e.saveOrchestration(ctx, orchestration, oMessage.Activity.ID, oMessage.OrchestrationID, oRevision)
+		orchestration, oRevision, err = SaveOrchestration(ctx, orchestration, oMessage.Activity.ID, oRevision, e.client)
 		if err != nil {
 			return err
 		}
@@ -159,49 +159,6 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return fmt.Errorf("failed to ACK activity message %s: %w", oMessage.OrchestrationID, err)
 	}
 	return nil
-}
-
-// readOrchestration reads the orchestration state from the KV store.
-func (e *NatsActivityExecutor) readOrchestration(ctx context.Context, orchestrationID string) (api.Orchestration, uint64, error) {
-	oEntry, err := e.client.Get(ctx, orchestrationID)
-	if err != nil {
-		return api.Orchestration{}, 0, fmt.Errorf("failed to get orchestration state %s: %w", orchestrationID, err)
-	}
-
-	var orchestration api.Orchestration
-	if err = json.Unmarshal(oEntry.Value(), &orchestration); err != nil {
-		// TODO pass to DLQ
-		return api.Orchestration{}, 0, fmt.Errorf("failed to unmarshal orchestration %s: %w", orchestrationID, err)
-	}
-
-	oRevision := oEntry.Revision()
-	return orchestration, oRevision, nil
-}
-
-// saveOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the last known revision.
-func (e *NatsActivityExecutor) saveOrchestration(
-	ctx context.Context,
-	orchestration api.Orchestration,
-	completedActivityID string,
-	orchestrationID string,
-	revision uint64) (api.Orchestration, uint64, error) {
-	for {
-		// TODO break after number of retries using exponential backoff
-		serialized, err := json.Marshal(orchestration)
-		if err != nil {
-			return api.Orchestration{}, 0, fmt.Errorf("failed to marshal orchestration %s: %w", orchestrationID, err)
-		}
-		_, err = e.client.Update(ctx, orchestrationID, serialized, revision)
-		if err == nil {
-			break
-		}
-		orchestration, revision, err = e.readOrchestration(ctx, orchestrationID)
-		if err != nil {
-			return api.Orchestration{}, 0, fmt.Errorf("failed to read orchestration data for update: %w", err)
-		}
-		orchestration.Completed[completedActivityID] = struct{}{}
-	}
-	return orchestration, revision, nil
 }
 
 type defaultActivityContext struct {
