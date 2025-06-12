@@ -33,14 +33,16 @@ type ActivityProcessorRegistry interface {
 	RegisterProcessor(processor ActivityProcessor)
 }
 
-// ActivityProcessor executes activities for a given type. If the execution completes successfully, the processor
-// returns true.
+// ActivityProcessor executes activities for a given type.
 //
-// If the process requires time to complete, the processor should return false to indicate that the orchestration should
-// wait for the activity to complete. At that point, the processor is responsible for signaling completion of the
-// activity.
+// If the execution completes successfully, the processor returns ActivityResultContinue.
 //
-// If the processor encounters an error, it returns an error to indicate that the orchestration should fail.
+// If the processor returns ActivityResultWait, the activity will remain outstanding until completion is asynchronously signaled.
+//
+// If the processor returns ActivityResultSchedule, the orchestration engine will reschedule message delivery in the duration
+// defined by WaitMillis.
+//
+// If the processor encounters an error, it returns an ActivityResultError.
 type ActivityProcessor interface {
 	Process(activityContext ActivityContext) ActivityResult
 }
