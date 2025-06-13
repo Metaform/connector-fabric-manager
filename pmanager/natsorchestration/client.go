@@ -93,14 +93,47 @@ func ReadOrchestration(ctx context.Context, orchestrationID string, client MsgCl
 	return orchestration, oEntry.Revision(), nil
 }
 
-// SaveOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the last known revision.
-func SaveOrchestration(
+func CompleteOrchestrationActivity(
 	ctx context.Context,
 	orchestration api.Orchestration,
 	completedActivityID string,
 	revision uint64,
 	client MsgClient) (api.Orchestration, uint64, error) {
+	return UpdateOrchestration(ctx, orchestration, revision, client, func(o *api.Orchestration) {
+		orchestration.Completed[completedActivityID] = struct{}{}
+	})
+}
+
+func MarkOrchestrationCompleted(
+	ctx context.Context,
+	orchestration api.Orchestration,
+	revision uint64,
+	client MsgClient) (api.Orchestration, uint64, error) {
+	return UpdateOrchestration(ctx, orchestration, revision, client, func(o *api.Orchestration) {
+		o.State = api.OrchestrationStateCompleted
+	})
+}
+
+func MarkOrchestrationErrored(
+	ctx context.Context,
+	orchestration api.Orchestration,
+	revision uint64,
+	client MsgClient) (api.Orchestration, uint64, error) {
+	return UpdateOrchestration(ctx, orchestration, revision, client, func(o *api.Orchestration) {
+		o.State = api.OrchestrationStateErrored
+	})
+}
+
+// UpdateOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the
+// last known revision.
+func UpdateOrchestration(
+	ctx context.Context,
+	orchestration api.Orchestration,
+	revision uint64,
+	client MsgClient,
+	updateFn func(*api.Orchestration)) (api.Orchestration, uint64, error) {
 	for {
+		updateFn(&orchestration)
 		// TODO break after number of retries using exponential backoff
 		serialized, err := json.Marshal(orchestration)
 		if err != nil {
@@ -114,7 +147,6 @@ func SaveOrchestration(
 		if err != nil {
 			return api.Orchestration{}, 0, fmt.Errorf("failed to read orchestration data for update: %w", err)
 		}
-		orchestration.Completed[completedActivityID] = struct{}{}
 	}
 	return orchestration, revision, nil
 }

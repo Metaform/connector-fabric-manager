@@ -46,7 +46,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		assert.NotNil(t, orchestration)
 		assert.NotEmpty(t, orchestration.ID)
 		assert.Equal(t, deploymentID, orchestration.DeploymentID)
-		assert.Equal(t, OrchestrationStateStateInitialized, orchestration.State)
+		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.Equal(t, data, orchestration.Inputs)
 		assert.NotNil(t, orchestration.ProcessingData)
 		assert.NotNil(t, orchestration.Completed)
@@ -94,7 +94,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
 		assert.Equal(t, deploymentID, orchestration.DeploymentID)
-		assert.Equal(t, OrchestrationStateStateInitialized, orchestration.State)
+		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 
 		// Verify activities are present in the orchestration
 		allActivities := make(map[string]bool)
@@ -150,7 +150,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
 		assert.Equal(t, deploymentID, orchestration.DeploymentID)
-		assert.Equal(t, OrchestrationStateStateInitialized, orchestration.State)
+		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.True(t, len(orchestration.Steps) > 0)
 
 		// Verify activity order: parallel structure should have proper step ordering
@@ -210,7 +210,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
 		assert.Equal(t, deploymentID, orchestration.DeploymentID)
-		assert.Equal(t, OrchestrationStateStateInitialized, orchestration.State)
+		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.Equal(t, data, orchestration.Inputs)
 		assert.Equal(t, 0, len(orchestration.Steps))
 	})
@@ -231,7 +231,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
 		assert.Equal(t, deploymentID, orchestration.DeploymentID)
-		assert.Equal(t, OrchestrationStateStateInitialized, orchestration.State)
+		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.Nil(t, orchestration.Inputs)
 		assert.NotNil(t, orchestration.ProcessingData)
 		assert.NotNil(t, orchestration.Completed)
@@ -288,7 +288,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
 		assert.Equal(t, deploymentID, orchestration.DeploymentID)
-		assert.Equal(t, OrchestrationStateStateInitialized, orchestration.State)
+		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.Equal(t, data, orchestration.Inputs)
 
 		// Verify all activities are included

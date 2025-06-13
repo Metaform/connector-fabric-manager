@@ -223,7 +223,7 @@ func TestExecuteOrchestration(t *testing.T) {
 				},
 			}
 
-			// Start goroutine to wait for all activities
+			// Start a goroutine to wait for all activities
 			go func() {
 				wg.Wait()
 				close(resultCh)
@@ -285,7 +285,7 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 	// Create orchestration with single activity
 	orchestration := api.Orchestration{
 		ID:        "test-schedule-continue-1",
-		State:     api.OrchestrationStateStateRunning,
+		State:     api.OrchestrationStateRunning,
 		Completed: make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{
 			{
@@ -298,17 +298,16 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 
 	adapter := natsClientAdapter{client: nt.client}
 
-	// Create and start orchestrator
+	// Create and start the orchestrator
 	orchestrator := &NatsDeploymentOrchestrator{
 		client:  adapter,
 		monitor: monitor.NoopMonitor{},
 	}
 
-	// Execute orchestration to set up initial state
 	err = orchestrator.ExecuteOrchestration(context.Background(), orchestration)
 	require.NoError(t, err)
 
-	// Create activity executor with our test processor
+	// Create an activity executor with our test processor
 	executor := &NatsActivityExecutor{
 		id:                "test-executor-schedule-continue",
 		client:            adapter,

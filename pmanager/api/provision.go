@@ -42,7 +42,7 @@ type ActivityProcessorRegistry interface {
 // If the processor returns ActivityResultSchedule, the orchestration engine will reschedule message delivery in the duration
 // defined by WaitMillis.
 //
-// If the processor encounters an error, it returns an ActivityResultError.
+// If the processor encounters an error, it returns an ActivityResultRetryError or an ActivityResultFatalError.
 type ActivityProcessor interface {
 	Process(activityContext ActivityContext) ActivityResult
 }
@@ -50,10 +50,11 @@ type ActivityProcessor interface {
 type ActivityResultType int
 
 const (
-	ActivityResultWait     = 0
-	ActivityResultContinue = 1
-	ActivityResultSchedule = 2
-	ActivityResultError    = -1
+	ActivityResultWait       = 0
+	ActivityResultContinue   = 1
+	ActivityResultSchedule   = 2
+	ActivityResultRetryError = -1
+	ActivityResultFatalError = -2
 )
 
 type ActivityResult struct {

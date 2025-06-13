@@ -35,10 +35,10 @@ type DeploymentManifest struct {
 type OrchestrationState uint
 
 const (
-	OrchestrationStateStateInitialized OrchestrationState = 0
-	OrchestrationStateStateRunning     OrchestrationState = 1
-	OrchestrationStateStateCompleted   OrchestrationState = 2
-	OrchestrationStateStateErrored     OrchestrationState = 3
+	OrchestrationStateInitialized OrchestrationState = 0
+	OrchestrationStateRunning     OrchestrationState = 1
+	OrchestrationStateCompleted   OrchestrationState = 2
+	OrchestrationStateErrored     OrchestrationState = 3
 )
 
 // Orchestration is a collection of activities that are executed to effect a deployment.
@@ -198,7 +198,7 @@ func InstantiateOrchestration(deploymentID string, definition OrchestrationDefin
 	orchestration := &Orchestration{
 		ID:             uuid.New().String(),
 		DeploymentID:   deploymentID,
-		State:          OrchestrationStateStateInitialized,
+		State:          OrchestrationStateInitialized,
 		Steps:          make([]OrchestrationStep, 0, len(definition)),
 		Inputs:         data,
 		ProcessingData: make(map[string]any),

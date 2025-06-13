@@ -136,7 +136,6 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 	tests := []struct {
 		name       string
 		activities []api.Activity
-		parallel   bool
 		setupMock  func(*mocks.MsgClient)
 		wantErr    bool
 	}{
@@ -145,7 +144,6 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 			activities: []api.Activity{
 				{ID: "A1", Type: activityType},
 			},
-			parallel: false,
 			setupMock: func(m *mocks.MsgClient) {
 				m.EXPECT().Publish(mock.Anything, subject, mock.Anything).
 					Return(nil, assert.AnError)
