@@ -212,7 +212,7 @@ func TestExecuteOrchestration(t *testing.T) {
 						id:        id,
 						startTime: time.Now(),
 					}
-					time.Sleep(100 * time.Millisecond) // Simulate work
+					time.Sleep(10 * time.Millisecond) // Simulate work
 					execution.endTime = time.Now()
 
 					executionsMutex.Lock()
@@ -382,6 +382,8 @@ type TestActivityProcessor struct {
 }
 
 func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	ctx.Value("key")
+
 	if t.onProcess != nil {
 		t.onProcess(ctx.ID())
 	}

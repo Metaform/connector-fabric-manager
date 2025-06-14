@@ -100,7 +100,7 @@ func CompleteOrchestrationActivity(
 	revision uint64,
 	client MsgClient) (api.Orchestration, uint64, error) {
 	return UpdateOrchestration(ctx, orchestration, revision, client, func(o *api.Orchestration) {
-		orchestration.Completed[completedActivityID] = struct{}{}
+		o.Completed[completedActivityID] = struct{}{}
 	})
 }
 

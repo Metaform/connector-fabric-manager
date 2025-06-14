@@ -67,6 +67,6 @@ type ActivityContext interface {
 	OID() string
 	ID() string
 	SetValue(key string, value any)
-	Value(key string) any
+	Value(key string) (any, bool)
 	Context() context.Context
 }

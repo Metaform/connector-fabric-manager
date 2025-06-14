@@ -100,15 +100,17 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 	e.monitor.Debugf("Received message: %s\n", e.id)
 	result := e.activityProcessor.Process(activityContext)
 
+	//Persist any data to
+
 	switch result.Result {
 	case api.ActivityResultRetryError:
-		return e.handleRetryError(message, oMessage.OrchestrationID, result.Error)
+		return e.handleRetryError(oMessage.OrchestrationID, message, result.Error)
 
 	case api.ActivityResultFatalError:
-		return e.handleFatalError(ctx, message, orchestration, revision, oMessage.OrchestrationID, result.Error)
+		return e.handleFatalError(ctx, orchestration, result.Error, revision, message)
 
 	case api.ActivityResultWait:
-		return e.ackMessage(message, oMessage.OrchestrationID)
+		return e.ackMessage(oMessage.OrchestrationID, message)
 
 	case api.ActivityResultSchedule:
 		if err := message.NakWithDelay(result.WaitMillis); err != nil {
@@ -117,24 +119,23 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return nil
 	}
 
-	return e.processOrchestration(ctx, message, oMessage)
+	return e.processOrchestration(ctx, orchestration, revision, message, oMessage)
 }
 
-func (e *NatsActivityExecutor) processOrchestration(ctx context.Context, message jetstream.Msg, oMessage api.ActivityMessage) error {
-	// Re-read the orchestration and update it
-	orchestration, revision, err := ReadOrchestration(ctx, oMessage.OrchestrationID, e.client)
-	if err != nil {
-		return fmt.Errorf("failed to read orchestration data for update: %w", err)
-	}
+func (e *NatsActivityExecutor) processOrchestration(ctx context.Context,
+	orchestration api.Orchestration,
+	revision uint64,
+	message jetstream.Msg,
+	oMessage api.ActivityMessage) error {
 
-	orchestration, revision, err = CompleteOrchestrationActivity(ctx, orchestration, oMessage.Activity.ID, revision, e.client)
+	orchestration, revision, err := CompleteOrchestrationActivity(ctx, orchestration, oMessage.Activity.ID, revision, e.client)
 	if err != nil {
 		return err
 	}
 
 	// Return if orchestration is in the error state
 	if orchestration.State == api.OrchestrationStateErrored {
-		return e.ackMessage(message, oMessage.OrchestrationID)
+		return e.ackMessage(oMessage.OrchestrationID, message)
 	}
 
 	canProceed, err := orchestration.CanProceedToNextStep(oMessage.Activity.ID)
@@ -143,13 +144,13 @@ func (e *NatsActivityExecutor) processOrchestration(ctx context.Context, message
 	}
 
 	if !canProceed {
-		return e.ackMessage(message, oMessage.OrchestrationID)
+		return e.ackMessage(oMessage.OrchestrationID, message)
 	}
 
 	next := orchestration.GetNextStepActivities(oMessage.Activity.ID)
 	if len(next) == 0 {
 		// No more steps, mark as completed
-		return e.handleOrchestrationCompletion(ctx, message, orchestration, revision, oMessage.OrchestrationID)
+		return e.handleOrchestrationCompletion(ctx, orchestration, revision, message)
 	}
 
 	e.monitor.Debugf("Finished activity: %s", oMessage.Activity.Type)
@@ -159,19 +160,22 @@ func (e *NatsActivityExecutor) processOrchestration(ctx context.Context, message
 		return fmt.Errorf("failed to enqueue next orchestration activities %s: %w", oMessage.OrchestrationID, err)
 	}
 
-	return e.ackMessage(message, oMessage.OrchestrationID)
+	return e.ackMessage(oMessage.OrchestrationID, message)
 }
 
-func (e *NatsActivityExecutor) handleOrchestrationCompletion(ctx context.Context, message jetstream.Msg, orchestration api.Orchestration, revision uint64, orchestrationID string) error {
+func (e *NatsActivityExecutor) handleOrchestrationCompletion(ctx context.Context,
+	orchestration api.Orchestration,
+	revision uint64,
+	message jetstream.Msg) error {
 	if _, _, err := MarkOrchestrationCompleted(ctx, orchestration, revision, e.client); err != nil {
-		e.monitor.Infof("Failed to mark orchestration %s as completed: %v", orchestrationID, err)
+		e.monitor.Infof("Failed to mark orchestration %s as completed: %v", orchestration.ID, err)
 	}
 
-	e.monitor.Debugf("Finished orchestration: %s", orchestrationID)
-	return e.ackMessage(message, orchestrationID)
+	e.monitor.Debugf("Finished orchestration: %s", orchestration.ID)
+	return e.ackMessage(orchestration.ID, message)
 }
 
-func (e *NatsActivityExecutor) handleRetryError(message jetstream.Msg, orchestrationID string, resultErr error) error {
+func (e *NatsActivityExecutor) handleRetryError(orchestrationID string, message jetstream.Msg, resultErr error) error {
 	// Nak to redeliver message
 	if err := message.Nak(); err != nil {
 		return fmt.Errorf("failed to execute activity message and NAK response %s (errors: %w, %v)",
@@ -180,20 +184,24 @@ func (e *NatsActivityExecutor) handleRetryError(message jetstream.Msg, orchestra
 	return fmt.Errorf("failed to execute activity %s: %w", orchestrationID, resultErr)
 }
 
-func (e *NatsActivityExecutor) handleFatalError(ctx context.Context, message jetstream.Msg, orchestration api.Orchestration, revision uint64, orchestrationID string, resultErr error) error {
+func (e *NatsActivityExecutor) handleFatalError(ctx context.Context,
+	orchestration api.Orchestration,
+	resultErr error,
+	revision uint64,
+	message jetstream.Msg) error {
 	// Update the orchestration before acking back. If the update fails, just log it to ensure the ack is sent to avoid message re-delivery
 	if _, _, err := MarkOrchestrationErrored(ctx, orchestration, revision, e.client); err != nil {
-		e.monitor.Infof("Failed to mark orchestration %s as fatal: %v", orchestrationID, err)
+		e.monitor.Infof("Failed to mark orchestration %s as fatal: %v", orchestration.ID, err)
 	}
 
 	if err := message.Ack(); err != nil {
 		return fmt.Errorf("fatal failure while executing activity %s (errors: %w, %v)",
-			orchestrationID, resultErr, err)
+			orchestration.ID, resultErr, err)
 	}
-	return fmt.Errorf("fatal failure while executing activity %s: %w", orchestrationID, resultErr)
+	return fmt.Errorf("fatal failure while executing activity %s: %w", orchestration.ID, resultErr)
 }
 
-func (e *NatsActivityExecutor) ackMessage(message jetstream.Msg, orchestrationID string) error {
+func (e *NatsActivityExecutor) ackMessage(orchestrationID string, message jetstream.Msg) error {
 	if err := message.Ack(); err != nil {
 		return fmt.Errorf("failed to ACK activity message %s: %w", orchestrationID, err)
 	}
@@ -232,11 +240,10 @@ func (d defaultActivityContext) OID() string {
 }
 
 func (d defaultActivityContext) SetValue(key string, value any) {
-	//TODO implement me
-	panic("implement me")
+	d.data[key] = value
 }
 
-func (d defaultActivityContext) Value(key string) any {
-	//TODO implement me
-	panic("implement me")
+func (d defaultActivityContext) Value(key string) (any, bool) {
+	value, ok := d.data[key]
+	return value, ok
 }
