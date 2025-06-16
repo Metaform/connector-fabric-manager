@@ -27,7 +27,7 @@ import (
 // TestExecuteOrchestration_ParallelActivitiesOneFailsFirst verifies orchestration with parallel activities where one fails first.
 // The orchestration should be in the errored state, i.e. the successful process should not change from an errored state.
 func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10000*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	nt, err := setupNatsContainer(ctx, "cfm-durable-activity-bucket")

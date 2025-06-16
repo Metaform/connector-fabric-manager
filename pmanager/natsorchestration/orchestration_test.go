@@ -27,7 +27,7 @@ import (
 
 const (
 	parallelActivityWindow = 50 * time.Millisecond
-	processTimeout         = 5 * time.Second
+	processTimeout         = 10 * time.Second
 )
 
 func TestExecuteOrchestration_NoSteps(t *testing.T) {

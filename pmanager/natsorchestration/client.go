@@ -93,37 +93,6 @@ func ReadOrchestration(ctx context.Context, orchestrationID string, client MsgCl
 	return orchestration, oEntry.Revision(), nil
 }
 
-func CompleteOrchestrationActivity(
-	ctx context.Context,
-	orchestration api.Orchestration,
-	completedActivityID string,
-	revision uint64,
-	client MsgClient) (api.Orchestration, uint64, error) {
-	return UpdateOrchestration(ctx, orchestration, revision, client, func(o *api.Orchestration) {
-		o.Completed[completedActivityID] = struct{}{}
-	})
-}
-
-func MarkOrchestrationCompleted(
-	ctx context.Context,
-	orchestration api.Orchestration,
-	revision uint64,
-	client MsgClient) (api.Orchestration, uint64, error) {
-	return UpdateOrchestration(ctx, orchestration, revision, client, func(o *api.Orchestration) {
-		o.State = api.OrchestrationStateCompleted
-	})
-}
-
-func MarkOrchestrationErrored(
-	ctx context.Context,
-	orchestration api.Orchestration,
-	revision uint64,
-	client MsgClient) (api.Orchestration, uint64, error) {
-	return UpdateOrchestration(ctx, orchestration, revision, client, func(o *api.Orchestration) {
-		o.State = api.OrchestrationStateErrored
-	})
-}
-
 // UpdateOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the
 // last known revision.
 func UpdateOrchestration(

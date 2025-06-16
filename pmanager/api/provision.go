@@ -68,5 +68,6 @@ type ActivityContext interface {
 	ID() string
 	SetValue(key string, value any)
 	Value(key string) (any, bool)
+	Values() map[string]any
 	Context() context.Context
 }
