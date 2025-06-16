@@ -41,7 +41,8 @@ const (
 	OrchestrationStateErrored     OrchestrationState = 3
 )
 
-// Orchestration is a collection of activities that are executed to effect a deployment.
+// Orchestration is a collection of activities that are executed to effect a deployment. Activities are organized into
+// parallel execution steps based on dependencies.
 //
 // The DeploymentID is a reference to the original DeploymentManifest. As actions are completed, the orchestration
 // system will update the Completed map.
@@ -194,6 +195,8 @@ func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
 	return &definition, nil
 }
 
+// InstantiateOrchestration creates and returns an initialized Orchestration based on the provided definition and inputs.
+// It validates activity dependencies and organizes activities into parallel execution steps based on those dependencies.
 func InstantiateOrchestration(deploymentID string, definition OrchestrationDefinition, data map[string]any) (*Orchestration, error) {
 	orchestration := &Orchestration{
 		ID:             uuid.New().String(),
