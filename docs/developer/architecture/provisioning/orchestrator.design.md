@@ -118,7 +118,7 @@ Each version defines the following properties:
   `openAPIV3Schema` is the only supported schema type. Activities may reference input properties.
 - `orchestration`: Defines the sequence of activities that are executed to deploy the resource.
 
-The orchestration is a collection of activities. Activities may form a Directed Acyclic Graph (DAG) by declaring
+The orchestration is a collection of activities. Activities form a Directed Acyclic Graph (DAG) by declaring
 dependencies using the `dependsOn` property. At deployment time, the activities will be ordered using a topological sort
 and grouping activities into tiers of parallel execution steps based on their dependencies.
 
