@@ -6,4 +6,12 @@ following components:
 - **Tenant Manager** - Tenant management and deployment
 - **Provision Manager** - Resource provisioning and orchestration
 
+## Prerequisites
+
+The following are required to build and run the system:
+
+- Go
+- A Docker-compatible CLI
+
+
 
