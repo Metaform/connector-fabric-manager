@@ -1,10 +1,10 @@
 # The Deployment Orchestrator
 
-|                |              |
-|----------------|--------------|
-| **Status**     | In design    |
-| **Subsystem**  | Provisioning |
-| **Committers** | @jimmarino   |
+|                |                                             |
+|----------------|---------------------------------------------|
+| **Status**     | In progress                                 |
+| **Subsystem**  | Provisioning                                |
+| **Committers** | [@jimmarino](https://github.com/jimmarino/) |
 
 ## Overview
 
