@@ -35,6 +35,19 @@ Activities may be implemented using a variety of programming languages and techn
 service or Terraform script. The `DeploymentOrchestrator` delegates to a _**provider**_ for an activity type that is an
 extensibility point for the system.
 
+### Messaging Implementation
+
+The messaging implementation will be pluggable. The initial system will be based
+on [NATS Jetstream](https://docs.nats.io/nats-concepts/jetstream). A design goal is to allow the use of other
+technologies such as [Temporal](https://github.com/temporalio).
+
+### Kubernetes Integration
+
+The Deployment Orchestrator will be deployable as a standalone application or to a Kubernetes cluster. While it is
+possible to implement the Orchestration Resource Model described above
+as [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/),
+doing so will add additional complexity (the need to implement Kubernetes operators) and tie the solution to Kubernetes.
+
 ## Resource Model: Deployments, Activities, and Definitions
 
 The `DeploymentOrchestrator` is built on a resource model consisting of two types: a `DeploymentDefinition` and an
@@ -147,16 +160,55 @@ The `ActivityDefinition` [JSON Schema](./activity-definition.schema.json) specif
 - `outputSchema`: The schema for output properties when creating a deployment resource of the definition type.
   Currently, `openAPIV3Schema` is the only supported schema type.
 
-## Orchestration Providers
+## Activity Executors
 
-When an orchestration is executed, the Deployment Orchestrator will reliably enqueue activity messages which will be
-dequeued and processed by an associated provider. Providers are system extensibility points for integrating technologies
-such as Terraform or custom operations code into the deployment process. For example, a Terraform provider would gather
-input data associated with the orchestration and pass it to a Terrform script for execution. It would then persist
-returned data back into the orchestration context for access by subsequent activities.
+When an orchestration is executed, the Deployment Orchestrator reliably enqueues activity messages which will be
+dequeued and processed by an associated activity executor. The executor delegates to an `ActivityProcessor` to process
+the message. The Deployment Orchestrator is responsible for handling system reliability, context persistence, recovery,
+and activity coordination.
 
-The Deployment Orchestrator will be responsible for handling system reliability, context persistence, recovery, and
-coordination of activities.
+An `ActivityProcessor` is an extensibility points for integrating technologies such as Terraform or custom operations
+code into the deployment process. For example, a Terraform processor would gather input data associated with the
+orchestration and pass it to a Terraform script for execution. The `ActivityProcess` interface is defined as follows:
+
+```go
+package api
+
+type ActivityProcessor interface {
+	Process(activityContext ActivityContext) ActivityResult
+}
+
+type ActivityResultType int
+
+type ActivityResult struct {
+	Result     ActivityResultType
+	WaitMillis time.Duration
+	Error      error
+}
+
+const (
+	ActivityResultWait       = 0
+	ActivityResultComplete   = 1
+	ActivityResultSchedule   = 2
+	ActivityResultRetryError = -1
+	ActivityResultFatalError = -2
+)
+
+```
+
+The `ActivityResult` indicates the following actions to be taken:
+
+- **ActivityResultWait** - The message is acknowledged and the activity must be marked for completion by an external
+  process. This is useful for activity types that asynchronously execute a callback on completion.
+- **ActivityResultComplete** - The activity is marked as completed and the message is acknowledged.
+- **ActivityResultSchedule** - Schedules the message for redelivery as defined by `WaitMillis`. This can be used to
+  implement a completion polling mechanism.
+- **ActivityResultRetryError** - A recoverable error was raised andtThe message is negatively acknowledged so that it
+  can be redelivered.
+- **ActivityResultRetryError** - A fatal error was raised, the orchestration is put into the error state, and the
+  messsage is acknowledged so it will not be redelivered.
+
+### Activity Processors
 
 The following providers will be created:
 
@@ -164,16 +216,4 @@ The following providers will be created:
 - HTTP endpoint
 - Custom Go providers for handling required application-level resources
 
-## Kubernetes Integration
-
-The Deployment Orchestrator will be deployable as a standalone application or to a Kubernetes cluster. While it is
-possible to implement the Orchestration Resource Model described above
-as [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/),
-doing so will add additional complexity (the need to implement Kubernetes operators) and tie the solution to Kubernetes.
-
-## Messaging Implementation
-
-The messaging implementation will be pluggable. The initial system will be based
-on [NATS Jetstream](https://docs.nats.io/nats-concepts/jetstream). A design goal is to allow the use of other
-technologies such as [Temporal](https://github.com/temporalio).
 

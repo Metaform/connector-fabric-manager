@@ -35,7 +35,7 @@ type ActivityProcessorRegistry interface {
 
 // ActivityProcessor executes activities for a given type.
 //
-// If the execution completes successfully, the processor returns ActivityResultContinue.
+// If the execution completes successfully, the processor returns ActivityResultComplete.
 //
 // If the processor returns ActivityResultWait, the activity will remain outstanding until completion is asynchronously signaled.
 //
@@ -51,7 +51,7 @@ type ActivityResultType int
 
 const (
 	ActivityResultWait       = 0
-	ActivityResultContinue   = 1
+	ActivityResultComplete   = 1
 	ActivityResultSchedule   = 2
 	ActivityResultRetryError = -1
 	ActivityResultFatalError = -2

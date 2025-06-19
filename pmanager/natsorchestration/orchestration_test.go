@@ -332,7 +332,7 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 }
 
 // ScheduleThenContinueProcessor implements ActivityProcessor
-// Returns ActivityResultSchedule on first call, ActivityResultContinue on subsequent calls
+// Returns ActivityResultSchedule on first call, ActivityResultComplete on subsequent calls
 type ScheduleThenContinueProcessor struct {
 	callCount int
 	wg        *sync.WaitGroup
@@ -353,7 +353,7 @@ func (p *ScheduleThenContinueProcessor) Process(_ api.ActivityContext) api.Activ
 
 	// Subsequent calls: return continue result
 	return api.ActivityResult{
-		Result:     api.ActivityResultContinue,
+		Result:     api.ActivityResultComplete,
 		WaitMillis: 0,
 		Error:      nil,
 	}
@@ -387,5 +387,5 @@ func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	if t.onProcess != nil {
 		t.onProcess(ctx.ID())
 	}
-	return api.ActivityResult{Result: api.ActivityResultContinue}
+	return api.ActivityResult{Result: api.ActivityResultComplete}
 }

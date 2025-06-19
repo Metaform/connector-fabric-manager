@@ -141,7 +141,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 			activityCtx.SetValue("second_attempt_data", "retry_value")
 			wg.Done()
 			return api.ActivityResult{
-				Result: api.ActivityResultContinue,
+				Result: api.ActivityResultComplete,
 			}
 		},
 	}
@@ -368,7 +368,7 @@ func (p *ValueSettingProcessor) Process(ctx api.ActivityContext) api.ActivityRes
 	if p.onProcess != nil {
 		p.onProcess(ctx)
 	}
-	return api.ActivityResult{Result: api.ActivityResultContinue}
+	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
 type RetryWithValueProcessor struct {
@@ -379,7 +379,7 @@ func (p *RetryWithValueProcessor) Process(ctx api.ActivityContext) api.ActivityR
 	if p.onProcess != nil {
 		return p.onProcess(ctx)
 	}
-	return api.ActivityResult{Result: api.ActivityResultContinue}
+	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
 type MultiActivityValueProcessor struct {
@@ -390,7 +390,7 @@ func (p *MultiActivityValueProcessor) Process(ctx api.ActivityContext) api.Activ
 	if p.onProcess != nil {
 		p.onProcess(ctx)
 	}
-	return api.ActivityResult{Result: api.ActivityResultContinue}
+	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
 type WaitWithValueProcessor struct {
