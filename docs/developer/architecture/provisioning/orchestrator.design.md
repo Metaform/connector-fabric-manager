@@ -216,4 +216,17 @@ The following providers will be created:
 - HTTP endpoint
 - Custom Go providers for handling required application-level resources
 
+## Integration with External Systems
 
+### Infrastructure as Code (IaC) Automation
+
+The Deployment Orchestrator is designed to work with IaC Automation and GitOps systems such
+as [Argo](https://argoproj.github.io/), [env0](https://www.env0.com/), [Scalr](https://scalr.com/),
+and [Spacelift](https://spacelift.io/). These systems can be used to drive deployments using the Deployment Orchestrator
+API. To facilitate integration, Terraform providers will be developed for common deployment definitions.
+
+### Provisioners
+
+The Deployment Orchestrator can integrate with infrastructure provisioning technologies such
+as [Eclipse Symphony](https://github.com/eclipse-symphony/symphony), [Fulcrum](https://github.com/fulcrumproject),
+and [Liqo](https://liqo.io/) via `ActivityProcessor` implementations. 
