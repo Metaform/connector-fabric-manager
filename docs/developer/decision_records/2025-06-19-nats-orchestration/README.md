@@ -2,7 +2,7 @@
 
 ## Decision
 
-NATS will be used as the default orchestration messaging system.
+[NATS](https://nats.io/) will be used as the default orchestration messaging system.
 
 ## Rationale
 
