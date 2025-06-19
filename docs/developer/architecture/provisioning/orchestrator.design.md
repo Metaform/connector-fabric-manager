@@ -167,7 +167,7 @@ dequeued and processed by an associated activity executor. The executor delegate
 the message. The Deployment Orchestrator is responsible for handling system reliability, context persistence, recovery,
 and activity coordination.
 
-An `ActivityProcessor` is an extensibility points for integrating technologies such as Terraform or custom operations
+An `ActivityProcessor` is an extensibility point for integrating technologies such as Terraform or custom operations
 code into the deployment process. For example, a Terraform processor would gather input data associated with the
 orchestration and pass it to a Terraform script for execution. The `ActivityProcess` interface is defined as follows:
 
