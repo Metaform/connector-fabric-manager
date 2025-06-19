@@ -225,7 +225,7 @@ as [Argo](https://argoproj.github.io/), [env0](https://www.env0.com/), [Scalr](h
 and [Spacelift](https://spacelift.io/). These systems can be used to drive deployments using the Deployment Orchestrator
 API. To facilitate integration, Terraform providers will be developed for common deployment definitions.
 
-### Provisioners
+### Infrastructure Provisioners
 
 The Deployment Orchestrator can integrate with infrastructure provisioning technologies such
 as [Eclipse Symphony](https://github.com/eclipse-symphony/symphony), [Fulcrum](https://github.com/fulcrumproject),
