@@ -13,5 +13,5 @@ storage, and clustering.
 
 ## Approach
 
-The Deployment Orchestrator will provide interface definitions that will be used to add NATs and other messaging
-systems support.    
+The Deployment Orchestrator will provide interface definitions that will be used to add support for NATs and other
+messaging systems.    
