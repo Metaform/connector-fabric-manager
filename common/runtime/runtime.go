@@ -136,6 +136,7 @@ func AssembleAndLaunch(assembler *system.ServiceAssembler, name string, vConfig 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
+	logMonitor.Infof("%s started", name)
 	// wait for interrupt signal
 	<-quit
 
