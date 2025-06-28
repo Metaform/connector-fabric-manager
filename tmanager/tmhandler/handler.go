@@ -26,6 +26,7 @@ type response struct {
 }
 
 type HandlerServiceAssembly struct {
+	system.DefaultServiceAssembly
 }
 
 func (h *HandlerServiceAssembly) Name() string {
@@ -56,21 +57,5 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 		json.NewEncoder(w).Encode(response)
 	})
 
-	return nil
-}
-
-func (h *HandlerServiceAssembly) Prepare() error {
-	return nil
-}
-
-func (h *HandlerServiceAssembly) Start() error {
-	return nil
-}
-
-func (h *HandlerServiceAssembly) Finalize() error {
-	return nil
-}
-
-func (h *HandlerServiceAssembly) Shutdown() error {
 	return nil
 }

@@ -13,21 +13,16 @@
 package runtime
 
 import (
-	"context"
 	"flag"
 	"fmt"
-	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
-	"time"
 )
 
 const (
@@ -135,34 +130,14 @@ func AssembleAndLaunch(assembler *system.ServiceAssembler, name string, vConfig 
 		panic(fmt.Errorf("error assembling runtime: %w", err))
 	}
 
-	router := assembler.Resolve(routing.RouterKey).(http.Handler)
-
-	port := vConfig.GetInt(key)
-	server := &http.Server{
-		Addr:    ":" + strconv.Itoa(port),
-		Handler: router,
-	}
+	//router, serverConfigured := assembler.ResolveOptional(routing.RouterKey)
 
 	// channel for shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		logMonitor.Infof("%s listening [%d]", name, port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logMonitor.Severew("failed to start", "error", err)
-		}
-	}()
-
 	// wait for interrupt signal
 	<-quit
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		logMonitor.Severew("Error attempting server shutdown", "error", err)
-	}
 
 	if err := assembler.Shutdown(); err != nil {
 		logMonitor.Severew("Error attempting shutdown", "error", err)

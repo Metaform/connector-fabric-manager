@@ -143,6 +143,10 @@ func (a *ServiceAssembler) Resolve(serviceType ServiceType) any {
 	return a.registry.Resolve(serviceType)
 }
 
+func (a *ServiceAssembler) ResolveOptional(serviceType ServiceType) (any, bool) {
+	return a.registry.ResolveOptional(serviceType)
+}
+
 func (a *ServiceAssembler) Register(assembly ServiceAssembly) {
 	a.assemblies = append(a.assemblies, assembly)
 }
@@ -242,4 +246,35 @@ func reverse[T any](s []T) {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}
+}
+
+type DefaultServiceAssembly struct {
+}
+
+func (d *DefaultServiceAssembly) Provides() []ServiceType {
+	return []ServiceType{}
+}
+
+func (d *DefaultServiceAssembly) Requires() []ServiceType {
+	return []ServiceType{}
+}
+
+func (d *DefaultServiceAssembly) Init(*InitContext) error {
+	return nil
+}
+
+func (d *DefaultServiceAssembly) Prepare() error {
+	return nil
+}
+
+func (d *DefaultServiceAssembly) Start() error {
+	return nil
+}
+
+func (d *DefaultServiceAssembly) Finalize() error {
+	return nil
+}
+
+func (d *DefaultServiceAssembly) Shutdown() error {
+	return nil
 }

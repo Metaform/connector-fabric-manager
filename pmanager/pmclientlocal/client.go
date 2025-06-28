@@ -25,6 +25,7 @@ func (l localProvisionManagerClient) Provision(manifest *api.DeploymentManifest)
 }
 
 type LocalPmClientServiceAssembly struct {
+	system.DefaultServiceAssembly
 }
 
 func (l LocalPmClientServiceAssembly) Name() string {
@@ -41,21 +42,5 @@ func (l LocalPmClientServiceAssembly) Requires() []system.ServiceType {
 
 func (l LocalPmClientServiceAssembly) Init(context *system.InitContext) error {
 	context.Registry.Register(api.ProvisionManagerClientKey, localProvisionManagerClient{})
-	return nil
-}
-
-func (l LocalPmClientServiceAssembly) Prepare() error {
-	return nil
-}
-
-func (l LocalPmClientServiceAssembly) Start() error {
-	return nil
-}
-
-func (l LocalPmClientServiceAssembly) Finalize() error {
-	return nil
-}
-
-func (l LocalPmClientServiceAssembly) Shutdown() error {
 	return nil
 }

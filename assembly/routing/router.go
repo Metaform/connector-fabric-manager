@@ -13,19 +13,28 @@
 package routing
 
 import (
+	"context"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/spf13/viper"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 const (
 	RouterKey system.ServiceType = "router:Router"
+	key                          = "httpPort"
 )
 
 type RouterServiceAssembly struct {
+	system.DefaultServiceAssembly
+	server     *http.Server
+	router     *chi.Mux
+	logMonitor monitor.LogMonitor
+	config     *viper.Viper
 }
 
 func (r *RouterServiceAssembly) Name() string {
@@ -41,24 +50,35 @@ func (r *RouterServiceAssembly) Requires() []system.ServiceType {
 }
 
 func (r *RouterServiceAssembly) Init(ctx *system.InitContext) error {
-	router := r.setupRouter(ctx.LogMonitor, ctx.Mode)
-	ctx.Registry.Register(RouterKey, router)
-	return nil
-}
-
-func (r *RouterServiceAssembly) Prepare() error {
+	r.router = r.setupRouter(ctx.LogMonitor, ctx.Mode)
+	ctx.Registry.Register(RouterKey, r.router)
+	r.logMonitor = ctx.LogMonitor
+	r.config = ctx.Config
 	return nil
 }
 
 func (r *RouterServiceAssembly) Start() error {
+	port := r.config.GetInt(key)
+	r.server = &http.Server{
+		Addr:    ":" + strconv.Itoa(port),
+		Handler: r.router,
+	}
+
+	go func() {
+		r.logMonitor.Infof("HTTP server listening on [%d]", port)
+		if err := r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			r.logMonitor.Severew("failed to start", "error", err)
+		}
+	}()
 	return nil
 }
 
 func (r *RouterServiceAssembly) Shutdown() error {
-	return nil
-}
-
-func (r *RouterServiceAssembly) Finalize() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := r.server.Shutdown(ctx); err != nil {
+		r.logMonitor.Severew("Error attempting HTTP server shutdown", "error", err)
+	}
 	return nil
 }
 

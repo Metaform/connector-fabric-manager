@@ -221,7 +221,7 @@ The following providers will be created:
 ### Infrastructure as Code (IaC) Automation
 
 The Deployment Orchestrator is designed to work with IaC Automation and GitOps systems such
-as [Argo](https://argoproj.github.io/), [env0](https://www.env0.com/), [Scalr](https://scalr.com/),
+as [Argo](https://argoproj.github.io/), [Atlantis](https://www.runatlantis.io/), [env0](https://www.env0.com/), [Scalr](https://scalr.com/),
 and [Spacelift](https://spacelift.io/). These systems can be used to drive deployments using the Deployment Orchestrator
 API. To facilitate integration, Terraform providers will be developed for common deployment definitions.
 

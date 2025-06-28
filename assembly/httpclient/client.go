@@ -29,6 +29,7 @@ const (
 )
 
 type HttpClientServiceAssembly struct {
+	system.DefaultServiceAssembly
 }
 
 func (h HttpClientServiceAssembly) Name() string {
@@ -53,21 +54,5 @@ func (h HttpClientServiceAssembly) Init(context *system.InitContext) error {
 	standardClient := retryClient.StandardClient()
 	context.Registry.Register(HttpClientKey, *standardClient)
 
-	return nil
-}
-
-func (h HttpClientServiceAssembly) Prepare() error {
-	return nil
-}
-
-func (h HttpClientServiceAssembly) Start() error {
-	return nil
-}
-
-func (h HttpClientServiceAssembly) Finalize() error {
-	return nil
-}
-
-func (h HttpClientServiceAssembly) Shutdown() error {
 	return nil
 }
