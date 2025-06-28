@@ -32,14 +32,14 @@ func Launch() {
 	vConfig := config.LoadConfigOrPanic(configPrefix)
 
 	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
-	assembler.Register(&testAgenServiceAssemby{})
+	assembler.Register(&testAgenServiceAssembly{})
 	runtime.AssembleAndLaunch(assembler, "Test Agent", vConfig, logMonitor)
 }
 
-type testAgenServiceAssemby struct {
+type testAgenServiceAssembly struct {
 	system.DefaultServiceAssembly
 }
 
-func (t testAgenServiceAssemby) Name() string {
+func (t testAgenServiceAssembly) Name() string {
 	return "Test Agent"
 }
