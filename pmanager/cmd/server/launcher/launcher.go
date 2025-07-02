@@ -27,7 +27,11 @@ const (
 	key          = "httpPort"
 )
 
-func Launch() {
+func LaunchAndWaitSignal() {
+	Launch(runtime.CreateSignalShutdownChan())
+}
+
+func Launch(shutdown <-chan struct{}) {
 	mode := runtime.LoadMode()
 
 	logMonitor := runtime.LoadLogMonitor(mode)
@@ -42,5 +46,5 @@ func Launch() {
 	assembler.Register(&routing.RouterServiceAssembly{})
 	assembler.Register(&tmhandler.HandlerServiceAssembly{})
 
-	runtime.AssembleAndLaunch(assembler, "Provision Manager", vConfig, logMonitor)
+	runtime.AssembleAndLaunch(assembler, "Provision Manager", logMonitor, shutdown)
 }

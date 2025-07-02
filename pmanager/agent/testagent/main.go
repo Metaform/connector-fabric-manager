@@ -12,9 +12,11 @@
 
 package main
 
-import "github.com/metaform/connector-fabric-manager/pmanager/agent/testagent/launcher"
+import (
+	"github.com/metaform/connector-fabric-manager/pmanager/agent/testagent/launcher"
+)
 
 // The entry point for the Provision Test agent runtime.
 func main() {
-	launcher.Launch()
+	launcher.LaunchAndWaitSignal()
 }

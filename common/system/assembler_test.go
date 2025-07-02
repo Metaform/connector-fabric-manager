@@ -218,7 +218,7 @@ func (m *MockServiceAssembly) Prepare() error {
 	return nil
 }
 
-func (m *MockServiceAssembly) Start() error {
+func (m *MockServiceAssembly) Start(*StartContext) error {
 	if m.startFunc != nil {
 		return m.startFunc()
 	}

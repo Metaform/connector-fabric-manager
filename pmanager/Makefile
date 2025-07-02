@@ -1,13 +1,14 @@
 cd.PHONY: build test clean run server dev-server
 
 # Binary name
-BINARY_NAME=assembly
 SERVER_BINARY=pmanager
+TEST_AGENT_BINARY=pmtestagent
 
 # Build settings
 BUILD_DIR=bin
 MAIN_PATH=./cmd/main.go
 SERVER_PATH=./cmd/server/main.go
+TEST_AGENT_PATH=./agent/testagent/main.go
 
 MOCKERY_CMD=$(GOPATH)/bin/mockery
 
@@ -27,11 +28,14 @@ generate-mocks: install-mockery
 
 
 # Build the application
-build: build-server
+build: build-server build-test-agent
 
 # Build the server
 build-server:
 	go build -o $(BUILD_DIR)/$(SERVER_BINARY) $(SERVER_PATH)
+
+build-test-agent:
+	go build -o $(BUILD_DIR)/$(TEST_AGENT_BINARY) $(TEST_AGENT_PATH)
 
 # Run tests
 test:
@@ -45,6 +49,9 @@ clean:
 # Run the server in development mode
 dev-server: build-server
 	./$(BUILD_DIR)/$(SERVER_BINARY)
+
+dev-test-agent: build-server
+	./$(BUILD_DIR)/$(TEST_AGENT_BINARY)
 
 # Run the server in production mode
 server: build-server

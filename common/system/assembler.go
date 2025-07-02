@@ -92,13 +92,17 @@ type ServiceAssembly interface {
 	Requires() []ServiceType
 	Init(*InitContext) error
 	Prepare() error
-	Start() error
+	Start(*StartContext) error
 	Finalize() error
 	Shutdown() error
 }
 
 type InitContext struct {
-	Registry   *ServiceRegistry
+	Registry *ServiceRegistry
+	StartContext
+}
+
+type StartContext struct {
 	LogMonitor monitor.LogMonitor
 	Config     *viper.Viper
 	Mode       RuntimeMode
@@ -180,15 +184,18 @@ func (a *ServiceAssembler) Assemble() error {
 	copy(reverseOrder, sorted.SortedOrder)
 	reverse(reverseOrder)
 
-	ctx := &InitContext{
-		Registry:   a.registry,
+	startCtx := &StartContext{
 		LogMonitor: a.logMonitor,
 		Config:     a.vConfig,
 		Mode:       a.mode,
 	}
+	initCtx := &InitContext{
+		Registry:     a.registry,
+		StartContext: *startCtx,
+	}
 
 	for _, v := range reverseOrder {
-		e := v.Value.Init(ctx)
+		e := v.Value.Init(initCtx)
 		a.logMonitor.Debugf("Initialized: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error initializing assembly %s: %w", v.Value.Name(), e)
@@ -204,7 +211,7 @@ func (a *ServiceAssembler) Assemble() error {
 	}
 
 	for _, v := range reverseOrder {
-		e := v.Value.Start()
+		e := v.Value.Start(startCtx)
 		a.logMonitor.Debugf("Started: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error starting assembly %s: %w", v.Value.Name(), e)
@@ -267,7 +274,7 @@ func (d *DefaultServiceAssembly) Prepare() error {
 	return nil
 }
 
-func (d *DefaultServiceAssembly) Start() error {
+func (d *DefaultServiceAssembly) Start(*StartContext) error {
 	return nil
 }
 

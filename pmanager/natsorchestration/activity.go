@@ -20,38 +20,35 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
+	"strings"
 	"time"
 )
 
-const (
-	streamName      = "cfm-activity"
-	durableConsumer = "cfm-durable-activity"
-)
-
 type NatsActivityExecutor struct {
-	id                string
-	client            MsgClient
-	activityName      string
-	activityProcessor api.ActivityProcessor
-	monitor           monitor.LogMonitor
+	Client            MsgClient
+	StreamName        string
+	ActivityType      string
+	ActivityProcessor api.ActivityProcessor
+	Monitor           monitor.LogMonitor
 }
 
 // Execute starts a goroutine to process messages from the activity queue.
 func (e *NatsActivityExecutor) Execute(ctx context.Context) error {
-	stream, err := e.client.Stream(ctx, streamName)
+	stream, err := e.Client.Stream(ctx, e.StreamName)
 	if err != nil {
 		return fmt.Errorf("error opening stream: %w", err)
 	}
 
-	consumer, err := stream.Consumer(ctx, durableConsumer)
+	consumerName := strings.ReplaceAll(e.ActivityType, ".", "-")
+	consumer, err := stream.Consumer(ctx, consumerName)
 	if err != nil {
-		return fmt.Errorf("error connecting to consumer: %w", err)
+		return fmt.Errorf("error connecting to consumer %s: %w", consumerName, err)
 	}
 
 	go func() {
 		err := e.processLoop(ctx, consumer)
 		if err != nil {
-			e.monitor.Warnf("Error processing message: %v", err)
+			e.Monitor.Warnf("Error processing message: %v", err)
 		}
 	}()
 	return nil
@@ -73,7 +70,7 @@ func (e *NatsActivityExecutor) processLoop(ctx context.Context, consumer jetstre
 
 			for message := range messageBatch.Messages() {
 				if err = e.processMessage(ctx, message); err != nil {
-					e.monitor.Warnf("Error processing message: %v", err)
+					e.Monitor.Warnf("Error processing message: %v", err)
 				}
 			}
 		}
@@ -90,19 +87,19 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 	if err := json.Unmarshal(message.Data(), &oMessage); err != nil {
 		err := e.ackMessage(oMessage.OrchestrationID, message)
 		if err != nil {
-			e.monitor.Warnf("Failed to ACK message %s: %v", oMessage.OrchestrationID, err)
+			e.Monitor.Warnf("Failed to ACK message %s: %v", oMessage.OrchestrationID, err)
 		}
 		return fmt.Errorf("failed to unmarshal orchestration message: %w", err)
 	}
 
-	orchestration, revision, err := ReadOrchestration(ctx, oMessage.OrchestrationID, e.client)
+	orchestration, revision, err := ReadOrchestration(ctx, oMessage.OrchestrationID, e.Client)
 	if err != nil {
 		return fmt.Errorf("failed to read orchestration data: %w", err)
 	}
 
 	activityContext := newActivityContext(ctx, orchestration.ID, oMessage.Activity)
-	e.monitor.Debugf("Received message: %s\n", e.id)
-	result := e.activityProcessor.Process(activityContext)
+	e.Monitor.Debugf("Received activity message %s for orchestration %s", oMessage.Activity.ID, oMessage.OrchestrationID)
+	result := e.ActivityProcessor.Process(activityContext)
 
 	switch result.Result {
 	case api.ActivityResultRetryError:
@@ -127,12 +124,12 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 }
 
 func (e *NatsActivityExecutor) persistState(activityContext api.ActivityContext, orchestration api.Orchestration, revision uint64) {
-	if _, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.client, func(o *api.Orchestration) {
+	if _, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
 		}
 	}); err != nil {
-		e.monitor.Warnf("Failed to persist orchestration state for %s: %v", orchestration.ID, err)
+		e.Monitor.Warnf("Failed to persist orchestration state for %s: %v", orchestration.ID, err)
 	}
 }
 
@@ -144,7 +141,7 @@ func (e *NatsActivityExecutor) processOnActivityCompletion(
 	oMessage api.ActivityMessage) error {
 
 	// The orchestration state must be saved and re-read to determine if activities completed after the last read and the orchestration is complete.
-	orchestration, revision, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.client, func(o *api.Orchestration) {
+	orchestration, revision, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
 		}
@@ -179,7 +176,7 @@ func (e *NatsActivityExecutor) processOnActivityCompletion(
 	}
 
 	// Enqueue next activities
-	if err := EnqueueActivityMessages(activityContext.Context(), orchestration.ID, next, e.client); err != nil {
+	if err := EnqueueActivityMessages(activityContext.Context(), orchestration.ID, next, e.Client); err != nil {
 		// Failed redeliver the message
 		err = nakError(message, err)
 		return fmt.Errorf("failed to enqueue next orchestration activities %s: %w", oMessage.OrchestrationID, err)
@@ -194,13 +191,13 @@ func (e *NatsActivityExecutor) handleOrchestrationCompletion(
 	revision uint64,
 	message jetstream.Msg) error {
 	// Mark as completed
-	_, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.client, func(o *api.Orchestration) {
+	_, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		o.State = api.OrchestrationStateCompleted
 	})
 	if err != nil {
 		// Error marking, redeliver the message
 		err = nakError(message, err)
-		return fmt.Errorf("Failed to mark orchestration %s as completed: %v", orchestration.ID, err)
+		return fmt.Errorf("failed to mark orchestration %s as completed: %v", orchestration.ID, err)
 	}
 	return e.ackMessage(orchestration.ID, message)
 }
@@ -232,13 +229,13 @@ func (e *NatsActivityExecutor) handleFatalError(
 	resultErr error,
 	message jetstream.Msg) error {
 	// Update the orchestration before acking back. If the update fails, just log it to ensure the ack is sent to avoid message re-delivery
-	if _, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.client, func(o *api.Orchestration) {
+	if _, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
 		}
 		o.State = api.OrchestrationStateErrored
 	}); err != nil {
-		e.monitor.Warnf("Failed to mark orchestration %s as fatal: %v", orchestration.ID, err)
+		e.Monitor.Warnf("Failed to mark orchestration %s as fatal: %v", orchestration.ID, err)
 	}
 
 	if err := message.Ack(); err != nil {

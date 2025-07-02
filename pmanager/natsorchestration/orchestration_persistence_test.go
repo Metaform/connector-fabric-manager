@@ -15,6 +15,7 @@ package natsorchestration
 import (
 	"context"
 	"fmt"
+	"github.com/metaform/connector-fabric-manager/pmanager/natstestutil"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -29,18 +30,20 @@ import (
 const (
 	persistenceTimeout = 10 * time.Second
 	pollInterval       = 10 * time.Millisecond
-	maxRetries         = 100
+	streamName         = "cfm-activity"
 )
 
 func Test_ValuePersistence(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := setupNatsContainer(ctx, "cfm-activity-context-bucket")
+	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-activity-context-bucket")
 	require.NoError(t, err)
-	defer teardownNatsContainer(ctx, nt)
 
-	setupConsumer(t, ctx, nt)
+	defer natstestutil.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestutil.SetupStream(t, ctx, nt.Client, streamName)
+	natstestutil.SetupConsumer(t, ctx, stream, "test.context.persistence")
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -59,22 +62,22 @@ func Test_ValuePersistence(t *testing.T) {
 	}
 
 	orchestration := createTestOrchestration("test-context-persistence", "test.context.persistence")
-	adapter := natsClientAdapter{client: nt.client}
+	adapter := NatsClientAdapter{Client: nt.Client}
 
 	orchestrator := &NatsDeploymentOrchestrator{
-		client:  adapter,
-		monitor: monitor.NoopMonitor{},
+		Client:  adapter,
+		Monitor: monitor.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
 	require.NoError(t, err)
 
 	executor := &NatsActivityExecutor{
-		id:                "test-executor-persistence",
-		client:            adapter,
-		activityName:      "test.context.persistence",
-		activityProcessor: processor,
-		monitor:           monitor.NoopMonitor{},
+		Client:            adapter,
+		StreamName:        "cfm-activity",
+		ActivityType:      "test.context.persistence",
+		ActivityProcessor: processor,
+		Monitor:           monitor.NoopMonitor{},
 	}
 
 	err = executor.Execute(ctx)
@@ -96,7 +99,7 @@ func Test_ValuePersistence(t *testing.T) {
 		}
 
 		assert.Equal(t, "test_value", updatedOrchestration.ProcessingData["string_key"])
-		assert.Equal(t, float64(42), updatedOrchestration.ProcessingData["int_key"]) // JSON unmarshaling converts numbers to float64
+		assert.Equal(t, float64(42), updatedOrchestration.ProcessingData["int_key"]) // JSON unmarshalling converts numbers to float64
 		assert.Equal(t, true, updatedOrchestration.ProcessingData["bool_key"])
 
 		mapValue, ok := updatedOrchestration.ProcessingData["map_key"].(map[string]interface{})
@@ -112,11 +115,13 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := setupNatsContainer(ctx, "cfm-activity-retry-bucket")
+	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-activity-retry-bucket")
 	require.NoError(t, err)
-	defer teardownNatsContainer(ctx, nt)
 
-	setupConsumer(t, ctx, nt)
+	defer natstestutil.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestutil.SetupStream(t, ctx, nt.Client, streamName)
+	natstestutil.SetupConsumer(t, ctx, stream, "test.retry.persistence")
 
 	var wg sync.WaitGroup
 	var callCount int32
@@ -147,22 +152,22 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 	}
 
 	orchestration := createTestOrchestration("test-retry-persistence", "test.retry.persistence")
-	adapter := natsClientAdapter{client: nt.client}
+	adapter := NatsClientAdapter{Client: nt.Client}
 
 	orchestrator := &NatsDeploymentOrchestrator{
-		client:  adapter,
-		monitor: monitor.NoopMonitor{},
+		Client:  adapter,
+		Monitor: monitor.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
 	require.NoError(t, err)
 
 	executor := &NatsActivityExecutor{
-		id:                "test-executor-retry",
-		client:            adapter,
-		activityName:      "test.retry.persistence",
-		activityProcessor: processor,
-		monitor:           monitor.NoopMonitor{},
+		Client:            adapter,
+		StreamName:        "cfm-activity",
+		ActivityType:      "test.retry.persistence",
+		ActivityProcessor: processor,
+		Monitor:           monitor.NoopMonitor{},
 	}
 
 	err = executor.Execute(ctx)
@@ -198,11 +203,13 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := setupNatsContainer(ctx, "cfm-multi-activity-bucket")
+	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-multi-activity-bucket")
 	require.NoError(t, err)
-	defer teardownNatsContainer(ctx, nt)
 
-	setupConsumer(t, ctx, nt)
+	defer natstestutil.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestutil.SetupStream(t, ctx, nt.Client, streamName)
+	natstestutil.SetupConsumer(t, ctx, stream, "test.multi.persistence")
 
 	var wg sync.WaitGroup
 	wg.Add(2) // Two activities
@@ -234,11 +241,11 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 		},
 	}
 
-	adapter := natsClientAdapter{client: nt.client}
+	adapter := NatsClientAdapter{Client: nt.Client}
 
 	orchestrator := &NatsDeploymentOrchestrator{
-		client:  adapter,
-		monitor: monitor.NoopMonitor{},
+		Client:  adapter,
+		Monitor: monitor.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
@@ -247,11 +254,11 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 	// Create multiple executors
 	for i := 0; i < 2; i++ {
 		executor := &NatsActivityExecutor{
-			id:                fmt.Sprintf("test-executor-multi-%d", i),
-			client:            adapter,
-			activityName:      "test.multi.persistence",
-			activityProcessor: processor,
-			monitor:           monitor.NoopMonitor{},
+			Client:            adapter,
+			StreamName:        "cfm-activity",
+			ActivityType:      "test.multi.persistence",
+			ActivityProcessor: processor,
+			Monitor:           monitor.NoopMonitor{},
 		}
 		err = executor.Execute(ctx)
 		require.NoError(t, err)
@@ -285,11 +292,13 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := setupNatsContainer(ctx, "cfm-wait-activity-bucket")
+	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-wait-activity-bucket")
 	require.NoError(t, err)
-	defer teardownNatsContainer(ctx, nt)
 
-	setupConsumer(t, ctx, nt)
+	defer natstestutil.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestutil.SetupStream(t, ctx, nt.Client, streamName)
+	natstestutil.SetupConsumer(t, ctx, stream, "test.wait.persistence")
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -304,22 +313,22 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 	}
 
 	orchestration := createTestOrchestration("test-wait-persistence", "test.wait.persistence")
-	adapter := natsClientAdapter{client: nt.client}
+	adapter := NatsClientAdapter{Client: nt.Client}
 
 	orchestrator := &NatsDeploymentOrchestrator{
-		client:  adapter,
-		monitor: monitor.NoopMonitor{},
+		Client:  adapter,
+		Monitor: monitor.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
 	require.NoError(t, err)
 
 	executor := &NatsActivityExecutor{
-		id:                "test-executor-wait",
-		client:            adapter,
-		activityName:      "test.wait.persistence",
-		activityProcessor: processor,
-		monitor:           monitor.NoopMonitor{},
+		Client:            adapter,
+		StreamName:        "cfm-activity",
+		ActivityType:      "test.wait.persistence",
+		ActivityProcessor: processor,
+		Monitor:           monitor.NoopMonitor{},
 	}
 
 	err = executor.Execute(ctx)

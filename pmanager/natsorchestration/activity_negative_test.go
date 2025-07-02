@@ -99,8 +99,8 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 			tt.setupMock(mockClient)
 
 			orchestrator := &NatsDeploymentOrchestrator{
-				client:  mockClient,
-				monitor: monitor.NoopMonitor{},
+				Client:  mockClient,
+				Monitor: monitor.NoopMonitor{},
 			}
 
 			err := orchestrator.ExecuteOrchestration(context.Background(), tt.orchestration)

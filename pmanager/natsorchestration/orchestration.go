@@ -27,8 +27,12 @@ import (
 // activity, a message is published to a durable queue based on the activity type. Activity messages are then dequeued
 // and reliably processed by a NatsActivityExecutor that handles the activity type.
 type NatsDeploymentOrchestrator struct {
-	client  MsgClient
-	monitor monitor.LogMonitor
+	Client  MsgClient
+	Monitor monitor.LogMonitor
+}
+
+func NewNatsDeploymentOrchestrator(client MsgClient, monitor monitor.LogMonitor) *NatsDeploymentOrchestrator {
+	return &NatsDeploymentOrchestrator{Client: client, Monitor: monitor}
 }
 
 // ExecuteOrchestration asynchronously executes the given orchestration by dispatching messages to durable activity
@@ -46,7 +50,7 @@ func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, o
 	}
 
 	// Use update to check if the orchestration already exists
-	_, err = o.client.Update(ctx, orchestration.ID, serializedOrchestration, 0)
+	_, err = o.Client.Update(ctx, orchestration.ID, serializedOrchestration, 0)
 	if err != nil {
 		var jsErr *jetstream.APIError
 		if errors.As(err, &jsErr) {
@@ -62,7 +66,7 @@ func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, o
 	if len(activities) == 0 {
 		return fmt.Errorf("orchestration has no activities: %s", orchestration.ID)
 	}
-	err = EnqueueActivityMessages(ctx, orchestration.ID, activities, o.client)
+	err = EnqueueActivityMessages(ctx, orchestration.ID, activities, o.Client)
 	if err != nil {
 		return err
 	}

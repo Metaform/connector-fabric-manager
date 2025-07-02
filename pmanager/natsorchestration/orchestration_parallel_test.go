@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/pmanager/natstestutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync"
@@ -30,11 +31,14 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	nt, err := setupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
-	defer teardownNatsContainer(ctx, nt)
 
-	setupConsumer(t, ctx, nt)
+	defer natstestutil.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestutil.SetupStream(t, ctx, nt.Client, "cfm-activity")
+	natstestutil.SetupConsumer(t, ctx, stream, "test.fail.activity")
+	natstestutil.SetupConsumer(t, ctx, stream, "test.succeed.activity")
 
 	// Create an orchestration with two parallel activities
 	orchestration := api.Orchestration{
@@ -51,7 +55,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 		Completed: make(map[string]struct{}),
 	}
 
-	adapter := natsClientAdapter{client: nt.client}
+	adapter := NatsClientAdapter{Client: nt.Client}
 
 	// WaitGroup to coordinate activity execution order
 	var activityWg sync.WaitGroup
@@ -81,22 +85,22 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 
 	// Create executor for failing activity
 	failExecutor := NatsActivityExecutor{
-		id:           "fail-executor",
-		client:       adapter,
-		activityName: "test.fail.activity",
-		activityProcessor: FailingActivityProcessor{
+		Client:       adapter,
+		StreamName:   "cfm-activity",
+		ActivityType: "test.fail.activity",
+		ActivityProcessor: FailingActivityProcessor{
 			testProcessor: failProcessor,
 		},
-		monitor: noOpMonitor,
+		Monitor: noOpMonitor,
 	}
 
 	// Create executor for succeeding activity
 	succeedExecutor := NatsActivityExecutor{
-		id:                "succeed-executor",
-		client:            adapter,
-		activityName:      "test.succeed.activity",
-		activityProcessor: succeedProcessor,
-		monitor:           noOpMonitor,
+		Client:            adapter,
+		StreamName:        "cfm-activity",
+		ActivityType:      "test.succeed.activity",
+		ActivityProcessor: succeedProcessor,
+		Monitor:           noOpMonitor,
 	}
 
 	// Start both executors
@@ -107,7 +111,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start orchestration
-	orchestrator := NatsDeploymentOrchestrator{client: adapter}
+	orchestrator := NatsDeploymentOrchestrator{Client: adapter}
 	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
 	require.NoError(t, err)
 

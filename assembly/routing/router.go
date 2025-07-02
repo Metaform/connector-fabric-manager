@@ -57,7 +57,7 @@ func (r *RouterServiceAssembly) Init(ctx *system.InitContext) error {
 	return nil
 }
 
-func (r *RouterServiceAssembly) Start() error {
+func (r *RouterServiceAssembly) Start(ctx *system.StartContext) error {
 	port := r.config.GetInt(key)
 	r.server = &http.Server{
 		Addr:    ":" + strconv.Itoa(port),

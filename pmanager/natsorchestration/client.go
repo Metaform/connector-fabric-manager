@@ -19,9 +19,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsclient"
 	"github.com/nats-io/nats.go/jetstream"
 	"strings"
 )
+
+const ActivitySubjectPrefix = "event"
 
 // MsgClient is an interface for interacting with NATS. This interface is used to allow for mocking in unit tests that
 // verify correct behavior in response to error conditions (i.e., negative tests).
@@ -32,25 +35,25 @@ type MsgClient interface {
 	Publish(ctx context.Context, subject string, payload []byte, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error)
 }
 
-// Wraps the natsClient to satisfy the MsgClient interface.
-type natsClientAdapter struct {
-	client *natsClient
+// Wraps the NatsClient to satisfy the MsgClient interface.
+type NatsClientAdapter struct {
+	Client *natsclient.NatsClient
 }
 
-func (a natsClientAdapter) Update(ctx context.Context, key string, value []byte, version uint64) (uint64, error) {
-	return a.client.kvStore.Update(ctx, key, value, version)
+func (a NatsClientAdapter) Update(ctx context.Context, key string, value []byte, version uint64) (uint64, error) {
+	return a.Client.KVStore.Update(ctx, key, value, version)
 }
 
-func (a natsClientAdapter) Stream(ctx context.Context, streamName string) (jetstream.Stream, error) {
-	return a.client.jetStream.Stream(ctx, streamName)
+func (a NatsClientAdapter) Stream(ctx context.Context, streamName string) (jetstream.Stream, error) {
+	return a.Client.JetStream.Stream(ctx, streamName)
 }
 
-func (a natsClientAdapter) Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error) {
-	return a.client.kvStore.Get(ctx, key)
+func (a NatsClientAdapter) Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error) {
+	return a.Client.KVStore.Get(ctx, key)
 }
 
-func (a natsClientAdapter) Publish(ctx context.Context, subject string, payload []byte, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
-	return a.client.jetStream.Publish(ctx, subject, payload, opts...)
+func (a NatsClientAdapter) Publish(ctx context.Context, subject string, payload []byte, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
+	return a.Client.JetStream.Publish(ctx, subject, payload, opts...)
 }
 
 // EnqueueActivityMessages enqueues the given activities for processing.
@@ -69,7 +72,7 @@ func EnqueueActivityMessages(ctx context.Context, orchestrationID string, activi
 		}
 
 		// Strip out periods since they denote a subject hierarchy for NATS
-		subject := "event." + strings.ReplaceAll(activity.Type, ".", "-")
+		subject := ActivitySubjectPrefix + "." + strings.ReplaceAll(activity.Type, ".", "-")
 		_, err = client.Publish(ctx, subject, payload)
 		if err != nil {
 			return fmt.Errorf("error publishing to stream: %w", err)

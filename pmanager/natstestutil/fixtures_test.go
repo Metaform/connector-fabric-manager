@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package natstestutil
 
 import (
 	"context"
@@ -23,27 +23,16 @@ import (
 func TestNewJetStreamPubSub(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	nt, err := setupNatsContainer(ctx, "test-bucket")
-	require.NoError(t, err)
-	//goland:noinspection GoUnhandledErrorResult
-	defer teardownNatsContainer(ctx, nt)
-
-	cfg := jetstream.StreamConfig{
-		Name:      "test-activity",
-		Retention: jetstream.WorkQueuePolicy,
-		Subjects:  []string{"event.*"},
-	}
-
-	stream, err := nt.client.jetStream.CreateOrUpdateStream(ctx, cfg)
+	nt, err := SetupNatsContainer(ctx, "test-bucket")
 	require.NoError(t, err)
 
-	consumer, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:   "test-activity",
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
-	require.NoError(t, err)
+	defer TeardownNatsContainer(ctx, nt)
 
-	_, err = nt.client.jetStream.Publish(ctx, "event.foo", []byte("Test message"))
+	stream := SetupStream(t, ctx, nt.Client, "test-activity")
+
+	consumer := SetupConsumer(t, ctx, stream, "foo")
+
+	_, err = nt.Client.JetStream.Publish(ctx, "event.foo", []byte("Test message"))
 	require.NoError(t, err)
 
 	msg, err := consumer.Next(jetstream.FetchMaxWait(100 * time.Millisecond))

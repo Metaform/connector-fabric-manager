@@ -14,10 +14,9 @@ package natsorchestration
 
 import (
 	"context"
-	"fmt"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/nats-io/nats.go/jetstream"
+	"github.com/metaform/connector-fabric-manager/pmanager/natstestutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync"
@@ -28,6 +27,7 @@ import (
 const (
 	parallelActivityWindow = 50 * time.Millisecond
 	processTimeout         = 10 * time.Second
+	testStream             = "cfm-activity"
 )
 
 func TestExecuteOrchestration_NoSteps(t *testing.T) {
@@ -40,13 +40,13 @@ func TestExecuteOrchestration_NoSteps(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := setupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
-	//goland:noinspection GoUnhandledErrorResult
-	defer teardownNatsContainer(ctx, nt)
 
-	adapter := natsClientAdapter{client: nt.client}
-	orchestrator := NatsDeploymentOrchestrator{client: adapter}
+	defer natstestutil.TeardownNatsContainer(ctx, nt)
+
+	adapter := NatsClientAdapter{Client: nt.Client}
+	orchestrator := NatsDeploymentOrchestrator{Client: adapter}
 	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
 	require.Error(t, err)
 
@@ -186,11 +186,13 @@ func TestExecuteOrchestration(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 			defer cancel()
 
-			nt, err := setupNatsContainer(ctx, "cfm-durable-activity-bucket")
+			nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-activity-context-bucket")
 			require.NoError(t, err)
-			defer teardownNatsContainer(ctx, nt)
 
-			setupConsumer(t, ctx, nt)
+			defer natstestutil.TeardownNatsContainer(ctx, nt)
+
+			stream := natstestutil.SetupStream(t, ctx, nt.Client, testStream)
+			natstestutil.SetupConsumer(t, ctx, stream, "test.activity")
 
 			var executions []activityExecution
 			executionsMutex := &sync.Mutex{}
@@ -230,22 +232,23 @@ func TestExecuteOrchestration(t *testing.T) {
 			}()
 
 			noOpMonitor := monitor.NoopMonitor{}
-			adapter := natsClientAdapter{client: nt.client}
+			adapter := NatsClientAdapter{Client: nt.Client}
 
 			// Create executors
 			executors := make([]NatsActivityExecutor, 4)
 			for i := range executors {
 				executors[i] = NatsActivityExecutor{
-					id:                fmt.Sprintf("Executor%d", i+1),
-					client:            adapter,
-					activityName:      "test.activity",
-					activityProcessor: processor,
-					monitor:           noOpMonitor,
+					Client:            adapter,
+					StreamName:        "cfm-activity",
+					ActivityType:      "test.activity",
+					ActivityProcessor: processor,
+					Monitor:           noOpMonitor,
 				}
-				executors[i].Execute(ctx)
+				err := executors[i].Execute(ctx)
+				require.NoError(t, err)
 			}
 
-			orchestrator := NatsDeploymentOrchestrator{client: adapter}
+			orchestrator := NatsDeploymentOrchestrator{Client: adapter}
 			err = orchestrator.ExecuteOrchestration(ctx, tt.orchestration)
 			require.NoError(t, err)
 
@@ -268,12 +271,15 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := setupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
-	//goland:noinspection ALL
-	defer teardownNatsContainer(ctx, nt)
 
-	setupConsumer(t, ctx, nt)
+	defer natstestutil.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestutil.SetupStream(t, ctx, nt.Client, testStream)
+	natstestutil.SetupConsumer(t, ctx, stream, "test.schedule.continue")
+
+	//natstestutil.SetupStreamAndConsumer(t, ctx, nt)
 
 	// Create a processor that returns schedule first, then continue
 	var wg sync.WaitGroup
@@ -296,12 +302,12 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 		},
 	}
 
-	adapter := natsClientAdapter{client: nt.client}
+	adapter := NatsClientAdapter{Client: nt.Client}
 
 	// Create and start the orchestrator
 	orchestrator := &NatsDeploymentOrchestrator{
-		client:  adapter,
-		monitor: monitor.NoopMonitor{},
+		Client:  adapter,
+		Monitor: monitor.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(context.Background(), orchestration)
@@ -309,11 +315,11 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 
 	// Create an activity executor with our test processor
 	executor := &NatsActivityExecutor{
-		id:                "test-executor-schedule-continue",
-		client:            adapter,
-		activityName:      "test.schedule.continue",
-		activityProcessor: processor,
-		monitor:           monitor.NoopMonitor{},
+		Client:            adapter,
+		StreamName:        "cfm-activity",
+		ActivityType:      "test.schedule.continue",
+		ActivityProcessor: processor,
+		Monitor:           monitor.NoopMonitor{},
 	}
 
 	// Start executor
@@ -357,23 +363,6 @@ func (p *ScheduleThenContinueProcessor) Process(_ api.ActivityContext) api.Activ
 		WaitMillis: 0,
 		Error:      nil,
 	}
-}
-
-func setupConsumer(t *testing.T, ctx context.Context, nt *natsTestContainer) {
-	cfg := jetstream.StreamConfig{
-		Name:      "cfm-activity",
-		Retention: jetstream.WorkQueuePolicy,
-		Subjects:  []string{"event.*"},
-	}
-
-	stream, err := nt.client.jetStream.CreateOrUpdateStream(ctx, cfg)
-	require.NoError(t, err)
-
-	_, err = stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable:   "cfm-durable-activity",
-		AckPolicy: jetstream.AckExplicitPolicy,
-	})
-	require.NoError(t, err)
 }
 
 // TestActivityProcessor with timing information

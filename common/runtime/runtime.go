@@ -17,16 +17,15 @@ import (
 	"fmt"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 )
 
 const (
-	key  = "httpPort"
 	mode = "mode"
 )
 
@@ -123,26 +122,61 @@ func (s *SugaredLogMonitor) Sync() error {
 
 // AssembleAndLaunch assembles and launches the runtime with the given name and configuration.
 // The runtime will be shutdown when the program is terminated.
-func AssembleAndLaunch(assembler *system.ServiceAssembler, name string, vConfig *viper.Viper, logMonitor monitor.LogMonitor) {
-
+func AssembleAndLaunch(assembler *system.ServiceAssembler, name string, logMonitor monitor.LogMonitor, shutdown <-chan struct{}) {
 	err := assembler.Assemble()
 	if err != nil {
 		panic(fmt.Errorf("error assembling runtime: %w", err))
 	}
 
-	//router, serverConfigured := assembler.ResolveOptional(routing.RouterKey)
-
-	// channel for shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
 	logMonitor.Infof("%s started", name)
+
 	// wait for interrupt signal
-	<-quit
+	<-shutdown
 
 	if err := assembler.Shutdown(); err != nil {
 		logMonitor.Severew("Error attempting shutdown", "error", err)
 	}
 
 	logMonitor.Infof("%s shutdown", name)
+}
+
+// CreateSignalShutdownChan creates and returns a channel that signals when the application receives SIGINT or SIGTERM signals.
+func CreateSignalShutdownChan() <-chan struct{} {
+	shutdown := make(chan struct{})
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-quit
+		close(shutdown)
+	}()
+
+	return shutdown
+}
+
+// CheckRequiredParams validates that all keys have corresponding non-nil, non-empty values in the provided parameters.
+// Returns an error if an odd number of parameters is given or if any key-value pairs have invalid values.
+func CheckRequiredParams(params ...interface{}) error {
+	var errors []string
+
+	if len(params)%2 != 0 {
+		errors = append(errors, fmt.Sprintf("arguments must be even, got %d", len(params)))
+	}
+
+	for i := 0; i < len(params); i++ {
+		if i%2 == 1 {
+			// Even index (0, 2, 4, ...) - check if nil
+			if params[i] == nil {
+				errors = append(errors, fmt.Sprintf("%v not specified", params[i-1]))
+			} else if str, ok := params[i].(string); ok && str == "" {
+				errors = append(errors, fmt.Sprintf("%v is empty", params[i-1]))
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("missing parameters: %s", strings.Join(errors, ", "))
+	}
+
+	return nil
 }

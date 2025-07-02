@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package natsclient
 
 import (
 	"context"
@@ -26,16 +26,16 @@ const (
 	forever         = -1
 )
 
-type natsClient struct {
-	connection *nats.Conn
-	jetStream  jetstream.JetStream
-	kvStore    jetstream.KeyValue
+type NatsClient struct {
+	Connection *nats.Conn
+	JetStream  jetstream.JetStream
+	KVStore    jetstream.KeyValue
 }
 
-// newNatsClient creates and returns a new natsClient instance connected to the specified URL and bucket with given options.
-// If options are not provided, default connection settings are used for the NATS client configuration.
-// Returns an error if the connection to NATS or JetStream initialization fails.
-func newNatsClient(url string, bucket string, options ...nats.Option) (*natsClient, error) {
+// NewNatsClient creates and returns a new NatsClient instance connected to the specified URL and bucket with given options.
+// If options are not provided, default Connection settings are used for the NATS Client configuration.
+// Returns an error if the Connection to NATS or JetStream initialization fails.
+func NewNatsClient(url string, bucket string, options ...nats.Option) (*NatsClient, error) {
 	if options == nil || len(options) == 0 {
 		options = []nats.Option{nats.PingInterval(defaultDuration),
 			nats.MaxPingsOutstanding(defaultPings),
@@ -60,16 +60,16 @@ func newNatsClient(url string, bucket string, options ...nats.Option) (*natsClie
 		return nil, fmt.Errorf("failed to create jetstream key value manager: %w", err)
 	}
 
-	return &natsClient{
-		connection: connection,
-		jetStream:  jetStream,
-		kvStore:    kvManager,
+	return &NatsClient{
+		Connection: connection,
+		JetStream:  jetStream,
+		KVStore:    kvManager,
 	}, nil
 }
 
-// Close closes the NATS connection.
-func (nc *natsClient) Close() {
-	if nc.connection != nil {
-		nc.connection.Close()
+// Close closes the NATS Connection.
+func (nc *NatsClient) Close() {
+	if nc.Connection != nil {
+		nc.Connection.Close()
 	}
 }
