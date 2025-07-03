@@ -18,7 +18,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
 )
 
 const (
@@ -44,7 +43,6 @@ func Launch(shutdown <-chan struct{}) {
 	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
 	assembler.Register(&httpclient.HttpClientServiceAssembly{})
 	assembler.Register(&routing.RouterServiceAssembly{})
-	assembler.Register(&tmhandler.HandlerServiceAssembly{})
 
 	runtime.AssembleAndLaunch(assembler, "Provision Manager", logMonitor, shutdown)
 }
