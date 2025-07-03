@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package tmhandler
+package pmhandler
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ type HandlerServiceAssembly struct {
 }
 
 func (h *HandlerServiceAssembly) Name() string {
-	return "Tenant Manager Handlers"
+	return "Provision Manager Handlers"
 }
 
 func (h *HandlerServiceAssembly) Provides() []system.ServiceType {
