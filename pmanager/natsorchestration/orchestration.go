@@ -41,7 +41,7 @@ func NewNatsDeploymentOrchestrator(client MsgClient, monitor monitor.LogMonitor)
 // A Jetstream KV entry is used to maintain durable state and is updated as the orchestration progresses. This
 // state is passed to the executors, which access and update it.
 
-func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration api.Orchestration) error {
+func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration *api.Orchestration) error {
 	// TODO validate orchestration - this should include a check to see if there are no steps or steps with no activities
 
 	serializedOrchestration, err := json.Marshal(orchestration)
@@ -75,7 +75,7 @@ func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, o
 
 // Returns the initial activities for the given orchestration.
 // If the orchestration has no activities, an empty list is returned.
-func getInitialActivities(orchestration api.Orchestration) []api.Activity {
+func getInitialActivities(orchestration *api.Orchestration) []api.Activity {
 	for _, step := range orchestration.Steps {
 		if len(step.Activities) > 0 {
 			return step.Activities

@@ -69,7 +69,7 @@ func Test_ValuePersistence(t *testing.T) {
 		Monitor: monitor.NoopMonitor{},
 	}
 
-	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
+	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
 	executor := &NatsActivityExecutor{
@@ -159,7 +159,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 		Monitor: monitor.NoopMonitor{},
 	}
 
-	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
+	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
 	executor := &NatsActivityExecutor{
@@ -248,7 +248,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 		Monitor: monitor.NoopMonitor{},
 	}
 
-	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
+	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
 	// Create multiple executors
@@ -320,7 +320,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 		Monitor: monitor.NoopMonitor{},
 	}
 
-	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
+	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
 	executor := &NatsActivityExecutor{

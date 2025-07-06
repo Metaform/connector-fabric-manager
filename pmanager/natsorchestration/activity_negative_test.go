@@ -103,7 +103,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 				Monitor: monitor.NoopMonitor{},
 			}
 
-			err := orchestrator.ExecuteOrchestration(context.Background(), tt.orchestration)
+			err := orchestrator.ExecuteOrchestration(context.Background(), &tt.orchestration)
 
 			if tt.expectedError != "" {
 				require.Error(t, err)

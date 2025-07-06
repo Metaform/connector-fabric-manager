@@ -19,18 +19,19 @@ import (
 )
 
 const (
-	ProvisionManagerKey          system.ServiceType = "pmapi:ProvisionManager"
-	ActivityProcessorRegistryKey system.ServiceType = "pmapi:ActivityProcessorRegistry"
+	ProvisionManagerKey system.ServiceType = "pmapi:ProvisionManager"
 )
 
 // ProvisionManager handles deployments to the system.
 type ProvisionManager interface {
-	Start(manifest *DeploymentManifest) (string, error)
-	Cancel(id string) error
+	Start(ctx context.Context, manifest *DeploymentManifest) error
+	Cancel(ctx context.Context, id string) error
 }
 
-type ActivityProcessorRegistry interface {
-	RegisterProcessor(processor ActivityProcessor)
+// DeploymentOrchestrator orchestrates deployments.
+// Implementations must support idempotent behavior.
+type DeploymentOrchestrator interface {
+	ExecuteOrchestration(ctx context.Context, orchestration *Orchestration) error
 }
 
 // ActivityProcessor executes activities for a given type.
