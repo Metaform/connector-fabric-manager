@@ -157,6 +157,20 @@ type DeploymentDefinition struct {
 	Versions   []Version `json:"versions"`
 }
 
+func (d *DeploymentDefinition) GetActiveVersion() (*Version, error) {
+	var activeVersion *Version
+	for _, version := range d.Versions {
+		if version.Active {
+			activeVersion = &version
+			break
+		}
+	}
+	if activeVersion == nil {
+		return nil, fmt.Errorf("no active version found for deployment type %s", d.Type)
+	}
+	return activeVersion, nil
+}
+
 type Resource struct {
 	Group       string `json:"group"`
 	Singular    string `json:"singular"`
@@ -170,8 +184,6 @@ type Version struct {
 	Schema     map[string]any `json:"schema"`
 	Activities []Activity     `json:"activities"`
 }
-
-type OrchestrationDefinition []Activity
 
 // ActivityDefinition represents a single activity in the orchestration
 type ActivityDefinition struct {
@@ -194,21 +206,21 @@ func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
 
 // InstantiateOrchestration creates and returns an initialized Orchestration based on the provided definition and inputs.
 // It validates activity dependencies and organizes activities into parallel execution steps based on those dependencies.
-func InstantiateOrchestration(deploymentID string, definition OrchestrationDefinition, data map[string]any) (*Orchestration, error) {
+func InstantiateOrchestration(deploymentID string, activities []Activity, data map[string]any) (*Orchestration, error) {
 	orchestration := &Orchestration{
 		ID:             deploymentID,
 		State:          OrchestrationStateInitialized,
-		Steps:          make([]OrchestrationStep, 0, len(definition)),
+		Steps:          make([]OrchestrationStep, 0, len(activities)),
 		Inputs:         data,
 		ProcessingData: make(map[string]any),
 		Completed:      make(map[string]struct{}),
 	}
 
 	graph := dag.NewGraph[Activity]()
-	for _, activity := range definition {
+	for _, activity := range activities {
 		graph.AddVertex(activity.ID, &activity)
 	}
-	for _, activity := range definition {
+	for _, activity := range activities {
 		for _, dependency := range activity.DependsOn {
 			if _, exists := graph.Vertices[dependency]; !exists {
 				return nil, fmt.Errorf("dependency not found: %s", dependency)

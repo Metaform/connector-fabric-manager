@@ -13,20 +13,26 @@
 package launcher
 
 import (
+	"fmt"
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
+	"github.com/metaform/connector-fabric-manager/pmanager/pmcore"
 	"github.com/metaform/connector-fabric-manager/pmanager/pmhandler"
 )
 
 const (
 	defaultPort  = 8181
-	configPrefix = "pmconfig"
+	configPrefix = "pm"
 	httpKey      = "httpPort"
 	storeKey     = "sql"
+	uriKey       = "uri"
+	bucketKey    = "bucket"
+	streamKey    = "stream"
 )
 
 func LaunchAndWaitSignal() {
@@ -43,7 +49,24 @@ func Launch(shutdown <-chan struct{}) {
 	vConfig := config.LoadConfigOrPanic(configPrefix)
 	vConfig.SetDefault(httpKey, defaultPort)
 
+	uri := vConfig.GetString(uriKey)
+	bucketValue := vConfig.GetString(bucketKey)
+	streamValue := vConfig.GetString(streamKey)
+
+	err := runtime.CheckRequiredParams(
+		fmt.Sprintf("%s.%s", configPrefix, uriKey), uri,
+		fmt.Sprintf("%s.%s", configPrefix, bucketKey), bucketValue,
+		fmt.Sprintf("%s.%s", configPrefix, streamKey), streamValue)
+	if err != nil {
+		panic(fmt.Errorf("error launching Provision Manager: %w", err))
+	}
+
 	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
+
+	assembler.Register(&httpclient.HttpClientServiceAssembly{})
+	assembler.Register(&routing.RouterServiceAssembly{})
+	assembler.Register(&pmhandler.HandlerServiceAssembly{})
+
 	if vConfig.IsSet(storeKey) {
 		// TODO add SQL assembly
 		panic("SQL storage not yet implemented")
@@ -51,9 +74,8 @@ func Launch(shutdown <-chan struct{}) {
 		assembler.Register(&memorystore.MemoryStoreServiceAssembly{})
 	}
 
-	assembler.Register(&httpclient.HttpClientServiceAssembly{})
-	assembler.Register(&routing.RouterServiceAssembly{})
-	assembler.Register(&pmhandler.HandlerServiceAssembly{})
+	assembler.Register(natsorchestration.NewOrchestratorServiceAssembly(uri, bucketValue, streamValue))
+	assembler.Register(&pmcore.PMCoreServiceAssembly{})
 
 	runtime.AssembleAndLaunch(assembler, "Provision Manager", logMonitor, shutdown)
 }

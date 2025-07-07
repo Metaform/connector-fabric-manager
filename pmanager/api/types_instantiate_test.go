@@ -21,7 +21,7 @@ import (
 func TestInstantiateOrchestration(t *testing.T) {
 	t.Run("successful instantiation with no dependencies", func(t *testing.T) {
 		deploymentID := "test-deployment-123"
-		definition := OrchestrationDefinition{
+		definition := []Activity{
 			{
 				ID:        "activity1",
 				Type:      "test-type",
@@ -66,7 +66,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 	t.Run("successful instantiation with linear dependencies", func(t *testing.T) {
 		deploymentID := "test-deployment-linear"
-		definition := OrchestrationDefinition{
+		definition := []Activity{
 			{
 				ID:        "activity1",
 				Type:      "first",
@@ -115,7 +115,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 	t.Run("successful instantiation with parallel dependencies", func(t *testing.T) {
 		deploymentID := "test-deployment-parallel"
-		definition := OrchestrationDefinition{
+		definition := []Activity{
 			{
 				ID:        "activity1",
 				Type:      "root",
@@ -174,7 +174,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 	t.Run("error when cycle detected", func(t *testing.T) {
 		deploymentID := "test-deployment-cycle"
-		definition := OrchestrationDefinition{
+		definition := []Activity{
 			{
 				ID:        "activity1",
 				Type:      "first",
@@ -199,7 +199,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 	t.Run("successful instantiation with empty definition", func(t *testing.T) {
 		deploymentID := "test-deployment-empty"
-		definition := OrchestrationDefinition{}
+		definition := []Activity{}
 		data := map[string]any{"empty": "test"}
 
 		orchestration, err := InstantiateOrchestration(deploymentID, definition, data)
@@ -213,7 +213,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 	t.Run("successful instantiation with nil data", func(t *testing.T) {
 		deploymentID := "test-deployment-nil-data"
-		definition := OrchestrationDefinition{
+		definition := []Activity{
 			{
 				ID:        "activity1",
 				Type:      "test",
@@ -239,7 +239,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 	t.Run("successful instantiation with complex dependencies", func(t *testing.T) {
 		deploymentID := "test-deployment-complex"
-		definition := OrchestrationDefinition{
+		definition := []Activity{
 			{
 				ID:        "activity1",
 				Type:      "init",
@@ -325,7 +325,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 	t.Run("uses deployment ID", func(t *testing.T) {
 		deploymentID := "test-deployment-id"
-		definition := OrchestrationDefinition{
+		definition := []Activity{
 			{
 				ID:        "activity1",
 				Type:      "test",
@@ -344,7 +344,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 	t.Run("error with invalid dependency reference", func(t *testing.T) {
 		deploymentID := "test-deployment-invalid-dep"
-		definition := OrchestrationDefinition{
+		definition := []Activity{
 			{
 				ID:        "activity1",
 				Type:      "test",

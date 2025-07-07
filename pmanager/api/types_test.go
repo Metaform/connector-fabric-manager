@@ -689,3 +689,73 @@ func TestMappingEntry_UnmarshalJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestDeploymentDefinition_GetActiveVersion_WithActiveVersion(t *testing.T) {
+	definition := &DeploymentDefinition{
+		Type:       "test-deployment",
+		ApiVersion: "v1",
+		Versions: []Version{
+			{
+				Active: false,
+				Activities: []Activity{
+					{ID: "activity1", Type: "test"},
+				},
+			},
+			{
+				Active: true,
+				Activities: []Activity{
+					{ID: "activity2", Type: "test"},
+				},
+			},
+		},
+	}
+
+	activeVersion, err := definition.GetActiveVersion()
+
+	require.NoError(t, err)
+	require.NotNil(t, activeVersion)
+	require.True(t, activeVersion.Active)
+	require.Len(t, activeVersion.Activities, 1)
+	require.Equal(t, "activity2", activeVersion.Activities[0].ID)
+}
+
+func TestDeploymentDefinition_GetActiveVersion_NoActiveVersion(t *testing.T) {
+	definition := &DeploymentDefinition{
+		Type:       "test-deployment",
+		ApiVersion: "v1",
+		Versions: []Version{
+			{
+				Active: false,
+				Activities: []Activity{
+					{ID: "activity1", Type: "test"},
+				},
+			},
+			{
+				Active: false,
+				Activities: []Activity{
+					{ID: "activity2", Type: "test"},
+				},
+			},
+		},
+	}
+
+	activeVersion, err := definition.GetActiveVersion()
+
+	require.Error(t, err)
+	require.Nil(t, activeVersion)
+	require.Contains(t, err.Error(), "no active version found")
+}
+
+func TestDeploymentDefinition_GetActiveVersion_EmptyVersions(t *testing.T) {
+	definition := &DeploymentDefinition{
+		Type:       "test-deployment",
+		ApiVersion: "v1",
+		Versions:   []Version{},
+	}
+
+	activeVersion, err := definition.GetActiveVersion()
+
+	require.Error(t, err)
+	require.Nil(t, activeVersion)
+	require.Contains(t, err.Error(), "no active version found")
+}

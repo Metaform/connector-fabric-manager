@@ -21,17 +21,25 @@ import (
 
 type provisionManager struct {
 	orchestrator api.DeploymentOrchestrator
+	store        api.DefinitionStore
 	logMonitor   monitor.LogMonitor
 }
 
 func (p provisionManager) Start(ctx context.Context, manifest *api.DeploymentManifest) (*api.Orchestration, error) {
 
-	// TODO return definition
-	definition := api.OrchestrationDefinition{}
+	deploymentID := manifest.ID
+
+	definition, err := p.store.FindDeploymentDefinition(manifest.DeploymentType)
+	if err != nil {
+		return nil, fmt.Errorf("error finding deployment definition for deployment %s: %w", deploymentID, err)
+	}
+
+	activeVersion, err := definition.GetActiveVersion()
+	if err != nil {
+		return nil, fmt.Errorf("error deploying %s", deploymentID)
+	}
 
 	// TODO implement validation
-
-	deploymentID := manifest.ID
 
 	// perform de-duplication
 	orchestration, err := p.orchestrator.GetOrchestration(ctx, deploymentID)
@@ -45,7 +53,7 @@ func (p provisionManager) Start(ctx context.Context, manifest *api.DeploymentMan
 	}
 
 	// Does not exist, create the orchestration
-	orchestration, err = api.InstantiateOrchestration(manifest.ID, definition, manifest.Payload)
+	orchestration, err = api.InstantiateOrchestration(manifest.ID, activeVersion.Activities, manifest.Payload)
 	if err != nil {
 		return nil, fmt.Errorf("error instantiating orchestration for deployment %s: %w", deploymentID, err)
 	}
