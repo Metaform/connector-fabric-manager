@@ -45,7 +45,6 @@ func TestInstantiateOrchestration(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
 		assert.NotEmpty(t, orchestration.ID)
-		assert.Equal(t, deploymentID, orchestration.DeploymentID)
 		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.Equal(t, data, orchestration.Inputs)
 		assert.NotNil(t, orchestration.ProcessingData)
@@ -93,7 +92,6 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
-		assert.Equal(t, deploymentID, orchestration.DeploymentID)
 		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 
 		// Verify activities are present in the orchestration
@@ -149,7 +147,6 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
-		assert.Equal(t, deploymentID, orchestration.DeploymentID)
 		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.True(t, len(orchestration.Steps) > 0)
 
@@ -209,7 +206,6 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
-		assert.Equal(t, deploymentID, orchestration.DeploymentID)
 		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.Equal(t, data, orchestration.Inputs)
 		assert.Equal(t, 0, len(orchestration.Steps))
@@ -230,7 +226,6 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
-		assert.Equal(t, deploymentID, orchestration.DeploymentID)
 		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.Nil(t, orchestration.Inputs)
 		assert.NotNil(t, orchestration.ProcessingData)
@@ -287,7 +282,6 @@ func TestInstantiateOrchestration(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
-		assert.Equal(t, deploymentID, orchestration.DeploymentID)
 		assert.Equal(t, OrchestrationStateInitialized, orchestration.State)
 		assert.Equal(t, data, orchestration.Inputs)
 
@@ -329,8 +323,8 @@ func TestInstantiateOrchestration(t *testing.T) {
 		assert.Equal(t, "activity5", orchestration.Steps[3].Activities[0].ID)
 	})
 
-	t.Run("generates unique orchestration IDs", func(t *testing.T) {
-		deploymentID := "test-deployment-unique"
+	t.Run("uses deployment ID", func(t *testing.T) {
+		deploymentID := "test-deployment-id"
 		definition := OrchestrationDefinition{
 			{
 				ID:        "activity1",
@@ -341,14 +335,11 @@ func TestInstantiateOrchestration(t *testing.T) {
 		}
 		data := map[string]any{"test": "data"}
 
-		orchestration1, err1 := InstantiateOrchestration(deploymentID, definition, data)
-		orchestration2, err2 := InstantiateOrchestration(deploymentID, definition, data)
+		orchestration, err1 := InstantiateOrchestration(deploymentID, definition, data)
 
 		assert.NoError(t, err1)
-		assert.NoError(t, err2)
-		assert.NotNil(t, orchestration1)
-		assert.NotNil(t, orchestration2)
-		assert.NotEqual(t, orchestration1.ID, orchestration2.ID)
+		assert.NotNil(t, orchestration)
+		assert.Equal(t, orchestration.ID, deploymentID)
 	})
 
 	t.Run("error with invalid dependency reference", func(t *testing.T) {

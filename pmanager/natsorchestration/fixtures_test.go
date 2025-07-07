@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natstestutil
+package natsorchestration
 
 import (
 	"context"
@@ -28,9 +28,9 @@ func TestNewJetStreamPubSub(t *testing.T) {
 
 	defer TeardownNatsContainer(ctx, nt)
 
-	stream := SetupStream(t, ctx, nt.Client, "test-activity")
+	stream := SetupTestStream(t, ctx, nt.Client, "test-activity")
 
-	consumer := SetupConsumer(t, ctx, stream, "foo")
+	consumer := SetupTestConsumer(t, ctx, stream, "foo")
 
 	_, err = nt.Client.JetStream.Publish(ctx, "event.foo", []byte("Test message"))
 	require.NoError(t, err)

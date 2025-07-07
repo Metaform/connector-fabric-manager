@@ -24,14 +24,20 @@ const (
 
 // ProvisionManager handles deployments to the system.
 type ProvisionManager interface {
-	Start(ctx context.Context, manifest *DeploymentManifest) error
-	Cancel(ctx context.Context, id string) error
+	Start(ctx context.Context, manifest *DeploymentManifest) (*Orchestration, error)
+	Cancel(ctx context.Context, deploymentID string) error
+	GetOrchestration(ctx context.Context, deploymentID string) (*Orchestration, error)
 }
 
 // DeploymentOrchestrator orchestrates deployments.
 // Implementations must support idempotent behavior.
 type DeploymentOrchestrator interface {
+
+	// ExecuteOrchestration starts the execution of the specified orchestration, processing its steps and activities.
 	ExecuteOrchestration(ctx context.Context, orchestration *Orchestration) error
+
+	// GetOrchestration retrieves an Orchestration by its ID or nil if not found.
+	GetOrchestration(ctx context.Context, id string) (*Orchestration, error)
 }
 
 // ActivityProcessor executes activities for a given type.

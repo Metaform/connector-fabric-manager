@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/dag"
 	"slices"
 )
@@ -44,11 +43,9 @@ const (
 // Orchestration is a collection of activities that are executed to effect a deployment. Activities are organized into
 // parallel execution steps based on dependencies.
 //
-// The DeploymentID is a reference to the original DeploymentManifest. As actions are completed, the orchestration
-// system will update the Completed map.
+// As actions are completed, the orchestration system will update the Completed map.
 type Orchestration struct {
 	ID             string             `json:"id"`
-	DeploymentID   string             `json:"deploymentId"`
 	State          OrchestrationState `json:"state"`
 	Steps          []OrchestrationStep
 	Inputs         map[string]any
@@ -199,8 +196,7 @@ func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
 // It validates activity dependencies and organizes activities into parallel execution steps based on those dependencies.
 func InstantiateOrchestration(deploymentID string, definition OrchestrationDefinition, data map[string]any) (*Orchestration, error) {
 	orchestration := &Orchestration{
-		ID:             uuid.New().String(),
-		DeploymentID:   deploymentID,
+		ID:             deploymentID,
 		State:          OrchestrationStateInitialized,
 		Steps:          make([]OrchestrationStep, 0, len(definition)),
 		Inputs:         data,

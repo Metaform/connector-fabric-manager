@@ -16,7 +16,6 @@ import (
 	"context"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/pmanager/natstestutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync"
@@ -40,10 +39,10 @@ func TestExecuteOrchestration_NoSteps(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
 
-	defer natstestutil.TeardownNatsContainer(ctx, nt)
+	defer TeardownNatsContainer(ctx, nt)
 
 	adapter := NatsClientAdapter{Client: nt.Client}
 	orchestrator := NatsDeploymentOrchestrator{Client: adapter}
@@ -186,13 +185,13 @@ func TestExecuteOrchestration(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 			defer cancel()
 
-			nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-activity-context-bucket")
+			nt, err := SetupNatsContainer(ctx, "cfm-activity-context-bucket")
 			require.NoError(t, err)
 
-			defer natstestutil.TeardownNatsContainer(ctx, nt)
+			defer TeardownNatsContainer(ctx, nt)
 
-			stream := natstestutil.SetupStream(t, ctx, nt.Client, testStream)
-			natstestutil.SetupConsumer(t, ctx, stream, "test.activity")
+			stream := SetupTestStream(t, ctx, nt.Client, testStream)
+			SetupTestConsumer(t, ctx, stream, "test.activity")
 
 			var executions []activityExecution
 			executionsMutex := &sync.Mutex{}
@@ -271,13 +270,13 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
 
-	defer natstestutil.TeardownNatsContainer(ctx, nt)
+	defer TeardownNatsContainer(ctx, nt)
 
-	stream := natstestutil.SetupStream(t, ctx, nt.Client, testStream)
-	natstestutil.SetupConsumer(t, ctx, stream, "test.schedule.continue")
+	stream := SetupTestStream(t, ctx, nt.Client, testStream)
+	SetupTestConsumer(t, ctx, stream, "test.schedule.continue")
 
 	//natstestutil.SetupStreamAndConsumer(t, ctx, nt)
 

@@ -15,7 +15,6 @@ package natsorchestration
 import (
 	"context"
 	"fmt"
-	"github.com/metaform/connector-fabric-manager/pmanager/natstestutil"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -37,13 +36,13 @@ func Test_ValuePersistence(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-activity-context-bucket")
+	nt, err := SetupNatsContainer(ctx, "cfm-activity-context-bucket")
 	require.NoError(t, err)
 
-	defer natstestutil.TeardownNatsContainer(ctx, nt)
+	defer TeardownNatsContainer(ctx, nt)
 
-	stream := natstestutil.SetupStream(t, ctx, nt.Client, streamName)
-	natstestutil.SetupConsumer(t, ctx, stream, "test.context.persistence")
+	stream := SetupTestStream(t, ctx, nt.Client, streamName)
+	SetupTestConsumer(t, ctx, stream, "test.context.persistence")
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -115,13 +114,13 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-activity-retry-bucket")
+	nt, err := SetupNatsContainer(ctx, "cfm-activity-retry-bucket")
 	require.NoError(t, err)
 
-	defer natstestutil.TeardownNatsContainer(ctx, nt)
+	defer TeardownNatsContainer(ctx, nt)
 
-	stream := natstestutil.SetupStream(t, ctx, nt.Client, streamName)
-	natstestutil.SetupConsumer(t, ctx, stream, "test.retry.persistence")
+	stream := SetupTestStream(t, ctx, nt.Client, streamName)
+	SetupTestConsumer(t, ctx, stream, "test.retry.persistence")
 
 	var wg sync.WaitGroup
 	var callCount int32
@@ -203,13 +202,13 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-multi-activity-bucket")
+	nt, err := SetupNatsContainer(ctx, "cfm-multi-activity-bucket")
 	require.NoError(t, err)
 
-	defer natstestutil.TeardownNatsContainer(ctx, nt)
+	defer TeardownNatsContainer(ctx, nt)
 
-	stream := natstestutil.SetupStream(t, ctx, nt.Client, streamName)
-	natstestutil.SetupConsumer(t, ctx, stream, "test.multi.persistence")
+	stream := SetupTestStream(t, ctx, nt.Client, streamName)
+	SetupTestConsumer(t, ctx, stream, "test.multi.persistence")
 
 	var wg sync.WaitGroup
 	wg.Add(2) // Two activities
@@ -292,13 +291,13 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-wait-activity-bucket")
+	nt, err := SetupNatsContainer(ctx, "cfm-wait-activity-bucket")
 	require.NoError(t, err)
 
-	defer natstestutil.TeardownNatsContainer(ctx, nt)
+	defer TeardownNatsContainer(ctx, nt)
 
-	stream := natstestutil.SetupStream(t, ctx, nt.Client, streamName)
-	natstestutil.SetupConsumer(t, ctx, stream, "test.wait.persistence")
+	stream := SetupTestStream(t, ctx, nt.Client, streamName)
+	SetupTestConsumer(t, ctx, stream, "test.wait.persistence")
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -348,6 +347,69 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 		assert.NotNil(t, waitOrchestration.ProcessingData["wait_timestamp"])
 		return true
 	}, persistenceTimeout, pollInterval, "Wait values should be persisted")
+}
+
+func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
+	defer cancel()
+
+	nt, err := SetupNatsContainer(ctx, "cfm-get-orchestration-bucket")
+	require.NoError(t, err)
+	defer TeardownNatsContainer(ctx, nt)
+
+	stream := SetupTestStream(t, ctx, nt.Client, streamName)
+	SetupTestConsumer(t, ctx, stream, "test.activity")
+
+	adapter := NatsClientAdapter{Client: nt.Client}
+	orchestrator := &NatsDeploymentOrchestrator{
+		Client:  adapter,
+		Monitor: monitor.NoopMonitor{},
+	}
+
+	// Create and execute an orchestration
+	orchestration := &api.Orchestration{
+		ID:             "test-get-orchestration-success",
+		State:          api.OrchestrationStateRunning,
+		Completed:      make(map[string]struct{}),
+		ProcessingData: make(map[string]any),
+		Steps: []api.OrchestrationStep{
+			{
+				Activities: []api.Activity{
+					{ID: "A1", Type: "test.activity"},
+				},
+			},
+		},
+	}
+
+	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
+	require.NoError(t, err)
+
+	// Test GetOrchestration
+	result, err := orchestrator.GetOrchestration(ctx, orchestration.ID)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.Equal(t, orchestration.ID, result.ID)
+}
+
+func TestNatsDeploymentOrchestrator_GetOrchestration_NotFound(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
+	defer cancel()
+
+	nt, err := SetupNatsContainer(ctx, "cfm-get-orchestration-notfound-bucket")
+	require.NoError(t, err)
+	defer TeardownNatsContainer(ctx, nt)
+
+	adapter := NatsClientAdapter{Client: nt.Client}
+	orchestrator := &NatsDeploymentOrchestrator{
+		Client:  adapter,
+		Monitor: monitor.NoopMonitor{},
+	}
+
+	// Test GetOrchestration for non-existent orchestration
+	result, err := orchestrator.GetOrchestration(ctx, "non-existent-orchestration")
+	require.NoError(t, err)
+	assert.Nil(t, result)
 }
 
 // Helper function to create test orchestration

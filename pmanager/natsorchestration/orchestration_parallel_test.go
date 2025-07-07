@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/pmanager/natstestutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync"
@@ -31,14 +30,14 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	nt, err := natstestutil.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
 
-	defer natstestutil.TeardownNatsContainer(ctx, nt)
+	defer TeardownNatsContainer(ctx, nt)
 
-	stream := natstestutil.SetupStream(t, ctx, nt.Client, "cfm-activity")
-	natstestutil.SetupConsumer(t, ctx, stream, "test.fail.activity")
-	natstestutil.SetupConsumer(t, ctx, stream, "test.succeed.activity")
+	stream := SetupTestStream(t, ctx, nt.Client, "cfm-activity")
+	SetupTestConsumer(t, ctx, stream, "test.fail.activity")
+	SetupTestConsumer(t, ctx, stream, "test.succeed.activity")
 
 	// Create an orchestration with two parallel activities
 	orchestration := api.Orchestration{

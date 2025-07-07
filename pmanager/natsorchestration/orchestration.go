@@ -35,6 +35,19 @@ func NewNatsDeploymentOrchestrator(client MsgClient, monitor monitor.LogMonitor)
 	return &NatsDeploymentOrchestrator{Client: client, Monitor: monitor}
 }
 
+func (o *NatsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {
+	orchestration, _, err := ReadOrchestration(ctx, id, o.Client)
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			// Doesn't exist return nil
+			return nil, nil
+		}
+		// Return other errors
+		return nil, fmt.Errorf("error reading orchestration %s: %w", id, err)
+	}
+	return &orchestration, nil
+}
+
 // ExecuteOrchestration asynchronously executes the given orchestration by dispatching messages to durable activity
 // queues, where they can be dequeued and reliably processed by NatsActivityExecutors.
 //

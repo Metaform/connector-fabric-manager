@@ -16,7 +16,6 @@ import (
 	"context"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/pmanager/natstestutil"
 	"os"
 	"testing"
 	"time"
@@ -38,13 +37,13 @@ func TestTestAgent_Integration(t *testing.T) {
 	defer cancel()
 
 	// Set up NATS container
-	nt, err := natstestutil.SetupNatsContainer(ctx, "test-agent-bucket")
+	nt, err := natsorchestration.SetupNatsContainer(ctx, "test-agent-bucket")
 
 	require.NoError(t, err)
 
-	defer natstestutil.TeardownNatsContainer(ctx, nt)
+	defer natsorchestration.TeardownNatsContainer(ctx, nt)
 
-	natstestutil.SetupStream(t, ctx, nt.Client, streamName)
+	natsorchestration.SetupTestStream(t, ctx, nt.Client, streamName)
 
 	// Set up an orchestration for the test agent to process
 	orchestration := api.Orchestration{
