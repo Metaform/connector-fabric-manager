@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package dbstore
+package sqlstore
 
 import (
 	"context"
@@ -18,20 +18,20 @@ import (
 	"fmt"
 )
 
-type dbTransactionKeyType struct{}
+type sqlTransactionKeyType struct{}
 
-// DBTransactionKey defines the key for obtaining the transaction from the context.
-var DBTransactionKey = dbTransactionKeyType{}
+// SQLTransactionKey defines the key for obtaining the transaction from the context.
+var SQLTransactionKey = sqlTransactionKeyType{}
 
-type DBTransactionContext struct {
+type SQLTransactionContext struct {
 	db *sql.DB
 }
 
-func NewDBTransactionContext(db *sql.DB) *DBTransactionContext {
-	return &DBTransactionContext{db: db}
+func NewDBTransactionContext(db *sql.DB) *SQLTransactionContext {
+	return &SQLTransactionContext{db: db}
 }
 
-func (trxContext *DBTransactionContext) Execute(ctx context.Context, operation func(context.Context) error) error {
+func (trxContext *SQLTransactionContext) Execute(ctx context.Context, operation func(context.Context) error) error {
 	// begin transaction
 	tx, err := trxContext.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -47,7 +47,7 @@ func (trxContext *DBTransactionContext) Execute(ctx context.Context, operation f
 	}()
 
 	// execute the operation
-	opCtx := context.WithValue(ctx, DBTransactionKey, tx)
+	opCtx := context.WithValue(ctx, SQLTransactionKey, tx)
 	if err := operation(opCtx); err != nil {
 		// Rollback on error
 		if rbErr := tx.Rollback(); rbErr != nil {

@@ -1,4 +1,4 @@
-package dbstore
+package sqlstore
 
 import (
 	"context"
@@ -81,7 +81,7 @@ func TestDBTransactionContext(t *testing.T) {
 
 	t.Run("Successful transaction", func(t *testing.T) {
 		err := trxContext.Execute(ctx, func(ctx context.Context) error {
-			trx := ctx.Value(DBTransactionKey).(*sql.Tx)
+			trx := ctx.Value(SQLTransactionKey).(*sql.Tx)
 			_, err := trx.Exec("INSERT INTO test_table (value) VALUES ($1)", "test1")
 			return err
 		})
@@ -101,7 +101,7 @@ func TestDBTransactionContext(t *testing.T) {
 		assert.NoError(t, err)
 
 		err = trxContext.Execute(ctx, func(ctx context.Context) error {
-			trx := ctx.Value(DBTransactionKey).(*sql.Tx)
+			trx := ctx.Value(SQLTransactionKey).(*sql.Tx)
 
 			_, err := trx.Exec("INSERT INTO test_table (value) VALUES ($1)", "test2")
 			if err != nil {
@@ -126,7 +126,7 @@ func TestDBTransactionContext(t *testing.T) {
 
 		assert.Panics(t, func() {
 			_ = trxContext.Execute(ctx, func(ctx context.Context) error {
-				trx := ctx.Value(DBTransactionKey).(*sql.Tx)
+				trx := ctx.Value(SQLTransactionKey).(*sql.Tx)
 				_, err := trx.Exec("INSERT INTO test_table (value) VALUES ($1)", "test3")
 				if err != nil {
 					return err
