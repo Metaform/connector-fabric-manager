@@ -18,13 +18,15 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
 	"github.com/metaform/connector-fabric-manager/pmanager/pmhandler"
 )
 
 const (
 	defaultPort  = 8181
 	configPrefix = "pmconfig"
-	key          = "httpPort"
+	httpKey      = "httpPort"
+	storeKey     = "sql"
 )
 
 func LaunchAndWaitSignal() {
@@ -39,9 +41,16 @@ func Launch(shutdown <-chan struct{}) {
 	defer logMonitor.Sync()
 
 	vConfig := config.LoadConfigOrPanic(configPrefix)
-	vConfig.SetDefault(key, defaultPort)
+	vConfig.SetDefault(httpKey, defaultPort)
 
 	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
+	if vConfig.IsSet(storeKey) {
+		// TODO add SQL assembly
+		panic("SQL storage not yet implemented")
+	} else {
+		assembler.Register(&memorystore.MemoryStoreServiceAssembly{})
+	}
+
 	assembler.Register(&httpclient.HttpClientServiceAssembly{})
 	assembler.Register(&routing.RouterServiceAssembly{})
 	assembler.Register(&pmhandler.HandlerServiceAssembly{})

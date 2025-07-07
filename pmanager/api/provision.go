@@ -20,6 +20,7 @@ import (
 
 const (
 	ProvisionManagerKey system.ServiceType = "pmapi:ProvisionManager"
+	DefinitionStoreKey  system.ServiceType = "pmapi:DefinitionStore"
 )
 
 // ProvisionManager handles deployments to the system.
