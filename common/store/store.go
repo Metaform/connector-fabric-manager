@@ -14,6 +14,7 @@ package store
 
 import (
 	"context"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
@@ -31,3 +32,5 @@ type NoOpTransactionContext struct{}
 func (n NoOpTransactionContext) Execute(ctx context.Context, callback func(ctx context.Context) error) error {
 	return callback(ctx)
 }
+
+var ErrNotFound = &model.SystemError{Code: -1, Message: "not found"}

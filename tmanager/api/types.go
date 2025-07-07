@@ -12,12 +12,28 @@
 
 package api
 
-import "github.com/metaform/connector-fabric-manager/common/system"
+type Tenant struct {
+	ID                  string
+	ParticipantContexts []ParticipantContext
+}
 
-const (
-	ProvisionManagerClientKey system.ServiceType = "pmclient:ProvisionManagerClient"
-)
+type ParticipantContext struct {
+	DID         string
+	DataSpaceId string
+}
 
-type ProvisionManagerClient interface {
-	Provision(manifest *DeploymentManifest) error
+type Dataspace struct {
+	ID string
+}
+
+type User struct {
+	Roles []Role
+}
+
+type Role struct {
+	Rights []Right
+}
+
+type Right interface {
+	GetDescription() string
 }

@@ -78,3 +78,33 @@ type ActivityContext interface {
 	Values() map[string]any
 	Context() context.Context
 }
+
+// DefinitionStore manages DeploymentDefinitions and ActivityDefinitions.
+type DefinitionStore interface {
+
+	// FindDeploymentDefinition retrieves the DeploymentDefinition associated with the given id.
+	// Returns the DeploymentDefinition object or store.ErrNotFound if the definition cannot be found.
+	FindDeploymentDefinition(id string) (*DeploymentDefinition, error)
+
+	// FindActivityDefinition retrieves the ActivityDefinition associated with the given id.
+	// Returns the ActivityDefinition object or store.ErrNotFound if the definition cannot be found.
+	FindActivityDefinition(id string) (*ActivityDefinition, error)
+
+	// StoreDeploymentDefinition saves or updates a DeploymentDefinition
+	StoreDeploymentDefinition(id string, definition *DeploymentDefinition)
+
+	// StoreActivityDefinition saves or updates a ActivityDefinition
+	StoreActivityDefinition(id string, definition *ActivityDefinition)
+
+	// DeleteDeploymentDefinition removes a DeploymentDefinition for the given id, returning true if successful.
+	DeleteDeploymentDefinition(id string) bool
+
+	// DeleteActivityDefinition removes an ActivityDefinition for the given id, returning true if successful.
+	DeleteActivityDefinition(id string) bool
+
+	// ListDeploymentDefinitions returns DeploymentDefinition instances with pagination support
+	ListDeploymentDefinitions(offset, limit int) ([]*DeploymentDefinition, bool, error)
+
+	// ListActivityDefinitions returns ActivityDefinition instances with pagination support
+	ListActivityDefinitions(offset, limit int) ([]*ActivityDefinition, bool, error)
+}
