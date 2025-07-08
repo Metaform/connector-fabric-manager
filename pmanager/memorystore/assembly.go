@@ -30,6 +30,6 @@ func (m MemoryStoreServiceAssembly) Provides() []system.ServiceType {
 }
 
 func (m MemoryStoreServiceAssembly) Init(context *system.InitContext) error {
-	context.Registry.Register(api.DefinitionStoreKey, newDefinitionStore())
+	context.Registry.Register(api.DefinitionStoreKey, NewDefinitionStore())
 	return nil
 }

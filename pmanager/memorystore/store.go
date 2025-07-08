@@ -19,22 +19,22 @@ import (
 	"sync"
 )
 
-// memoryDefinitionStore is a thread-safe in-memory store for deployment and activity definitions.
-type memoryDefinitionStore struct {
+// MemoryDefinitionStore is a thread-safe in-memory store for deployment and activity definitions.
+type MemoryDefinitionStore struct {
 	mutex                 sync.RWMutex
 	deploymentDefinitions map[string]*api.DeploymentDefinition
 	activityDefinitions   map[string]*api.ActivityDefinition
 }
 
 // NewDefinitionStore creates a new thread-safe in-memory definition store
-func newDefinitionStore() *memoryDefinitionStore {
-	return &memoryDefinitionStore{
+func NewDefinitionStore() *MemoryDefinitionStore {
+	return &MemoryDefinitionStore{
 		deploymentDefinitions: make(map[string]*api.DeploymentDefinition),
 		activityDefinitions:   make(map[string]*api.ActivityDefinition),
 	}
 }
 
-func (d *memoryDefinitionStore) FindDeploymentDefinition(id string) (*api.DeploymentDefinition, error) {
+func (d *MemoryDefinitionStore) FindDeploymentDefinition(id string) (*api.DeploymentDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
@@ -48,7 +48,7 @@ func (d *memoryDefinitionStore) FindDeploymentDefinition(id string) (*api.Deploy
 	return &definitionCopy, nil
 }
 
-func (d *memoryDefinitionStore) FindActivityDefinition(id string) (*api.ActivityDefinition, error) {
+func (d *MemoryDefinitionStore) FindActivityDefinition(id string) (*api.ActivityDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
@@ -62,7 +62,7 @@ func (d *memoryDefinitionStore) FindActivityDefinition(id string) (*api.Activity
 	return &definitionCopy, nil
 }
 
-func (d *memoryDefinitionStore) StoreDeploymentDefinition(id string, definition *api.DeploymentDefinition) {
+func (d *MemoryDefinitionStore) StoreDeploymentDefinition(id string, definition *api.DeploymentDefinition) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -71,7 +71,7 @@ func (d *memoryDefinitionStore) StoreDeploymentDefinition(id string, definition 
 	d.deploymentDefinitions[id] = &definitionCopy
 }
 
-func (d *memoryDefinitionStore) StoreActivityDefinition(id string, definition *api.ActivityDefinition) {
+func (d *MemoryDefinitionStore) StoreActivityDefinition(id string, definition *api.ActivityDefinition) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -80,7 +80,7 @@ func (d *memoryDefinitionStore) StoreActivityDefinition(id string, definition *a
 	d.activityDefinitions[id] = &definitionCopy
 }
 
-func (d *memoryDefinitionStore) DeleteDeploymentDefinition(id string) bool {
+func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(id string) bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -91,7 +91,7 @@ func (d *memoryDefinitionStore) DeleteDeploymentDefinition(id string) bool {
 	return exists
 }
 
-func (d *memoryDefinitionStore) DeleteActivityDefinition(id string) bool {
+func (d *MemoryDefinitionStore) DeleteActivityDefinition(id string) bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -102,14 +102,14 @@ func (d *memoryDefinitionStore) DeleteActivityDefinition(id string) bool {
 	return exists
 }
 
-func (d *memoryDefinitionStore) ListDeploymentDefinitions(offset, limit int) ([]*api.DeploymentDefinition, bool, error) {
+func (d *MemoryDefinitionStore) ListDeploymentDefinitions(offset, limit int) ([]*api.DeploymentDefinition, bool, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
 	return listDefinitions[api.DeploymentDefinition](d.deploymentDefinitions, offset, limit)
 }
 
-func (d *memoryDefinitionStore) ListActivityDefinitions(offset, limit int) ([]*api.ActivityDefinition, bool, error) {
+func (d *MemoryDefinitionStore) ListActivityDefinitions(offset, limit int) ([]*api.ActivityDefinition, bool, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
@@ -117,7 +117,7 @@ func (d *memoryDefinitionStore) ListActivityDefinitions(offset, limit int) ([]*a
 }
 
 // Clear removes all stored definitions
-func (d *memoryDefinitionStore) Clear() {
+func (d *MemoryDefinitionStore) Clear() {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 

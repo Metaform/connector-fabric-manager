@@ -22,7 +22,7 @@ import (
 )
 
 func TestNewDefinitionStore(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	assert.NotNil(t, definitionStore)
 	assert.NotNil(t, definitionStore.deploymentDefinitions)
@@ -32,7 +32,7 @@ func TestNewDefinitionStore(t *testing.T) {
 }
 
 func TestDefinitionStore_DeploymentDefinition_StoreAndFind(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	deploymentID := "test-deployment-1"
 	definition := &api.DeploymentDefinition{
@@ -54,7 +54,7 @@ func TestDefinitionStore_DeploymentDefinition_StoreAndFind(t *testing.T) {
 }
 
 func TestDefinitionStore_DeploymentDefinition_FindNotFound(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	result, err := definitionStore.FindDeploymentDefinition("non-existent")
 
@@ -64,7 +64,7 @@ func TestDefinitionStore_DeploymentDefinition_FindNotFound(t *testing.T) {
 }
 
 func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	activityID := "test-activity-1"
 	definition := &api.ActivityDefinition{
@@ -88,7 +88,7 @@ func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
 }
 
 func TestDefinitionStore_ActivityDefinition_FindNotFound(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	result, err := definitionStore.FindActivityDefinition("non-existent")
 
@@ -98,7 +98,7 @@ func TestDefinitionStore_ActivityDefinition_FindNotFound(t *testing.T) {
 }
 
 func TestDefinitionStore_DeploymentDefinition_Delete(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	deploymentID := "test-deployment-1"
 	definition := &api.DeploymentDefinition{Type: "test-type"}
@@ -118,7 +118,7 @@ func TestDefinitionStore_DeploymentDefinition_Delete(t *testing.T) {
 }
 
 func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	activityID := "test-activity-1"
 	definition := &api.ActivityDefinition{Type: "test-type"}
@@ -138,7 +138,7 @@ func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
 }
 
 func TestDefinitionStore_DataIsolation(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	deploymentID := "test-deployment"
 	originalDef := &api.DeploymentDefinition{
@@ -163,7 +163,7 @@ func TestDefinitionStore_DataIsolation(t *testing.T) {
 }
 
 func TestDefinitionStore_StoreOverwrite(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	deploymentID := "test-deployment"
 
@@ -193,7 +193,7 @@ func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 }
 
 func TestDefinitionStore_ListDeploymentDefinitions_WithPagination(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	// Test empty store
 	definitions, hasMore, err := definitionStore.ListDeploymentDefinitions(0, 10)
@@ -252,7 +252,7 @@ func TestDefinitionStore_ListDeploymentDefinitions_WithPagination(t *testing.T) 
 }
 
 func TestDefinitionStore_ListDeploymentDefinitions_ValidationErrors(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	// Test negative offset
 	_, _, err := definitionStore.ListDeploymentDefinitions(-1, 10)
@@ -271,7 +271,7 @@ func TestDefinitionStore_ListDeploymentDefinitions_ValidationErrors(t *testing.T
 }
 
 func TestDefinitionStore_ListDeploymentDefinitions_DataIsolation(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	originalDef := &api.DeploymentDefinition{Type: "original", ApiVersion: "v1"}
 	definitionStore.StoreDeploymentDefinition("deploy-1", originalDef)
@@ -297,7 +297,7 @@ func TestDefinitionStore_ListDeploymentDefinitions_DataIsolation(t *testing.T) {
 }
 
 func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	// Test empty store
 	definitions, hasMore, err := definitionStore.ListActivityDefinitions(0, 10)
@@ -356,7 +356,7 @@ func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
 }
 
 func TestDefinitionStore_ListActivityDefinitions_ValidationErrors(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	// Test negative offset
 	_, _, err := definitionStore.ListActivityDefinitions(-1, 10)
@@ -375,7 +375,7 @@ func TestDefinitionStore_ListActivityDefinitions_ValidationErrors(t *testing.T) 
 }
 
 func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
-	definitionStore := newDefinitionStore()
+	definitionStore := NewDefinitionStore()
 
 	originalDef := &api.ActivityDefinition{Type: "original", Provider: "provider1", Description: "desc1"}
 	definitionStore.StoreActivityDefinition("activity-1", originalDef)
