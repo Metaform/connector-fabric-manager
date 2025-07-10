@@ -10,6 +10,9 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
+//go:build test
+// +build test
+
 package pmcore
 
 import (
