@@ -13,9 +13,15 @@
 package natsorchestration
 
 import (
+	"context"
+	"fmt"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsclient"
+)
+
+const (
+	setupStreamKey = "setupStream"
 )
 
 type natsOrchestratorServiceAssembly struct {
@@ -35,14 +41,14 @@ func NewOrchestratorServiceAssembly(uri string, bucket string, streamName string
 }
 
 func (a *natsOrchestratorServiceAssembly) Name() string {
-	return "NATs Deployment OrchestratorKey"
+	return "NATs Deployment Orchestrator"
 }
 
 func (a *natsOrchestratorServiceAssembly) Provides() []system.ServiceType {
 	return []system.ServiceType{api.DeploymentOrchestratorKey}
 }
 
-func (a *natsOrchestratorServiceAssembly) Init(context *system.InitContext) error {
+func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 	natsClient, err := natsclient.NewNatsClient(a.uri, a.bucket)
 	if err != nil {
 		return err
@@ -50,9 +56,24 @@ func (a *natsOrchestratorServiceAssembly) Init(context *system.InitContext) erro
 
 	a.natsClient = natsClient
 
-	context.Registry.Register(api.DeploymentOrchestratorKey, &NatsDeploymentOrchestrator{
+	natsContext := context.Background()
+	defer natsContext.Done()
+
+	setupStream := true
+	if ctx.Config.IsSet(setupStreamKey) {
+		setupStream = ctx.Config.GetBool(setupStreamKey)
+	}
+
+	if setupStream {
+		_, err = SetupStream(natsContext, natsClient, a.streamName)
+		if err != nil {
+			return fmt.Errorf("error initializing NATS stream: %w", err)
+		}
+	}
+
+	ctx.Registry.Register(api.DeploymentOrchestratorKey, &NatsDeploymentOrchestrator{
 		Client:  NatsClientAdapter{Client: natsClient},
-		Monitor: context.LogMonitor,
+		Monitor: ctx.LogMonitor,
 	})
 	return nil
 }

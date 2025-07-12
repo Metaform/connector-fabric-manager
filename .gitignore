@@ -27,3 +27,8 @@ bin/
 
 # Mockery generated files
 mocks/
+
+.terraform/*
+*/.terraform.lock.hcl
+*/terraform.tfstate
+*/terraform.tfstate.backup

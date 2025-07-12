@@ -6,7 +6,6 @@ TEST_AGENT_BINARY=pmtestagent
 
 # Build settings
 BUILD_DIR=bin
-MAIN_PATH=./cmd/main.go
 SERVER_PATH=./cmd/server/main.go
 TEST_AGENT_PATH=./agent/testagent/main.go
 

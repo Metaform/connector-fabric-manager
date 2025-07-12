@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -33,13 +35,50 @@ type NatsTestContainer struct {
 }
 
 func SetupNatsContainer(ctx context.Context, bucket string) (*NatsTestContainer, error) {
+	// Create NATS configuration
+	natsConfig := fmt.Sprintf(`
+# Basic server configuration
+port: 4222
+monitor_port: 8222
+
+# JetStream configuration
+jetstream {
+    store_dir: "/tmp/jetstream"
+    max_memory_store: 64MB
+    max_file_store: 512MB
+}
+
+# Enable debug/trace
+debug: true
+trace: true
+`)
+
+	// Create temporary config file
+	tmpDir, err := os.MkdirTemp("", "nats-config-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	configFile := filepath.Join(tmpDir, "nats.conf")
+	if err := os.WriteFile(configFile, []byte(natsConfig), 0644); err != nil {
+		return nil, fmt.Errorf("failed to write config file: %w", err)
+	}
+
 	req := testcontainers.ContainerRequest{
 		Image:        natsImage,
 		ExposedPorts: []string{"0:4222/tcp"},
 		WaitingFor:   wait.ForLog("Server is ready"),
-		Cmd: []string{
-			"-js", // Enable JetStream
-			"-DV", // Debug and trace
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      configFile,
+				ContainerFilePath: "/etc/nats/nats.conf",
+				FileMode:          0644,
+			},
+		},
+		Cmd: []string{"-c", "/etc/nats/nats.conf"},
+		Tmpfs: map[string]string{
+			"/tmp/jetstream": "size=1G", // Provide storage space
 		},
 	}
 
@@ -48,26 +87,25 @@ func SetupNatsContainer(ctx context.Context, bucket string) (*NatsTestContainer,
 		Started:          true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create/start NATS container: %w", err)
 	}
 
 	mappedPort, err := container.MappedPort(ctx, "4222")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get mapped port: %w", err)
 	}
 
 	hostIP, err := container.Host(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get host IP: %w", err)
 	}
 
 	uri := fmt.Sprintf("nats://%s:%s", hostIP, mappedPort.Port())
 
 	natsClient, err := natsclient.NewNatsClient(uri, bucket)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create NATS client: %w", err)
 	}
-	//return NatsClient, nil
 
 	return &NatsTestContainer{
 		Container: container,

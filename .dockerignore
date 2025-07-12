@@ -1,0 +1,12 @@
+.git
+.gitignore
+README.md
+.dockerignore
+*.log
+.env
+.env.local
+coverage.txt
+*.test
+.DS_Store
+deployments/
+docs/
