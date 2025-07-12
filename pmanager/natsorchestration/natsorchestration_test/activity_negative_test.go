@@ -13,7 +13,7 @@
 //go:build test
 // +build test
 
-package natsorchestration_test
+package natsorchestration_test_test
 
 import (
 	"context"

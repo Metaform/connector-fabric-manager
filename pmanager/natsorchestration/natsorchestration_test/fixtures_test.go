@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration_test
+package natsorchestration_test_test
 
 import (
 	"context"
