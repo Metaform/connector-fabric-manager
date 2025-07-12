@@ -117,7 +117,7 @@ generate-mocks:
 # Docker Commands - Handled at Top Level
 #==============================================================================
 
-docker-build: docker-build-pmanager docker-build-tmanager
+docker-build: docker-build-pmanager docker-build-tmanager docker-build-testagent
 
 docker-build-pmanager:
 	@echo "Building pmanager Docker image..."
@@ -127,13 +127,20 @@ docker-build-tmanager:
 	@echo "Building tmanager Docker image..."
 	docker build -f Dockerfile.tmanager.dockerfile -t $(DOCKER_REGISTRY)tmanager:$(DOCKER_TAG) .
 
-docker-clean: docker-clean-pmanager docker-clean-tmanager
+docker-build-testagent:
+	@echo "Building test agent Docker image..."
+	docker build -f Dockerfile.testagent.dockerfile -t $(DOCKER_REGISTRY)testagent:$(DOCKER_TAG) .
+
+docker-clean: docker-clean-pmanager docker-clean-tmanager docker-clean-testagent
 
 docker-clean-pmanager:
 	docker rmi $(DOCKER_REGISTRY)pmanager:$(DOCKER_TAG) || true
 
 docker-clean-tmanager:
 	docker rmi $(DOCKER_REGISTRY)tmanager:$(DOCKER_TAG) || true
+
+docker-clean-testagent:
+	docker rmi $(DOCKER_REGISTRY)testagent:$(DOCKER_TAG) || true
 
 #==============================================================================
 # Combined Commands
