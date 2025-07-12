@@ -25,6 +25,7 @@ variable "replicas" {
 variable "tmanager_image" {
   description = "Docker image"
   type        = string
+  default     = "tmanager:latest"
 }
 
 variable "pull_policy" {

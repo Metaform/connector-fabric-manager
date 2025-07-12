@@ -25,6 +25,7 @@ variable "replicas" {
 variable "testagent_image" {
   description = "Docker image"
   type        = string
+  default     = "testagent:latest"
 }
 
 variable "pull_policy" {
@@ -70,7 +71,7 @@ variable "resources" {
 
 variable "labels" {
   description = "Additional labels to apply to all resources"
-  type        = map(string)
-  default     = {}
+  type = map(string)
+  default = {}
 }
 

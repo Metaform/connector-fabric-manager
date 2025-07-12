@@ -25,6 +25,7 @@ variable "replicas" {
 variable "pmanager_image" {
   description = "Docker image"
   type        = string
+  default     = "pmanager:latest"
 }
 
 variable "pull_policy" {
