@@ -24,4 +24,4 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /app/bin/pmanager /pmanager
 
 EXPOSE 8080
-ENTRYPOIk cNT ["/pmanager"]
+ENTRYPOINT ["/pmanager"]
