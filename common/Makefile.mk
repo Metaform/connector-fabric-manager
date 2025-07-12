@@ -3,10 +3,6 @@
 # Build settings
 COVER_PROFILE=coverage.out
 
-# Environment variables
-export GO111MODULE=on
-export CGO_ENABLED=0
-
 # Run all tests
 test:
 	go test -v ./...

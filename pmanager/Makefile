@@ -12,7 +12,6 @@ TEST_AGENT_PATH=./agent/testagent/main.go
 MOCKERY_CMD=$(GOPATH)/bin/mockery
 
 # Environment variables
-export GO111MODULE=on
 export CGO_ENABLED=0
 
 # Install development tools

@@ -10,7 +10,6 @@ MAIN_PATH=./cmd/main.go
 SERVER_PATH=./cmd/server/main.go
 
 # Environment variables
-export GO111MODULE=on
 export CGO_ENABLED=0
 
 # Build the application
