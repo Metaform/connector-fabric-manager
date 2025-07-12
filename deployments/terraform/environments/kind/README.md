@@ -6,7 +6,7 @@ Build the `tmanager` and `pmanager` Docker images.
 
 ## Kind Setup
 
-Install Kind and create a cluster. Set it as the default K8S context. Load the Provision Manager images local into Kind:
+Install Kind and create a cluster. Set it as the default K8S context. Load the runtime images locally into Kind:
 
 ```
 kind load docker-image pmanager:latest
