@@ -15,7 +15,7 @@ kind load docker-image tmanager:latest
 
 ## Terraform Deployment
 
-Ensure the `tmanager` and `pmanager` and `pull_policy` is set to `Never` (the default). The Terraform scripts are
+Ensure the `pull_policy` for `tmanager` and `pmanager` is set to `Never` (the default). The Terraform scripts are
 configured to use the default K8S context. To deploy:
 
 ```
