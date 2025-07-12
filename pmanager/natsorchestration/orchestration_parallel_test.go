@@ -10,13 +10,14 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package natsorchestration_test
 
 import (
 	"context"
 	"fmt"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sync"
@@ -30,14 +31,14 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	nt, err := SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := natsorchestration.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
 
-	defer TeardownNatsContainer(ctx, nt)
+	defer natsorchestration.TeardownNatsContainer(ctx, nt)
 
-	stream := SetupTestStream(t, ctx, nt.Client, "cfm-activity")
-	SetupTestConsumer(t, ctx, stream, "test.fail.activity")
-	SetupTestConsumer(t, ctx, stream, "test.succeed.activity")
+	stream := natsorchestration.SetupTestStream(t, ctx, nt.Client, "cfm-activity")
+	natsorchestration.SetupTestConsumer(t, ctx, stream, "test.fail.activity")
+	natsorchestration.SetupTestConsumer(t, ctx, stream, "test.succeed.activity")
 
 	// Create an orchestration with two parallel activities
 	orchestration := api.Orchestration{
@@ -54,7 +55,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 		Completed: make(map[string]struct{}),
 	}
 
-	adapter := NatsClientAdapter{Client: nt.Client}
+	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
 
 	// WaitGroup to coordinate activity execution order
 	var activityWg sync.WaitGroup
@@ -83,7 +84,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	noOpMonitor := monitor.NoopMonitor{}
 
 	// Create executor for failing activity
-	failExecutor := NatsActivityExecutor{
+	failExecutor := natsorchestration.NatsActivityExecutor{
 		Client:       adapter,
 		StreamName:   "cfm-activity",
 		ActivityType: "test.fail.activity",
@@ -94,7 +95,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	}
 
 	// Create executor for succeeding activity
-	succeedExecutor := NatsActivityExecutor{
+	succeedExecutor := natsorchestration.NatsActivityExecutor{
 		Client:            adapter,
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.succeed.activity",
@@ -110,7 +111,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start orchestration
-	orchestrator := NatsDeploymentOrchestrator{Client: adapter}
+	orchestrator := natsorchestration.NatsDeploymentOrchestrator{Client: adapter}
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
@@ -126,7 +127,7 @@ outerLoop:
 		case <-timeout:
 			t.Fatalf("Timeout waiting for activity A2 to complete after 3 seconds")
 		default:
-			finalOrchestration, _, err = ReadOrchestration(ctx, orchestration.ID, adapter)
+			finalOrchestration, _, err = natsorchestration.ReadOrchestration(ctx, orchestration.ID, adapter)
 			require.NoError(t, err)
 			if _, found := finalOrchestration.Completed["A2"]; found {
 				break outerLoop

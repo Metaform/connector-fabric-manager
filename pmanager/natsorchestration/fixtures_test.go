@@ -10,10 +10,11 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package natsorchestration_test
 
 import (
 	"context"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -23,14 +24,14 @@ import (
 func TestNewJetStreamPubSub(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	nt, err := SetupNatsContainer(ctx, "test-bucket")
+	nt, err := natsorchestration.SetupNatsContainer(ctx, "test-bucket")
 	require.NoError(t, err)
 
-	defer TeardownNatsContainer(ctx, nt)
+	defer natsorchestration.TeardownNatsContainer(ctx, nt)
 
-	stream := SetupTestStream(t, ctx, nt.Client, "test-activity")
+	stream := natsorchestration.SetupTestStream(t, ctx, nt.Client, "test-activity")
 
-	consumer := SetupTestConsumer(t, ctx, stream, "foo")
+	consumer := natsorchestration.SetupTestConsumer(t, ctx, stream, "foo")
 
 	_, err = nt.Client.JetStream.Publish(ctx, "event.foo", []byte("Test message"))
 	require.NoError(t, err)
