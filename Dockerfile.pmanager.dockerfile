@@ -23,5 +23,5 @@ FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=builder /app/bin/pmanager /pmanager
 
-EXPOSE 8080
+EXPOSE 8181
 ENTRYPOINT ["/pmanager"]

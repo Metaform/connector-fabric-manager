@@ -33,4 +33,4 @@ func (n NoOpTransactionContext) Execute(ctx context.Context, callback func(ctx c
 	return callback(ctx)
 }
 
-var ErrNotFound = &model.SystemError{Code: -1, Message: "not found"}
+var ErrNotFound = &model.BadRequestError{Message: "not found"}

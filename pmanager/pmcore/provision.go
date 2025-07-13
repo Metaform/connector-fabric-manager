@@ -14,8 +14,10 @@ package pmcore
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -31,12 +33,16 @@ func (p provisionManager) Start(ctx context.Context, manifest *api.DeploymentMan
 
 	definition, err := p.store.FindDeploymentDefinition(manifest.DeploymentType)
 	if err != nil {
-		return nil, fmt.Errorf("error finding deployment definition for deployment %s: %w", deploymentID, err)
+		if errors.Is(err, store.ErrNotFound) {
+			// Not found is a client error
+			return nil, model.NewClientError("deployment type '%s' not found", manifest.DeploymentType)
+		}
+		return nil, model.NewFatalWrappedError(err, "no deployment definition for deployment %s", deploymentID)
 	}
 
 	activeVersion, err := definition.GetActiveVersion()
 	if err != nil {
-		return nil, fmt.Errorf("error deploying %s", deploymentID)
+		return nil, model.NewFatalError("error deploying %s: unable to get active version", deploymentID)
 	}
 
 	// TODO implement validation
@@ -44,7 +50,7 @@ func (p provisionManager) Start(ctx context.Context, manifest *api.DeploymentMan
 	// perform de-duplication
 	orchestration, err := p.orchestrator.GetOrchestration(ctx, deploymentID)
 	if err != nil {
-		return nil, fmt.Errorf("error checking for orchestration %s: %w", deploymentID, err)
+		return nil, model.NewFatalWrappedError(err, "error checking for orchestration %s", deploymentID)
 	}
 
 	if orchestration != nil {
@@ -55,11 +61,11 @@ func (p provisionManager) Start(ctx context.Context, manifest *api.DeploymentMan
 	// Does not exist, create the orchestration
 	orchestration, err = api.InstantiateOrchestration(manifest.ID, activeVersion.Activities, manifest.Payload)
 	if err != nil {
-		return nil, fmt.Errorf("error instantiating orchestration for deployment %s: %w", deploymentID, err)
+		return nil, model.NewFatalWrappedError(err, "error instantiating orchestration for deployment %s", deploymentID)
 	}
 	err = p.orchestrator.ExecuteOrchestration(ctx, orchestration)
 	if err != nil {
-		return nil, fmt.Errorf("error executing orchestration %s for deployment %s: %w", orchestration.ID, deploymentID, err)
+		return nil, model.NewFatalWrappedError(err, "error executing orchestration %s for deployment %s", orchestration.ID, deploymentID)
 	}
 	return orchestration, nil
 }

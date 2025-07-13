@@ -14,6 +14,9 @@ package pmhandler
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"io"
@@ -73,10 +76,25 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 
 	orchestration, err := h.provisionManager.Start(req.Context(), &manifest)
 	if err != nil {
-		http.Error(w, "Failed to initiate orchestration", http.StatusInternalServerError)
-		return
+		switch {
+		case model.IsClientError(err):
+			http.Error(w, fmt.Sprintf("Invalid deployment: %s", err.Error()), http.StatusBadRequest)
+			return
+		case model.IsRecoverable(err):
+			id := uuid.New().String()
+			h.logMonitor.Infof("Recoverable error encountered during deployment [%s]: %w ", id, err)
+			http.Error(w, fmt.Sprintf("Recoverable error encountered during deployment [%s], id"), http.StatusServiceUnavailable)
+			return
+		case model.IsFatal(err):
+			id := uuid.New().String()
+			h.logMonitor.Infof("Fatal error encountered during deployment [%s]: %w ", id, err)
+			http.Error(w, fmt.Sprintf("Fatal error encountered during deployment [%s], id"), http.StatusInternalServerError)
+			return
+		default:
+			http.Error(w, "Failed to initiate orchestration", http.StatusInternalServerError)
+			return
+		}
 	}
-
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(orchestration); err != nil {

@@ -10,7 +10,6 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-
 //go:generate mockery --name DeploymentOrchestrator --filename deployment_orchestrator_mock.go --with-expecter --outpkg mocks --dir . --output ./mocks
 
 package api
@@ -29,8 +28,16 @@ const (
 
 // ProvisionManager handles deployments to the system.
 type ProvisionManager interface {
+
+	// Start initializes a new orchestration and starts its execution.
+	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
 	Start(ctx context.Context, manifest *DeploymentManifest) (*Orchestration, error)
+
+	// Cancel terminates an orchestration execution.
+	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
 	Cancel(ctx context.Context, deploymentID string) error
+
+	// GetOrchestration returns an orchestration by its ID or nil if not found.
 	GetOrchestration(ctx context.Context, deploymentID string) (*Orchestration, error)
 }
 

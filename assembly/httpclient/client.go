@@ -13,8 +13,10 @@
 package httpclient
 
 import (
+	"context"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"net/http"
 	"time"
 )
 
@@ -50,9 +52,27 @@ func (h HttpClientServiceAssembly) Init(context *system.InitContext) error {
 	retryClient.RetryMax = context.GetConfigIntOrDefault(ConfigKeyRetryMax, DefaultRetryMax)
 	retryClient.RetryWaitMin = time.Duration(context.GetConfigIntOrDefault(ConfigKeyRetryWaitMin, DefaultRetryWaitMin)) * time.Second
 	retryClient.RetryWaitMax = time.Duration(context.GetConfigIntOrDefault(ConfigKeyRetryWaitMax, DefaultRetryWaitMax)) * time.Second
+	retryClient.CheckRetry = customCheckRetry
 
 	standardClient := retryClient.StandardClient()
 	context.Registry.Register(HttpClientKey, *standardClient)
 
 	return nil
+}
+
+// customCheckRetry determines whether a request should be retried
+// It will not retry on 4xx client errors (bad requests)
+func customCheckRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	// Don't retry if the context is canceled or timed out
+	if ctx.Err() != nil {
+		return false, ctx.Err()
+	}
+
+	// Don't retry on 4xx client errors (bad requests)
+	if resp != nil && resp.StatusCode >= 400 && resp.StatusCode < 500 {
+		return false, nil
+	}
+
+	// Use the default retry logic for other cases
+	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 }

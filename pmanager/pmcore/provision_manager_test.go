@@ -122,7 +122,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			setupOrch: func(orch *mocks.DeploymentOrchestrator) {
 				// No orchestrator calls expected
 			},
-			expectedError: "error finding deployment definition for deployment test-deployment-3",
+			expectedError: "deployment type 'non-existent-type' not found",
 		},
 		{
 			name: "deployment definition has no active version",
