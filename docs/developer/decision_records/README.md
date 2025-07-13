@@ -22,5 +22,5 @@ the following sections:
 | 2025-05-08 | [Core Subsystems](2025-05-09-core-subsystems/README.md)                | Core subsystems, including the Tenant Manager, Provision Manager and Provisioners |
 | 2025-05-14 | [Testing and Test Frameworks](2025-05-14-testing-frameworks/README.md) | Testing and test frameworks guidelines                                            |
 | 2025-05-14 | [NATS Orchestration](2025-06-19-nats-orchestration/README.md)          | Selection of NATS for orchestration                                               |
-| 2025-07-13 | [Exceptions](2025-07-13-errors/README.md)                              | Raising and handling errors                                                       |
+| 2025-07-13 | [Error Handling](2025-07-13-errors/README.md)                          | Raising and handling errors                                                       |
 
