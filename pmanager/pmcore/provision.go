@@ -45,7 +45,14 @@ func (p provisionManager) Start(ctx context.Context, manifest *api.DeploymentMan
 		return nil, model.NewFatalError("error deploying %s: unable to get active version", deploymentID)
 	}
 
-	// TODO implement validation
+	// Validate required fields
+	if manifest.ID == "" {
+		return nil, model.NewClientError("Missing required field: id")
+	}
+
+	if manifest.DeploymentType == "" {
+		return nil, model.NewClientError("Missing required field: deploymentType")
+	}
 
 	// perform de-duplication
 	orchestration, err := p.orchestrator.GetOrchestration(ctx, deploymentID)

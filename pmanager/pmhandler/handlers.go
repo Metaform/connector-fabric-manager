@@ -63,17 +63,6 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Validate required fields
-	if manifest.ID == "" {
-		http.Error(w, "Missing required field: id", http.StatusBadRequest)
-		return
-	}
-
-	if manifest.DeploymentType == "" {
-		http.Error(w, "Missing required field: deploymentType", http.StatusBadRequest)
-		return
-	}
-
 	orchestration, err := h.provisionManager.Start(req.Context(), &manifest)
 	if err != nil {
 		switch {
