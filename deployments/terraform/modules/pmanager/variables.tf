@@ -78,13 +78,13 @@ variable "labels" {
 variable "pmanager_port" {
   description = "Port that pmanager HTTP server listens on"
   type        = number
-  default     = 8080
+  default     = 8181
 }
 
 variable "metrics_port" {
   description = "Port that pmanager metrics server listens on"
   type        = number
-  default     = 9090
+  default     = 9191
 }
 
 variable "enable_nodeport" {

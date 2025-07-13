@@ -13,12 +13,11 @@
 package pmhandler
 
 import (
-	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"net/http"
+	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
 type response struct {
@@ -33,29 +32,19 @@ func (h *HandlerServiceAssembly) Name() string {
 	return "Provision Manager Handlers"
 }
 
-func (h *HandlerServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{}
-}
-
 func (h *HandlerServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{routing.RouterKey}
+	return []system.ServiceType{routing.RouterKey, api.ProvisionManagerKey}
 }
 
 func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	router := context.Registry.Resolve(routing.RouterKey).(chi.Router)
 	router.Use(middleware.Recoverer)
 
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		response := response{Message: "OK"}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
+	provisionManager := context.Registry.Resolve(api.ProvisionManagerKey).(api.ProvisionManager)
+	handler := NewHandler(provisionManager, context.LogMonitor)
 
-	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		response := response{Message: "OK"}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
+	router.Get("/health", handler.health)
+	router.Post("/deployment", handler.deployment)
 
 	return nil
 }
