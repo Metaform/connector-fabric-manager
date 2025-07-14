@@ -33,7 +33,7 @@ func (h *HandlerServiceAssembly) Name() string {
 }
 
 func (h *HandlerServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{routing.RouterKey, api.ProvisionManagerKey}
+	return []system.ServiceType{routing.RouterKey, api.ProvisionManagerKey, api.DefinitionStoreKey}
 }
 
 func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
@@ -41,7 +41,8 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	router.Use(middleware.Recoverer)
 
 	provisionManager := context.Registry.Resolve(api.ProvisionManagerKey).(api.ProvisionManager)
-	handler := NewHandler(provisionManager, context.LogMonitor)
+	definitionStore := context.Registry.Resolve(api.DefinitionStoreKey).(api.DefinitionStore)
+	handler := NewHandler(provisionManager, definitionStore, context.LogMonitor)
 
 	router.Get("/health", handler.health)
 	router.Post("/deployment", handler.deployment)

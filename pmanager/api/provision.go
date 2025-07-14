@@ -103,7 +103,7 @@ type DefinitionStore interface {
 	FindActivityDefinition(id string) (*ActivityDefinition, error)
 
 	// StoreDeploymentDefinition saves or updates a DeploymentDefinition
-	StoreDeploymentDefinition(id string, definition *DeploymentDefinition)
+	StoreDeploymentDefinition(definition *DeploymentDefinition)
 
 	// StoreActivityDefinition saves or updates a ActivityDefinition
 	StoreActivityDefinition(id string, definition *ActivityDefinition)

@@ -63,7 +63,7 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition("test-type", definition)
+				store.StoreDeploymentDefinition(definition)
 			},
 			setupOrch: func(orch *mocks.DeploymentOrchestrator) {
 				orch.EXPECT().GetOrchestration(mock.Anything, "test-deployment-1").Return(nil, nil)
@@ -97,7 +97,7 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition("test-type", definition)
+				store.StoreDeploymentDefinition(definition)
 			},
 			setupOrch: func(orch *mocks.DeploymentOrchestrator) {
 				existingOrch := &api.Orchestration{
@@ -148,7 +148,7 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition("test-type-inactive", definition)
+				store.StoreDeploymentDefinition(definition)
 			},
 			setupOrch: func(orch *mocks.DeploymentOrchestrator) {
 				// No orchestrator calls expected
@@ -179,7 +179,7 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition("test-type", definition)
+				store.StoreDeploymentDefinition(definition)
 			},
 			setupOrch: func(orch *mocks.DeploymentOrchestrator) {
 				orch.EXPECT().GetOrchestration(mock.Anything, "test-deployment-5").Return(nil, errors.New("orchestrator error"))
@@ -210,7 +210,7 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition("test-type", definition)
+				store.StoreDeploymentDefinition(definition)
 			},
 			setupOrch: func(orch *mocks.DeploymentOrchestrator) {
 				orch.EXPECT().GetOrchestration(mock.Anything, "test-deployment-6").Return(nil, nil)
@@ -283,7 +283,7 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	// Setup memory store with test definition
 	store := memorystore.NewDefinitionStore()
 	definition := createTestDeploymentDefinition("test-type", true)
-	store.StoreDeploymentDefinition("test-type", definition)
+	store.StoreDeploymentDefinition(definition)
 
 	// Setup mock orchestrator
 	mockOrch := mocks.NewDeploymentOrchestrator(t)

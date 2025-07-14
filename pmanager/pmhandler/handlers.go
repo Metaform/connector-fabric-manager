@@ -25,12 +25,14 @@ import (
 
 type PMHandler struct {
 	provisionManager api.ProvisionManager
+	definitionStore  api.DefinitionStore
 	logMonitor       monitor.LogMonitor
 }
 
-func NewHandler(provisionManager api.ProvisionManager, logMonitor monitor.LogMonitor) *PMHandler {
+func NewHandler(provisionManager api.ProvisionManager, definitionStore api.DefinitionStore, logMonitor monitor.LogMonitor) *PMHandler {
 	return &PMHandler{
 		provisionManager: provisionManager,
+		definitionStore:  definitionStore,
 		logMonitor:       logMonitor,
 	}
 }
@@ -39,6 +41,33 @@ func (h *PMHandler) health(w http.ResponseWriter, _ *http.Request) {
 	response := response{Message: "OK"}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func (h *PMHandler) deploymentDefinition(w http.ResponseWriter, req *http.Request) {
+	// Only allow POST requests
+	if req.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Read the request body
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+	defer req.Body.Close()
+
+	// Deserialize the DeploymentManifest from JSON
+	var definition api.DeploymentDefinition
+	if err := json.Unmarshal(body, &definition); err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	h.definitionStore.StoreDeploymentDefinition(&definition)
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 }
 
 func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {

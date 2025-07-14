@@ -35,8 +35,9 @@ module "nats" {
 module "pmanager" {
   source = "../../modules/pmanager"
 
-  pmanager_image = "pmanager:latest"
+  pmanager_image  = "pmanager:latest"
   pull_policy = "Never"  # pull locally from Docker
+  enable_nodeport = true
 
   depends_on = [module.nats]
 }
@@ -46,6 +47,7 @@ module "tmanager" {
 
   tmanager_image = "tmanager:latest"
   pull_policy = "Never"  # pull locally from Docker
+  enable_nodeport = true
 
   depends_on = [module.nats]
 }
