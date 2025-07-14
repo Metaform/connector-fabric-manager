@@ -46,6 +46,8 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 
 	router.Get("/health", handler.health)
 	router.Post("/deployment", handler.deployment)
+	router.Post("/activity-definition", handler.activityDefinition)
+	router.Post("/deployment-definition", handler.deploymentDefinition)
 
 	return nil
 }

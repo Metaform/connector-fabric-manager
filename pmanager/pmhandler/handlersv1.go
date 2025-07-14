@@ -43,6 +43,32 @@ func (h *PMHandler) health(w http.ResponseWriter, _ *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func (h *PMHandler) activityDefinition(w http.ResponseWriter, req *http.Request) {
+	// Only allow POST requests
+	if req.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Read the request body
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+	defer req.Body.Close()
+
+	var definition api.ActivityDefinition
+	if err := json.Unmarshal(body, &definition); err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	h.definitionStore.StoreActivityDefinition(&definition)
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+}
+
 func (h *PMHandler) deploymentDefinition(w http.ResponseWriter, req *http.Request) {
 	// Only allow POST requests
 	if req.Method != http.MethodPost {
@@ -58,7 +84,6 @@ func (h *PMHandler) deploymentDefinition(w http.ResponseWriter, req *http.Reques
 	}
 	defer req.Body.Close()
 
-	// Deserialize the DeploymentManifest from JSON
 	var definition api.DeploymentDefinition
 	if err := json.Unmarshal(body, &definition); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
@@ -66,7 +91,7 @@ func (h *PMHandler) deploymentDefinition(w http.ResponseWriter, req *http.Reques
 	}
 
 	h.definitionStore.StoreDeploymentDefinition(&definition)
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 }
 
@@ -114,6 +139,7 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	// Return success response
+	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(orchestration); err != nil {
 		h.logMonitor.Infow("Error encoding response: %v", err)

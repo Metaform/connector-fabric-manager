@@ -71,13 +71,13 @@ func (d *MemoryDefinitionStore) StoreDeploymentDefinition(definition *api.Deploy
 	d.deploymentDefinitions[definitionCopy.Type] = &definitionCopy
 }
 
-func (d *MemoryDefinitionStore) StoreActivityDefinition(id string, definition *api.ActivityDefinition) {
+func (d *MemoryDefinitionStore) StoreActivityDefinition(definition *api.ActivityDefinition) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
 	// Store a copy to prevent external modifications
 	definitionCopy := *definition
-	d.activityDefinitions[id] = &definitionCopy
+	d.activityDefinitions[definitionCopy.Type] = &definitionCopy
 }
 
 func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(id string) bool {

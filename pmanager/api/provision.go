@@ -106,7 +106,7 @@ type DefinitionStore interface {
 	StoreDeploymentDefinition(definition *DeploymentDefinition)
 
 	// StoreActivityDefinition saves or updates a ActivityDefinition
-	StoreActivityDefinition(id string, definition *ActivityDefinition)
+	StoreActivityDefinition(definition *ActivityDefinition)
 
 	// DeleteDeploymentDefinition removes a DeploymentDefinition for the given id, returning true if successful.
 	DeleteDeploymentDefinition(id string) bool
