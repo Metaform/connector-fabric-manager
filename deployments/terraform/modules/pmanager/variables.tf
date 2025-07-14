@@ -96,11 +96,11 @@ variable "enable_nodeport" {
 variable "pmanager_nodeport" {
   description = "NodePort HTTP server external access"
   type        = number
-  default     = 30080
+  default     = 30081
 }
 
 variable "metrics_nodeport" {
   description = "NodePort metrics server external access"
   type        = number
-  default     = 30090
+  default     = 30091
 }
