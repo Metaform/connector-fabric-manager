@@ -94,13 +94,13 @@ variable "enable_nodeport" {
 }
 
 variable "tmanager_nodeport" {
-  description = "NodePort HTTP server external access"
+  description = "NodePort HTTP server for external access"
   type        = number
   default     = 30082
 }
 
 variable "metrics_nodeport" {
-  description = "NodePort metrics server external access"
+  description = "NodePort metrics server for external access"
   type        = number
   default     = 30092
 }
