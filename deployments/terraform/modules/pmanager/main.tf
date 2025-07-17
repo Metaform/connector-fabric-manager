@@ -128,7 +128,7 @@ resource "kubernetes_deployment" "pmanager" {
 # Pmanager Service
 resource "kubernetes_service" "pmanager" {
   metadata {
-    name      = "pmanager-service"
+    name      = var.pmanager_service
     namespace = var.namespace
     labels    = local.labels
   }

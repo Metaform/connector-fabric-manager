@@ -128,7 +128,7 @@ resource "kubernetes_deployment" "tmanager" {
 # tmanager Service
 resource "kubernetes_service" "tmanager" {
   metadata {
-    name      = "tmanager-service"
+    name      = var.tmanager_service
     namespace = var.namespace
     labels    = local.labels
   }

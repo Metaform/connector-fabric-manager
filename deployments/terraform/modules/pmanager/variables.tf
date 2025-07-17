@@ -75,6 +75,13 @@ variable "labels" {
   default     = {}
 }
 
+variable "pmanager_service" {
+  description = "Provision manager service name"
+  type        = string
+  default     = "pmanager-service"
+}
+
+
 variable "pmanager_port" {
   description = "Port that pmanager HTTP server listens on"
   type        = number

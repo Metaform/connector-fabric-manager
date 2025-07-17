@@ -75,6 +75,14 @@ variable "labels" {
   default     = {}
 }
 
+
+variable "tmanager_service" {
+  description = "Tenant manager service name"
+  type        = string
+  default     = "tmanager-service"
+}
+
+
 variable "tmanager_port" {
   description = "Port that tmanager HTTP server listens on"
   type        = number
