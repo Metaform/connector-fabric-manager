@@ -29,11 +29,11 @@ output "monitoring_urls" {
 }
 
 output "pmanager_internal_url" {
-  value = "${module.pmanager.pmanager_service_name}:${module.pmanager.pmanager_port}"
+  value = "http://${module.pmanager.pmanager_service_name}:${module.pmanager.pmanager_port}"
   description = "Provision manager URL for internal cluster access"
 }
 
 output "tmanager_internal_url" {
-  value = "${module.pmanager.pmanager_service_name}:${module.pmanager.pmanager_port}"
+  value = "http://${module.pmanager.pmanager_service_name}:${module.pmanager.pmanager_port}"
   description = "Tenant manager URL for internal cluster access"
 }
