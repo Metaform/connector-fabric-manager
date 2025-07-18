@@ -6,7 +6,26 @@ Build the `tmanager` and `pmanager` Docker images.
 
 ## Kind Setup
 
-Install Kind and create a cluster. Set it as the default K8S context. Load the runtime images locally into Kind:
+Install Kind and create a cluster. Set it as the default K8S context. 
+
+Services can be exposed on the host by configuring the cluster with port mappings:
+
+```yaml
+# kind-config.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30081    # PManager
+        hostPort: 8181
+        protocol: TCP
+      - containerPort: 30082    # TManager
+        hostPort: 8282
+        protocol: TCP
+```
+
+Load the runtime images locally into Kind:
 
 ```
 kind load docker-image pmanager:latest
