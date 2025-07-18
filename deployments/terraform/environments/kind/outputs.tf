@@ -34,6 +34,6 @@ output "pmanager_internal_url" {
 }
 
 output "tmanager_internal_url" {
-  value = "http://${module.pmanager.pmanager_service_name}:${module.pmanager.pmanager_port}"
+  value = "http://${module.tmanager.tmanager_service_name}:${module.tmanager.tmanager_port}"
   description = "Tenant manager URL for internal cluster access"
 }
