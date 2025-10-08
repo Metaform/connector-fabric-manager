@@ -18,13 +18,19 @@ import (
 	"fmt"
 )
 
+type Entity struct {
+	ID      string
+	Version int64
+}
+
 type Tenant struct {
-	ID                  string
+	Entity
 	ParticipantProfiles []ParticipantProfile
 	Properties          Properties
 }
 
 type ParticipantProfile struct {
+	Entity
 	Identifier       string
 	DataSpaceProfile DataspaceProfile
 	VPAs             []VirtualParticipantAgent
@@ -32,19 +38,19 @@ type ParticipantProfile struct {
 }
 
 type DataspaceProfile struct {
-	ID         string
+	Entity
 	Properties Properties
 }
 
 type VirtualParticipantAgent struct {
-	ID         string
+	Entity
 	Type       string
 	Cell       Cell
 	Properties Properties
 }
 
 type Cell struct {
-	ID         string
+	Entity
 	State      CellState
 	Properties Properties
 }
