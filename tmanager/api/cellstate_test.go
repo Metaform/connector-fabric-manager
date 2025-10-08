@@ -279,7 +279,9 @@ func TestCellState_DatabaseRoundTrip(t *testing.T) {
 func TestCellState_WithStruct(t *testing.T) {
 	t.Run("Cell struct with state", func(t *testing.T) {
 		cell := Cell{
-			ID:    "cell-123",
+			Entity: Entity{
+				ID: "cell-123",
+			},
 			State: CellStateActive,
 			Properties: Properties{
 				"key1": "value1",
