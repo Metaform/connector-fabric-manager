@@ -38,13 +38,94 @@ type DataspaceProfile struct {
 
 type VirtualParticipantAgent struct {
 	ID         string
+	Type       string
 	Cell       Cell
 	Properties Properties
 }
 
 type Cell struct {
 	ID         string
+	State      CellState
 	Properties Properties
+}
+
+// CellState represents the current state of a cell in the system
+type CellState string
+
+const (
+	CellStateInitial CellState = "initial"
+	CellStatePending CellState = "pending"
+	CellStateActive  CellState = "active"
+	CellStateLocked  CellState = "locked"
+	CellStateOffline CellState = "offline"
+	CellStateError   CellState = "error"
+)
+
+// String implements the Stringer interface
+func (c CellState) String() string {
+	return string(c)
+}
+
+// IsValid validates the enum value
+func (c CellState) IsValid() bool {
+	switch c {
+	case CellStateInitial, CellStatePending, CellStateActive, CellStateOffline, CellStateError, CellStateLocked:
+		return true
+	default:
+		return false
+	}
+}
+
+// MarshalJSON implements json.Marshaler
+func (c CellState) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(c))
+}
+
+// UnmarshalJSON implements json.Unmarshaler
+func (c *CellState) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	state := CellState(s)
+	if !state.IsValid() {
+		return fmt.Errorf("invalid cell state: %s", s)
+	}
+
+	*c = state
+	return nil
+}
+
+// Value implements the driver.Valuer interface for database serialization
+func (c CellState) Value() (driver.Value, error) {
+	if !c.IsValid() {
+		return nil, fmt.Errorf("invalid cell state: %s", c)
+	}
+	return string(c), nil
+}
+
+// Scan implements the sql.Scanner interface for database deserialization
+func (c *CellState) Scan(value interface{}) error {
+	if value == nil {
+		*c = ""
+		return nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		*c = CellState(v)
+	case []byte:
+		*c = CellState(v)
+	default:
+		return fmt.Errorf("cannot scan %T into CellState", value)
+	}
+
+	if !c.IsValid() {
+		return fmt.Errorf("invalid cell state: %s", *c)
+	}
+
+	return nil
 }
 
 type User struct {
