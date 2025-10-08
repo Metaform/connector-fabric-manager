@@ -39,6 +39,7 @@ type ParticipantProfile struct {
 
 type DataspaceProfile struct {
 	Entity
+	Artifacts  []string
 	Properties Properties
 }
 
