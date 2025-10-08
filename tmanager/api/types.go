@@ -12,18 +12,39 @@
 
 package api
 
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
+)
+
 type Tenant struct {
 	ID                  string
-	ParticipantContexts []ParticipantContext
+	ParticipantProfiles []ParticipantProfile
+	Properties          Properties
 }
 
-type ParticipantContext struct {
-	DID         string
-	DataSpaceId string
+type ParticipantProfile struct {
+	Identifier       string
+	DataSpaceProfile DataspaceProfile
+	VPAs             []VirtualParticipantAgent
+	Properties       Properties
 }
 
-type Dataspace struct {
-	ID string
+type DataspaceProfile struct {
+	ID         string
+	Properties Properties
+}
+
+type VirtualParticipantAgent struct {
+	ID         string
+	Cell       Cell
+	Properties Properties
+}
+
+type Cell struct {
+	ID         string
+	Properties Properties
 }
 
 type User struct {
@@ -36,4 +57,77 @@ type Role struct {
 
 type Right interface {
 	GetDescription() string
+}
+
+// Properties are extensible key-value pairs
+type Properties map[string]any
+
+// Value implements the driver.Valuer interface for database serialization
+func (p *Properties) Value() (driver.Value, error) {
+	if p == nil || *p == nil || len(*p) == 0 {
+		return nil, nil
+	}
+	return json.Marshal(*p)
+}
+
+// Scan implements the sql.Scanner interface for database deserialization
+func (p *Properties) Scan(value any) error {
+	if value == nil {
+		*p = nil
+		return nil
+	}
+
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("cannot scan %T into Properties", value)
+	}
+
+	if len(bytes) == 0 {
+		*p = make(Properties)
+		return nil
+	}
+
+	return json.Unmarshal(bytes, p)
+}
+
+// Helper methods for common operations
+func (p *Properties) Get(key string) (any, bool) {
+	if p == nil || *p == nil {
+		return nil, false
+	}
+	value, exists := (*p)[key]
+	return value, exists
+}
+
+func (p *Properties) GetString(key string) (string, bool) {
+	if value, exists := p.Get(key); exists {
+		if str, ok := value.(string); ok {
+			return str, true
+		}
+	}
+	return "", false
+}
+
+func (p *Properties) GetInt(key string) (int, bool) {
+	if value, exists := p.Get(key); exists {
+		switch v := value.(type) {
+		case int:
+			return v, true
+		case float64:
+			return int(v), true
+		}
+	}
+	return 0, false
+}
+
+func (p *Properties) Set(key string, value any) {
+	if *p == nil {
+		*p = make(Properties)
+	}
+	(*p)[key] = value
 }
