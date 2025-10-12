@@ -14,6 +14,7 @@ package store
 
 import (
 	"context"
+
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
@@ -34,3 +35,20 @@ func (n NoOpTransactionContext) Execute(ctx context.Context, callback func(ctx c
 }
 
 var ErrNotFound = &model.BadRequestError{Message: "not found"}
+
+type NoOpTrxAssembly struct {
+	system.DefaultServiceAssembly
+}
+
+func (n NoOpTrxAssembly) Name() string {
+	return "NoOpTrxAssembly"
+}
+
+func (n NoOpTrxAssembly) Provides() []system.ServiceType {
+	return []system.ServiceType{TransactionContextKey}
+}
+
+func (n *NoOpTrxAssembly) Init(context *system.InitContext) error {
+	context.Registry.Register(TransactionContextKey, NoOpTransactionContext{})
+	return nil
+}

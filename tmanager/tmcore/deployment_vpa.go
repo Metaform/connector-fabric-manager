@@ -16,6 +16,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/dmodel"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
@@ -23,43 +24,46 @@ import (
 
 type participantDeployer struct {
 	participantGenerator participantGenerator
+	trxContext           store.TransactionContext
 }
 
 func (t participantDeployer) Deploy(
-	_ context.Context,
+	ctx context.Context,
 	identifier string,
 	properties map[string]any) error {
 
 	// TODO perform property validation against a custom schema
+	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
+		// TODO get cells and dataspace profiles from store
+		cells := make([]api.Cell, 0)
+		dProfiles := make([]api.DataspaceProfile, 0)
 
-	// TODO get cells and dataspace profiles from store
-	cells := make([]api.Cell, 0)
-	dProfiles := make([]api.DataspaceProfile, 0)
-
-	participantProfile, err := t.participantGenerator.Generate(identifier, properties, cells, dProfiles)
-	if err != nil {
-		return err
-	}
-	dManifest := dmodel.DeploymentManifest{
-		ID:             uuid.New().String(),
-		DeploymentType: dmodel.VpaDeploymentType,
-		Payload:        make(map[string]any),
-	}
-
-	vpaManifests := make([]dmodel.VPAManifest, 0, len(participantProfile.VPAs))
-	for _, vpa := range participantProfile.VPAs {
-		vpaManifest := dmodel.VPAManifest{
-			ID:         vpa.ID,
-			VPAType:    vpa.Type,
-			Cell:       vpa.Cell.ID,
-			Properties: vpa.DeploymentProperties,
+		participantProfile, err := t.participantGenerator.Generate(identifier, properties, cells, dProfiles)
+		if err != nil {
+			return err
 		}
-		vpaManifests = append(vpaManifests, vpaManifest)
-	}
+		dManifest := dmodel.DeploymentManifest{
+			ID:             uuid.New().String(),
+			DeploymentType: dmodel.VpaDeploymentType,
+			Payload:        make(map[string]any),
+		}
 
-	dManifest.Payload[dmodel.VpaPayloadType] = vpaManifests
-	// TODO finish
-	return nil
+		vpaManifests := make([]dmodel.VPAManifest, 0, len(participantProfile.VPAs))
+		for _, vpa := range participantProfile.VPAs {
+			vpaManifest := dmodel.VPAManifest{
+				ID:         vpa.ID,
+				VPAType:    vpa.Type,
+				Cell:       vpa.Cell.ID,
+				Properties: vpa.DeploymentProperties,
+			}
+			vpaManifests = append(vpaManifests, vpaManifest)
+		}
+
+		dManifest.Payload[dmodel.VpaPayloadType] = vpaManifests
+		// TODO finish
+
+		return nil
+	})
 }
 
 type vpaDeploymentCallbackHandler struct {

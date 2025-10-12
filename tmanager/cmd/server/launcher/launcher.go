@@ -16,6 +16,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmcore"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
@@ -45,6 +46,7 @@ func Launch(shutdown <-chan struct{}) {
 	assembler.Register(&routing.RouterServiceAssembly{})
 	assembler.Register(&tmhandler.HandlerServiceAssembly{})
 	assembler.Register(&tmcore.TMCoreServiceAssembly{})
+	assembler.Register(&store.NoOpTrxAssembly{})
 
 	runtime.AssembleAndLaunch(assembler, "Tenant Manager", logMonitor, shutdown)
 

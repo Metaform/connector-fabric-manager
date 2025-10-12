@@ -13,6 +13,7 @@
 package tmcore
 
 import (
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/dmodel"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
@@ -28,7 +29,7 @@ func (a *TMCoreServiceAssembly) Name() string {
 }
 
 func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{}
+	return []system.ServiceType{store.TransactionContextKey}
 }
 
 func (a *TMCoreServiceAssembly) Provides() []system.ServiceType {
@@ -40,8 +41,11 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 		CellSelector: defaultVPASelector, // Register the default selector, which may be overridden
 	}
 
+	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
+	
 	participantDeployer := participantDeployer{
 		participantGenerator: a.vpaGenerator,
+		trxContext:           trxContext,
 	}
 	context.Registry.Register(api.ParticipantDeployerKey, participantDeployer)
 
