@@ -15,9 +15,11 @@ package pmcore
 import (
 	"context"
 	"errors"
+
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/store"
+	"github.com/metaform/connector-fabric-manager/dmodel"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -27,11 +29,11 @@ type provisionManager struct {
 	logMonitor   monitor.LogMonitor
 }
 
-func (p provisionManager) Start(ctx context.Context, manifest *api.DeploymentManifest) (*api.Orchestration, error) {
+func (p provisionManager) Start(ctx context.Context, manifest *dmodel.DeploymentManifest) (*api.Orchestration, error) {
 
 	deploymentID := manifest.ID
 
-	definition, err := p.store.FindDeploymentDefinition(manifest.DeploymentType)
+	definition, err := p.store.FindDeploymentDefinition(manifest.DeploymentType.String())
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			// Not found is a client error

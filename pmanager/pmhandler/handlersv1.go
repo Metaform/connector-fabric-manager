@@ -15,12 +15,14 @@ package pmhandler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/dmodel"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"io"
-	"net/http"
 )
 
 type PMHandler struct {
@@ -111,7 +113,7 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	// Deserialize the DeploymentManifest from JSON
-	var manifest api.DeploymentManifest
+	var manifest dmodel.DeploymentManifest
 	if err := json.Unmarshal(body, &manifest); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return

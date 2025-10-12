@@ -17,6 +17,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/metaform/connector-fabric-manager/dmodel"
 )
 
 // Entity is the base type for all entities.
@@ -45,10 +47,10 @@ type Tenant struct {
 // (e.g., department).
 type ParticipantProfile struct {
 	Entity
-	Identifier       string
-	DataSpaceProfile DataspaceProfile
-	VPAs             []VirtualParticipantAgent
-	Properties       Properties
+	Identifier        string
+	DataSpaceProfiles []DataspaceProfile
+	VPAs              []VirtualParticipantAgent
+	Properties        Properties
 }
 
 // DataspaceProfile represents a specific dataspace, protocol, and policies tuple. For example, The Foo Dataspace that
@@ -64,9 +66,10 @@ type DataspaceProfile struct {
 // context could be a connector, credential service, or another component.
 type VirtualParticipantAgent struct {
 	DeployableEntity
-	Type       string
-	Cell       Cell
-	Properties Properties
+	Type                 dmodel.VPAType
+	Cell                 Cell
+	Properties           Properties
+	DeploymentProperties Properties
 }
 
 // DataspaceDeployment is runtime capabilities and configuration deployed when a dataspace profile to a cell.

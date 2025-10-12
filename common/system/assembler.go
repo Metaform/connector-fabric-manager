@@ -14,10 +14,11 @@ package system
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/metaform/connector-fabric-manager/common/dag"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 const (
@@ -91,7 +92,7 @@ type ServiceAssembly interface {
 	Provides() []ServiceType
 	Requires() []ServiceType
 	Init(*InitContext) error
-	Prepare() error
+	Prepare(*InitContext) error
 	Start(*StartContext) error
 	Finalize() error
 	Shutdown() error
@@ -203,7 +204,7 @@ func (a *ServiceAssembler) Assemble() error {
 	}
 
 	for _, v := range reverseOrder {
-		e := v.Value.Prepare()
+		e := v.Value.Prepare(initCtx)
 		a.logMonitor.Debugf("Prepared: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error preparing assembly %s: %w", v.Value.Name(), e)
@@ -270,7 +271,7 @@ func (d *DefaultServiceAssembly) Init(*InitContext) error {
 	return nil
 }
 
-func (d *DefaultServiceAssembly) Prepare() error {
+func (d *DefaultServiceAssembly) Prepare(*InitContext) error {
 	return nil
 }
 

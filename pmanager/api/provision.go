@@ -16,7 +16,10 @@ package api
 
 import (
 	"context"
+
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/dmodel"
+
 	"time"
 )
 
@@ -31,7 +34,7 @@ type ProvisionManager interface {
 
 	// Start initializes a new orchestration and starts its execution.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Start(ctx context.Context, manifest *DeploymentManifest) (*Orchestration, error)
+	Start(ctx context.Context, manifest *dmodel.DeploymentManifest) (*Orchestration, error)
 
 	// Cancel terminates an orchestration execution.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.

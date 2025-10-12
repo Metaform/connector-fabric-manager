@@ -16,20 +16,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/metaform/connector-fabric-manager/common/dag"
 	"slices"
-)
 
-// DeploymentManifest represents the configuration details for a system deployment. An Orchestration is instantiated
-// from the manifest and executed.
-//
-// The manifest includes a unique identifier, the type of deployment specified by a DeploymentDefinition, and a payload
-// of deployment-specific data, which will be passed as input to the Orchestration.
-type DeploymentManifest struct {
-	ID             string         `json:"id"`
-	DeploymentType string         `json:"deploymentType"`
-	Payload        map[string]any `json:"payload"`
-}
+	"github.com/metaform/connector-fabric-manager/common/dag"
+)
 
 type OrchestrationState uint
 

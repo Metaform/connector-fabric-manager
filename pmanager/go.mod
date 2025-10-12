@@ -4,6 +4,7 @@ go 1.24.1
 
 require (
 	github.com/go-chi/chi/v5 v5.2.1
+	github.com/google/uuid v1.6.0
 	github.com/metaform/connector-fabric-manager/assembly v0.0.0-20250510143305-14ff64b5f347
 	github.com/metaform/connector-fabric-manager/common v0.0.0-20250710113030-878d481aab6e
 	github.com/nats-io/nats.go v1.42.0
@@ -35,7 +36,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect

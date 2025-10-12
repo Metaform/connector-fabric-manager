@@ -14,12 +14,13 @@ package system
 
 import (
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 func TestServiceAssembler(t *testing.T) {
@@ -211,7 +212,7 @@ func (m *MockServiceAssembly) Finalize() error {
 	return nil
 }
 
-func (m *MockServiceAssembly) Prepare() error {
+func (m *MockServiceAssembly) Prepare(*InitContext) error {
 	if m.prepareFunc != nil {
 		return m.prepareFunc()
 	}
