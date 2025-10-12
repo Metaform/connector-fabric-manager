@@ -84,6 +84,8 @@ github.com/metaform/connector-fabric-manager/assembly v0.0.0-20250510143305-14ff
 github.com/metaform/connector-fabric-manager/assembly v0.0.0-20250510143305-14ff64b5f347/go.mod h1:0mWI/1SQ4zMJZ/iHYr126XjLuvLKVvp7+m+E5AMrN6s=
 github.com/metaform/connector-fabric-manager/common v0.0.0-20250710113030-878d481aab6e h1:trA23KGsE9seKD0AcVMcJlQT/ic88QhkRUD+GEeptmo=
 github.com/metaform/connector-fabric-manager/common v0.0.0-20250710113030-878d481aab6e/go.mod h1:C/ywmApzF1/lRazk37Gx16lexFkZXc5QCjPyeXp9GwA=
+github.com/metaform/connector-fabric-manager/dmodel v0.0.0-20251012171631-f870db721d27 h1:XIGgwqQqQobb3QScpoxW3smen/P109ra+LDiuzhSsx8=
+github.com/metaform/connector-fabric-manager/dmodel v0.0.0-20251012171631-f870db721d27/go.mod h1:fKaYeM7vR4QuaiognQEw3OvnE/EG6k7yhR1b2oHtOao=
 github.com/moby/docker-image-spec v1.3.1 h1:jMKff3w6PgbfSa69GfNg+zN/XLhfXJGnEx3Nl2EsFP0=
 github.com/moby/docker-image-spec v1.3.1/go.mod h1:eKmb5VW8vQEh/BAr2yvVNvuiJuY6UIocYsFu/DxxRpo=
 github.com/moby/patternmatcher v0.6.0 h1:GmP9lR19aU5GqSSFko+5pRqHi+Ohk1O69aFiKkVGiPk=

@@ -7,6 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/metaform/connector-fabric-manager/assembly v0.0.0-20250510143305-14ff64b5f347
 	github.com/metaform/connector-fabric-manager/common v0.0.0-20250710113030-878d481aab6e
+	github.com/metaform/connector-fabric-manager/dmodel v0.0.0-20251012171631-f870db721d27
 	github.com/nats-io/nats.go v1.42.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
