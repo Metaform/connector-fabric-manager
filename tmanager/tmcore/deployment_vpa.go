@@ -30,8 +30,8 @@ type participantDeployer struct {
 func (t participantDeployer) Deploy(
 	ctx context.Context,
 	identifier string,
-	deploymentProperties map[string]any,
-	extensionProperties map[string]any) error {
+	vpaProperties map[string]any,
+	properties map[string]any) error {
 
 	// TODO perform property validation against a custom schema
 	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
@@ -41,8 +41,8 @@ func (t participantDeployer) Deploy(
 
 		participantProfile, err := t.participantGenerator.Generate(
 			identifier,
-			deploymentProperties,
-			extensionProperties,
+			vpaProperties,
+			properties,
 			cells,
 			dProfiles)
 		if err != nil {

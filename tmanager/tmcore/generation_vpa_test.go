@@ -46,12 +46,12 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		}
 
 		identifier := "participant-abc"
-		deploymentProperties := api.Properties{
+		vpaProperties := api.Properties{
 			"department": "IT",
 			"region":     "US-West",
 		}
 
-		extensionProperties := api.Properties{
+		properties := api.Properties{
 			"test": "value",
 		}
 
@@ -74,11 +74,11 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 					ID:      "profile-456",
 					Version: 1,
 				},
-				DeploymentProperties: make(api.Properties),
+				Properties: make(api.Properties),
 			},
 		}
 
-		profile, err := generator.Generate(identifier, deploymentProperties, extensionProperties, cells, dProfiles)
+		profile, err := generator.Generate(identifier, vpaProperties, properties, cells, dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, profile)
@@ -89,8 +89,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		assert.NoError(t, err, "ID should be a valid UUID")
 		assert.Equal(t, int64(0), profile.Version)
 		assert.Equal(t, identifier, profile.Identifier)
-		assert.Equal(t, deploymentProperties, profile.DeploymentProperties)
-		assert.Equal(t, extensionProperties, profile.ExtensionProperties)
+		assert.Equal(t, properties, profile.Properties)
 		assert.Equal(t, dProfiles, profile.DataSpaceProfiles)
 
 		// Validate VPAs

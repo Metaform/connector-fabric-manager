@@ -27,10 +27,12 @@ type participantGenerator struct {
 
 func (g participantGenerator) Generate(
 	identifier string,
-	deploymentProperties map[string]any,
-	extensionProperties map[string]any,
+	vpaProperties map[string]any,
+	properties map[string]any,
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
+
+	// TODO process vpaProperties properties - decompose properties into VPA properties
 
 	cell, err := g.CellSelector(dmodel.VpaDeploymentType, cells, dProfiles)
 	if err != nil {
@@ -45,11 +47,10 @@ func (g participantGenerator) Generate(
 			ID:      uuid.New().String(),
 			Version: 0,
 		},
-		Identifier:           identifier,
-		DataSpaceProfiles:    dProfiles,
-		VPAs:                 vpas,
-		DeploymentProperties: deploymentProperties,
-		ExtensionProperties:  extensionProperties,
+		Identifier:        identifier,
+		DataSpaceProfiles: dProfiles,
+		VPAs:              vpas,
+		Properties:        properties,
 	}
 	return pProfile, nil
 }
