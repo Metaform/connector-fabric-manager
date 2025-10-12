@@ -30,7 +30,8 @@ type participantDeployer struct {
 func (t participantDeployer) Deploy(
 	ctx context.Context,
 	identifier string,
-	properties map[string]any) error {
+	deploymentProperties map[string]any,
+	extensionProperties map[string]any) error {
 
 	// TODO perform property validation against a custom schema
 	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
@@ -38,7 +39,12 @@ func (t participantDeployer) Deploy(
 		cells := make([]api.Cell, 0)
 		dProfiles := make([]api.DataspaceProfile, 0)
 
-		participantProfile, err := t.participantGenerator.Generate(identifier, properties, cells, dProfiles)
+		participantProfile, err := t.participantGenerator.Generate(
+			identifier,
+			deploymentProperties,
+			extensionProperties,
+			cells,
+			dProfiles)
 		if err != nil {
 			return err
 		}
@@ -54,7 +60,7 @@ func (t participantDeployer) Deploy(
 				ID:         vpa.ID,
 				VPAType:    vpa.Type,
 				Cell:       vpa.Cell.ID,
-				Properties: vpa.DeploymentProperties,
+				Properties: vpa.Properties,
 			}
 			vpaManifests = append(vpaManifests, vpaManifest)
 		}

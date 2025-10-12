@@ -39,7 +39,7 @@ type DeployableEntity struct {
 type Tenant struct {
 	Entity
 	ParticipantProfiles []ParticipantProfile
-	Properties          Properties
+	ExtensionProperties Properties
 }
 
 // ParticipantProfile represents a participant in a dataspace. A participant can be an entire organization, in which case
@@ -47,29 +47,30 @@ type Tenant struct {
 // (e.g., department).
 type ParticipantProfile struct {
 	Entity
-	Identifier        string
-	DataSpaceProfiles []DataspaceProfile
-	VPAs              []VirtualParticipantAgent
-	Properties        Properties
+	Identifier           string
+	DataSpaceProfiles    []DataspaceProfile
+	VPAs                 []VirtualParticipantAgent
+	DeploymentProperties Properties
+	ExtensionProperties  Properties
 }
 
 // DataspaceProfile represents a specific dataspace, protocol, and policies tuple. For example, The Foo Dataspace that
 // runs version 2025-1 with version 2 of its policies schema.
 type DataspaceProfile struct {
 	Entity
-	Artifacts   []string
-	Deployments []DataspaceDeployment
-	Properties  Properties
+	Artifacts            []string
+	Deployments          []DataspaceDeployment
+	DeploymentProperties Properties
+	ExtensionProperties  Properties
 }
 
 // VirtualParticipantAgent is a runtime context deployed when a participant profile is provisioned to a cell. A runtime
 // context could be a connector, credential service, or another component.
 type VirtualParticipantAgent struct {
 	DeployableEntity
-	Type                 dmodel.VPAType
-	Cell                 Cell
-	Properties           Properties
-	DeploymentProperties Properties
+	Type       dmodel.VPAType
+	Cell       Cell
+	Properties Properties
 }
 
 // DataspaceDeployment is runtime capabilities and configuration deployed when a dataspace profile to a cell.

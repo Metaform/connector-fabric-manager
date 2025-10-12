@@ -27,7 +27,8 @@ type participantGenerator struct {
 
 func (g participantGenerator) Generate(
 	identifier string,
-	properties map[string]any,
+	deploymentProperties map[string]any,
+	extensionProperties map[string]any,
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
 
@@ -44,10 +45,11 @@ func (g participantGenerator) Generate(
 			ID:      uuid.New().String(),
 			Version: 0,
 		},
-		Identifier:        identifier,
-		DataSpaceProfiles: dProfiles,
-		VPAs:              vpas,
-		Properties:        properties,
+		Identifier:           identifier,
+		DataSpaceProfiles:    dProfiles,
+		VPAs:                 vpas,
+		DeploymentProperties: deploymentProperties,
+		ExtensionProperties:  extensionProperties,
 	}
 	return pProfile, nil
 }

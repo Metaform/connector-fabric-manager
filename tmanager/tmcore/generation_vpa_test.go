@@ -46,10 +46,13 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		}
 
 		identifier := "participant-abc"
-		properties := api.Properties{
-			"organization": "Test Corp",
-			"department":   "IT",
-			"region":       "US-West",
+		deploymentProperties := api.Properties{
+			"department": "IT",
+			"region":     "US-West",
+		}
+
+		extensionProperties := api.Properties{
+			"test": "value",
 		}
 
 		cells := []api.Cell{
@@ -71,11 +74,11 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 					ID:      "profile-456",
 					Version: 1,
 				},
-				Properties: make(api.Properties),
+				DeploymentProperties: make(api.Properties),
 			},
 		}
 
-		profile, err := generator.Generate(identifier, properties, cells, dProfiles)
+		profile, err := generator.Generate(identifier, deploymentProperties, extensionProperties, cells, dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, profile)
@@ -86,7 +89,8 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		assert.NoError(t, err, "ID should be a valid UUID")
 		assert.Equal(t, int64(0), profile.Version)
 		assert.Equal(t, identifier, profile.Identifier)
-		assert.Equal(t, properties, profile.Properties)
+		assert.Equal(t, deploymentProperties, profile.DeploymentProperties)
+		assert.Equal(t, extensionProperties, profile.ExtensionProperties)
 		assert.Equal(t, dProfiles, profile.DataSpaceProfiles)
 
 		// Validate VPAs
@@ -112,7 +116,12 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			CellSelector: mockCellSelector,
 		}
 
-		profile, err := generator.Generate("test-participant", nil, []api.Cell{}, []api.DataspaceProfile{})
+		profile, err := generator.Generate(
+			"test-participant",
+			make(map[string]any),
+			make(map[string]any),
+			[]api.Cell{},
+			[]api.DataspaceProfile{})
 
 		require.Error(t, err)
 		require.Nil(t, profile)
@@ -140,7 +149,12 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			CellSelector: mockCellSelector,
 		}
 
-		_, err := generator.Generate("test", nil, []api.Cell{}, []api.DataspaceProfile{})
+		_, err := generator.Generate(
+			"test",
+			make(map[string]any),
+			make(map[string]any),
+			[]api.Cell{},
+			[]api.DataspaceProfile{})
 
 		require.NoError(t, err)
 		assert.Equal(t, dmodel.VpaDeploymentType, receivedDeploymentType)
@@ -183,7 +197,12 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			},
 		}
 
-		_, err := generator.Generate("test", nil, inputCells, inputProfiles)
+		_, err := generator.Generate(
+			"test",
+			make(map[string]any),
+			make(map[string]any),
+			inputCells,
+			inputProfiles)
 
 		require.NoError(t, err)
 		assert.Equal(t, inputCells, receivedCells)
@@ -230,7 +249,12 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			},
 		}
 
-		profile, err := generator.Generate("multi-profile-test", nil, []api.Cell{}, dProfiles)
+		profile, err := generator.Generate(
+			"multi-profile-test",
+			make(map[string]any),
+			make(map[string]any),
+			[]api.Cell{},
+			dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, profile)
