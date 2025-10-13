@@ -30,7 +30,7 @@ type participantDeployer struct {
 func (t participantDeployer) Deploy(
 	ctx context.Context,
 	identifier string,
-	vpaProperties map[string]any,
+	vpaProperties map[dmodel.VPAType]any,
 	properties map[string]any) error {
 
 	// TODO perform property validation against a custom schema

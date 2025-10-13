@@ -27,7 +27,7 @@ type participantGenerator struct {
 
 func (g participantGenerator) Generate(
 	identifier string,
-	vpaProperties map[string]any,
+	vpaProperties map[dmodel.VPAType]any,
 	properties map[string]any,
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
@@ -39,8 +39,10 @@ func (g participantGenerator) Generate(
 		return nil, err
 	}
 
-	connector := g.generateConnector(cell)
-	vpas := []api.VirtualParticipantAgent{connector}
+	connector := g.generateVPA(dmodel.ConnectorType, cell)
+	cservice := g.generateVPA(dmodel.CredentialServiceType, cell)
+	dplane := g.generateVPA(dmodel.DataPlaneType, cell)
+	vpas := []api.VirtualParticipantAgent{connector, cservice, dplane}
 
 	pProfile := &api.ParticipantProfile{
 		Entity: api.Entity{
@@ -55,7 +57,8 @@ func (g participantGenerator) Generate(
 	return pProfile, nil
 }
 
-func (g participantGenerator) generateConnector(cell *api.Cell) api.VirtualParticipantAgent {
+// generateVPA creates a VPA targeted at given cell.
+func (g participantGenerator) generateVPA(vpaType dmodel.VPAType, cell *api.Cell) api.VirtualParticipantAgent {
 	connector := api.VirtualParticipantAgent{
 		DeployableEntity: api.DeployableEntity{
 			Entity: api.Entity{
@@ -65,7 +68,7 @@ func (g participantGenerator) generateConnector(cell *api.Cell) api.VirtualParti
 			State:          api.DeploymentStateActive,
 			StateTimestamp: time.Now().UTC(),
 		},
-		Type:       dmodel.ConnectorType,
+		Type:       vpaType,
 		Cell:       *cell,
 		Properties: make(api.Properties),
 	}

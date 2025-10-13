@@ -46,10 +46,11 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		}
 
 		identifier := "participant-abc"
-		vpaProperties := api.Properties{
-			"department": "IT",
-			"region":     "US-West",
-		}
+
+		vpaProperties := make(map[dmodel.VPAType]any, 2)
+		vpaProperties[dmodel.ConnectorType] = "connector"
+		vpaProperties[dmodel.CredentialServiceType] = "credentialservice"
+		vpaProperties[dmodel.DataPlaneType] = "dataplane"
 
 		properties := api.Properties{
 			"test": "value",
@@ -93,17 +94,32 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		assert.Equal(t, dProfiles, profile.DataSpaceProfiles)
 
 		// Validate VPAs
-		assert.Len(t, profile.VPAs, 1)
-		vpa := profile.VPAs[0]
-		assert.NotEmpty(t, vpa.ID)
-		_, err = uuid.Parse(vpa.ID)
-		assert.NoError(t, err, "VPA ID should be a valid UUID")
-		assert.Equal(t, int64(0), vpa.Version)
-		assert.Equal(t, dmodel.ConnectorType, vpa.Type)
-		assert.Equal(t, api.DeploymentStateActive, vpa.State)
-		assert.Equal(t, "cell-123", vpa.Cell.ID)
-		assert.NotNil(t, vpa.Properties)
-		assert.NotNil(t, vpa.StateTimestamp)
+		assert.Len(t, profile.VPAs, 3)
+
+		// Extract VPA types and verify they match expected types
+		expectedTypes := []dmodel.VPAType{
+			dmodel.ConnectorType,
+			dmodel.CredentialServiceType,
+			dmodel.DataPlaneType,
+		}
+		actualTypes := make([]dmodel.VPAType, len(profile.VPAs))
+		for i, vpa := range profile.VPAs {
+			actualTypes[i] = vpa.Type
+		}
+		assert.ElementsMatch(t, expectedTypes, actualTypes)
+
+		// Verify each VPA
+		for _, vpa := range profile.VPAs {
+			assert.NotEmpty(t, vpa.ID)
+			_, err = uuid.Parse(vpa.ID)
+			assert.NoError(t, err, "VPA ID should be a valid UUID")
+			assert.Equal(t, int64(0), vpa.Version)
+			assert.Equal(t, api.DeploymentStateActive, vpa.State)
+			assert.Equal(t, "cell-123", vpa.Cell.ID)
+			assert.NotNil(t, vpa.Properties)
+			assert.NotNil(t, vpa.StateTimestamp)
+		}
+
 	})
 
 	t.Run("error when cell selector fails", func(t *testing.T) {
@@ -117,7 +133,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		profile, err := generator.Generate(
 			"test-participant",
-			make(map[string]any),
+			make(map[dmodel.VPAType]any),
 			make(map[string]any),
 			[]api.Cell{},
 			[]api.DataspaceProfile{})
@@ -150,7 +166,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		_, err := generator.Generate(
 			"test",
-			make(map[string]any),
+			make(map[dmodel.VPAType]any),
 			make(map[string]any),
 			[]api.Cell{},
 			[]api.DataspaceProfile{})
@@ -198,7 +214,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		_, err := generator.Generate(
 			"test",
-			make(map[string]any),
+			make(map[dmodel.VPAType]any),
 			make(map[string]any),
 			inputCells,
 			inputProfiles)
@@ -250,7 +266,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		profile, err := generator.Generate(
 			"multi-profile-test",
-			make(map[string]any),
+			make(map[dmodel.VPAType]any),
 			make(map[string]any),
 			[]api.Cell{},
 			dProfiles)
@@ -291,7 +307,7 @@ func TestParticipantProfileGenerator_generateConnector(t *testing.T) {
 			Properties: cellProperties,
 		}
 
-		connector := generator.generateConnector(inputCell)
+		connector := generator.generateVPA(dmodel.ConnectorType, inputCell)
 
 		assert.Equal(t, cellProperties, connector.Cell.Properties)
 		assert.NotSame(t, &cellProperties, &connector.Cell.Properties, "Properties should be a copy, not the same reference")
@@ -312,9 +328,9 @@ func TestParticipantProfileGenerator_generateConnector(t *testing.T) {
 			Properties: make(api.Properties),
 		}
 
-		connector1 := generator.generateConnector(inputCell)
-		connector2 := generator.generateConnector(inputCell)
-		connector3 := generator.generateConnector(inputCell)
+		connector1 := generator.generateVPA(dmodel.ConnectorType, inputCell)
+		connector2 := generator.generateVPA(dmodel.ConnectorType, inputCell)
+		connector3 := generator.generateVPA(dmodel.ConnectorType, inputCell)
 
 		ids := map[string]bool{
 			connector1.ID: true,
