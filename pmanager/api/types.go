@@ -19,6 +19,7 @@ import (
 	"slices"
 
 	"github.com/metaform/connector-fabric-manager/common/dag"
+	"github.com/metaform/connector-fabric-manager/dmodel"
 )
 
 type OrchestrationState uint
@@ -97,9 +98,15 @@ type OrchestrationStep struct {
 	Activities []Activity `json:"activities"`
 }
 
+type ActivityType string
+
+func (at ActivityType) String() string {
+	return string(at)
+}
+
 type Activity struct {
 	ID        string         `json:"id"`
-	Type      string         `json:"type"`
+	Type      ActivityType   `json:"type"`
 	Inputs    []MappingEntry `json:"inputs"`
 	DependsOn []string       `json:"dependsOn"`
 }
@@ -141,10 +148,10 @@ func (m *MappingEntry) UnmarshalJSON(data []byte) error {
 }
 
 type DeploymentDefinition struct {
-	Type       string    `json:"type"`
-	ApiVersion string    `json:"apiVersion"`
-	Resource   Resource  `json:"resource"`
-	Versions   []Version `json:"versions"`
+	Type       dmodel.DeploymentType `json:"type"`
+	ApiVersion string                `json:"apiVersion"`
+	Resource   Resource              `json:"resource"`
+	Versions   []Version             `json:"versions"`
 }
 
 func (d *DeploymentDefinition) GetActiveVersion() (*Version, error) {
@@ -177,11 +184,11 @@ type Version struct {
 
 // ActivityDefinition represents a single activity in the orchestration
 type ActivityDefinition struct {
-	Type         string `json:"type"`
-	Provider     string `json:"provider"`
-	Description  string `json:"description"`
-	InputSchema  string `json:"inputSchema"`
-	OutputSchema string `json:"outputSchema"`
+	Type         ActivityType `json:"type"`
+	Provider     string       `json:"provider"`
+	Description  string       `json:"description"`
+	InputSchema  string       `json:"inputSchema"`
+	OutputSchema string       `json:"outputSchema"`
 }
 
 func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {

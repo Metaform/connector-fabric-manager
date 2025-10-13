@@ -33,13 +33,13 @@ func (p provisionManager) Start(ctx context.Context, manifest *dmodel.Deployment
 
 	deploymentID := manifest.ID
 
-	definition, err := p.store.FindDeploymentDefinition(manifest.DeploymentType.String())
+	definition, err := p.store.FindDeploymentDefinition(manifest.DeploymentType)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			// Not found is a client error
 			return nil, model.NewClientError("deployment type '%s' not found", manifest.DeploymentType)
 		}
-		return nil, model.NewFatalWrappedError(err, "no deployment definition for deployment %s", deploymentID)
+		return nil, model.NewFatalWrappedError(err, "unable to find deployment definition for deployment %s", deploymentID)
 	}
 
 	activeVersion, err := definition.GetActiveVersion()

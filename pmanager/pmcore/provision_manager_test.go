@@ -262,7 +262,7 @@ func TestProvisionManager_Start(t *testing.T) {
 // Helper function to create a test deployment definition
 func createTestDeploymentDefinition(deploymentType string, active bool) *api.DeploymentDefinition {
 	return &api.DeploymentDefinition{
-		Type:       deploymentType,
+		Type:       dmodel.DeploymentType(deploymentType),
 		ApiVersion: "1.0",
 		Versions: []api.Version{
 			{

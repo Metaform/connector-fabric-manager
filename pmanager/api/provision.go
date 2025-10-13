@@ -99,11 +99,11 @@ type DefinitionStore interface {
 
 	// FindDeploymentDefinition retrieves the DeploymentDefinition associated with the given type.
 	// Returns the DeploymentDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindDeploymentDefinition(deploymentType string) (*DeploymentDefinition, error)
+	FindDeploymentDefinition(deploymentType dmodel.DeploymentType) (*DeploymentDefinition, error)
 
 	// FindActivityDefinition retrieves the ActivityDefinition associated with the given type.
 	// Returns the ActivityDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindActivityDefinition(activityType string) (*ActivityDefinition, error)
+	FindActivityDefinition(activityType ActivityType) (*ActivityDefinition, error)
 
 	// StoreDeploymentDefinition saves or updates a DeploymentDefinition
 	StoreDeploymentDefinition(definition *DeploymentDefinition)
@@ -112,10 +112,10 @@ type DefinitionStore interface {
 	StoreActivityDefinition(definition *ActivityDefinition)
 
 	// DeleteDeploymentDefinition removes a DeploymentDefinition for the given type, returning true if successful.
-	DeleteDeploymentDefinition(deploymentType string) bool
+	DeleteDeploymentDefinition(deploymentType dmodel.DeploymentType) bool
 
 	// DeleteActivityDefinition removes an ActivityDefinition for the given type, returning true if successful.
-	DeleteActivityDefinition(activityType string) bool
+	DeleteActivityDefinition(activityType ActivityType) bool
 
 	// ListDeploymentDefinitions returns DeploymentDefinition instances with pagination support
 	ListDeploymentDefinitions(offset, limit int) ([]*DeploymentDefinition, bool, error)

@@ -128,12 +128,12 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 		case model.IsRecoverable(err):
 			id := uuid.New().String()
 			h.logMonitor.Infof("Recoverable error encountered during deployment [%s]: %w ", id, err)
-			http.Error(w, fmt.Sprintf("Recoverable error encountered during deployment [%s], id"), http.StatusServiceUnavailable)
+			http.Error(w, fmt.Sprintf("Recoverable error encountered during deployment [%s]", id), http.StatusServiceUnavailable)
 			return
 		case model.IsFatal(err):
 			id := uuid.New().String()
 			h.logMonitor.Infof("Fatal error encountered during deployment [%s]: %w ", id, err)
-			http.Error(w, fmt.Sprintf("Fatal error encountered during deployment [%s], id"), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Fatal error encountered during deployment [%s]", id), http.StatusInternalServerError)
 			return
 		default:
 			http.Error(w, "Failed to initiate orchestration", http.StatusInternalServerError)

@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/store"
+	"github.com/metaform/connector-fabric-manager/dmodel"
 
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,7 @@ func TestNewDefinitionStore(t *testing.T) {
 func TestDefinitionStore_DeploymentDefinition_StoreAndFind(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	dType := "test-deployment-1"
+	var dType dmodel.DeploymentType = "test-deployment-1"
 	definition := &api.DeploymentDefinition{
 		Type:       dType,
 		ApiVersion: "v1",
@@ -67,7 +68,7 @@ func TestDefinitionStore_DeploymentDefinition_FindNotFound(t *testing.T) {
 func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	activityType := "test-activity-1"
+	var activityType api.ActivityType = "test-activity-1"
 	definition := &api.ActivityDefinition{
 		Type:        activityType,
 		Provider:    "test-provider",
@@ -101,7 +102,7 @@ func TestDefinitionStore_ActivityDefinition_FindNotFound(t *testing.T) {
 func TestDefinitionStore_DeploymentDefinition_Delete(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	dType := "test-deployment-1"
+	var dType dmodel.DeploymentType = "test-deployment-1"
 	definition := &api.DeploymentDefinition{Type: dType}
 	definitionStore.StoreDeploymentDefinition(definition)
 
@@ -121,7 +122,7 @@ func TestDefinitionStore_DeploymentDefinition_Delete(t *testing.T) {
 func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	activityType := "test-activity-1"
+	var activityType api.ActivityType = "test-activity-1"
 	definition := &api.ActivityDefinition{Type: activityType}
 	definitionStore.StoreActivityDefinition(definition)
 
@@ -141,7 +142,7 @@ func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
 func TestDefinitionStore_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	originalType := "original-type"
+	var originalType dmodel.DeploymentType = "original-type"
 	originalDef := &api.DeploymentDefinition{
 		Type:       originalType,
 		ApiVersion: "v1",
@@ -166,7 +167,7 @@ func TestDefinitionStore_DataIsolation(t *testing.T) {
 func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	dType := "test-deployment"
+	var dType dmodel.DeploymentType = "test-deployment"
 
 	// Store first definition
 	definition1 := &api.DeploymentDefinition{
@@ -274,7 +275,7 @@ func TestDefinitionStore_ListDeploymentDefinitions_ValidationErrors(t *testing.T
 func TestDefinitionStore_ListDeploymentDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	originalType := "original"
+	var originalType dmodel.DeploymentType = "original"
 	originalDef := &api.DeploymentDefinition{Type: originalType, ApiVersion: "v1"}
 	definitionStore.StoreDeploymentDefinition(originalDef)
 
@@ -379,7 +380,7 @@ func TestDefinitionStore_ListActivityDefinitions_ValidationErrors(t *testing.T) 
 func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	originalType := "original"
+	var originalType api.ActivityType = "original"
 	originalDef := &api.ActivityDefinition{Type: originalType, Provider: "provider1", Description: "desc1"}
 	definitionStore.StoreActivityDefinition(originalDef)
 

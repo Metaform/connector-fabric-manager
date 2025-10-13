@@ -15,11 +15,12 @@ package natsorchestration_test_test
 import (
 	"context"
 	"fmt"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -423,7 +424,7 @@ func createTestOrchestration(id, activityType string) api.Orchestration {
 		Steps: []api.OrchestrationStep{
 			{
 				Activities: []api.Activity{
-					{ID: "A1", Type: activityType},
+					{ID: "A1", Type: api.ActivityType(activityType)},
 				},
 			},
 		},

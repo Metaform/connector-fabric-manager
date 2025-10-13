@@ -15,9 +15,10 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/assert"
-	"testing"
 )
 
 func TestOrchestration_CanProceedToNextStep(t *testing.T) {
@@ -629,7 +630,7 @@ func TestGetNextActivities(t *testing.T) {
 		activities := orch.GetNextStepActivities("complex1")
 		require.Len(t, activities, 1)
 		require.Equal(t, "complex2", activities[0].ID)
-		require.Equal(t, "another.complex.test.com", activities[0].Type)
+		require.Equal(t, "another.complex.test.com", activities[0].Type.String())
 		require.Len(t, activities[0].Inputs, 1)
 		require.Equal(t, "input3", activities[0].Inputs[0].Source)
 		require.Equal(t, "target3", activities[0].Inputs[0].Target)
