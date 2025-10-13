@@ -27,22 +27,20 @@ type participantGenerator struct {
 
 func (g participantGenerator) Generate(
 	identifier string,
-	vpaProperties map[dmodel.VPAType]any,
+	vpaProperties vpaPropMap,
 	properties map[string]any,
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
-
-	// TODO process vpaProperties properties - decompose properties into VPA properties
 
 	cell, err := g.CellSelector(dmodel.VpaDeploymentType, cells, dProfiles)
 	if err != nil {
 		return nil, err
 	}
 
-	connector := g.generateVPA(dmodel.ConnectorType, cell)
-	cservice := g.generateVPA(dmodel.CredentialServiceType, cell)
-	dplane := g.generateVPA(dmodel.DataPlaneType, cell)
-	vpas := []api.VirtualParticipantAgent{connector, cservice, dplane}
+	connector := g.generateVPA(dmodel.ConnectorType, vpaProperties, cell)
+	cService := g.generateVPA(dmodel.CredentialServiceType, vpaProperties, cell)
+	dPlane := g.generateVPA(dmodel.DataPlaneType, vpaProperties, cell)
+	vpas := []api.VirtualParticipantAgent{connector, cService, dPlane}
 
 	pProfile := &api.ParticipantProfile{
 		Entity: api.Entity{
@@ -58,8 +56,12 @@ func (g participantGenerator) Generate(
 }
 
 // generateVPA creates a VPA targeted at given cell.
-func (g participantGenerator) generateVPA(vpaType dmodel.VPAType, cell *api.Cell) api.VirtualParticipantAgent {
-	connector := api.VirtualParticipantAgent{
+func (g participantGenerator) generateVPA(
+	vpaType dmodel.VPAType,
+	vpaProperties vpaPropMap,
+	cell *api.Cell) api.VirtualParticipantAgent {
+
+	vpa := api.VirtualParticipantAgent{
 		DeployableEntity: api.DeployableEntity{
 			Entity: api.Entity{
 				ID:      uuid.New().String(),
@@ -72,5 +74,15 @@ func (g participantGenerator) generateVPA(vpaType dmodel.VPAType, cell *api.Cell
 		Cell:       *cell,
 		Properties: make(api.Properties),
 	}
-	return connector
+
+	// Decompose the properties and add them to the VPA
+	props, found := vpaProperties[vpaType]
+	if found {
+		vpa.Properties = make(api.Properties)
+		for k, v := range props {
+			vpa.Properties[k] = v
+		}
+	}
+
+	return vpa
 }

@@ -22,6 +22,8 @@ import (
 	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
 
+type vpaPropMap = map[dmodel.VPAType]map[string]any
+
 type participantDeployer struct {
 	participantGenerator participantGenerator
 	trxContext           store.TransactionContext
@@ -30,7 +32,7 @@ type participantDeployer struct {
 func (t participantDeployer) Deploy(
 	ctx context.Context,
 	identifier string,
-	vpaProperties map[dmodel.VPAType]any,
+	vpaProperties vpaPropMap,
 	properties map[string]any) error {
 
 	// TODO perform property validation against a custom schema
@@ -66,7 +68,8 @@ func (t participantDeployer) Deploy(
 		}
 
 		dManifest.Payload[dmodel.VpaPayloadType] = vpaManifests
-		// TODO finish
+
+		// TODO finish by persisting
 
 		return nil
 	})
