@@ -14,9 +14,10 @@ package memorystore
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"sync"
 )
 
 // MemoryDefinitionStore is a thread-safe in-memory store for deployment and activity definitions.
@@ -34,11 +35,11 @@ func NewDefinitionStore() *MemoryDefinitionStore {
 	}
 }
 
-func (d *MemoryDefinitionStore) FindDeploymentDefinition(id string) (*api.DeploymentDefinition, error) {
+func (d *MemoryDefinitionStore) FindDeploymentDefinition(deploymentType string) (*api.DeploymentDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	definition, exists := d.deploymentDefinitions[id]
+	definition, exists := d.deploymentDefinitions[deploymentType]
 	if !exists {
 		return nil, store.ErrNotFound
 	}
@@ -48,11 +49,11 @@ func (d *MemoryDefinitionStore) FindDeploymentDefinition(id string) (*api.Deploy
 	return &definitionCopy, nil
 }
 
-func (d *MemoryDefinitionStore) FindActivityDefinition(id string) (*api.ActivityDefinition, error) {
+func (d *MemoryDefinitionStore) FindActivityDefinition(activityType string) (*api.ActivityDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	definition, exists := d.activityDefinitions[id]
+	definition, exists := d.activityDefinitions[activityType]
 	if !exists {
 		return nil, store.ErrNotFound
 	}
@@ -80,24 +81,24 @@ func (d *MemoryDefinitionStore) StoreActivityDefinition(definition *api.Activity
 	d.activityDefinitions[definitionCopy.Type] = &definitionCopy
 }
 
-func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(id string) bool {
+func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(deploymentType string) bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	_, exists := d.deploymentDefinitions[id]
+	_, exists := d.deploymentDefinitions[deploymentType]
 	if exists {
-		delete(d.deploymentDefinitions, id)
+		delete(d.deploymentDefinitions, deploymentType)
 	}
 	return exists
 }
 
-func (d *MemoryDefinitionStore) DeleteActivityDefinition(id string) bool {
+func (d *MemoryDefinitionStore) DeleteActivityDefinition(activityType string) bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	_, exists := d.activityDefinitions[id]
+	_, exists := d.activityDefinitions[activityType]
 	if exists {
-		delete(d.activityDefinitions, id)
+		delete(d.activityDefinitions, activityType)
 	}
 	return exists
 }

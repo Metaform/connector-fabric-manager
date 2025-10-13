@@ -13,8 +13,9 @@
 package memorystore
 
 import (
-	"github.com/metaform/connector-fabric-manager/common/store"
 	"testing"
+
+	"github.com/metaform/connector-fabric-manager/common/store"
 
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
@@ -34,15 +35,15 @@ func TestNewDefinitionStore(t *testing.T) {
 func TestDefinitionStore_DeploymentDefinition_StoreAndFind(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	deploymentID := "test-deployment-1"
+	dType := "test-deployment-1"
 	definition := &api.DeploymentDefinition{
-		Type:       "test-type",
+		Type:       dType,
 		ApiVersion: "v1",
 	}
 
-	definitionStore.StoreDeploymentDefinition(deploymentID, definition)
+	definitionStore.StoreDeploymentDefinition(definition)
 
-	result, err := definitionStore.FindDeploymentDefinition(deploymentID)
+	result, err := definitionStore.FindDeploymentDefinition(dType)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -66,16 +67,16 @@ func TestDefinitionStore_DeploymentDefinition_FindNotFound(t *testing.T) {
 func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	activityID := "test-activity-1"
+	activityType := "test-activity-1"
 	definition := &api.ActivityDefinition{
-		Type:        "test-activity-type",
+		Type:        activityType,
 		Provider:    "test-provider",
 		Description: "Test activity",
 	}
 
-	definitionStore.StoreActivityDefinition(activityID, definition)
+	definitionStore.StoreActivityDefinition(definition)
 
-	result, err := definitionStore.FindActivityDefinition(activityID)
+	result, err := definitionStore.FindActivityDefinition(activityType)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -100,91 +101,91 @@ func TestDefinitionStore_ActivityDefinition_FindNotFound(t *testing.T) {
 func TestDefinitionStore_DeploymentDefinition_Delete(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	deploymentID := "test-deployment-1"
-	definition := &api.DeploymentDefinition{Type: "test-type"}
-	definitionStore.StoreDeploymentDefinition(deploymentID, definition)
+	dType := "test-deployment-1"
+	definition := &api.DeploymentDefinition{Type: dType}
+	definitionStore.StoreDeploymentDefinition(definition)
 
-	_, err := definitionStore.FindDeploymentDefinition(deploymentID)
+	_, err := definitionStore.FindDeploymentDefinition(dType)
 	assert.NoError(t, err)
 
-	deleted := definitionStore.DeleteDeploymentDefinition(deploymentID)
+	deleted := definitionStore.DeleteDeploymentDefinition(dType)
 	assert.True(t, deleted)
 
-	_, err = definitionStore.FindDeploymentDefinition(deploymentID)
+	_, err = definitionStore.FindDeploymentDefinition(dType)
 	assert.Equal(t, store.ErrNotFound, err)
 
-	deleted = definitionStore.DeleteDeploymentDefinition(deploymentID)
+	deleted = definitionStore.DeleteDeploymentDefinition(dType)
 	assert.False(t, deleted)
 }
 
 func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	activityID := "test-activity-1"
-	definition := &api.ActivityDefinition{Type: "test-type"}
-	definitionStore.StoreActivityDefinition(activityID, definition)
+	activityType := "test-activity-1"
+	definition := &api.ActivityDefinition{Type: activityType}
+	definitionStore.StoreActivityDefinition(definition)
 
-	_, err := definitionStore.FindActivityDefinition(activityID)
+	_, err := definitionStore.FindActivityDefinition(activityType)
 	assert.NoError(t, err)
 
-	deleted := definitionStore.DeleteActivityDefinition(activityID)
+	deleted := definitionStore.DeleteActivityDefinition(activityType)
 	assert.True(t, deleted)
 
-	_, err = definitionStore.FindActivityDefinition(activityID)
+	_, err = definitionStore.FindActivityDefinition(activityType)
 	assert.Equal(t, store.ErrNotFound, err)
 
-	deleted = definitionStore.DeleteActivityDefinition(activityID)
+	deleted = definitionStore.DeleteActivityDefinition(activityType)
 	assert.False(t, deleted)
 }
 
 func TestDefinitionStore_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	deploymentID := "test-deployment"
+	originalType := "original-type"
 	originalDef := &api.DeploymentDefinition{
-		Type:       "original-type",
+		Type:       originalType,
 		ApiVersion: "v1",
 	}
-	definitionStore.StoreDeploymentDefinition(deploymentID, originalDef)
+	definitionStore.StoreDeploymentDefinition(originalDef)
 
 	originalDef.Type = "modified-type"
 
-	retrievedDef, err := definitionStore.FindDeploymentDefinition(deploymentID)
+	retrievedDef, err := definitionStore.FindDeploymentDefinition(originalType)
 	require.NoError(t, err)
 
-	assert.Equal(t, "original-type", retrievedDef.Type)
+	assert.Equal(t, originalType, retrievedDef.Type)
 	assert.NotEqual(t, originalDef.Type, retrievedDef.Type)
 
 	retrievedDef.Type = "retrieved-modified"
 
-	retrievedDef2, err := definitionStore.FindDeploymentDefinition(deploymentID)
+	retrievedDef2, err := definitionStore.FindDeploymentDefinition(originalType)
 	require.NoError(t, err)
-	assert.Equal(t, "original-type", retrievedDef2.Type)
+	assert.Equal(t, originalType, retrievedDef2.Type)
 }
 
 func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	deploymentID := "test-deployment"
+	dType := "test-deployment"
 
 	// Store first definition
 	definition1 := &api.DeploymentDefinition{
-		Type:       "type1",
+		Type:       dType,
 		ApiVersion: "v1",
 	}
-	definitionStore.StoreDeploymentDefinition(deploymentID, definition1)
+	definitionStore.StoreDeploymentDefinition(definition1)
 
 	// Store second definition with same ID (overwrite)
 	definition2 := &api.DeploymentDefinition{
-		Type:       "type2",
+		Type:       dType,
 		ApiVersion: "v2",
 	}
-	definitionStore.StoreDeploymentDefinition(deploymentID, definition2)
+	definitionStore.StoreDeploymentDefinition(definition2)
 
 	// Verify the second definition is stored
-	result, err := definitionStore.FindDeploymentDefinition(deploymentID)
+	result, err := definitionStore.FindDeploymentDefinition(dType)
 	require.NoError(t, err)
-	assert.Equal(t, "type2", result.Type)
+	assert.Equal(t, dType, result.Type)
 	assert.Equal(t, "v2", result.ApiVersion)
 
 	// Verify only one definition exists
@@ -208,11 +209,11 @@ func TestDefinitionStore_ListDeploymentDefinitions_WithPagination(t *testing.T) 
 	def4 := &api.DeploymentDefinition{Type: "type4", ApiVersion: "v4"}
 	def5 := &api.DeploymentDefinition{Type: "type5", ApiVersion: "v5"}
 
-	definitionStore.StoreDeploymentDefinition("deploy-1", def1)
-	definitionStore.StoreDeploymentDefinition("deploy-2", def2)
-	definitionStore.StoreDeploymentDefinition("deploy-3", def3)
-	definitionStore.StoreDeploymentDefinition("deploy-4", def4)
-	definitionStore.StoreDeploymentDefinition("deploy-5", def5)
+	definitionStore.StoreDeploymentDefinition(def1)
+	definitionStore.StoreDeploymentDefinition(def2)
+	definitionStore.StoreDeploymentDefinition(def3)
+	definitionStore.StoreDeploymentDefinition(def4)
+	definitionStore.StoreDeploymentDefinition(def5)
 
 	// Test first page
 	definitions, hasMore, err = definitionStore.ListDeploymentDefinitions(0, 2)
@@ -273,8 +274,9 @@ func TestDefinitionStore_ListDeploymentDefinitions_ValidationErrors(t *testing.T
 func TestDefinitionStore_ListDeploymentDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	originalDef := &api.DeploymentDefinition{Type: "original", ApiVersion: "v1"}
-	definitionStore.StoreDeploymentDefinition("deploy-1", originalDef)
+	originalType := "original"
+	originalDef := &api.DeploymentDefinition{Type: originalType, ApiVersion: "v1"}
+	definitionStore.StoreDeploymentDefinition(originalDef)
 
 	definitions, hasMore, err := definitionStore.ListDeploymentDefinitions(0, 10)
 	assert.NoError(t, err)
@@ -285,15 +287,15 @@ func TestDefinitionStore_ListDeploymentDefinitions_DataIsolation(t *testing.T) {
 	originalDef.Type = "modified"
 
 	// Verify returned definition is not affected
-	assert.Equal(t, "original", definitions[0].Type)
+	assert.Equal(t, originalType, definitions[0].Type)
 
 	// Modify the returned definition
 	definitions[0].Type = "returned-modified"
 
 	// Verify stored definition is not affected
-	storedDef, err := definitionStore.FindDeploymentDefinition("deploy-1")
+	storedDef, err := definitionStore.FindDeploymentDefinition(originalType)
 	assert.NoError(t, err)
-	assert.Equal(t, "original", storedDef.Type)
+	assert.Equal(t, originalType, storedDef.Type)
 }
 
 func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
@@ -312,11 +314,11 @@ func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
 	def4 := &api.ActivityDefinition{Type: "type4", Provider: "provider4", Description: "desc4"}
 	def5 := &api.ActivityDefinition{Type: "type5", Provider: "provider5", Description: "desc5"}
 
-	definitionStore.StoreActivityDefinition("activity-1", def1)
-	definitionStore.StoreActivityDefinition("activity-2", def2)
-	definitionStore.StoreActivityDefinition("activity-3", def3)
-	definitionStore.StoreActivityDefinition("activity-4", def4)
-	definitionStore.StoreActivityDefinition("activity-5", def5)
+	definitionStore.StoreActivityDefinition(def1)
+	definitionStore.StoreActivityDefinition(def2)
+	definitionStore.StoreActivityDefinition(def3)
+	definitionStore.StoreActivityDefinition(def4)
+	definitionStore.StoreActivityDefinition(def5)
 
 	// Test first page
 	definitions, hasMore, err = definitionStore.ListActivityDefinitions(0, 2)
@@ -377,8 +379,9 @@ func TestDefinitionStore_ListActivityDefinitions_ValidationErrors(t *testing.T) 
 func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	originalDef := &api.ActivityDefinition{Type: "original", Provider: "provider1", Description: "desc1"}
-	definitionStore.StoreActivityDefinition("activity-1", originalDef)
+	originalType := "original"
+	originalDef := &api.ActivityDefinition{Type: originalType, Provider: "provider1", Description: "desc1"}
+	definitionStore.StoreActivityDefinition(originalDef)
 
 	definitions, hasMore, err := definitionStore.ListActivityDefinitions(0, 10)
 	assert.NoError(t, err)
@@ -389,13 +392,13 @@ func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
 	originalDef.Type = "modified"
 
 	// Verify returned definition is not affected
-	assert.Equal(t, "original", definitions[0].Type)
+	assert.Equal(t, originalType, definitions[0].Type)
 
 	// Modify the returned definition
 	definitions[0].Type = "returned-modified"
 
 	// Verify stored definition is not affected
-	storedDef, err := definitionStore.FindActivityDefinition("activity-1")
+	storedDef, err := definitionStore.FindActivityDefinition(originalType)
 	assert.NoError(t, err)
-	assert.Equal(t, "original", storedDef.Type)
+	assert.Equal(t, originalType, storedDef.Type)
 }

@@ -97,13 +97,13 @@ type ActivityContext interface {
 // DefinitionStore manages DeploymentDefinitions and ActivityDefinitions.
 type DefinitionStore interface {
 
-	// FindDeploymentDefinition retrieves the DeploymentDefinition associated with the given id.
+	// FindDeploymentDefinition retrieves the DeploymentDefinition associated with the given type.
 	// Returns the DeploymentDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindDeploymentDefinition(id string) (*DeploymentDefinition, error)
+	FindDeploymentDefinition(deploymentType string) (*DeploymentDefinition, error)
 
-	// FindActivityDefinition retrieves the ActivityDefinition associated with the given id.
+	// FindActivityDefinition retrieves the ActivityDefinition associated with the given type.
 	// Returns the ActivityDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindActivityDefinition(id string) (*ActivityDefinition, error)
+	FindActivityDefinition(activityType string) (*ActivityDefinition, error)
 
 	// StoreDeploymentDefinition saves or updates a DeploymentDefinition
 	StoreDeploymentDefinition(definition *DeploymentDefinition)
@@ -111,11 +111,11 @@ type DefinitionStore interface {
 	// StoreActivityDefinition saves or updates a ActivityDefinition
 	StoreActivityDefinition(definition *ActivityDefinition)
 
-	// DeleteDeploymentDefinition removes a DeploymentDefinition for the given id, returning true if successful.
-	DeleteDeploymentDefinition(id string) bool
+	// DeleteDeploymentDefinition removes a DeploymentDefinition for the given type, returning true if successful.
+	DeleteDeploymentDefinition(deploymentType string) bool
 
-	// DeleteActivityDefinition removes an ActivityDefinition for the given id, returning true if successful.
-	DeleteActivityDefinition(id string) bool
+	// DeleteActivityDefinition removes an ActivityDefinition for the given type, returning true if successful.
+	DeleteActivityDefinition(activityType string) bool
 
 	// ListDeploymentDefinitions returns DeploymentDefinition instances with pagination support
 	ListDeploymentDefinitions(offset, limit int) ([]*DeploymentDefinition, bool, error)
