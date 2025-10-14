@@ -33,7 +33,7 @@ type ParticipantDeployer interface {
 // DeploymentClient asynchronously deploys a manifest to the provision manager. Implementations may use different wire protocols.
 type DeploymentClient interface {
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	deploy(manifest dmodel.DeploymentManifest) error
+	Deploy(manifest dmodel.DeploymentManifest) error
 }
 
 // DeploymentResponse is asynchronously returned by the deployment client.
