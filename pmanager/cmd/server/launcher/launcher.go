@@ -14,6 +14,7 @@ package launcher
 
 import (
 	"fmt"
+
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/config"
@@ -26,6 +27,7 @@ import (
 )
 
 const (
+	logPrefix    = "pmanager"
 	defaultPort  = 8181
 	configPrefix = "pm"
 	httpKey      = "httpPort"
@@ -42,7 +44,7 @@ func LaunchAndWaitSignal() {
 func Launch(shutdown <-chan struct{}) {
 	mode := runtime.LoadMode()
 
-	logMonitor := runtime.LoadLogMonitor(mode)
+	logMonitor := runtime.LoadLogMonitor(logPrefix, mode)
 	//goland:noinspection GoUnhandledErrorResult
 	defer logMonitor.Sync()
 

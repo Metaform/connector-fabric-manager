@@ -15,9 +15,10 @@ package natsorchestration
 import (
 	"context"
 	"fmt"
+
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsclient"
 )
 
 const (
@@ -65,7 +66,7 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 	}
 
 	if setupStream {
-		_, err = SetupStream(natsContext, natsClient, a.streamName)
+		_, err = natsclient.SetupStream(natsContext, natsClient, a.streamName)
 		if err != nil {
 			return fmt.Errorf("error initializing NATS stream: %w", err)
 		}

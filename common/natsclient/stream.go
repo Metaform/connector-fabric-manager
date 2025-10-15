@@ -10,24 +10,38 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package natsclient
 
 import (
 	"context"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsclient"
-	"github.com/nats-io/nats.go/jetstream"
+	"errors"
+	"fmt"
 	"strings"
+
+	"github.com/nats-io/nats.go/jetstream"
 )
 
-// SetupStream configures a JetStream stream configured for activity messages.
-func SetupStream(ctx context.Context, client *natsclient.NatsClient, streamName string) (jetstream.Stream, error) {
-	cfg := jetstream.StreamConfig{
-		Name:      streamName,
-		Retention: jetstream.WorkQueuePolicy,
-		Subjects:  []string{ActivitySubjectPrefix + ".*"},
+const CFMSubjectPrefix = "event"
+const CFMDeployment = "cfm-deployment"
+
+// SetupStream configures a JetStream stream used for component messaging. If the stream does not exist, it is created.
+func SetupStream(ctx context.Context, client *NatsClient, streamName string) (jetstream.Stream, error) {
+	stream, err := client.JetStream.Stream(ctx, streamName)
+	if err == nil {
+		return stream, nil
 	}
 
-	return client.JetStream.CreateOrUpdateStream(ctx, cfg)
+	// If stream doesn't exist, create it
+	if errors.Is(err, jetstream.ErrStreamNotFound) {
+		cfg := jetstream.StreamConfig{
+			Name:      streamName,
+			Retention: jetstream.WorkQueuePolicy,
+			Subjects:  []string{CFMSubjectPrefix + ".*"},
+		}
+		return client.JetStream.CreateOrUpdateStream(ctx, cfg)
+	}
+
+	return nil, fmt.Errorf("unable to access NATS stream: %w", err)
 }
 
 // SetupConsumer creates or updates a NATS JetStream consumer for an activity processor.
@@ -36,6 +50,6 @@ func SetupConsumer(ctx context.Context, stream jetstream.Stream, subject string)
 	return stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
 		Durable:       sanitizedSubject,
 		AckPolicy:     jetstream.AckExplicitPolicy,
-		FilterSubject: "event." + sanitizedSubject,
+		FilterSubject: CFMSubjectPrefix + "." + sanitizedSubject,
 	})
 }

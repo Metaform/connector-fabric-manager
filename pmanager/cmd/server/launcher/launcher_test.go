@@ -14,13 +14,14 @@ package launcher
 
 import (
 	"context"
-	"github.com/metaform/connector-fabric-manager/common/testfixtures"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
-	"github.com/stretchr/testify/require"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/testfixtures"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -33,13 +34,13 @@ func TestTestAgent_Integration(t *testing.T) {
 	defer cancel()
 
 	// Set up NATS container
-	nt, err := natsorchestration.SetupNatsContainer(ctx, "test-orchestration-bucket")
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "test-orchestration-bucket")
 
 	require.NoError(t, err)
 
-	defer natsorchestration.TeardownNatsContainer(ctx, nt)
+	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
-	natsorchestration.SetupTestStream(t, ctx, nt.Client, streamName)
+	natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
 
 	// Required agent config
 	_ = os.Setenv("PM_URI", nt.Uri)

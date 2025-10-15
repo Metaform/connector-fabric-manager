@@ -14,14 +14,16 @@ package natsorchestration_test_test
 
 import (
 	"context"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sync"
-	"testing"
-	"time"
 )
 
 const (
@@ -40,10 +42,10 @@ func TestExecuteOrchestration_NoSteps(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natsorchestration.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
 
-	defer natsorchestration.TeardownNatsContainer(ctx, nt)
+	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
 	orchestrator := natsorchestration.NatsDeploymentOrchestrator{Client: adapter}
@@ -186,13 +188,13 @@ func TestExecuteOrchestration(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 			defer cancel()
 
-			nt, err := natsorchestration.SetupNatsContainer(ctx, "cfm-activity-context-bucket")
+			nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-activity-context-bucket")
 			require.NoError(t, err)
 
-			defer natsorchestration.TeardownNatsContainer(ctx, nt)
+			defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
-			stream := natsorchestration.SetupTestStream(t, ctx, nt.Client, testStream)
-			natsorchestration.SetupTestConsumer(t, ctx, stream, "test.activity")
+			stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+			natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
 
 			var executions []activityExecution
 			executionsMutex := &sync.Mutex{}
@@ -271,13 +273,13 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natsorchestration.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
 
-	defer natsorchestration.TeardownNatsContainer(ctx, nt)
+	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natsorchestration.SetupTestStream(t, ctx, nt.Client, testStream)
-	natsorchestration.SetupTestConsumer(t, ctx, stream, "test.schedule.continue")
+	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.schedule.continue")
 
 	//natstestutil.SetupStreamAndConsumer(t, ctx, nt)
 

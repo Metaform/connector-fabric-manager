@@ -23,6 +23,7 @@ const (
 	DeploymentHandlerRegistryKey    system.ServiceType = "tmapi:DeploymentHandlerRegistry"
 	DeploymentCallbackDispatcherKey system.ServiceType = "tmapi:DeploymentCallbackDispatcher"
 	ParticipantDeployerKey          system.ServiceType = "tmapi:ParticipantDeployer"
+	DeploymentClientKey             system.ServiceType = "tmapi:DeploymentClient"
 )
 
 // ParticipantDeployer creates a participant profile and deploys its associated VPAs.
@@ -32,12 +33,15 @@ type ParticipantDeployer interface {
 
 // DeploymentClient asynchronously deploys a manifest to the provision manager. Implementations may use different wire protocols.
 type DeploymentClient interface {
+
+	// Deploy deploys the specified manifest.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Deploy(manifest dmodel.DeploymentManifest) error
+	Deploy(ctx context.Context, manifest dmodel.DeploymentManifest) error
 }
 
 // DeploymentResponse is asynchronously returned by the deployment client.
 type DeploymentResponse struct {
+	ID             string
 	Success        bool
 	ErrorDetail    string
 	ManifestID     string

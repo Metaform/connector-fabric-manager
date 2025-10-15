@@ -20,12 +20,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsclient"
 	"github.com/nats-io/nats.go/jetstream"
 )
-
-const ActivitySubjectPrefix = "event"
 
 // MsgClient is an interface for interacting with NATS. This interface is used to allow for mocking in unit tests that
 // verify correct behavior in response to error conditions (i.e., negative tests).
@@ -73,7 +71,7 @@ func EnqueueActivityMessages(ctx context.Context, orchestrationID string, activi
 		}
 
 		// Strip out periods since they denote a subject hierarchy for NATS
-		subject := ActivitySubjectPrefix + "." + strings.ReplaceAll(activity.Type.String(), ".", "-")
+		subject := natsclient.CFMSubjectPrefix + "." + strings.ReplaceAll(activity.Type.String(), ".", "-")
 		_, err = client.Publish(ctx, subject, payload)
 		if err != nil {
 			return fmt.Errorf("error publishing to stream: %w", err)

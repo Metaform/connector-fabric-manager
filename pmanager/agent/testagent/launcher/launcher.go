@@ -15,17 +15,19 @@ package launcher
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsclient"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
-	"time"
 )
 
 const (
+	logPrefix    = "test-agent"
 	activityType = "test.activity"
 	configPrefix = "testagent"
 	uriKey       = "uri"
@@ -41,7 +43,7 @@ func LaunchAndWaitSignal() {
 func Launch(shutdown <-chan struct{}) {
 	mode := runtime.LoadMode()
 
-	logMonitor := runtime.LoadLogMonitor(mode)
+	logMonitor := runtime.LoadLogMonitor(logPrefix, mode)
 	//goland:noinspection GoUnhandledErrorResult
 	defer logMonitor.Sync()
 
@@ -112,13 +114,13 @@ func SetupConsumer(natsClient *natsclient.NatsClient, streamName string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	stream, err := natsorchestration.SetupStream(ctx, natsClient, streamName)
+	stream, err := natsclient.SetupStream(ctx, natsClient, streamName)
 
 	if err != nil {
 		return fmt.Errorf("error setting up NATS test agent stream: %w", err)
 	}
 
-	_, err = natsorchestration.SetupConsumer(ctx, stream, activityType)
+	_, err = natsclient.SetupConsumer(ctx, stream, activityType)
 
 	if err != nil {
 		return fmt.Errorf("error setting up NATS test agent consumer: %w", err)

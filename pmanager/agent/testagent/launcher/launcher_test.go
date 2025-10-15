@@ -14,11 +14,13 @@ package launcher
 
 import (
 	"context"
-	"github.com/metaform/connector-fabric-manager/common/runtime"
-	"github.com/metaform/connector-fabric-manager/common/system"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/runtime"
+	"github.com/metaform/connector-fabric-manager/common/system"
 
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
@@ -37,13 +39,13 @@ func TestTestAgent_Integration(t *testing.T) {
 	defer cancel()
 
 	// Set up NATS container
-	nt, err := natsorchestration.SetupNatsContainer(ctx, "test-agent-bucket")
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "test-agent-bucket")
 
 	require.NoError(t, err)
 
-	defer natsorchestration.TeardownNatsContainer(ctx, nt)
+	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
-	natsorchestration.SetupTestStream(t, ctx, nt.Client, streamName)
+	natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
 
 	// Set up an orchestration for the test agent to process
 	orchestration := api.Orchestration{
@@ -73,7 +75,7 @@ func TestTestAgent_Integration(t *testing.T) {
 
 	// Submit orchestration
 	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
-	logMonitor := runtime.LoadLogMonitor(system.DevelopmentMode)
+	logMonitor := runtime.LoadLogMonitor("test-agent", system.DevelopmentMode)
 	orchestrator := natsorchestration.NewNatsDeploymentOrchestrator(adapter, logMonitor)
 
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)

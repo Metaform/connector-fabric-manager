@@ -10,19 +10,20 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package natstestfixtures
 
 import (
 	"context"
 	"fmt"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsclient"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 // The image used for testing
@@ -127,13 +128,13 @@ func TeardownNatsContainer(ctx context.Context, nt *NatsTestContainer) {
 }
 
 func SetupTestStream(t *testing.T, ctx context.Context, client *natsclient.NatsClient, streamName string) jetstream.Stream {
-	stream, err := SetupStream(ctx, client, streamName)
+	stream, err := natsclient.SetupStream(ctx, client, streamName)
 	require.NoError(t, err)
 	return stream
 }
 
 func SetupTestConsumer(t *testing.T, ctx context.Context, stream jetstream.Stream, subject string) jetstream.Consumer {
-	consumer, err := SetupConsumer(ctx, stream, subject)
+	consumer, err := natsclient.SetupConsumer(ctx, stream, subject)
 	require.NoError(t, err)
 	return consumer
 }

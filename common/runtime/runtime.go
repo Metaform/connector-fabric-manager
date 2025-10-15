@@ -15,21 +15,23 @@ package runtime
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"strings"
+	"sync"
+	"syscall"
+
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
 )
 
 const (
 	mode = "mode"
 )
 
-func LoadLogMonitor(mode system.RuntimeMode) monitor.LogMonitor {
+func LoadLogMonitor(name string, mode system.RuntimeMode) monitor.LogMonitor {
 	var config zap.Config
 	var options []zap.Option
 
@@ -56,18 +58,37 @@ func LoadLogMonitor(mode system.RuntimeMode) monitor.LogMonitor {
 		panic(fmt.Errorf("failed to initialize logger: %w", err))
 	}
 
-	return NewSugaredLogMonitor(logger.Sugar())
+	return NewSugaredLogMonitor(logger.Named(name).Sugar())
 }
 
-func LoadMode() system.RuntimeMode {
-	modeFlag := flag.String(mode, system.ProductionMode, "Runtime mode: development, production, or debug")
-	flag.Parse()
+var (
+	loadModeOnce sync.Once
+	runtimeMode  system.RuntimeMode
+)
 
-	mode, err := system.ParseRuntimeMode(*modeFlag)
-	if err != nil {
-		panic(fmt.Errorf("error parsing runtime mode: %w", err))
-	}
-	return mode
+func LoadMode() system.RuntimeMode {
+	// Guard against multiple calls when more than one runtime is loaded in the same process
+	loadModeOnce.Do(func() {
+		var modeFlag *string
+
+		// Check if flag is already defined
+		if flag.Lookup(mode) == nil {
+			modeFlag = flag.String(mode, system.ProductionMode, "Runtime mode: development, production, or debug")
+		} else {
+			// Get the existing flag value
+			modeValue := flag.Lookup(mode).Value.String()
+			modeFlag = &modeValue
+		}
+		flag.Parse()
+
+		parsedMode, err := system.ParseRuntimeMode(*modeFlag)
+		if err != nil {
+			panic(fmt.Errorf("error parsing runtime mode: %w", err))
+		}
+		runtimeMode = parsedMode
+	})
+
+	return runtimeMode
 }
 
 // SugaredLogMonitor implements LogMonitor by wrapping a zap.SugaredLogger
