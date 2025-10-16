@@ -213,28 +213,23 @@ type mockJetStreamMsg struct {
 }
 
 func (m *mockJetStreamMsg) Headers() nats.Header {
-	//TODO implement me
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (m *mockJetStreamMsg) Metadata() (*jetstream.MsgMetadata, error) {
-	//TODO implement me
-	panic("implement me")
+	panic("not implemented")
 }
 
-func (m *mockJetStreamMsg) DoubleAck(ctx context.Context) error {
-	//TODO implement me
-	panic("implement me")
+func (m *mockJetStreamMsg) DoubleAck(_ context.Context) error {
+	panic("not implemented")
 }
 
-func (m *mockJetStreamMsg) NakWithDelay(delay time.Duration) error {
-	//TODO implement me
-	panic("implement me")
+func (m *mockJetStreamMsg) NakWithDelay(_ time.Duration) error {
+	panic("not implemented")
 }
 
-func (m *mockJetStreamMsg) TermWithReason(reason string) error {
-	//TODO implement me
-	panic("implement me")
+func (m *mockJetStreamMsg) TermWithReason(_ string) error {
+	panic("not implemented")
 }
 
 func (m *mockJetStreamMsg) Data() []byte {
@@ -276,14 +271,12 @@ type mockConsumer struct {
 	mock.Mock
 }
 
-func (m *mockConsumer) FetchBytes(maxBytes int, opts ...jetstream.FetchOpt) (jetstream.MessageBatch, error) {
-	//TODO implement me
-	panic("implement me")
+func (m *mockConsumer) FetchBytes(_ int, _ ...jetstream.FetchOpt) (jetstream.MessageBatch, error) {
+	panic("not implemented")
 }
 
-func (m *mockConsumer) FetchNoWait(batch int) (jetstream.MessageBatch, error) {
-	//TODO implement me
-	panic("implement me")
+func (m *mockConsumer) FetchNoWait(_ int) (jetstream.MessageBatch, error) {
+	panic("not implemented")
 }
 
 func (m *mockConsumer) Consume(handler jetstream.MessageHandler, opts ...jetstream.PullConsumeOpt) (jetstream.ConsumeContext, error) {
