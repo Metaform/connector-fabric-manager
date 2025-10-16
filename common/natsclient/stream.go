@@ -23,6 +23,9 @@ import (
 
 const CFMSubjectPrefix = "event"
 const CFMDeployment = "cfm-deployment"
+const CFMDeploymentSubject = CFMSubjectPrefix + "." + CFMDeployment
+const CFMDeploymentResponse = "cfm-deployment-response"
+const CFMDeploymentResponseSubject = CFMSubjectPrefix + "." + CFMDeploymentResponse
 
 // SetupStream configures a JetStream stream used for component messaging. If the stream does not exist, it is created.
 func SetupStream(ctx context.Context, client *NatsClient, streamName string) (jetstream.Stream, error) {

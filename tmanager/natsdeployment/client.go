@@ -16,6 +16,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
@@ -30,9 +31,22 @@ type natsDeploymentClient struct {
 	client     natsclient.MsgClient
 	dispatcher api.DeploymentCallbackDispatcher
 	monitor    monitor.LogMonitor
+	proccesing atomic.Bool
 }
 
-func (n natsDeploymentClient) Init(ctx context.Context, consumer jetstream.Consumer) error {
+func newNatsDeploymentClient(
+	client natsclient.MsgClient,
+	dispatcher api.DeploymentCallbackDispatcher,
+	monitor monitor.LogMonitor) *natsDeploymentClient {
+	return &natsDeploymentClient{
+		client:     client,
+		dispatcher: dispatcher,
+		monitor:    monitor,
+		proccesing: atomic.Bool{},
+	}
+}
+
+func (n *natsDeploymentClient) Init(ctx context.Context, consumer jetstream.Consumer) error {
 	go func() {
 		err := n.processLoop(ctx, consumer)
 		if err != nil {
@@ -42,8 +56,12 @@ func (n natsDeploymentClient) Init(ctx context.Context, consumer jetstream.Consu
 	return nil
 }
 
-func (n natsDeploymentClient) Deploy(ctx context.Context, manifest dmodel.DeploymentManifest) error {
-	_, err := n.client.Publish(ctx, "subject", nil)
+func (n *natsDeploymentClient) Deploy(ctx context.Context, manifest dmodel.DeploymentManifest) error {
+	serialized, err := json.Marshal(manifest)
+	if err != nil {
+		return err
+	}
+	_, err = n.client.Publish(ctx, natsclient.CFMDeploymentSubject, serialized)
 	if err != nil {
 		return err
 	}
@@ -53,10 +71,12 @@ func (n natsDeploymentClient) Deploy(ctx context.Context, manifest dmodel.Deploy
 // processLoop handles the main loop for consuming and processing messages from a JetStream consumer.
 // It runs continuously until the provided context is canceled or an error occurs.
 // Returns an error if message fetching or processing fails.
-func (n natsDeploymentClient) processLoop(ctx context.Context, consumer jetstream.Consumer) error {
+func (n *natsDeploymentClient) processLoop(ctx context.Context, consumer jetstream.Consumer) error {
+	n.proccesing.Store(true)
 	for {
 		select {
 		case <-ctx.Done():
+			n.proccesing.Store(false)
 			return ctx.Err()
 		default:
 			messageBatch, err := consumer.Fetch(1, jetstream.FetchMaxWait(time.Second))
@@ -73,7 +93,7 @@ func (n natsDeploymentClient) processLoop(ctx context.Context, consumer jetstrea
 	}
 }
 
-func (n natsDeploymentClient) processMessage(ctx context.Context, message jetstream.Msg) error {
+func (n *natsDeploymentClient) processMessage(ctx context.Context, message jetstream.Msg) error {
 	var dResponse api.DeploymentResponse
 	if err := json.Unmarshal(message.Data(), &dResponse); err != nil {
 		err2 := n.ackMessage(dResponse.ID, message)
@@ -106,7 +126,7 @@ func (n natsDeploymentClient) processMessage(ctx context.Context, message jetstr
 	}
 }
 
-func (n natsDeploymentClient) ackMessage(id string, message jetstream.Msg) error {
+func (n *natsDeploymentClient) ackMessage(id string, message jetstream.Msg) error {
 	if err := message.Ack(); err != nil {
 		return fmt.Errorf("failed to ACK activity message %s: %w", id, err)
 	}

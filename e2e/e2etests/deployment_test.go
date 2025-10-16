@@ -72,7 +72,7 @@ func Test_VerifyE2E(t *testing.T) {
 	ser, err := json.Marshal(m)
 	require.NoError(t, err)
 
-	_, err = nt.Client.JetStream.Publish(context.TODO(), "event.cfm-deployment", ser)
+	_, err = nt.Client.JetStream.Publish(context.TODO(), "event.cfm-deployment-response", ser)
 
 	require.NoError(t, err)
 

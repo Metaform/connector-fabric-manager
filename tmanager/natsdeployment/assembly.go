@@ -26,7 +26,7 @@ type natsDeploymentServiceAssembly struct {
 	bucket           string
 	streamName       string
 	natsClient       *natsclient.NatsClient
-	deploymentClient natsDeploymentClient
+	deploymentClient *natsDeploymentClient
 	processCancel    context.CancelFunc
 
 	system.DefaultServiceAssembly
@@ -62,11 +62,8 @@ func (a *natsDeploymentServiceAssembly) Init(ctx *system.InitContext) error {
 
 	dispatcher := ctx.Registry.Resolve(api.DeploymentCallbackDispatcherKey).(api.DeploymentCallbackDispatcher)
 
-	a.deploymentClient = natsDeploymentClient{
-		client:     natsclient.NewMsgClient(natsClient),
-		dispatcher: dispatcher,
-		monitor:    ctx.LogMonitor,
-	}
+	client := natsclient.NewMsgClient(natsClient)
+	a.deploymentClient = newNatsDeploymentClient(client, dispatcher, ctx.LogMonitor)
 	ctx.Registry.Register(api.DeploymentClientKey, &a.deploymentClient)
 
 	return nil
@@ -82,7 +79,7 @@ func (a *natsDeploymentServiceAssembly) Start(_ *system.StartContext) error {
 		return fmt.Errorf("error initializing NATS stream: %w", err)
 	}
 
-	consumer, err := natsclient.SetupConsumer(natsContext, stream, natsclient.CFMDeployment)
+	consumer, err := natsclient.SetupConsumer(natsContext, stream, natsclient.CFMDeploymentResponse)
 	if err != nil {
 		return fmt.Errorf("error initializing NATS deployment consumer: %w", err)
 	}
