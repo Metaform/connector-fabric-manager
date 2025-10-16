@@ -18,15 +18,16 @@ package natsorchestration_test_test
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/natsclient/mocks"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration/mocks"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 const (
@@ -38,7 +39,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 	tests := []struct {
 		name          string
 		orchestration api.Orchestration
-		setupMock     func(*mocks.MsgClient)
+		setupMock     func(*mocks.MockMsgClient)
 		expectedError string
 		expectedCalls int
 		parallelCheck bool
@@ -53,7 +54,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 					},
 				},
 			},
-			setupMock: func(m *mocks.MsgClient) {
+			setupMock: func(m *mocks.MockMsgClient) {
 				m.EXPECT().Update(mock.Anything, "test-3", mock.Anything, uint64(0)).
 					Return(uint64(0), &jetstream.APIError{ErrorCode: jetstream.JSErrCodeStreamWrongLastSequence})
 			},
@@ -69,7 +70,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 					},
 				},
 			},
-			setupMock: func(m *mocks.MsgClient) {
+			setupMock: func(m *mocks.MockMsgClient) {
 				m.EXPECT().Update(mock.Anything, "test-4", mock.Anything, uint64(0)).
 					Return(uint64(0), assert.AnError)
 			},
@@ -86,7 +87,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 					},
 				},
 			},
-			setupMock: func(m *mocks.MsgClient) {
+			setupMock: func(m *mocks.MockMsgClient) {
 				m.EXPECT().Update(mock.Anything, "test-5", mock.Anything, uint64(0)).
 					Return(uint64(1), nil)
 				m.EXPECT().Publish(mock.Anything, subject, mock.Anything).
@@ -99,7 +100,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockClient := mocks.NewMsgClient(t)
+			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
 			orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
@@ -140,7 +141,7 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 	tests := []struct {
 		name       string
 		activities []api.Activity
-		setupMock  func(*mocks.MsgClient)
+		setupMock  func(*mocks.MockMsgClient)
 		wantErr    bool
 	}{
 		{
@@ -148,7 +149,7 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 			activities: []api.Activity{
 				{ID: "A1", Type: activityType},
 			},
-			setupMock: func(m *mocks.MsgClient) {
+			setupMock: func(m *mocks.MockMsgClient) {
 				m.EXPECT().Publish(mock.Anything, subject, mock.Anything).
 					Return(nil, assert.AnError)
 			},
@@ -158,7 +159,7 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockClient := mocks.NewMsgClient(t)
+			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
 			err := natsorchestration.EnqueueActivityMessages(context.Background(), "test-oid", tt.activities, mockClient)
