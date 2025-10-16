@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration_test_test
+package natsorchestration
 
 import (
 	"context"
@@ -20,11 +20,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
-
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,7 +65,7 @@ func Test_ValuePersistence(t *testing.T) {
 	orchestration := createTestOrchestration("test-context-persistence", "test.context.persistence")
 	adapter := natsclient.NewMsgClient(nt.Client)
 
-	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: monitor.NoopMonitor{},
 	}
@@ -75,7 +73,7 @@ func Test_ValuePersistence(t *testing.T) {
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
-	executor := &natsorchestration.NatsActivityExecutor{
+	executor := &NatsActivityExecutor{
 		Client:            adapter,
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.context.persistence",
@@ -91,7 +89,7 @@ func Test_ValuePersistence(t *testing.T) {
 
 	// Verify values were persisted
 	require.Eventually(t, func() bool {
-		updatedOrchestration, _, err := natsorchestration.ReadOrchestration(ctx, orchestration.ID, adapter)
+		updatedOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 		if err != nil {
 			return false
 		}
@@ -157,7 +155,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 	orchestration := createTestOrchestration("test-retry-persistence", "test.retry.persistence")
 	adapter := natsclient.NewMsgClient(nt.Client)
 
-	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: monitor.NoopMonitor{},
 	}
@@ -165,7 +163,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
-	executor := &natsorchestration.NatsActivityExecutor{
+	executor := &NatsActivityExecutor{
 		Client:            adapter,
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.retry.persistence",
@@ -184,7 +182,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 
 	// Verify values were persisted
 	require.Eventually(t, func() bool {
-		finalOrchestration, _, err := natsorchestration.ReadOrchestration(ctx, orchestration.ID, adapter)
+		finalOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 		if err != nil || finalOrchestration.ProcessingData["retry_count"] == nil {
 			return false
 		}
@@ -246,7 +244,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 
 	adapter := natsclient.NewMsgClient(nt.Client)
 
-	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: monitor.NoopMonitor{},
 	}
@@ -256,7 +254,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 
 	// Create multiple executors
 	for i := 0; i < 2; i++ {
-		executor := &natsorchestration.NatsActivityExecutor{
+		executor := &NatsActivityExecutor{
 			Client:            adapter,
 			StreamName:        "cfm-activity",
 			ActivityType:      "test.multi.persistence",
@@ -271,7 +269,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 
 	// Verify values were persisted
 	require.Eventually(t, func() bool {
-		finalOrchestration, _, err := natsorchestration.ReadOrchestration(ctx, orchestration.ID, adapter)
+		finalOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 		if err != nil {
 			return false
 		}
@@ -318,7 +316,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 	orchestration := createTestOrchestration("test-wait-persistence", "test.wait.persistence")
 	adapter := natsclient.NewMsgClient(nt.Client)
 
-	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: monitor.NoopMonitor{},
 	}
@@ -326,7 +324,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
-	executor := &natsorchestration.NatsActivityExecutor{
+	executor := &NatsActivityExecutor{
 		Client:            adapter,
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.wait.persistence",
@@ -341,7 +339,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 
 	// Verify values were persisted
 	require.Eventually(t, func() bool {
-		waitOrchestration, _, err := natsorchestration.ReadOrchestration(ctx, orchestration.ID, adapter)
+		waitOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 		if err != nil || waitOrchestration.ProcessingData["wait_state"] == nil {
 			return false
 		}
@@ -365,7 +363,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
 	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
 
 	adapter := natsclient.NewMsgClient(nt.Client)
-	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: monitor.NoopMonitor{},
 	}
@@ -405,7 +403,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_NotFound(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	adapter := natsclient.NewMsgClient(nt.Client)
-	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: monitor.NoopMonitor{},
 	}

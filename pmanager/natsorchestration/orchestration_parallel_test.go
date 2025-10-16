@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration_test_test
+package natsorchestration
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -87,7 +86,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	noOpMonitor := monitor.NoopMonitor{}
 
 	// Create executor for failing activity
-	failExecutor := natsorchestration.NatsActivityExecutor{
+	failExecutor := NatsActivityExecutor{
 		Client:       adapter,
 		StreamName:   "cfm-activity",
 		ActivityType: "test.fail.activity",
@@ -98,7 +97,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	}
 
 	// Create executor for succeeding activity
-	succeedExecutor := natsorchestration.NatsActivityExecutor{
+	succeedExecutor := NatsActivityExecutor{
 		Client:            adapter,
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.succeed.activity",
@@ -114,7 +113,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start orchestration
-	orchestrator := natsorchestration.NatsDeploymentOrchestrator{Client: adapter}
+	orchestrator := NatsDeploymentOrchestrator{Client: adapter}
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
@@ -130,7 +129,7 @@ outerLoop:
 		case <-timeout:
 			t.Fatalf("Timeout waiting for activity A2 to complete after 3 seconds")
 		default:
-			finalOrchestration, _, err = natsorchestration.ReadOrchestration(ctx, orchestration.ID, adapter)
+			finalOrchestration, _, err = ReadOrchestration(ctx, orchestration.ID, adapter)
 			require.NoError(t, err)
 			if _, found := finalOrchestration.Completed["A2"]; found {
 				break outerLoop

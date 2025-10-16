@@ -13,7 +13,7 @@
 //go:build test
 // +build test
 
-package natsorchestration_test_test
+package natsorchestration
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient/mocks"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -103,7 +102,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
-			orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
+			orchestrator := &NatsDeploymentOrchestrator{
 				Client:  mockClient,
 				Monitor: monitor.NoopMonitor{},
 			}
@@ -162,7 +161,7 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
-			err := natsorchestration.EnqueueActivityMessages(context.Background(), "test-oid", tt.activities, mockClient)
+			err := EnqueueActivityMessages(context.Background(), "test-oid", tt.activities, mockClient)
 
 			if tt.wantErr {
 				assert.Error(t, err)
