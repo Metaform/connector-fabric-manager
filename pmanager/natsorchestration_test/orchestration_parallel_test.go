@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
@@ -57,7 +58,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 		Completed: make(map[string]struct{}),
 	}
 
-	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
+	adapter := natsclient.NewMsgClient(nt.Client)
 
 	// WaitGroup to coordinate activity execution order
 	var activityWg sync.WaitGroup

@@ -60,9 +60,12 @@ func (a *natsDeploymentServiceAssembly) Init(ctx *system.InitContext) error {
 
 	a.natsClient = natsClient
 
+	dispatcher := ctx.Registry.Resolve(api.DeploymentCallbackDispatcherKey).(api.DeploymentCallbackDispatcher)
+
 	a.deploymentClient = natsDeploymentClient{
-		client:  natsClient,
-		monitor: ctx.LogMonitor,
+		client:     natsclient.NewMsgClient(natsClient),
+		dispatcher: dispatcher,
+		monitor:    ctx.LogMonitor,
 	}
 	ctx.Registry.Register(api.DeploymentClientKey, &a.deploymentClient)
 

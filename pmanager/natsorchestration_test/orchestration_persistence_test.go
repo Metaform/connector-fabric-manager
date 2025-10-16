@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 
@@ -64,7 +65,7 @@ func Test_ValuePersistence(t *testing.T) {
 	}
 
 	orchestration := createTestOrchestration("test-context-persistence", "test.context.persistence")
-	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
+	adapter := natsclient.NewMsgClient(nt.Client)
 
 	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
 		Client:  adapter,
@@ -154,7 +155,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 	}
 
 	orchestration := createTestOrchestration("test-retry-persistence", "test.retry.persistence")
-	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
+	adapter := natsclient.NewMsgClient(nt.Client)
 
 	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
 		Client:  adapter,
@@ -243,7 +244,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 		},
 	}
 
-	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
+	adapter := natsclient.NewMsgClient(nt.Client)
 
 	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
 		Client:  adapter,
@@ -315,7 +316,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 	}
 
 	orchestration := createTestOrchestration("test-wait-persistence", "test.wait.persistence")
-	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
+	adapter := natsclient.NewMsgClient(nt.Client)
 
 	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
 		Client:  adapter,
@@ -363,7 +364,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
 	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
 
-	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
+	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: monitor.NoopMonitor{},
@@ -403,7 +404,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_NotFound(t *testing.T) {
 	require.NoError(t, err)
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
-	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
+	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := &natsorchestration.NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: monitor.NoopMonitor{},

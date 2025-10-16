@@ -41,12 +41,12 @@ type DeploymentClient interface {
 
 // DeploymentResponse is asynchronously returned by the deployment client.
 type DeploymentResponse struct {
-	ID             string
-	Success        bool
-	ErrorDetail    string
-	ManifestID     string
-	DeploymentType string
-	Properties     map[string]any
+	ID             string                `json:"id"`
+	Success        bool                  `json:"success"`
+	ErrorDetail    string                `json:"errorDetail"`
+	ManifestID     string                `json:"manifestId"`
+	DeploymentType dmodel.DeploymentType `json:"deploymentType"`
+	Properties     map[string]any        `json:"properties"`
 }
 
 // DeploymentCallbackHandler is called when a deployment is complete.

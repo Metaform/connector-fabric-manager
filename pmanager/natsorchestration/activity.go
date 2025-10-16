@@ -17,15 +17,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
-	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/nats-io/nats.go/jetstream"
 	"strings"
 	"time"
+
+	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 type NatsActivityExecutor struct {
-	Client            MsgClient
+	Client            natsclient.MsgClient
 	StreamName        string
 	ActivityType      string
 	ActivityProcessor api.ActivityProcessor

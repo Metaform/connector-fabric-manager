@@ -30,7 +30,7 @@ func (d deploymentCallbackService) RegisterDeploymentHandler(deploymentType dmod
 }
 
 func (d deploymentCallbackService) Dispatch(ctx context.Context, response api.DeploymentResponse) error {
-	handler, found := d.handlers[response.DeploymentType]
+	handler, found := d.handlers[response.DeploymentType.String()]
 	if !found {
 		return model.NewFatalError("deployment handler not found for type: %s", response.DeploymentType)
 	}

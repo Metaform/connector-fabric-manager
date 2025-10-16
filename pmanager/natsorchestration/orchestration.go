@@ -18,7 +18,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -27,11 +29,11 @@ import (
 // activity, a message is published to a durable queue based on the activity type. Activity messages are then dequeued
 // and reliably processed by a NatsActivityExecutor that handles the activity type.
 type NatsDeploymentOrchestrator struct {
-	Client  MsgClient
+	Client  natsclient.MsgClient
 	Monitor monitor.LogMonitor
 }
 
-func NewNatsDeploymentOrchestrator(client MsgClient, monitor monitor.LogMonitor) *NatsDeploymentOrchestrator {
+func NewNatsDeploymentOrchestrator(client natsclient.MsgClient, monitor monitor.LogMonitor) *NatsDeploymentOrchestrator {
 	return &NatsDeploymentOrchestrator{Client: client, Monitor: monitor}
 }
 

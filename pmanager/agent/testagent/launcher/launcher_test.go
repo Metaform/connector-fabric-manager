@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -74,7 +75,7 @@ func TestTestAgent_Integration(t *testing.T) {
 	}()
 
 	// Submit orchestration
-	adapter := natsorchestration.NatsClientAdapter{Client: nt.Client}
+	adapter := natsclient.NewMsgClient(nt.Client)
 	logMonitor := runtime.LoadLogMonitor("test-agent", system.DevelopmentMode)
 	orchestrator := natsorchestration.NewNatsDeploymentOrchestrator(adapter, logMonitor)
 

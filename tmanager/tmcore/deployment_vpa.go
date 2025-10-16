@@ -14,6 +14,7 @@ package tmcore
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/store"
@@ -84,5 +85,6 @@ func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response api.Dep
 		// TODO move to error state
 		return nil
 	}
+	fmt.Println("deployment succeeded:" + response.ManifestID)
 	return nil
 }

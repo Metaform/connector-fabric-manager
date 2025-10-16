@@ -90,7 +90,7 @@ func (t testAgenServiceAssembly) Start(startCtx *system.StartContext) error {
 	}
 
 	executor := &natsorchestration.NatsActivityExecutor{
-		Client:            natsorchestration.NatsClientAdapter{Client: natsClient},
+		Client:            natsclient.NewMsgClient(natsClient),
 		StreamName:        t.streamName,
 		ActivityType:      activityType,
 		ActivityProcessor: TestActivityProcessor{startCtx.LogMonitor},

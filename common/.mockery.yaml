@@ -1,0 +1,12 @@
+issue-845-fix: true
+resolve-type-alias: false
+disable-version-string: true
+with-expecter: true
+packages:
+  github.com/metaform/connector-fabric-manager/common/natsclient:
+    interfaces:
+      MsgClient:
+        config:
+          filename: msg_client_mock.go
+          outpkg: mocks
+          dir: ./mocks

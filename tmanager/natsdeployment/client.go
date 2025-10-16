@@ -27,7 +27,7 @@ import (
 )
 
 type natsDeploymentClient struct {
-	client     *natsclient.NatsClient
+	client     natsclient.MsgClient
 	dispatcher api.DeploymentCallbackDispatcher
 	monitor    monitor.LogMonitor
 }
@@ -43,7 +43,7 @@ func (n natsDeploymentClient) Init(ctx context.Context, consumer jetstream.Consu
 }
 
 func (n natsDeploymentClient) Deploy(ctx context.Context, manifest dmodel.DeploymentManifest) error {
-	_, err := n.client.JetStream.Publish(ctx, "subject", nil)
+	_, err := n.client.Publish(ctx, "subject", nil)
 	if err != nil {
 		return err
 	}
@@ -76,9 +76,9 @@ func (n natsDeploymentClient) processLoop(ctx context.Context, consumer jetstrea
 func (n natsDeploymentClient) processMessage(ctx context.Context, message jetstream.Msg) error {
 	var dResponse api.DeploymentResponse
 	if err := json.Unmarshal(message.Data(), &dResponse); err != nil {
-		err := n.ackMessage(dResponse.ID, message)
-		if err != nil {
-			n.monitor.Warnf("Failed to ACK message %s: %v", dResponse.ID, err)
+		err2 := n.ackMessage(dResponse.ID, message)
+		if err2 != nil {
+			n.monitor.Warnf("Failed to ACK message %s: %v", dResponse.ID, err2)
 		}
 		return fmt.Errorf("failed to unmarshal deployment response message: %w", err)
 	}

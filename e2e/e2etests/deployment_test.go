@@ -13,17 +13,22 @@ package e2etests
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/dmodel"
+	planucher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
+	"github.com/metaform/connector-fabric-manager/tmanager/api"
+	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"
 	"github.com/stretchr/testify/require"
 )
 
 const (
 	testTimeout = 30 * time.Second
-	streamName  = "cfm-deployment"
+	streamName  = "cfm-stream"
 )
 
 func Test_VerifyE2E(t *testing.T) {
@@ -32,7 +37,7 @@ func Test_VerifyE2E(t *testing.T) {
 	defer cancel()
 
 	// Set up NATS container
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "test-agent-bucket")
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 
 	require.NoError(t, err)
 
@@ -46,13 +51,29 @@ func Test_VerifyE2E(t *testing.T) {
 	_ = os.Setenv("PM_BUCKET", "cfm-bucket")
 	_ = os.Setenv("PM_STREAM", "cfm-stream")
 
-	//shutdownChannel := make(chan struct{})
-	//go func() {
-	//	planucher.Launch(shutdownChannel)
-	//}()
-	//
-	//go func() {
-	//	tlauncher.Launch(shutdownChannel)
-	//}()
+	shutdownChannel := make(chan struct{})
+	go func() {
+		planucher.Launch(shutdownChannel)
+	}()
+
+	go func() {
+		tlauncher.Launch(shutdownChannel)
+	}()
+
+	m := &api.DeploymentResponse{
+		ID:             "test-deployment-123",
+		Success:        true,
+		ErrorDetail:    "",
+		ManifestID:     "1234567890",
+		DeploymentType: dmodel.VpaDeploymentType,
+		Properties:     make(map[string]any),
+	}
+
+	ser, err := json.Marshal(m)
+	require.NoError(t, err)
+
+	_, err = nt.Client.JetStream.Publish(context.TODO(), "event.cfm-deployment", ser)
+
+	require.NoError(t, err)
 
 }
