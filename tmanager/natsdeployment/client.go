@@ -96,7 +96,7 @@ func (n *natsDeploymentClient) processLoop(ctx context.Context, consumer jetstre
 func (n *natsDeploymentClient) processMessage(ctx context.Context, message jetstream.Msg) error {
 	var dResponse api.DeploymentResponse
 	if err := json.Unmarshal(message.Data(), &dResponse); err != nil {
-		err2 := n.ackMessage(dResponse.ID, message)
+		err2 := n.ackMessage(message)
 		if err2 != nil {
 			n.monitor.Warnf("Failed to ACK message %s: %v", dResponse.ID, err2)
 		}
@@ -106,7 +106,7 @@ func (n *natsDeploymentClient) processMessage(ctx context.Context, message jetst
 	n.monitor.Debugf("Received deployment response %s for %s", dResponse.ID, dResponse.ManifestID)
 	resultErr := n.dispatcher.Dispatch(ctx, dResponse)
 	if resultErr == nil {
-		return n.ackMessage(dResponse.ID, message)
+		return n.ackMessage(message)
 	}
 
 	switch {
@@ -126,9 +126,9 @@ func (n *natsDeploymentClient) processMessage(ctx context.Context, message jetst
 	}
 }
 
-func (n *natsDeploymentClient) ackMessage(id string, message jetstream.Msg) error {
+func (n *natsDeploymentClient) ackMessage(message jetstream.Msg) error {
 	if err := message.Ack(); err != nil {
-		return fmt.Errorf("failed to ACK activity message %s: %w", id, err)
+		return fmt.Errorf("failed to ACK activity message: %w", err)
 	}
 	return nil
 }
