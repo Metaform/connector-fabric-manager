@@ -15,8 +15,8 @@ package tmcore
 import (
 	"context"
 
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/dmodel"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 

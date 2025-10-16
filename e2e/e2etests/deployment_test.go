@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
-	"github.com/metaform/connector-fabric-manager/dmodel"
 	planucher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"

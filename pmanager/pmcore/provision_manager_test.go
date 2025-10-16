@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

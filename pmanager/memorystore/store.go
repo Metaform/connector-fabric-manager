@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/store"
-	"github.com/metaform/connector-fabric-manager/dmodel"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 

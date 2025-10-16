@@ -19,7 +19,7 @@ import (
 	"slices"
 
 	"github.com/metaform/connector-fabric-manager/common/dag"
-	"github.com/metaform/connector-fabric-manager/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 )
 
 type OrchestrationState uint

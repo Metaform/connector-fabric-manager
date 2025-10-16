@@ -13,8 +13,8 @@
 package api
 
 import (
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/dmodel"
 )
 
 const (

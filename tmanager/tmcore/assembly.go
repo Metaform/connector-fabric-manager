@@ -13,9 +13,9 @@
 package tmcore
 
 import (
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/dmodel"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -42,7 +42,7 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	}
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
-	
+
 	participantDeployer := participantDeployer{
 		participantGenerator: a.vpaGenerator,
 		trxContext:           trxContext,

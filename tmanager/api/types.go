@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 )
 
 // Entity is the base type for all entities.

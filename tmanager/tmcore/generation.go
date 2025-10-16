@@ -15,7 +15,7 @@ package tmcore
 import (
 	"errors"
 
-	"github.com/metaform/connector-fabric-manager/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 

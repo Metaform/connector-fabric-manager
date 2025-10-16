@@ -17,10 +17,10 @@ package api
 import (
 	"context"
 
-	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/dmodel"
-
 	"time"
+
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
 const (
