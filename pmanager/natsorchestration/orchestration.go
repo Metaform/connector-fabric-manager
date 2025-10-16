@@ -81,7 +81,7 @@ func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, o
 	if len(activities) == 0 {
 		return fmt.Errorf("orchestration has no activities: %s", orchestration.ID)
 	}
-	err = EnqueueActivityMessages(ctx, orchestration.ID, activities, o.Client)
+	err = enqueueActivityMessages(ctx, orchestration.ID, activities, o.Client)
 	if err != nil {
 		return err
 	}

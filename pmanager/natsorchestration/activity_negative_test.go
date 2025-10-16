@@ -161,7 +161,7 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
-			err := EnqueueActivityMessages(context.Background(), "test-oid", tt.activities, mockClient)
+			err := enqueueActivityMessages(context.Background(), "test-oid", tt.activities, mockClient)
 
 			if tt.wantErr {
 				assert.Error(t, err)

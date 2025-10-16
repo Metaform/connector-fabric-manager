@@ -22,11 +22,11 @@ import (
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
-// EnqueueActivityMessages enqueues the given activities for processing.
+// enqueueActivityMessages enqueues the given activities for processing.
 //
 // Messages are sent to a named durable queue corresponding to the activity type. For example, messages for the
 // 'test-activity' type will be routed to the 'event.test-activity' queue.
-func EnqueueActivityMessages(ctx context.Context, orchestrationID string, activities []api.Activity, client natsclient.MsgClient) error {
+func enqueueActivityMessages(ctx context.Context, orchestrationID string, activities []api.Activity, client natsclient.MsgClient) error {
 	for _, activity := range activities {
 		// route to queue
 		payload, err := json.Marshal(api.ActivityMessage{
@@ -62,9 +62,9 @@ func ReadOrchestration(ctx context.Context, orchestrationID string, client natsc
 	return orchestration, oEntry.Revision(), nil
 }
 
-// UpdateOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the
+// updateOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the
 // last known revision.
-func UpdateOrchestration(
+func updateOrchestration(
 	ctx context.Context,
 	orchestration api.Orchestration,
 	revision uint64,

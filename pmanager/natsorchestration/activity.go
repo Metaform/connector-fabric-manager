@@ -126,7 +126,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 }
 
 func (e *NatsActivityExecutor) persistState(activityContext api.ActivityContext, orchestration api.Orchestration, revision uint64) {
-	if _, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
+	if _, _, err := updateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
 		}
@@ -143,7 +143,7 @@ func (e *NatsActivityExecutor) processOnActivityCompletion(
 	oMessage api.ActivityMessage) error {
 
 	// The orchestration state must be saved and re-read to determine if activities completed after the last read and the orchestration is complete.
-	orchestration, revision, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
+	orchestration, revision, err := updateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
 		}
@@ -178,7 +178,7 @@ func (e *NatsActivityExecutor) processOnActivityCompletion(
 	}
 
 	// Enqueue next activities
-	if err := EnqueueActivityMessages(activityContext.Context(), orchestration.ID, next, e.Client); err != nil {
+	if err := enqueueActivityMessages(activityContext.Context(), orchestration.ID, next, e.Client); err != nil {
 		// Failed redeliver the message
 		err = nakError(message, err)
 		return fmt.Errorf("failed to enqueue next orchestration activities %s: %w", oMessage.OrchestrationID, err)
@@ -193,7 +193,7 @@ func (e *NatsActivityExecutor) handleOrchestrationCompletion(
 	revision uint64,
 	message jetstream.Msg) error {
 	// Mark as completed
-	_, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
+	_, _, err := updateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		o.State = api.OrchestrationStateCompleted
 	})
 	if err != nil {
@@ -231,7 +231,7 @@ func (e *NatsActivityExecutor) handleFatalError(
 	resultErr error,
 	message jetstream.Msg) error {
 	// Update the orchestration before acking back. If the update fails, just log it to ensure the ack is sent to avoid message re-delivery
-	if _, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
+	if _, _, err := updateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
 		}
