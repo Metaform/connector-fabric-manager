@@ -77,14 +77,14 @@ func TestTestAgent_Integration(t *testing.T) {
 	// Submit orchestration
 	adapter := natsclient.NewMsgClient(nt.Client)
 	logMonitor := runtime.LoadLogMonitor("test-agent", system.DevelopmentMode)
-	orchestrator := natsorchestration.NewNatsDeploymentOrchestrator(adapter, logMonitor)
+	orchestrator := natsprovision.NewNatsDeploymentOrchestrator(adapter, logMonitor)
 
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
 	// Wait for the activity to be processed
 	assert.Eventually(t, func() bool {
-		updatedOrchestration, _, err := natsorchestration.ReadOrchestration(ctx, orchestration.ID, adapter)
+		updatedOrchestration, _, err := natsprovision.ReadOrchestration(ctx, orchestration.ID, adapter)
 		require.NoError(t, err)
 		return updatedOrchestration.State == api.OrchestrationStateCompleted
 	}, testTimeout, pollInterval, "Activity should be processed")

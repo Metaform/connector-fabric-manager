@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package natsprovision
 
 import (
 	"context"

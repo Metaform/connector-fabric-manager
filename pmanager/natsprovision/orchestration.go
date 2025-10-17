@@ -11,7 +11,7 @@
 //
 
 // Package natsorchestration implements a NATS-based deployment orchestrator.
-package natsorchestration
+package natsprovision
 
 import (
 	"context"

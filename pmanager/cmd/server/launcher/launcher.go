@@ -76,7 +76,7 @@ func Launch(shutdown <-chan struct{}) {
 		assembler.Register(&memorystore.MemoryStoreServiceAssembly{})
 	}
 
-	assembler.Register(natsorchestration.NewOrchestratorServiceAssembly(uri, bucketValue, streamValue))
+	assembler.Register(natsprovision.NewOrchestratorServiceAssembly(uri, bucketValue, streamValue))
 	assembler.Register(&pmcore.PMCoreServiceAssembly{})
 
 	runtime.AssembleAndLaunch(assembler, "Provision Manager", logMonitor, shutdown)

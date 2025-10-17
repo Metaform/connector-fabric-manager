@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package natsprovision
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func NewOrchestratorServiceAssembly(uri string, bucket string, streamName string
 }
 
 func (a *natsOrchestratorServiceAssembly) Name() string {
-	return "NATs Deployment Orchestrator"
+	return "NATs Provisioning"
 }
 
 func (a *natsOrchestratorServiceAssembly) Provides() []system.ServiceType {

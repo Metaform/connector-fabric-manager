@@ -12,7 +12,7 @@
 
 //go:build test
 
-package natsorchestration
+package natsprovision
 
 import (
 	"context"
