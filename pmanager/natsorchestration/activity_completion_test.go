@@ -1,0 +1,239 @@
+//  Copyright (c) 2025 Metaform Systems, Inc
+//
+//  This program and the accompanying materials are made available under the
+//  terms of the Apache License, Version 2.0 which is available at
+//  https://www.apache.org/licenses/LICENSE-2.0
+//
+//  SPDX-License-Identifier: Apache-2.0
+//
+//  Contributors:
+//       Metaform Systems, Inc. - initial API and implementation
+//
+
+package natsorchestration
+
+import (
+	"context"
+	"encoding/json"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/nats-io/nats.go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
+	defer cancel()
+
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	require.NoError(t, err)
+
+	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.response.activity")
+
+	msgClient := natsclient.NewMsgClient(nt.Client)
+
+	// Create orchestration with single activity that will complete the orchestration
+	orchestration := api.Orchestration{
+		ID:             "test-deployment-response",
+		State:          api.OrchestrationStateRunning,
+		DeploymentType: dmodel.VpaDeploymentType,
+		ProcessingData: make(map[string]any),
+		Completed:      make(map[string]struct{}),
+		Steps: []api.OrchestrationStep{
+			{
+				Activities: []api.Activity{
+					{ID: "A1", Type: "test.response.activity"},
+				},
+			},
+		},
+	}
+
+	serializedOrchestration, err := json.Marshal(orchestration)
+	require.NoError(t, err)
+
+	_, err = msgClient.Update(ctx, orchestration.ID, serializedOrchestration, 0)
+	require.NoError(t, err)
+
+	// Setup message capture for deployment response
+	var capturedResponse *dmodel.DeploymentResponse
+	var responseMutex sync.Mutex
+	responseCaptured := make(chan struct{})
+
+	// Subscribe to deployment response subject to capture the published message
+	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMDeploymentResponseSubject, func(msg *nats.Msg) {
+		var dr dmodel.DeploymentResponse
+		if err := json.Unmarshal(msg.Data, &dr); err == nil {
+			responseMutex.Lock()
+			capturedResponse = &dr
+			responseMutex.Unlock()
+			close(responseCaptured)
+		}
+	})
+	require.NoError(t, err)
+	defer subscription.Unsubscribe()
+
+	// Create and start activity executor with a processor that completes successfully
+	processor := &TestCompleteActivityProcessor{}
+	executor := &NatsActivityExecutor{
+		Client:            msgClient,
+		StreamName:        testStream,
+		ActivityType:      "test.response.activity",
+		ActivityProcessor: processor,
+		Monitor:           monitor.NoopMonitor{},
+	}
+
+	err = executor.Execute(ctx)
+	require.NoError(t, err)
+
+	// Trigger orchestration by publishing activity message
+	activityMessage := api.ActivityMessage{
+		OrchestrationID: orchestration.ID,
+		Activity: api.Activity{
+			ID:   "A1",
+			Type: "test.response.activity",
+		},
+	}
+
+	msgData, err := json.Marshal(activityMessage)
+	require.NoError(t, err)
+
+	subject := natsclient.CFMSubjectPrefix + ".test-response-activity"
+	_, err = msgClient.Publish(ctx, subject, msgData)
+	require.NoError(t, err)
+
+	// Wait for deployment response to be published
+	select {
+	case <-responseCaptured:
+		// Response was captured successfully
+	case <-time.After(5 * time.Second):
+		t.Fatal("Timeout waiting for deployment response to be published")
+	}
+
+	// Verify the deployment response
+	responseMutex.Lock()
+	require.NotNil(t, capturedResponse, "Deployment response should have been captured")
+	assert.NotEmpty(t, capturedResponse.ID, "Response should have an ID")
+	assert.Equal(t, orchestration.ID, capturedResponse.ManifestID, "ManifestID should match orchestration ID")
+	assert.True(t, capturedResponse.Success, "Response should indicate success")
+	assert.Equal(t, orchestration.DeploymentType, capturedResponse.DeploymentType, "DeploymentType should match")
+	assert.NotNil(t, capturedResponse.Properties, "Properties should be initialized")
+	responseMutex.Unlock()
+}
+
+func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
+	defer cancel()
+
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-activity-error-bucket")
+	require.NoError(t, err)
+
+	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.error.activity")
+
+	adapter := natsclient.NewMsgClient(nt.Client)
+
+	// Create orchestration with single activity
+	orchestration := api.Orchestration{
+		ID:             "test-deployment-error",
+		State:          api.OrchestrationStateRunning,
+		DeploymentType: dmodel.VpaDeploymentType,
+		ProcessingData: make(map[string]any),
+		Completed:      make(map[string]struct{}),
+		Steps: []api.OrchestrationStep{
+			{
+				Activities: []api.Activity{
+					{ID: "A1", Type: "test.error.activity"},
+				},
+			},
+		},
+	}
+
+	// Store orchestration using the same method as the orchestrator
+	serializedOrchestration, err := json.Marshal(orchestration)
+	require.NoError(t, err)
+
+	_, err = adapter.Update(ctx, orchestration.ID, serializedOrchestration, 0)
+	require.NoError(t, err)
+
+	// Setup message capture for deployment response
+	responseReceived := make(chan struct{})
+	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMDeploymentResponseSubject, func(msg *nats.Msg) {
+		close(responseReceived)
+	})
+	require.NoError(t, err)
+	defer subscription.Unsubscribe()
+
+	// Create and start activity executor with a processor that returns fatal error
+	processor := &TestFatalErrorActivityProcessor{}
+	executor := &NatsActivityExecutor{
+		Client:            adapter,
+		StreamName:        testStream,
+		ActivityType:      "test.error.activity",
+		ActivityProcessor: processor,
+		Monitor:           monitor.NoopMonitor{},
+	}
+
+	err = executor.Execute(ctx)
+	require.NoError(t, err)
+
+	// Trigger orchestration by publishing activity message
+	activityMessage := api.ActivityMessage{
+		OrchestrationID: orchestration.ID,
+		Activity: api.Activity{
+			ID:   "A1",
+			Type: "test.error.activity",
+		},
+	}
+
+	msgData, err := json.Marshal(activityMessage)
+	require.NoError(t, err)
+
+	subject := natsclient.CFMSubjectPrefix + ".test-error-activity"
+	_, err = adapter.Publish(ctx, subject, msgData)
+	require.NoError(t, err)
+
+	// Wait and ensure no deployment response is published
+	select {
+	case <-responseReceived:
+		t.Fatal("Deployment response should not be published on fatal error")
+	case <-time.After(2 * time.Second):
+		// Expected - no response should be published on error
+	}
+
+	// Verify orchestration is marked as errored
+	updatedOrchestration, _, err := readOrchestration(ctx, orchestration.ID, adapter)
+	require.NoError(t, err)
+	assert.Equal(t, api.OrchestrationStateErrored, updatedOrchestration.State, "Orchestration should be in error state")
+}
+
+// TestCompleteActivityProcessor always returns complete
+type TestCompleteActivityProcessor struct{}
+
+func (p *TestCompleteActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	return api.ActivityResult{
+		Result: api.ActivityResultComplete,
+	}
+}
+
+// TestFatalErrorActivityProcessor always returns fatal error
+type TestFatalErrorActivityProcessor struct{}
+
+func (p *TestFatalErrorActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	return api.ActivityResult{
+		Result: api.ActivityResultFatalError,
+		Error:  assert.AnError,
+	}
+}

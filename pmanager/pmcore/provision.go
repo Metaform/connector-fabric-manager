@@ -68,7 +68,7 @@ func (p provisionManager) Start(ctx context.Context, manifest *dmodel.Deployment
 	}
 
 	// Does not exist, create the orchestration
-	orchestration, err = api.InstantiateOrchestration(manifest.ID, activeVersion.Activities, manifest.Payload)
+	orchestration, err = api.InstantiateOrchestration(manifest.ID, manifest.DeploymentType, activeVersion.Activities, manifest.Payload)
 	if err != nil {
 		return nil, model.NewFatalWrappedError(err, "error instantiating orchestration for deployment %s", deploymentID)
 	}

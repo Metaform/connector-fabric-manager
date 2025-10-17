@@ -25,20 +25,20 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-// NatsDeploymentOrchestrator is responsible for executing an orchestration using NATS for reliable messaging. For each
+// natsDeploymentOrchestrator is responsible for executing an orchestration using NATS for reliable messaging. For each
 // activity, a message is published to a durable queue based on the activity type. Activity messages are then dequeued
 // and reliably processed by a NatsActivityExecutor that handles the activity type.
-type NatsDeploymentOrchestrator struct {
+type natsDeploymentOrchestrator struct {
 	Client  natsclient.MsgClient
 	Monitor monitor.LogMonitor
 }
 
-func NewNatsDeploymentOrchestrator(client natsclient.MsgClient, monitor monitor.LogMonitor) *NatsDeploymentOrchestrator {
-	return &NatsDeploymentOrchestrator{Client: client, Monitor: monitor}
+func newNatsDeploymentOrchestrator(client natsclient.MsgClient, monitor monitor.LogMonitor) *natsDeploymentOrchestrator {
+	return &natsDeploymentOrchestrator{Client: client, Monitor: monitor}
 }
 
-func (o *NatsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {
-	orchestration, _, err := ReadOrchestration(ctx, id, o.Client)
+func (o *natsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {
+	orchestration, _, err := readOrchestration(ctx, id, o.Client)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			// Doesn't exist return nil
@@ -56,7 +56,7 @@ func (o *NatsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id st
 // A Jetstream KV entry is used to maintain durable state and is updated as the orchestration progresses. This
 // state is passed to the executors, which access and update it.
 
-func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration *api.Orchestration) error {
+func (o *natsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration *api.Orchestration) error {
 	// TODO validate orchestration - this should include a check to see if there are no steps or steps with no activities
 
 	serializedOrchestration, err := json.Marshal(orchestration)

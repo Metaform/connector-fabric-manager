@@ -19,7 +19,9 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	alauncher "github.com/metaform/connector-fabric-manager/pmanager/agent/testagent/launcher"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"
@@ -68,14 +70,17 @@ func Test_VerifyE2E(t *testing.T) {
 		alauncher.Launch(shutdownChannel)
 	}()
 
-	//m := &dmodel.DeploymentResponse{
-	//	ID:             "test-deployment-123",
-	//	Success:        true,
-	//	ErrorDetail:    "",
-	//	ManifestID:     "1234567890",
-	//	DeploymentType: dmodel.VpaDeploymentType,
-	//	Properties:     make(map[string]any),
-	//}
+	client := e2efixtures.NewApiClient("http://localhost:8181")
+	// Wait for the pmanager to be ready
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		if err = e2efixtures.CreateTestActivityDefinition(client); err == nil {
+			break
+		}
+	}
+	require.NoError(t, err)
+
+	err = e2efixtures.CreateTestDeploymentDefinition(client)
+	require.NoError(t, err)
 
 	m := &dmodel.DeploymentManifest{
 		ID:             "test-deployment-123",
@@ -85,7 +90,7 @@ func Test_VerifyE2E(t *testing.T) {
 	ser, err := json.Marshal(m)
 	require.NoError(t, err)
 
-	_, err = nt.Client.JetStream.Publish(context.Background(), "event.cfm-deployment", ser)
+	_, err = nt.Client.JetStream.Publish(context.Background(), natsclient.CFMDeploymentSubject, ser)
 	//_, err = nt.Client.JetStream.Publish(context.Background(), "event.cfm-deployment-response", ser)
 
 	require.NoError(t, err)

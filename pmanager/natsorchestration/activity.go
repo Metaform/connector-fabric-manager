@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -93,7 +95,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return fmt.Errorf("failed to unmarshal orchestration message: %w", err)
 	}
 
-	orchestration, revision, err := ReadOrchestration(ctx, oMessage.OrchestrationID, e.Client)
+	orchestration, revision, err := readOrchestration(ctx, oMessage.OrchestrationID, e.Client)
 	if err != nil {
 		return fmt.Errorf("failed to read orchestration data: %w", err)
 	}
@@ -200,7 +202,29 @@ func (e *NatsActivityExecutor) handleOrchestrationCompletion(
 		err = natsclient.NakError(message, err)
 		return fmt.Errorf("failed to mark orchestration %s as completed: %v", orchestration.ID, err)
 	}
+
+	err = e.publishResponse(activityContext, orchestration)
+	if err != nil {
+		return err
+	}
+
 	return natsclient.AckMessage(message)
+}
+
+func (e *NatsActivityExecutor) publishResponse(activityContext api.ActivityContext, orchestration api.Orchestration) error {
+	dr := &dmodel.DeploymentResponse{
+		ID:             uuid.New().String(),
+		ManifestID:     orchestration.ID,
+		Success:        true,
+		DeploymentType: orchestration.DeploymentType,
+		Properties:     make(map[string]any),
+	}
+	ser, err := json.Marshal(dr)
+	if err != nil {
+		return fmt.Errorf("failed to marshal deployment response: %w", err)
+	}
+	_, err = e.Client.Publish(activityContext.Context(), natsclient.CFMDeploymentResponseSubject, ser)
+	return err
 }
 
 // handleRetryError handles retriable errors by persisting the orchestration state and re-delivering the message using a Nak.

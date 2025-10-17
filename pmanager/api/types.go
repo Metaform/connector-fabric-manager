@@ -36,8 +36,9 @@ const (
 //
 // As actions are completed, the orchestration system will update the Completed map.
 type Orchestration struct {
-	ID             string             `json:"id"`
-	State          OrchestrationState `json:"state"`
+	ID             string                `json:"id"`
+	State          OrchestrationState    `json:"state"`
+	DeploymentType dmodel.DeploymentType `json:"deploymentType"`
 	Steps          []OrchestrationStep
 	Inputs         map[string]any
 	ProcessingData map[string]any
@@ -203,9 +204,14 @@ func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
 
 // InstantiateOrchestration creates and returns an initialized Orchestration based on the provided definition and inputs.
 // It validates activity dependencies and organizes activities into parallel execution steps based on those dependencies.
-func InstantiateOrchestration(deploymentID string, activities []Activity, data map[string]any) (*Orchestration, error) {
+func InstantiateOrchestration(
+	deploymentID string,
+	deploymentType dmodel.DeploymentType,
+	activities []Activity,
+	data map[string]any) (*Orchestration, error) {
 	orchestration := &Orchestration{
 		ID:             deploymentID,
+		DeploymentType: deploymentType,
 		State:          OrchestrationStateInitialized,
 		Steps:          make([]OrchestrationStep, 0, len(activities)),
 		Inputs:         data,

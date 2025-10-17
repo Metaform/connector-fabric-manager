@@ -63,22 +63,22 @@ func Launch(shutdown <-chan struct{}) {
 		panic(fmt.Errorf("error launching test agent: %w", err))
 	}
 
-	assembler.Register(&testAgenServiceAssembly{uri: uri, bucket: bucketValue, streamName: streamValue})
+	assembler.Register(&testAgentServiceAssembly{uri: uri, bucket: bucketValue, streamName: streamValue})
 	runtime.AssembleAndLaunch(assembler, "Test Agent", logMonitor, shutdown)
 }
 
-type testAgenServiceAssembly struct {
+type testAgentServiceAssembly struct {
 	uri        string
 	bucket     string
 	streamName string
 	system.DefaultServiceAssembly
 }
 
-func (t testAgenServiceAssembly) Name() string {
+func (t testAgentServiceAssembly) Name() string {
 	return "Test Agent"
 }
 
-func (t testAgenServiceAssembly) Start(startCtx *system.StartContext) error {
+func (t testAgentServiceAssembly) Start(startCtx *system.StartContext) error {
 
 	natsClient, err := natsclient.NewNatsClient(t.uri, t.bucket)
 	if err != nil {

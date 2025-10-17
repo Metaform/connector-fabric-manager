@@ -82,6 +82,7 @@ type vpaDeploymentCallbackHandler struct {
 
 func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response dmodel.DeploymentResponse) error {
 	if !response.Success {
+		fmt.Println("deployment failed:" + response.ErrorDetail)
 		// TODO move to error state
 		return nil
 	}

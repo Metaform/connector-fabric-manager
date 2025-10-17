@@ -101,7 +101,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
-			orchestrator := &NatsDeploymentOrchestrator{
+			orchestrator := &natsDeploymentOrchestrator{
 				Client:  mockClient,
 				Monitor: monitor.NoopMonitor{},
 			}

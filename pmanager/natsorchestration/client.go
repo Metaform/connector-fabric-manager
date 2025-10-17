@@ -47,8 +47,8 @@ func enqueueActivityMessages(ctx context.Context, orchestrationID string, activi
 	return nil
 }
 
-// ReadOrchestration reads the orchestration state from the KV store.
-func ReadOrchestration(ctx context.Context, orchestrationID string, client natsclient.MsgClient) (api.Orchestration, uint64, error) {
+// readOrchestration reads the orchestration state from the KV store.
+func readOrchestration(ctx context.Context, orchestrationID string, client natsclient.MsgClient) (api.Orchestration, uint64, error) {
 	oEntry, err := client.Get(ctx, orchestrationID)
 	if err != nil {
 		return api.Orchestration{}, 0, fmt.Errorf("failed to get orchestration state %s: %w", orchestrationID, err)
@@ -81,7 +81,7 @@ func updateOrchestration(
 		if err == nil {
 			break
 		}
-		orchestration, revision, err = ReadOrchestration(ctx, orchestration.ID, client)
+		orchestration, revision, err = readOrchestration(ctx, orchestration.ID, client)
 		if err != nil {
 			return api.Orchestration{}, 0, fmt.Errorf("failed to read orchestration data for update: %w", err)
 		}
