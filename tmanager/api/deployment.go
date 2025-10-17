@@ -39,19 +39,9 @@ type DeploymentClient interface {
 	Deploy(ctx context.Context, manifest dmodel.DeploymentManifest) error
 }
 
-// DeploymentResponse is asynchronously returned by the deployment client.
-type DeploymentResponse struct {
-	ID             string                `json:"id"`
-	Success        bool                  `json:"success"`
-	ErrorDetail    string                `json:"errorDetail"`
-	ManifestID     string                `json:"manifestId"`
-	DeploymentType dmodel.DeploymentType `json:"deploymentType"`
-	Properties     map[string]any        `json:"properties"`
-}
-
 // DeploymentCallbackHandler is called when a deployment is complete.
 // If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-type DeploymentCallbackHandler func(context.Context, DeploymentResponse) error
+type DeploymentCallbackHandler func(context.Context, dmodel.DeploymentResponse) error
 
 // DeploymentHandlerRegistry registers deployment handlers by deployment type.
 type DeploymentHandlerRegistry interface {
@@ -63,5 +53,5 @@ type DeploymentCallbackDispatcher interface {
 
 	// Dispatch is invoked when a deployment is complete.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Dispatch(ctx context.Context, response DeploymentResponse) error
+	Dispatch(ctx context.Context, response dmodel.DeploymentResponse) error
 }

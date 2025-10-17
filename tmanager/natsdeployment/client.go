@@ -94,7 +94,7 @@ func (n *natsDeploymentClient) processLoop(ctx context.Context, consumer jetstre
 }
 
 func (n *natsDeploymentClient) processMessage(ctx context.Context, message jetstream.Msg) error {
-	var dResponse api.DeploymentResponse
+	var dResponse dmodel.DeploymentResponse
 	if err := json.Unmarshal(message.Data(), &dResponse); err != nil {
 		err2 := n.ackMessage(message)
 		if err2 != nil {

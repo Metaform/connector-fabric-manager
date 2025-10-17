@@ -16,6 +16,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestDeploymentCallbackService_RegisterDeploymentHandler(t *testing.T) {
 			handlers: make(map[string]api.DeploymentCallbackHandler),
 		}
 
-		handler := func(ctx context.Context, response api.DeploymentResponse) error {
+		handler := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			return nil
 		}
 
@@ -44,10 +45,10 @@ func TestDeploymentCallbackService_RegisterDeploymentHandler(t *testing.T) {
 			handlers: make(map[string]api.DeploymentCallbackHandler),
 		}
 
-		handler1 := func(ctx context.Context, response api.DeploymentResponse) error {
+		handler1 := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			return nil
 		}
-		handler2 := func(ctx context.Context, response api.DeploymentResponse) error {
+		handler2 := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			return model.NewClientError("test error")
 		}
 
@@ -64,10 +65,10 @@ func TestDeploymentCallbackService_RegisterDeploymentHandler(t *testing.T) {
 			handlers: make(map[string]api.DeploymentCallbackHandler),
 		}
 
-		originalHandler := func(ctx context.Context, response api.DeploymentResponse) error {
+		originalHandler := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			return model.NewClientError("original")
 		}
-		newHandler := func(ctx context.Context, response api.DeploymentResponse) error {
+		newHandler := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			return model.NewClientError("new")
 		}
 
@@ -85,15 +86,15 @@ func TestDeploymentCallbackService_Dispatch(t *testing.T) {
 			handlers: make(map[string]api.DeploymentCallbackHandler),
 		}
 
-		var receivedResponse api.DeploymentResponse
-		handler := func(ctx context.Context, response api.DeploymentResponse) error {
+		var receivedResponse dmodel.DeploymentResponse
+		handler := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			receivedResponse = response
 			return nil
 		}
 
 		service.RegisterDeploymentHandler("vpa", handler)
 
-		response := api.DeploymentResponse{
+		response := dmodel.DeploymentResponse{
 			Success:        true,
 			ErrorDetail:    "",
 			ManifestID:     "manifest-123",
@@ -115,13 +116,13 @@ func TestDeploymentCallbackService_Dispatch(t *testing.T) {
 		}
 
 		expectedError := model.NewClientError("deployment failed")
-		handler := func(ctx context.Context, response api.DeploymentResponse) error {
+		handler := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			return expectedError
 		}
 
 		service.RegisterDeploymentHandler("vpa", handler)
 
-		response := api.DeploymentResponse{
+		response := dmodel.DeploymentResponse{
 			Success:        false,
 			ErrorDetail:    "connection timeout",
 			DeploymentType: "vpa",
@@ -138,7 +139,7 @@ func TestDeploymentCallbackService_Dispatch(t *testing.T) {
 			handlers: make(map[string]api.DeploymentCallbackHandler),
 		}
 
-		response := api.DeploymentResponse{
+		response := dmodel.DeploymentResponse{
 			DeploymentType: "nonexistent-type",
 		}
 
@@ -156,7 +157,7 @@ func TestDeploymentCallbackService_Dispatch(t *testing.T) {
 			handlers: make(map[string]api.DeploymentCallbackHandler),
 		}
 
-		handler := func(ctx context.Context, response api.DeploymentResponse) error {
+		handler := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -170,7 +171,7 @@ func TestDeploymentCallbackService_Dispatch(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately
 
-		response := api.DeploymentResponse{
+		response := dmodel.DeploymentResponse{
 			DeploymentType: "vpa",
 		}
 
@@ -191,12 +192,12 @@ func TestDeploymentCallbackService_Integration(t *testing.T) {
 		var connectorCalls int
 		var dataspaceCalls int
 
-		connectorHandler := func(ctx context.Context, response api.DeploymentResponse) error {
+		connectorHandler := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			connectorCalls++
 			return nil
 		}
 
-		dataspaceHandler := func(ctx context.Context, response api.DeploymentResponse) error {
+		dataspaceHandler := func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			dataspaceCalls++
 			return model.NewRecoverableError("temporary failure")
 		}
@@ -204,11 +205,11 @@ func TestDeploymentCallbackService_Integration(t *testing.T) {
 		service.RegisterDeploymentHandler("vpa", connectorHandler)
 		service.RegisterDeploymentHandler("dprofile", dataspaceHandler)
 
-		connectorResponse := api.DeploymentResponse{DeploymentType: "vpa"}
+		connectorResponse := dmodel.DeploymentResponse{DeploymentType: "vpa"}
 		err := service.Dispatch(context.Background(), connectorResponse)
 		require.NoError(t, err)
 
-		dataspaceResponse := api.DeploymentResponse{DeploymentType: "dprofile"}
+		dataspaceResponse := dmodel.DeploymentResponse{DeploymentType: "dprofile"}
 		err = service.Dispatch(context.Background(), dataspaceResponse)
 		require.Error(t, err)
 

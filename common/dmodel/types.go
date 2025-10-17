@@ -23,6 +23,16 @@ type DeploymentManifest struct {
 	Payload        map[string]any `json:"payload"`
 }
 
+// DeploymentResponse returned when a system deployment completes.
+type DeploymentResponse struct {
+	ID             string         `json:"id"`
+	Success        bool           `json:"success"`
+	ErrorDetail    string         `json:"errorDetail,omitempty"`
+	ManifestID     string         `json:"manifestId"`
+	DeploymentType DeploymentType `json:"deploymentType"`
+	Properties     map[string]any `json:"properties"`
+}
+
 // VPAManifest represents the configuration details for a VPA deployment.
 type VPAManifest struct {
 	ID         string         `json:"id"`

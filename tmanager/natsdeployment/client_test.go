@@ -25,7 +25,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
-	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,7 +101,7 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 
 	// Setup dispatcher with expectations
 	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan api.DeploymentResponse, 1),
+		responses: make(chan dmodel.DeploymentResponse, 1),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -112,7 +111,7 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create and publish the deployment response
-	response := api.DeploymentResponse{
+	response := dmodel.DeploymentResponse{
 		ID:             "test-deployment-response-123",
 		Success:        true,
 		ManifestID:     "manifest-456",
@@ -153,7 +152,7 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 
 	// Setup dispatcher that returns recoverable error
 	dispatcher := &testDeploymentDispatcher{
-		responses:     make(chan api.DeploymentResponse, 1),
+		responses:     make(chan dmodel.DeploymentResponse, 1),
 		shouldError:   true,
 		errorToReturn: model.NewRecoverableError("test recoverable error"),
 	}
@@ -164,7 +163,7 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create and publish the deployment response
-	response := api.DeploymentResponse{
+	response := dmodel.DeploymentResponse{
 		ID:             "test-deployment-response-456",
 		Success:        false,
 		ErrorDetail:    "deployment failed",
@@ -203,7 +202,7 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 
 	// Setup dispatcher that returns fatal error
 	dispatcher := &testDeploymentDispatcher{
-		responses:     make(chan api.DeploymentResponse, 1),
+		responses:     make(chan dmodel.DeploymentResponse, 1),
 		shouldError:   true,
 		errorToReturn: model.NewFatalError("test fatal error"),
 	}
@@ -213,7 +212,7 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
-	response := api.DeploymentResponse{
+	response := dmodel.DeploymentResponse{
 		ID:             "test-deployment-response-789",
 		Success:        false,
 		ErrorDetail:    "fatal deployment error",
@@ -251,7 +250,7 @@ func TestNatsDeploymentClient_ProcessLoop_ContextCancellation(t *testing.T) {
 	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
 
 	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan api.DeploymentResponse, 1),
+		responses: make(chan dmodel.DeploymentResponse, 1),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -286,7 +285,7 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 
 	const messageCount = 5
 	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan api.DeploymentResponse, messageCount),
+		responses: make(chan dmodel.DeploymentResponse, messageCount),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -296,9 +295,9 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 	require.NoError(t, err)
 
 	// Publish multiple messages
-	var expectedResponses []api.DeploymentResponse
+	var expectedResponses []dmodel.DeploymentResponse
 	for i := 0; i < messageCount; i++ {
-		response := api.DeploymentResponse{
+		response := dmodel.DeploymentResponse{
 			ID:             fmt.Sprintf("test-deployment-response-%d", i),
 			Success:        true,
 			ErrorDetail:    "",
@@ -316,7 +315,7 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 	}
 
 	// Collect all received responses
-	var receivedResponses []api.DeploymentResponse
+	var receivedResponses []dmodel.DeploymentResponse
 	for i := 0; i < messageCount; i++ {
 		select {
 		case response := <-dispatcher.responses:
@@ -359,7 +358,7 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 
 	// Setup dispatcher that should NOT be called as the test sends invalid JSON
 	dispatcher := &testDeploymentDispatcher{
-		onDispatch: func(ctx context.Context, response api.DeploymentResponse) error {
+		onDispatch: func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			t.Error("Dispatcher should not be called for invalid JSON")
 			return nil
 		},
@@ -414,7 +413,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	var mu sync.Mutex
 
 	dispatcher := &testDeploymentDispatcher{
-		onDispatch: func(ctx context.Context, response api.DeploymentResponse) error {
+		onDispatch: func(ctx context.Context, response dmodel.DeploymentResponse) error {
 			mu.Lock()
 			processedCount++
 			mu.Unlock()
@@ -430,7 +429,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create and publish deployment response message
-	response := api.DeploymentResponse{
+	response := dmodel.DeploymentResponse{
 		ID:             "test-success-response",
 		Success:        true,
 		ErrorDetail:    "",
@@ -456,14 +455,14 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 
 // testDeploymentDispatcher implements api.DeploymentCallbackDispatcher for testing
 type testDeploymentDispatcher struct {
-	responses     chan api.DeploymentResponse
+	responses     chan dmodel.DeploymentResponse
 	shouldError   bool
 	errorToReturn error
-	onDispatch    func(ctx context.Context, response api.DeploymentResponse) error
+	onDispatch    func(ctx context.Context, response dmodel.DeploymentResponse) error
 	mu            sync.Mutex
 }
 
-func (t *testDeploymentDispatcher) Dispatch(ctx context.Context, response api.DeploymentResponse) error {
+func (t *testDeploymentDispatcher) Dispatch(ctx context.Context, response dmodel.DeploymentResponse) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 

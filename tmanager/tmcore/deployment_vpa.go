@@ -80,7 +80,7 @@ type vpaDeploymentCallbackHandler struct {
 	TenantStore tmstore.TenantStore
 }
 
-func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response api.DeploymentResponse) error {
+func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response dmodel.DeploymentResponse) error {
 	if !response.Success {
 		// TODO move to error state
 		return nil
