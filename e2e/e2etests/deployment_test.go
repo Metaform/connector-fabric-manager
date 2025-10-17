@@ -59,15 +59,20 @@ func Test_VerifyE2E(t *testing.T) {
 		tlauncher.Launch(shutdownChannel)
 	}()
 
-	m := &dmodel.DeploymentResponse{
-		ID:             "test-deployment-123",
-		Success:        true,
-		ErrorDetail:    "",
-		ManifestID:     "1234567890",
-		DeploymentType: dmodel.VpaDeploymentType,
-		Properties:     make(map[string]any),
-	}
+	//m := &dmodel.DeploymentResponse{
+	//	ID:             "test-deployment-123",
+	//	Success:        true,
+	//	ErrorDetail:    "",
+	//	ManifestID:     "1234567890",
+	//	DeploymentType: dmodel.VpaDeploymentType,
+	//	Properties:     make(map[string]any),
+	//}
 
+	m := &dmodel.DeploymentManifest{
+		ID:             "test-deployment-123",
+		DeploymentType: dmodel.VpaDeploymentType,
+		Payload:        make(map[string]any),
+	}
 	ser, err := json.Marshal(m)
 	require.NoError(t, err)
 

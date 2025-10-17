@@ -40,7 +40,7 @@ func TestTestAgent_Integration(t *testing.T) {
 	defer cancel()
 
 	// Set up NATS container
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "test-agent-bucket")
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 
 	require.NoError(t, err)
 
@@ -65,7 +65,7 @@ func TestTestAgent_Integration(t *testing.T) {
 
 	// Required agent config
 	_ = os.Setenv("TESTAGENT_URI", nt.Uri)
-	_ = os.Setenv("TESTAGENT_BUCKET", "test-agent-bucket")
+	_ = os.Setenv("TESTAGENT_BUCKET", "cfm-bucket")
 	_ = os.Setenv("TESTAGENT_STREAM", streamName)
 
 	// Create and start the test agent
