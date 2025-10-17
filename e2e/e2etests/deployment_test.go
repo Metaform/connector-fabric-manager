@@ -20,7 +20,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
-	planucher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
+	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"
 	"github.com/stretchr/testify/require"
 )
@@ -52,7 +52,7 @@ func Test_VerifyE2E(t *testing.T) {
 
 	shutdownChannel := make(chan struct{})
 	go func() {
-		planucher.Launch(shutdownChannel)
+		plauncher.Launch(shutdownChannel)
 	}()
 
 	go func() {
