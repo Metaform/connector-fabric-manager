@@ -89,7 +89,7 @@ func (t testAgenServiceAssembly) Start(startCtx *system.StartContext) error {
 		return err
 	}
 
-	executor := &natsprovision.NatsActivityExecutor{
+	executor := &natsorchestration.NatsActivityExecutor{
 		Client:            natsclient.NewMsgClient(natsClient),
 		StreamName:        t.streamName,
 		ActivityType:      activityType,

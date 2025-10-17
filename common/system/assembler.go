@@ -178,7 +178,7 @@ func (a *ServiceAssembler) Assemble() error {
 	}
 	sorted := assemblyGraph.TopologicalSort()
 	if sorted.HasCycle {
-		return fmt.Errorf("cycle detected in assembly assemblyGraph")
+		return fmt.Errorf("cycle detected in assembly graph")
 	}
 
 	reverseOrder := make([]*dag.Vertex[ServiceAssembly], len(sorted.SortedOrder))

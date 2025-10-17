@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -27,6 +28,8 @@ const (
 	defaultDuration = 20 * time.Second
 	defaultPings    = 5
 	forever         = -1
+
+	NatsClientKey system.ServiceType = "pmapi:NatsClient"
 )
 
 type NatsClient struct {

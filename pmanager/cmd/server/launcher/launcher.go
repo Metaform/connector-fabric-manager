@@ -21,6 +21,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsdeployment"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 	"github.com/metaform/connector-fabric-manager/pmanager/pmcore"
 	"github.com/metaform/connector-fabric-manager/pmanager/pmhandler"
@@ -76,7 +77,8 @@ func Launch(shutdown <-chan struct{}) {
 		assembler.Register(&memorystore.MemoryStoreServiceAssembly{})
 	}
 
-	assembler.Register(natsprovision.NewOrchestratorServiceAssembly(uri, bucketValue, streamValue))
+	assembler.Register(natsorchestration.NewOrchestratorServiceAssembly(uri, bucketValue, streamValue))
+	assembler.Register(natsdeployment.NewDeploymentServiceAssembly(streamValue))
 	assembler.Register(&pmcore.PMCoreServiceAssembly{})
 
 	runtime.AssembleAndLaunch(assembler, "Provision Manager", logMonitor, shutdown)
