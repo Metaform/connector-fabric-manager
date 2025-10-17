@@ -58,11 +58,11 @@ func newNatsDeploymentHandler(
 						}
 						ser, err := json.Marshal(m)
 						if err != nil {
-							return model.NewRecoverableError(err.Error())
+							return model.NewRecoverableError("failed to marshal response: %s", err.Error())
 						}
 						_, err = client.Publish(ctx, natsclient.CFMDeploymentResponseSubject, ser)
 						if err != nil {
-							return model.NewRecoverableError(err.Error())
+							return model.NewRecoverableError("failed to publish response: %s", err.Error())
 						}
 
 						return nil // ack message back
