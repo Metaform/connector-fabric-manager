@@ -5,6 +5,7 @@
 #==============================================================================
 
 # Service directories
+COMMON_DIR=common
 PMANAGER_DIR=pmanager
 TMANAGER_DIR=tmanager
 
@@ -110,8 +111,9 @@ install-tools:
 
 generate-mocks:
 	@echo "Generating mocks for all services..."
+	$(MAKE) -C $(COMMON_DIR) generate-mocks
 	$(MAKE) -C $(PMANAGER_DIR) generate-mocks
-	$(MAKE) -C $(TMANAGER_DIR) generate-mocks
+
 
 #==============================================================================
 # Docker Commands - Handled at Top Level

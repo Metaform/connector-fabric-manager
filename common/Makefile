@@ -1,4 +1,12 @@
-.PHONY: test test-coverage clean lint
+.PHONY: test test-coverage clean lint generate-mocks install-mockery
+
+MOCKERY_CMD=$(shell which mockery || echo $(GOPATH)/bin/mockery)
+
+install-mockery:
+	go install github.com/vektra/mockery/v2@latest
+
+generate-mocks: install-mockery
+	$(MOCKERY_CMD)
 
 # Build settings
 COVER_PROFILE=coverage.out

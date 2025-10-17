@@ -26,11 +26,13 @@ const (
 )
 
 type natsOrchestratorServiceAssembly struct {
-	uri        string
-	bucket     string
-	streamName string
-	natsClient *natsclient.NatsClient
+	uri               string
+	bucket            string
+	streamName        string
+	natsClient        *natsclient.NatsClient
+	deploymentHandler *natsDeploymentHandler
 	system.DefaultServiceAssembly
+	processCancel context.CancelFunc
 }
 
 func NewOrchestratorServiceAssembly(uri string, bucket string, streamName string) system.ServiceAssembly {
@@ -76,10 +78,36 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 		Client:  natsclient.NewMsgClient(natsClient),
 		Monitor: ctx.LogMonitor,
 	})
+
+	client := natsclient.NewMsgClient(a.natsClient)
+	a.deploymentHandler = newNatsDeploymentHandler(client, ctx.LogMonitor)
 	return nil
 }
 
+func (a *natsOrchestratorServiceAssembly) Start(_ *system.StartContext) error {
+	var ctx context.Context
+	natsContext := context.Background()
+	defer natsContext.Done()
+
+	stream, err := natsclient.SetupStream(natsContext, a.natsClient, a.streamName)
+	if err != nil {
+		return fmt.Errorf("error initializing NATS stream: %w", err)
+	}
+
+	consumer, err := natsclient.SetupConsumer(natsContext, stream, natsclient.CFMDeployment)
+	if err != nil {
+		return fmt.Errorf("error initializing NATS deployment manifest consumer: %w", err)
+	}
+
+	ctx, a.processCancel = context.WithCancel(context.Background())
+
+	return a.deploymentHandler.Init(ctx, consumer)
+}
+
 func (a *natsOrchestratorServiceAssembly) Shutdown() error {
+	if a.processCancel != nil {
+		a.processCancel()
+	}
 	if a.natsClient != nil {
 		a.natsClient.Connection.Close()
 	}

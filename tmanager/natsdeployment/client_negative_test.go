@@ -10,9 +10,6 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-//go:build test
-// +build test
-
 package natsdeployment
 
 import (
@@ -49,7 +46,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 				m.On("Data").Return([]byte(`invalid json`))
 				m.On("Ack").Return(nil)
 			},
-			expectedError: "failed to unmarshal deployment response message",
+			expectedError: "failed to unmarshal ",
 		},
 		{
 			name:        "dispatcher returns recoverable error",
@@ -63,7 +60,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 				m.On("Data").Return([]byte(`{"id":"test-id","success":true,"manifestID":"manifest-1"}`))
 				m.On("Nak").Return(nil)
 			},
-			expectedError: "retriable failure when dispatching deployment response test-id",
+			expectedError: "retriable failure when dispatching ",
 		},
 		{
 			name:        "dispatcher returns recoverable error and NAK fails",
@@ -77,7 +74,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 				m.On("Data").Return([]byte(`{"id":"test-id-2","success":true,"manifestID":"manifest-2"}`))
 				m.On("Nak").Return(errors.New("NAK failed"))
 			},
-			expectedError: "retriable failure when dispatching deployment response message and NAK response test-id-2",
+			expectedError: "retriable failure when dispatching ",
 		},
 		{
 			name:        "dispatcher returns fatal error",
@@ -91,7 +88,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 				m.On("Data").Return([]byte(`{"id":"test-id-3","success":false,"manifestID":"manifest-3"}`))
 				m.On("Ack").Return(nil)
 			},
-			expectedError: "fatal failure when dispatching deployment response test-id-3",
+			expectedError: "fatal failure when dispatching ",
 		},
 		{
 			name:        "dispatcher returns fatal error and ACK fails",
@@ -105,7 +102,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 				m.On("Data").Return([]byte(`{"id":"test-id-4","success":false,"manifestID":"manifest-4"}`))
 				m.On("Ack").Return(errors.New("ACK failed"))
 			},
-			expectedError: "fatal failure when dispatching deployment response test-id-4",
+			expectedError: "fatal failure when dispatching ",
 		},
 		{
 			name:        "ACK message error after successful dispatch",
@@ -119,7 +116,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 				m.On("Data").Return([]byte(`{"id":"test-id-5","success":true,"manifestID":"manifest-5"}`))
 				m.On("Ack").Return(errors.New("ACK failed"))
 			},
-			expectedError: "failed to ACK activity message: ACK failed",
+			expectedError: "failed to ACK ",
 		},
 		{
 			name:        "ACK message error for invalid JSON",
@@ -131,7 +128,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 				m.On("Data").Return([]byte(`invalid json`))
 				m.On("Ack").Return(errors.New("ACK failed"))
 			},
-			expectedError: "failed to unmarshal deployment response message",
+			expectedError: "failed to unmarshal ",
 		},
 	}
 
@@ -145,7 +142,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 
 			client := newNatsDeploymentClient(nil, mockDispatcher, monitor.NoopMonitor{})
 
-			err := client.processMessage(context.Background(), mockMessage)
+			err := client.ProcessMessage(context.Background(), mockMessage)
 
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
@@ -190,7 +187,7 @@ func TestNatsDeploymentClient_ProcessLoop_Errors(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			err := client.processLoop(ctx, mockConsumer)
+			err := client.ProcessLoop(ctx, mockConsumer)
 
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)

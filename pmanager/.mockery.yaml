@@ -1,0 +1,12 @@
+issue-845-fix: true
+resolve-type-alias: false
+disable-version-string: true
+with-expecter: true
+packages:
+  github.com/metaform/connector-fabric-manager/pmanager/api:
+    interfaces:
+      DeploymentOrchestrator:
+        config:
+          filename: deployment_orchestrator_mock.go
+          outpkg: mocks
+          dir: ./api/mocks

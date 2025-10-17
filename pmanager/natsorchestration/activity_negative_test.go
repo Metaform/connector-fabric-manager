@@ -11,7 +11,6 @@
 //
 
 //go:build test
-// +build test
 
 package natsorchestration
 

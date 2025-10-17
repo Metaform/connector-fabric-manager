@@ -15,7 +15,6 @@ package natsorchestration
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -87,9 +86,9 @@ func (e *NatsActivityExecutor) processLoop(ctx context.Context, consumer jetstre
 func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetstream.Msg) error {
 	var oMessage api.ActivityMessage
 	if err := json.Unmarshal(message.Data(), &oMessage); err != nil {
-		err := e.ackMessage(oMessage.OrchestrationID, message)
+		err := natsclient.AckMessage(message)
 		if err != nil {
-			e.Monitor.Warnf("Failed to ACK message %s: %v", oMessage.OrchestrationID, err)
+			e.Monitor.Warnf("Failed to ACK message: %v", err)
 		}
 		return fmt.Errorf("failed to unmarshal orchestration message: %w", err)
 	}
@@ -112,7 +111,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 
 	case api.ActivityResultWait:
 		e.persistState(activityContext, orchestration, revision)
-		return e.ackMessage(orchestration.ID, message)
+		return natsclient.AckMessage(message)
 
 	case api.ActivityResultSchedule:
 		e.persistState(activityContext, orchestration, revision)
@@ -150,25 +149,25 @@ func (e *NatsActivityExecutor) processOnActivityCompletion(
 		o.Completed[oMessage.Activity.ID] = struct{}{} // Mark current activity as completed
 	})
 	if err != nil {
-		err = nakError(message, err)
+		err = natsclient.NakError(message, err)
 		return err
 	}
 
 	// Return if orchestration is in the error state since processing should stop
 	if orchestration.State == api.OrchestrationStateErrored {
-		return e.ackMessage(oMessage.OrchestrationID, message)
+		return natsclient.AckMessage(message)
 	}
 
 	// Check if all parallel activities have completed and the orchestration can continue to the next step
 	canProceed, err := orchestration.CanProceedToNextStep(oMessage.Activity.ID)
 	if err != nil {
-		err = nakError(message, err)
+		err = natsclient.NakError(message, err)
 		return fmt.Errorf("failed to proceed with orchestration %s: %w", oMessage.OrchestrationID, err)
 	}
 
 	if !canProceed {
 		// Waiting for parallel activities to complete
-		return e.ackMessage(oMessage.OrchestrationID, message)
+		return natsclient.AckMessage(message)
 	}
 
 	next := orchestration.GetNextStepActivities(oMessage.Activity.ID)
@@ -180,11 +179,11 @@ func (e *NatsActivityExecutor) processOnActivityCompletion(
 	// Enqueue next activities
 	if err := enqueueActivityMessages(activityContext.Context(), orchestration.ID, next, e.Client); err != nil {
 		// Failed redeliver the message
-		err = nakError(message, err)
+		err = natsclient.NakError(message, err)
 		return fmt.Errorf("failed to enqueue next orchestration activities %s: %w", oMessage.OrchestrationID, err)
 	}
 
-	return e.ackMessage(oMessage.OrchestrationID, message)
+	return natsclient.AckMessage(message)
 }
 
 func (e *NatsActivityExecutor) handleOrchestrationCompletion(
@@ -198,10 +197,10 @@ func (e *NatsActivityExecutor) handleOrchestrationCompletion(
 	})
 	if err != nil {
 		// Error marking, redeliver the message
-		err = nakError(message, err)
+		err = natsclient.NakError(message, err)
 		return fmt.Errorf("failed to mark orchestration %s as completed: %v", orchestration.ID, err)
 	}
-	return e.ackMessage(orchestration.ID, message)
+	return natsclient.AckMessage(message)
 }
 
 // handleRetryError handles retriable errors by persisting the orchestration state and re-delivering the message using a Nak.
@@ -247,13 +246,6 @@ func (e *NatsActivityExecutor) handleFatalError(
 	return fmt.Errorf("fatal failure while executing activity %s: %w", orchestration.ID, resultErr)
 }
 
-func (e *NatsActivityExecutor) ackMessage(orchestrationID string, message jetstream.Msg) error {
-	if err := message.Ack(); err != nil {
-		return fmt.Errorf("failed to ACK activity message %s: %w", orchestrationID, err)
-	}
-	return nil
-}
-
 type defaultActivityContext struct {
 	activity api.Activity
 	oID      string
@@ -296,12 +288,4 @@ func (d defaultActivityContext) Value(key string) (any, bool) {
 
 func (d defaultActivityContext) Values() map[string]any {
 	return d.data
-}
-
-func nakError(message jetstream.Msg, err error) error {
-	err2 := message.Nak() // Attempt redelivery
-	if err2 != nil {
-		err = errors.Join(err, err2)
-	}
-	return err
 }

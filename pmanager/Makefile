@@ -9,21 +9,19 @@ BUILD_DIR=bin
 SERVER_PATH=./cmd/server/main.go
 TEST_AGENT_PATH=./agent/testagent/main.go
 
-MOCKERY_CMD=$(GOPATH)/bin/mockery
+MOCKERY_CMD=$(shell which mockery || echo $(GOPATH)/bin/mockery)
+
+install-mockery:
+	go install github.com/vektra/mockery/v2@latest
+
+generate-mocks: install-mockery
+	$(MOCKERY_CMD)
 
 # Environment variables
 export CGO_ENABLED=0
 
 # Install development tools
 install-tools: install-mockery
-
-install-mockery:
-	go get github.com/vektra/mockery/v2@latest
-
-# Generate mocks
-generate-mocks: install-mockery
-	$(MOCKERY_CMD) --case underscore --dir ./natsorchestration --all --output ./natsorchestration/mocks --outpkg mocks --with-expecter
-
 
 # Build the application
 build: build-server build-test-agent

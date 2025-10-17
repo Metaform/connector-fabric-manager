@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-//go:generate mockery --name DeploymentOrchestrator --filename deployment_orchestrator_mock.go --with-expecter --outpkg mocks --dir . --output ./mocks
+//go:generate mockery
 
 package api
 

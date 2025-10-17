@@ -20,6 +20,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	alauncher "github.com/metaform/connector-fabric-manager/pmanager/agent/testagent/launcher"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"
 	"github.com/stretchr/testify/require"
@@ -28,6 +29,7 @@ import (
 const (
 	testTimeout = 30 * time.Second
 	streamName  = "cfm-stream"
+	cfmBucket   = "cfm-bucket"
 )
 
 func Test_VerifyE2E(t *testing.T) {
@@ -35,20 +37,23 @@ func Test_VerifyE2E(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	// Set up NATS container
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, cfmBucket)
 
 	require.NoError(t, err)
 
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	_ = os.Setenv("TM_URI", nt.Uri)
-	_ = os.Setenv("TM_BUCKET", "cfm-bucket")
-	_ = os.Setenv("TM_STREAM", "cfm-stream")
+	_ = os.Setenv("TM_BUCKET", cfmBucket)
+	_ = os.Setenv("TM_STREAM", streamName)
 
 	_ = os.Setenv("PM_URI", nt.Uri)
-	_ = os.Setenv("PM_BUCKET", "cfm-bucket")
-	_ = os.Setenv("PM_STREAM", "cfm-stream")
+	_ = os.Setenv("PM_BUCKET", cfmBucket)
+	_ = os.Setenv("PM_STREAM", streamName)
+
+	_ = os.Setenv("TESTAGENT_URI", nt.Uri)
+	_ = os.Setenv("TESTAGENT_BUCKET", cfmBucket)
+	_ = os.Setenv("TESTAGENT_STREAM", streamName)
 
 	shutdownChannel := make(chan struct{})
 	go func() {
@@ -57,6 +62,10 @@ func Test_VerifyE2E(t *testing.T) {
 
 	go func() {
 		tlauncher.Launch(shutdownChannel)
+	}()
+
+	go func() {
+		alauncher.Launch(shutdownChannel)
 	}()
 
 	//m := &dmodel.DeploymentResponse{
@@ -76,7 +85,8 @@ func Test_VerifyE2E(t *testing.T) {
 	ser, err := json.Marshal(m)
 	require.NoError(t, err)
 
-	_, err = nt.Client.JetStream.Publish(context.TODO(), "event.cfm-deployment-response", ser)
+	_, err = nt.Client.JetStream.Publish(context.Background(), "event.cfm-deployment", ser)
+	//_, err = nt.Client.JetStream.Publish(context.Background(), "event.cfm-deployment-response", ser)
 
 	require.NoError(t, err)
 

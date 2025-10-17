@@ -265,9 +265,9 @@ func TestNatsDeploymentClient_ProcessLoop_ContextCancellation(t *testing.T) {
 	// Cancel the context
 	shortCancel()
 
-	// Check if processing finished
+	// Check if Processing finished
 	assert.Eventually(t, func() bool {
-		return !client.proccesing.Load()
+		return !client.Processing.Load()
 	}, waitDuration, tickDuration, "Processing should have stopped after context cancellation")
 }
 
@@ -369,7 +369,7 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
-	// Get initial NATS consumer info to track message processing
+	// Get initial NATS consumer info to track message Processing
 	initialInfo, err := consumer.Info(ctx)
 	require.NoError(t, err)
 	initialAckCount := initialInfo.AckFloor.Consumer
@@ -379,7 +379,7 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMDeploymentSubject, invalidJSON)
 	require.NoError(t, err)
 
-	// Wait for message processing and verify it was ACKed
+	// Wait for message Processing and verify it was ACKed
 	assert.Eventually(t, func() bool {
 		info, err := consumer.Info(ctx)
 		if err != nil {
@@ -392,7 +392,7 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 	// Verify that no more messages are pending
 	finalInfo, err := consumer.Info(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, finalInfo.NumPending, uint64(0), "No messages should be pending after processing invalid message")
+	assert.Equal(t, finalInfo.NumPending, uint64(0), "No messages should be pending after Processing invalid message")
 }
 
 func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
@@ -408,7 +408,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
 	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
 
-	// Track successful processing
+	// Track successful Processing
 	var processedCount int
 	var mu sync.Mutex
 
@@ -444,7 +444,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMDeploymentSubject, payload)
 	require.NoError(t, err)
 
-	// Wait for processing
+	// Wait for Processing
 	assert.Eventually(t, func() bool {
 		mu.Lock()
 		count := processedCount
