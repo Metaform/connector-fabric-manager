@@ -72,8 +72,13 @@ build-all:
 
 test:
 	@echo "Testing all services..."
+	$(MAKE) -C $(COMMON_DIR) test
 	$(MAKE) -C $(PMANAGER_DIR) test
 	$(MAKE) -C $(TMANAGER_DIR) test
+
+test-common:
+	@echo "Testing common..."
+	$(MAKE) -C $(COMMON_DIR) test
 
 test-pmanager:
 	@echo "Testing pmanager..."
