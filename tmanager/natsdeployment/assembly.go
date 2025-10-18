@@ -49,7 +49,7 @@ func (a *natsDeploymentServiceAssembly) Provides() []system.ServiceType {
 }
 
 func (d *natsDeploymentServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{api.DeploymentCallbackDispatcherKey}
+	return []system.ServiceType{}
 }
 
 func (a *natsDeploymentServiceAssembly) Init(ctx *system.InitContext) error {
@@ -60,11 +60,12 @@ func (a *natsDeploymentServiceAssembly) Init(ctx *system.InitContext) error {
 
 	a.natsClient = natsClient
 
-	dispatcher := ctx.Registry.Resolve(api.DeploymentCallbackDispatcherKey).(api.DeploymentCallbackDispatcher)
+	dispatcher := newDeploymentCallbackService()
+	ctx.Registry.Register(api.DeploymentHandlerRegistryKey, dispatcher)
 
 	client := natsclient.NewMsgClient(natsClient)
 	a.deploymentClient = newNatsDeploymentClient(client, dispatcher, ctx.LogMonitor)
-	ctx.Registry.Register(api.DeploymentClientKey, &a.deploymentClient)
+	ctx.Registry.Register(api.DeploymentClientKey, a.deploymentClient)
 
 	return nil
 }

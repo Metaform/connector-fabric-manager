@@ -20,7 +20,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
-	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -30,7 +29,7 @@ type natsDeploymentClient struct {
 
 func newNatsDeploymentClient(
 	client natsclient.MsgClient,
-	dispatcher api.DeploymentCallbackDispatcher,
+	dispatcher deploymentCallbackDispatcher,
 	monitor monitor.LogMonitor) *natsDeploymentClient {
 	return &natsDeploymentClient{
 		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[dmodel.DeploymentResponse]{

@@ -20,15 +20,16 @@ import (
 )
 
 const (
-	DeploymentHandlerRegistryKey    system.ServiceType = "tmapi:DeploymentHandlerRegistry"
-	DeploymentCallbackDispatcherKey system.ServiceType = "tmapi:DeploymentCallbackDispatcher"
-	ParticipantDeployerKey          system.ServiceType = "tmapi:ParticipantDeployer"
-	DeploymentClientKey             system.ServiceType = "tmapi:DeploymentClient"
+	DeploymentHandlerRegistryKey system.ServiceType = "tmapi:DeploymentHandlerRegistry"
+	ParticipantDeployerKey       system.ServiceType = "tmapi:ParticipantDeployer"
+	DeploymentClientKey          system.ServiceType = "tmapi:DeploymentClient"
 )
+
+type VpaPropMap = map[dmodel.VPAType]map[string]any
 
 // ParticipantDeployer creates a participant profile and deploys its associated VPAs.
 type ParticipantDeployer interface {
-	Deploy(ctx context.Context, identifier string, properties map[string]any) error
+	Deploy(ctx context.Context, identifier string, vpaProperties VpaPropMap, properties map[string]any) error
 }
 
 // DeploymentClient asynchronously deploys a manifest to the provision manager. Implementations may use different wire protocols.
@@ -45,13 +46,5 @@ type DeploymentCallbackHandler func(context.Context, dmodel.DeploymentResponse) 
 
 // DeploymentHandlerRegistry registers deployment handlers by deployment type.
 type DeploymentHandlerRegistry interface {
-	RegisterDeploymentHandler(deploymentType string, handler DeploymentCallbackHandler)
-}
-
-// DeploymentCallbackDispatcher routes deployment responses to the associated handler.
-type DeploymentCallbackDispatcher interface {
-
-	// Dispatch is invoked when a deployment is complete.
-	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Dispatch(ctx context.Context, response dmodel.DeploymentResponse) error
+	RegisterDeploymentHandler(deploymentType dmodel.DeploymentType, handler DeploymentCallbackHandler)
 }

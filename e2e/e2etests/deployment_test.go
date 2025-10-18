@@ -13,14 +13,15 @@ package e2etests
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
-	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/testfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	alauncher "github.com/metaform/connector-fabric-manager/pmanager/agent/testagent/launcher"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
@@ -57,6 +58,11 @@ func Test_VerifyE2E(t *testing.T) {
 	_ = os.Setenv("TESTAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("TESTAGENT_STREAM", streamName)
 
+	tPort := testfixtures.GetRandomPort(t)
+	_ = os.Setenv("TM_HTTPPORT", strconv.Itoa(tPort))
+	pPort := testfixtures.GetRandomPort(t)
+	_ = os.Setenv("PM_HTTPPORT", strconv.Itoa(pPort))
+
 	shutdownChannel := make(chan struct{})
 	go func() {
 		plauncher.Launch(shutdownChannel)
@@ -70,7 +76,7 @@ func Test_VerifyE2E(t *testing.T) {
 		alauncher.Launch(shutdownChannel)
 	}()
 
-	client := e2efixtures.NewApiClient("http://localhost:8181")
+	client := e2efixtures.NewApiClient(fmt.Sprintf("http://localhost:%d", tPort), fmt.Sprintf("http://localhost:%d", pPort))
 	// Wait for the pmanager to be ready
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
 		if err = e2efixtures.CreateTestActivityDefinition(client); err == nil {
@@ -82,17 +88,7 @@ func Test_VerifyE2E(t *testing.T) {
 	err = e2efixtures.CreateTestDeploymentDefinition(client)
 	require.NoError(t, err)
 
-	m := &dmodel.DeploymentManifest{
-		ID:             "test-deployment-123",
-		DeploymentType: dmodel.VpaDeploymentType,
-		Payload:        make(map[string]any),
-	}
-	ser, err := json.Marshal(m)
-	require.NoError(t, err)
-
-	_, err = nt.Client.JetStream.Publish(context.Background(), natsclient.CFMDeploymentSubject, ser)
-	//_, err = nt.Client.JetStream.Publish(context.Background(), "event.cfm-deployment-response", ser)
+	err = client.PostToTManager("participant/"+uuid.New().String(), "{}")
 
 	require.NoError(t, err)
-
 }

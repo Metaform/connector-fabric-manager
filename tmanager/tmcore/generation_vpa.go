@@ -27,7 +27,7 @@ type participantGenerator struct {
 
 func (g participantGenerator) Generate(
 	identifier string,
-	vpaProperties vpaPropMap,
+	vpaProperties api.VpaPropMap,
 	properties map[string]any,
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
@@ -58,7 +58,7 @@ func (g participantGenerator) Generate(
 // generateVPA creates a VPA targeted at given cell.
 func (g participantGenerator) generateVPA(
 	vpaType dmodel.VPAType,
-	vpaProperties vpaPropMap,
+	vpaProperties api.VpaPropMap,
 	cell *api.Cell) api.VirtualParticipantAgent {
 
 	vpa := api.VirtualParticipantAgent{

@@ -453,7 +453,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	}, waitDuration, tickDuration, "Message should be processed successfully")
 }
 
-// testDeploymentDispatcher implements api.DeploymentCallbackDispatcher for testing
+// testDeploymentDispatcher implements api.deploymentCallbackDispatcher for testing
 type testDeploymentDispatcher struct {
 	responses     chan dmodel.DeploymentResponse
 	shouldError   bool

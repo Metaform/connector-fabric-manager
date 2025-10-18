@@ -22,12 +22,14 @@ import (
 
 type ApiClient struct {
 	pmanagerBaseUrl string
+	tmanagerBaseUrl string
 	cfmAgentBaseUrl string
 	client          http.Client
 }
 
-func NewApiClient(pmanagerBaseUrl string) *ApiClient {
+func NewApiClient(tmanagerBaseUrl string, pmanagerBaseUrl string) *ApiClient {
 	return &ApiClient{
+		tmanagerBaseUrl: tmanagerBaseUrl,
 		pmanagerBaseUrl: pmanagerBaseUrl,
 		client:          http.Client{},
 	}
@@ -36,6 +38,12 @@ func NewApiClient(pmanagerBaseUrl string) *ApiClient {
 // PostToPManager makes a POST request to Process Manager API
 func (c *ApiClient) PostToPManager(endpoint string, payload any) error {
 	url := fmt.Sprintf("%s/%s", c.pmanagerBaseUrl, endpoint)
+	_, err := c.postRequest(url, payload, nil)
+	return err
+}
+
+func (c *ApiClient) PostToTManager(endpoint string, payload any) error {
+	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
 	_, err := c.postRequest(url, payload, nil)
 	return err
 }

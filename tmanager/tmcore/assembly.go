@@ -29,11 +29,11 @@ func (a *TMCoreServiceAssembly) Name() string {
 }
 
 func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{store.TransactionContextKey}
+	return []system.ServiceType{api.DeploymentClientKey, store.TransactionContextKey}
 }
 
 func (a *TMCoreServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{api.DeploymentCallbackDispatcherKey, api.DeploymentHandlerRegistryKey, api.ParticipantDeployerKey}
+	return []system.ServiceType{api.ParticipantDeployerKey}
 }
 
 func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
@@ -42,19 +42,19 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	}
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
+	deploymentClient := context.Registry.Resolve(api.DeploymentClientKey).(api.DeploymentClient)
 
 	participantDeployer := participantDeployer{
 		participantGenerator: a.vpaGenerator,
+		deploymentClient:     deploymentClient,
 		trxContext:           trxContext,
 	}
 	context.Registry.Register(api.ParticipantDeployerKey, participantDeployer)
 
-	callbackService := deploymentCallbackService{handlers: make(map[string]api.DeploymentCallbackHandler)}
+	registry := context.Registry.Resolve(api.DeploymentHandlerRegistryKey).(api.DeploymentHandlerRegistry)
 	handler := vpaDeploymentCallbackHandler{}
-	callbackService.RegisterDeploymentHandler(dmodel.VpaDeploymentType, handler.handle)
+	registry.RegisterDeploymentHandler(dmodel.VpaDeploymentType, handler.handle)
 
-	context.Registry.Register(api.DeploymentCallbackDispatcherKey, callbackService)
-	context.Registry.Register(api.DeploymentHandlerRegistryKey, callbackService)
 	return nil
 }
 

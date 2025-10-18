@@ -15,6 +15,7 @@ package tmcore
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
@@ -23,26 +24,24 @@ import (
 	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
 
-type vpaPropMap = map[dmodel.VPAType]map[string]any
-
 type participantDeployer struct {
 	participantGenerator participantGenerator
+	deploymentClient     api.DeploymentClient
 	trxContext           store.TransactionContext
 }
 
-func (t participantDeployer) Deploy(
+func (d participantDeployer) Deploy(
 	ctx context.Context,
 	identifier string,
-	vpaProperties vpaPropMap,
+	vpaProperties api.VpaPropMap,
 	properties map[string]any) error {
 
 	// TODO perform property validation against a custom schema
-	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
-		// TODO get cells and dataspace profiles from store
-		cells := make([]api.Cell, 0)
-		dProfiles := make([]api.DataspaceProfile, 0)
+	return d.trxContext.Execute(ctx, func(ctx context.Context) error {
+		// FIXME get cells and dataspace profiles from store
+		cells, dProfiles := seedData()
 
-		participantProfile, err := t.participantGenerator.Generate(
+		participantProfile, err := d.participantGenerator.Generate(
 			identifier,
 			vpaProperties,
 			properties,
@@ -70,8 +69,12 @@ func (t participantDeployer) Deploy(
 
 		dManifest.Payload[dmodel.VpaPayloadType] = vpaManifests
 
-		// TODO finish by persisting
+		err = d.deploymentClient.Deploy(ctx, dManifest)
+		if err != nil {
+			return fmt.Errorf("error deploying participant %s: %w", identifier, err)
+		}
 
+		// TODO persist
 		return nil
 	})
 }
@@ -82,10 +85,56 @@ type vpaDeploymentCallbackHandler struct {
 
 func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response dmodel.DeploymentResponse) error {
 	if !response.Success {
-		fmt.Println("deployment failed:" + response.ErrorDetail)
+		fmt.Println("Deployment failed:" + response.ErrorDetail)
 		// TODO move to error state
 		return nil
 	}
-	fmt.Println("deployment succeeded:" + response.ManifestID)
+	fmt.Println("Deployment succeeded:" + response.ManifestID)
 	return nil
+}
+
+// seedData temporary function to initialize and return sample cells and dataspace profiles for use in deployment workflows.
+func seedData() ([]api.Cell, []api.DataspaceProfile) {
+	cells := []api.Cell{
+		{
+			DeployableEntity: api.DeployableEntity{
+				Entity: api.Entity{
+					ID:      "cell-001",
+					Version: 1,
+				},
+				State:          api.DeploymentStateActive,
+				StateTimestamp: time.Now(),
+			},
+			Properties: api.Properties{
+				"region": "us-east-1",
+				"type":   "kubernetes",
+			},
+		},
+	}
+
+	dProfiles := []api.DataspaceProfile{
+		{
+			Entity: api.Entity{
+				ID:      "dataspace-profile-001",
+				Version: 1,
+			},
+			Artifacts: []string{"connector-runtime", "policy-engine"},
+			Deployments: []api.DataspaceDeployment{
+				{
+					DeployableEntity: api.DeployableEntity{
+						Entity: api.Entity{
+							ID:      "deployment-001",
+							Version: 1,
+						},
+						State:          api.DeploymentStateActive,
+						StateTimestamp: time.Now(),
+					},
+					Cell:       cells[0], // Reference to the first cell
+					Properties: api.Properties{},
+				},
+			},
+			Properties: api.Properties{},
+		},
+	}
+	return cells, dProfiles
 }

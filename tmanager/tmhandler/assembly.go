@@ -13,12 +13,11 @@
 package tmhandler
 
 import (
-	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"net/http"
+	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
 type response struct {
@@ -38,24 +37,18 @@ func (h *HandlerServiceAssembly) Provides() []system.ServiceType {
 }
 
 func (h *HandlerServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{routing.RouterKey}
+	return []system.ServiceType{api.ParticipantDeployerKey, routing.RouterKey}
 }
 
 func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	router := context.Registry.Resolve(routing.RouterKey).(chi.Router)
 	router.Use(middleware.Recoverer)
 
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		response := response{Message: "OK"}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
+	deployer := context.Registry.Resolve(api.ParticipantDeployerKey).(api.ParticipantDeployer)
 
-	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		response := response{Message: "OK"}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
+	handler := NewHandler(deployer, context.LogMonitor)
+
+	router.Post("/participant/{id}", handler.deployParticipant)
 
 	return nil
 }
