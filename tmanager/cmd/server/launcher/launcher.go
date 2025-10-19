@@ -17,10 +17,10 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/tmanager/memorystore"
 	"github.com/metaform/connector-fabric-manager/tmanager/natsdeployment"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmcore"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmhandler"
-	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
 
 const (
@@ -57,7 +57,7 @@ func Launch(shutdown <-chan struct{}) {
 	assembler.Register(&tmhandler.HandlerServiceAssembly{})
 	assembler.Register(&tmcore.TMCoreServiceAssembly{})
 	assembler.Register(&store.NoOpTrxAssembly{})
-	assembler.Register(&tmstore.InMemoryServiceAssembly{})
+	assembler.Register(&memorystore.InMemoryServiceAssembly{})
 	assembler.Register(natsdeployment.NewNatsDeploymentServiceAssembly(uri, bucketValue, streamValue))
 
 	runtime.AssembleAndLaunch(assembler, "Tenant Manager", logMonitor, shutdown)

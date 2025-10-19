@@ -17,7 +17,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
-	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
 
 type TMCoreServiceAssembly struct {
@@ -30,7 +29,7 @@ func (a *TMCoreServiceAssembly) Name() string {
 }
 
 func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{api.DeploymentClientKey, store.TransactionContextKey, tmstore.CellStoreKey, tmstore.DataspaceProfileStoreKey}
+	return []system.ServiceType{api.DeploymentClientKey, store.TransactionContextKey, api.CellStoreKey, api.DataspaceProfileStoreKey}
 }
 
 func (a *TMCoreServiceAssembly) Provides() []system.ServiceType {
@@ -44,8 +43,8 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
 	deploymentClient := context.Registry.Resolve(api.DeploymentClientKey).(api.DeploymentClient)
-	cellStore := context.Registry.Resolve(tmstore.CellStoreKey).(tmstore.EntityStore[api.Cell])
-	dProfileStore := context.Registry.Resolve(tmstore.DataspaceProfileStoreKey).(tmstore.EntityStore[api.DataspaceProfile])
+	cellStore := context.Registry.Resolve(api.CellStoreKey).(api.EntityStore[api.Cell])
+	dProfileStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(api.EntityStore[api.DataspaceProfile])
 
 	participantDeployer := participantDeployer{
 		participantGenerator: a.vpaGenerator,

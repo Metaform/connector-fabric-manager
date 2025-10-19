@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package tmstore
+package memorystore
 
 import (
 	"context"
@@ -107,10 +107,10 @@ func (s *InMemoryEntityStore[T]) Delete(_ context.Context, id string) error {
 }
 
 func (s *InMemoryEntityStore[T]) GetAll(ctx context.Context) iter.Seq2[T, error] {
-	return s.GetAllPaginated(ctx, DefaultPaginationOptions())
+	return s.GetAllPaginated(ctx, api.DefaultPaginationOptions())
 }
 
-func (s *InMemoryEntityStore[T]) GetAllPaginated(ctx context.Context, opts PaginationOptions) iter.Seq2[T, error] {
+func (s *InMemoryEntityStore[T]) GetAllPaginated(ctx context.Context, opts api.PaginationOptions) iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
 		s.mu.RLock()
 		defer s.mu.RUnlock()

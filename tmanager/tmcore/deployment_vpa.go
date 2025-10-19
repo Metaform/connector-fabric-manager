@@ -21,15 +21,14 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
-	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
 
 type participantDeployer struct {
 	participantGenerator participantGenerator
 	deploymentClient     api.DeploymentClient
 	trxContext           store.TransactionContext
-	cellStore            tmstore.EntityStore[api.Cell]
-	dProfileStore        tmstore.EntityStore[api.DataspaceProfile]
+	cellStore            api.EntityStore[api.Cell]
+	dProfileStore        api.EntityStore[api.DataspaceProfile]
 }
 
 func (d participantDeployer) Deploy(

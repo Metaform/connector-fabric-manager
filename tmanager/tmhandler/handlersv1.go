@@ -22,20 +22,19 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
-	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
 
 type TMHandler struct {
 	participantDeployer api.ParticipantDeployer
-	cellStore           tmstore.EntityStore[api.Cell]
-	dProfileStore       tmstore.EntityStore[api.DataspaceProfile]
+	cellStore           api.EntityStore[api.Cell]
+	dProfileStore       api.EntityStore[api.DataspaceProfile]
 	monitor             system.LogMonitor
 }
 
 func NewHandler(
 	participantDeployer api.ParticipantDeployer,
-	cellStore tmstore.EntityStore[api.Cell],
-	dProfileStore tmstore.EntityStore[api.DataspaceProfile],
+	cellStore api.EntityStore[api.Cell],
+	dProfileStore api.EntityStore[api.DataspaceProfile],
 	monitor system.LogMonitor) *TMHandler {
 	return &TMHandler{
 		participantDeployer: participantDeployer,

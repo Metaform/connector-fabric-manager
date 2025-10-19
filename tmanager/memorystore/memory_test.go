@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package tmstore
+package memorystore
 
 import (
 	"context"
@@ -19,6 +19,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/collection"
 	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -273,7 +274,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	}
 
 	t.Run("pagination with limit", func(t *testing.T) {
-		opts := PaginationOptions{Offset: 0, Limit: 3}
+		opts := api.PaginationOptions{Offset: 0, Limit: 3}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -281,7 +282,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	})
 
 	t.Run("pagination with offset", func(t *testing.T) {
-		opts := PaginationOptions{Offset: 2, Limit: 2}
+		opts := api.PaginationOptions{Offset: 2, Limit: 2}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -289,7 +290,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	})
 
 	t.Run("pagination with offset beyond range", func(t *testing.T) {
-		opts := PaginationOptions{Offset: 10, Limit: 2}
+		opts := api.PaginationOptions{Offset: 10, Limit: 2}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -297,7 +298,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	})
 
 	t.Run("pagination with negative offset", func(t *testing.T) {
-		opts := PaginationOptions{Offset: -1, Limit: 2}
+		opts := api.PaginationOptions{Offset: -1, Limit: 2}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -305,7 +306,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	})
 
 	t.Run("pagination with no limit", func(t *testing.T) {
-		opts := PaginationOptions{Offset: 0, Limit: 0}
+		opts := api.PaginationOptions{Offset: 0, Limit: 0}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -365,7 +366,7 @@ func TestInMemoryEntityStore_ContextCancellation(t *testing.T) {
 		var results []testEntity
 		var lastErr error
 
-		for entity, err := range store.GetAllPaginated(ctx, DefaultPaginationOptions()) {
+		for entity, err := range store.GetAllPaginated(ctx, api.DefaultPaginationOptions()) {
 			if err != nil {
 				lastErr = err
 				break

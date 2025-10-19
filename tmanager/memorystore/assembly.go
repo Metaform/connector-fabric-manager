@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package tmstore
+package memorystore
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func (a *InMemoryServiceAssembly) Name() string {
 }
 
 func (a *InMemoryServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{CellStoreKey, DataspaceProfileStoreKey}
+	return []system.ServiceType{api.CellStoreKey, api.DataspaceProfileStoreKey}
 }
 
 func (a *InMemoryServiceAssembly) Init(ictx *system.InitContext) error {
@@ -49,7 +49,7 @@ func (a *InMemoryServiceAssembly) Init(ictx *system.InitContext) error {
 		dProfileStore.Create(ctx, &profile)
 	}
 
-	ictx.Registry.Register(CellStoreKey, cellStore)
-	ictx.Registry.Register(DataspaceProfileStoreKey, dProfileStore)
+	ictx.Registry.Register(api.CellStoreKey, cellStore)
+	ictx.Registry.Register(api.DataspaceProfileStoreKey, dProfileStore)
 	return nil
 }
