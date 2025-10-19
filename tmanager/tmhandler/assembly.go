@@ -18,6 +18,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
+	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
 
 type response struct {
@@ -37,7 +38,7 @@ func (h *HandlerServiceAssembly) Provides() []system.ServiceType {
 }
 
 func (h *HandlerServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{api.ParticipantDeployerKey, routing.RouterKey}
+	return []system.ServiceType{api.ParticipantDeployerKey, tmstore.CellStoreKey, tmstore.DataspaceProfileStoreKey, routing.RouterKey}
 }
 
 func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
@@ -45,8 +46,10 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	router.Use(middleware.Recoverer)
 
 	deployer := context.Registry.Resolve(api.ParticipantDeployerKey).(api.ParticipantDeployer)
+	cellStore := context.Registry.Resolve(tmstore.CellStoreKey).(tmstore.EntityStore[api.Cell])
+	dProfileStore := context.Registry.Resolve(tmstore.DataspaceProfileStoreKey).(tmstore.EntityStore[api.DataspaceProfile])
 
-	handler := NewHandler(deployer, context.LogMonitor)
+	handler := NewHandler(deployer, cellStore, dProfileStore, context.LogMonitor)
 
 	router.Post("/participant/{id}", handler.deployParticipant)
 
