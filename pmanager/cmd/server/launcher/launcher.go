@@ -19,11 +19,11 @@ import (
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/pmanager/core"
+	"github.com/metaform/connector-fabric-manager/pmanager/handler"
 	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsdeployment"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
-	"github.com/metaform/connector-fabric-manager/pmanager/pmcore"
-	"github.com/metaform/connector-fabric-manager/pmanager/pmhandler"
 )
 
 const (
@@ -67,7 +67,7 @@ func Launch(shutdown <-chan struct{}) {
 
 	assembler.Register(&httpclient.HttpClientServiceAssembly{})
 	assembler.Register(&routing.RouterServiceAssembly{})
-	assembler.Register(&pmhandler.HandlerServiceAssembly{})
+	assembler.Register(&handler.HandlerServiceAssembly{})
 
 	if vConfig.IsSet(storeKey) {
 		// TODO add SQL assembly
@@ -78,7 +78,7 @@ func Launch(shutdown <-chan struct{}) {
 
 	assembler.Register(natsorchestration.NewOrchestratorServiceAssembly(uri, bucketValue, streamValue))
 	assembler.Register(natsdeployment.NewDeploymentServiceAssembly(streamValue))
-	assembler.Register(&pmcore.PMCoreServiceAssembly{})
+	assembler.Register(&core.PMCoreServiceAssembly{})
 
 	runtime.AssembleAndLaunch(assembler, "Provision Manager", logMonitor, shutdown)
 }

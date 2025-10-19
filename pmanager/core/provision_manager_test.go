@@ -12,7 +12,7 @@
 
 //go:build test
 
-package pmcore
+package core
 
 import (
 	"context"

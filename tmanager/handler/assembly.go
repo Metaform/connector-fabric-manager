@@ -10,14 +10,14 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package pmhandler
+package handler
 
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
 type response struct {
@@ -29,25 +29,28 @@ type HandlerServiceAssembly struct {
 }
 
 func (h *HandlerServiceAssembly) Name() string {
-	return "Provision Manager Handlers"
+	return "Tenant Manager Handlers"
+}
+
+func (h *HandlerServiceAssembly) Provides() []system.ServiceType {
+	return []system.ServiceType{}
 }
 
 func (h *HandlerServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{routing.RouterKey, api.ProvisionManagerKey, api.DefinitionStoreKey}
+	return []system.ServiceType{api.ParticipantDeployerKey, api.CellStoreKey, api.DataspaceProfileStoreKey, routing.RouterKey}
 }
 
 func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	router := context.Registry.Resolve(routing.RouterKey).(chi.Router)
 	router.Use(middleware.Recoverer)
 
-	provisionManager := context.Registry.Resolve(api.ProvisionManagerKey).(api.ProvisionManager)
-	definitionStore := context.Registry.Resolve(api.DefinitionStoreKey).(api.DefinitionStore)
-	handler := NewHandler(provisionManager, definitionStore, context.LogMonitor)
+	deployer := context.Registry.Resolve(api.ParticipantDeployerKey).(api.ParticipantDeployer)
+	cellStore := context.Registry.Resolve(api.CellStoreKey).(api.EntityStore[api.Cell])
+	dProfileStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(api.EntityStore[api.DataspaceProfile])
 
-	router.Get("/health", handler.health)
-	router.Post("/deployment", handler.deployment)
-	router.Post("/activity-definition", handler.activityDefinition)
-	router.Post("/deployment-definition", handler.deploymentDefinition)
+	handler := NewHandler(deployer, cellStore, dProfileStore, context.LogMonitor)
+
+	router.Post("/participant/{id}", handler.deployParticipant)
 
 	return nil
 }

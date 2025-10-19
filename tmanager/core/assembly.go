@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package tmcore
+package core
 
 import (
 	"github.com/metaform/connector-fabric-manager/common/model"
