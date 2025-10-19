@@ -14,7 +14,6 @@ package launcher
 
 import (
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
-	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -46,7 +45,7 @@ func Launch(shutdown <-chan struct{}) {
 	//goland:noinspection GoUnhandledErrorResult
 	defer logMonitor.Sync()
 
-	vConfig := config.LoadConfigOrPanic(configPrefix)
+	vConfig := system.LoadConfigOrPanic(configPrefix)
 	vConfig.SetDefault(key, defaultPort)
 
 	uri := vConfig.GetString(uriKey)

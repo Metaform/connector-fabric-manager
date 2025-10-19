@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -46,7 +45,7 @@ func Launch(shutdown <-chan struct{}) {
 	//goland:noinspection GoUnhandledErrorResult
 	defer monitor.Sync()
 
-	vConfig := config.LoadConfigOrPanic(configPrefix)
+	vConfig := system.LoadConfigOrPanic(configPrefix)
 
 	assembler := system.NewServiceAssembler(monitor, vConfig, mode)
 

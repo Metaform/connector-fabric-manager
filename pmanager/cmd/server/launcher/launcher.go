@@ -17,7 +17,6 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
-	"github.com/metaform/connector-fabric-manager/common/config"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
@@ -49,7 +48,7 @@ func Launch(shutdown <-chan struct{}) {
 	//goland:noinspection GoUnhandledErrorResult
 	defer logMonitor.Sync()
 
-	vConfig := config.LoadConfigOrPanic(configPrefix)
+	vConfig := system.LoadConfigOrPanic(configPrefix)
 	vConfig.SetDefault(httpKey, defaultPort)
 
 	uri := vConfig.GetString(uriKey)

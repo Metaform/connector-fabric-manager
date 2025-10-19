@@ -10,12 +10,13 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package config
+package system
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 // LoadConfigOrPanic initializes a Config instance with the specified configuration name.
