@@ -42,13 +42,13 @@ func LaunchAndWaitSignal() {
 func Launch(shutdown <-chan struct{}) {
 	mode := runtime.LoadMode()
 
-	logMonitor := runtime.LoadLogMonitor(logPrefix, mode)
+	monitor := runtime.LoadLogMonitor(logPrefix, mode)
 	//goland:noinspection GoUnhandledErrorResult
-	defer logMonitor.Sync()
+	defer monitor.Sync()
 
 	vConfig := config.LoadConfigOrPanic(configPrefix)
 
-	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
+	assembler := system.NewServiceAssembler(monitor, vConfig, mode)
 
 	uri := vConfig.GetString(uriKey)
 	bucketValue := vConfig.GetString(bucketKey)
@@ -63,7 +63,7 @@ func Launch(shutdown <-chan struct{}) {
 	}
 
 	assembler.Register(&testAgentServiceAssembly{uri: uri, bucket: bucketValue, streamName: streamValue})
-	runtime.AssembleAndLaunch(assembler, "Test Agent", logMonitor, shutdown)
+	runtime.AssembleAndLaunch(assembler, "Test Agent", monitor, shutdown)
 }
 
 type testAgentServiceAssembly struct {
