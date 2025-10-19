@@ -14,11 +14,31 @@ package tmstore
 
 import (
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
 const (
-	TenantStoreKey system.ServiceType = "tmstore:TenantStore"
+	TManagerStoreKey system.ServiceType = "tmstore:TManagerStore"
 )
 
-type TenantStore interface {
+// TManagerStore manages tenant entities.
+type TManagerStore interface {
+
+	// GetCells returns all cells in the system.
+	GetCells() ([]api.Cell, error)
+
+	// GetDataspaceProfiles GetCells returns all dataspace profiles in the system.
+	GetDataspaceProfiles() ([]api.DataspaceProfile, error)
+
+	// FindDeployment returns a deployment record by ID. If not found, returns errors.NotFound.
+	FindDeployment(id string) (*api.DeploymentRecord, error)
+
+	// DeploymentExists returns true if a deployment record exists with the given ID.
+	DeploymentExists(id string) (bool, error)
+
+	// CreateDeployment creates a new deployment record.
+	CreateDeployment(record api.DeploymentRecord) (*api.DeploymentRecord, error)
+
+	// UpdateDeployment updates an existing deployment record.
+	UpdateDeployment(record api.DeploymentRecord) error
 }

@@ -45,6 +45,7 @@ func Test_VerifyE2E(t *testing.T) {
 	require.NoError(t, err)
 
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer cleanup()
 
 	_ = os.Setenv("TM_URI", nt.Uri)
 	_ = os.Setenv("TM_BUCKET", cfmBucket)
@@ -91,4 +92,21 @@ func Test_VerifyE2E(t *testing.T) {
 	err = client.PostToTManager("participant/"+uuid.New().String(), "{}")
 
 	require.NoError(t, err)
+}
+
+func cleanup() {
+	_ = os.Unsetenv("TM_URI")
+	_ = os.Unsetenv("TM_BUCKET")
+	_ = os.Unsetenv("TM_STREAM")
+
+	_ = os.Unsetenv("PM_URI")
+	_ = os.Unsetenv("PM_BUCKET")
+	_ = os.Unsetenv("PM_STREAM")
+
+	_ = os.Unsetenv("TESTAGENT_URI")
+	_ = os.Unsetenv("TESTAGENT_BUCKET")
+	_ = os.Unsetenv("TESTAGENT_STREAM")
+
+	_ = os.Unsetenv("TM_HTTPPORT")
+	_ = os.Unsetenv("PM_HTTPPORT")
 }

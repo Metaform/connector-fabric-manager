@@ -1,8 +1,29 @@
+//  Copyright (c) 2025 Metaform Systems, Inc
+//
+//  This program and the accompanying materials are made available under the
+//  terms of the Apache License, Version 2.0 which is available at
+//  https://www.apache.org/licenses/LICENSE-2.0
+//
+//  SPDX-License-Identifier: Apache-2.0
+//
+//  Contributors:
+//       Metaform Systems, Inc. - initial API and implementation
+//
+
 package model
 
 import (
 	"errors"
 	"fmt"
+)
+
+var (
+	// ErrConflict indicates an object conflict, e.g. when creating an object that already exists
+	ErrConflict = NewRecoverableError("conflict")
+	// ErrNotFound indicates that a certain object does not exist
+	ErrNotFound = NewRecoverableError("not found")
+	// ErrInvalidInput Sentinel error to indicate a wrong input, e.g., a string when a number was expected, or an empty string
+	ErrInvalidInput = NewRecoverableError("invalid input")
 )
 
 type RecoverableError interface {

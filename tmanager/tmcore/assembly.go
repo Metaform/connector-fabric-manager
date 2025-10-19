@@ -17,6 +17,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
+	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
 
 type TMCoreServiceAssembly struct {
@@ -29,7 +30,7 @@ func (a *TMCoreServiceAssembly) Name() string {
 }
 
 func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{api.DeploymentClientKey, store.TransactionContextKey}
+	return []system.ServiceType{api.DeploymentClientKey, store.TransactionContextKey, tmstore.TManagerStoreKey}
 }
 
 func (a *TMCoreServiceAssembly) Provides() []system.ServiceType {
@@ -43,11 +44,13 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
 	deploymentClient := context.Registry.Resolve(api.DeploymentClientKey).(api.DeploymentClient)
+	tmStore := context.Registry.Resolve(tmstore.TManagerStoreKey).(tmstore.TManagerStore)
 
 	participantDeployer := participantDeployer{
 		participantGenerator: a.vpaGenerator,
 		deploymentClient:     deploymentClient,
 		trxContext:           trxContext,
+		store:                tmStore,
 	}
 	context.Registry.Register(api.ParticipantDeployerKey, participantDeployer)
 

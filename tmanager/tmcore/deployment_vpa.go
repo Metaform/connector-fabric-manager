@@ -15,7 +15,6 @@ package tmcore
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
@@ -28,6 +27,7 @@ type participantDeployer struct {
 	participantGenerator participantGenerator
 	deploymentClient     api.DeploymentClient
 	trxContext           store.TransactionContext
+	store                tmstore.TManagerStore
 }
 
 func (d participantDeployer) Deploy(
@@ -38,8 +38,14 @@ func (d participantDeployer) Deploy(
 
 	// TODO perform property validation against a custom schema
 	return d.trxContext.Execute(ctx, func(ctx context.Context) error {
-		// FIXME get cells and dataspace profiles from store
-		cells, dProfiles := seedData()
+		cells, err := d.store.GetCells()
+		if err != nil {
+			return err
+		}
+		dProfiles, err := d.store.GetDataspaceProfiles()
+		if err != nil {
+			return err
+		}
 
 		participantProfile, err := d.participantGenerator.Generate(
 			identifier,
@@ -80,7 +86,7 @@ func (d participantDeployer) Deploy(
 }
 
 type vpaDeploymentCallbackHandler struct {
-	TenantStore tmstore.TenantStore
+	TenantStore tmstore.TManagerStore
 }
 
 func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response dmodel.DeploymentResponse) error {
@@ -91,50 +97,4 @@ func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response dmodel.
 	}
 	fmt.Println("Deployment succeeded:" + response.ManifestID)
 	return nil
-}
-
-// seedData temporary function to initialize and return sample cells and dataspace profiles for use in deployment workflows.
-func seedData() ([]api.Cell, []api.DataspaceProfile) {
-	cells := []api.Cell{
-		{
-			DeployableEntity: api.DeployableEntity{
-				Entity: api.Entity{
-					ID:      "cell-001",
-					Version: 1,
-				},
-				State:          api.DeploymentStateActive,
-				StateTimestamp: time.Now(),
-			},
-			Properties: api.Properties{
-				"region": "us-east-1",
-				"type":   "kubernetes",
-			},
-		},
-	}
-
-	dProfiles := []api.DataspaceProfile{
-		{
-			Entity: api.Entity{
-				ID:      "dataspace-profile-001",
-				Version: 1,
-			},
-			Artifacts: []string{"connector-runtime", "policy-engine"},
-			Deployments: []api.DataspaceDeployment{
-				{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "deployment-001",
-							Version: 1,
-						},
-						State:          api.DeploymentStateActive,
-						StateTimestamp: time.Now(),
-					},
-					Cell:       cells[0], // Reference to the first cell
-					Properties: api.Properties{},
-				},
-			},
-			Properties: api.Properties{},
-		},
-	}
-	return cells, dProfiles
 }

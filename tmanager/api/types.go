@@ -246,3 +246,26 @@ func (p *Properties) Set(key string, value any) {
 	}
 	(*p)[key] = value
 }
+
+type DeploymentRecord struct {
+	ID                 string                `json:"id"`
+	CorrelationID      string                `json:"correlationId"`
+	DeploymentType     dmodel.DeploymentType `json:"deploymentType"`
+	State              ProcessingState       `json:"state"`
+	Timestamp          time.Time             `json:"timestamp"`
+	TenantID           string                `json:"tenantId"`
+	ManifestID         string                `json:"manifestId"`
+	ResponseID         string                `json:"responseId"`
+	Success            bool                  `json:"success"`
+	ErrorDetail        string                `json:"errorDetail,omitempty"`
+	ResponseProperties map[string]any        `json:"reponseProperties,omitempty"`
+}
+
+type ProcessingState string
+
+const (
+	ProcessingStateInitialized ProcessingState = "initialed"
+	ProcessingStateRunning     ProcessingState = "running"
+	ProcessingStateCompleted   ProcessingState = "completed"
+	ProcessingStateErrored     DeploymentState = "errored"
+)
