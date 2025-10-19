@@ -17,6 +17,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/collections"
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
@@ -27,7 +28,8 @@ type participantDeployer struct {
 	participantGenerator participantGenerator
 	deploymentClient     api.DeploymentClient
 	trxContext           store.TransactionContext
-	store                tmstore.TManagerStore
+	cellStore            tmstore.EntityStore[api.Cell]
+	dProfileStore        tmstore.EntityStore[api.DataspaceProfile]
 }
 
 func (d participantDeployer) Deploy(
@@ -38,11 +40,12 @@ func (d participantDeployer) Deploy(
 
 	// TODO perform property validation against a custom schema
 	return d.trxContext.Execute(ctx, func(ctx context.Context) error {
-		cells, err := d.store.GetCells()
+		cells, err := collections.CollectAll(d.cellStore.GetAll(ctx))
 		if err != nil {
 			return err
 		}
-		dProfiles, err := d.store.GetDataspaceProfiles()
+
+		dProfiles, err := collections.CollectAll(d.dProfileStore.GetAll(ctx))
 		if err != nil {
 			return err
 		}
@@ -86,7 +89,6 @@ func (d participantDeployer) Deploy(
 }
 
 type vpaDeploymentCallbackHandler struct {
-	TenantStore tmstore.TManagerStore
 }
 
 func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response dmodel.DeploymentResponse) error {

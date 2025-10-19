@@ -30,7 +30,7 @@ func (a *TMCoreServiceAssembly) Name() string {
 }
 
 func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{api.DeploymentClientKey, store.TransactionContextKey, tmstore.TManagerStoreKey}
+	return []system.ServiceType{api.DeploymentClientKey, store.TransactionContextKey, tmstore.CellStoreKey, tmstore.DataspaceProfileStoreKey}
 }
 
 func (a *TMCoreServiceAssembly) Provides() []system.ServiceType {
@@ -44,13 +44,15 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
 	deploymentClient := context.Registry.Resolve(api.DeploymentClientKey).(api.DeploymentClient)
-	tmStore := context.Registry.Resolve(tmstore.TManagerStoreKey).(tmstore.TManagerStore)
+	cellStore := context.Registry.Resolve(tmstore.CellStoreKey).(tmstore.EntityStore[api.Cell])
+	dProfileStore := context.Registry.Resolve(tmstore.DataspaceProfileStoreKey).(tmstore.EntityStore[api.DataspaceProfile])
 
 	participantDeployer := participantDeployer{
 		participantGenerator: a.vpaGenerator,
 		deploymentClient:     deploymentClient,
 		trxContext:           trxContext,
-		store:                tmStore,
+		cellStore:            cellStore,
+		dProfileStore:        dProfileStore,
 	}
 	context.Registry.Register(api.ParticipantDeployerKey, participantDeployer)
 

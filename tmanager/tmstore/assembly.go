@@ -13,7 +13,10 @@
 package tmstore
 
 import (
+	"context"
+
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
 type InMemoryServiceAssembly struct {
@@ -25,10 +28,28 @@ func (a *InMemoryServiceAssembly) Name() string {
 }
 
 func (a *InMemoryServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{TManagerStoreKey}
+	return []system.ServiceType{CellStoreKey, DataspaceProfileStoreKey}
 }
 
-func (a *InMemoryServiceAssembly) Init(context *system.InitContext) error {
-	context.Registry.Register(TManagerStoreKey, NewInMemoryTManagerStore(true))
+func (a *InMemoryServiceAssembly) Init(ictx *system.InitContext) error {
+	cellStore := NewInMemoryEntityStore[api.Cell](func(c *api.Cell) string {
+		return c.ID
+	})
+	dProfileStore := NewInMemoryEntityStore[api.DataspaceProfile](func(p *api.DataspaceProfile) string {
+		return p.ID
+	})
+
+	// FIXME temporary
+	cells, profiles := seedData()
+	ctx := context.Background()
+	for _, cell := range cells {
+		cellStore.Create(ctx, &cell)
+	}
+	for _, profile := range profiles {
+		dProfileStore.Create(ctx, &profile)
+	}
+
+	ictx.Registry.Register(CellStoreKey, cellStore)
+	ictx.Registry.Register(DataspaceProfileStoreKey, dProfileStore)
 	return nil
 }

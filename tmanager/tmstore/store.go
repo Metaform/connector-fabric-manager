@@ -13,32 +13,42 @@
 package tmstore
 
 import (
+	"context"
+	"iter"
+
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
 const (
-	TManagerStoreKey system.ServiceType = "tmstore:TManagerStore"
+	CellStoreKey             system.ServiceType = "tmstore:CellStore"
+	DataspaceProfileStoreKey system.ServiceType = "tmstore:DataspaceProfileStore"
 )
 
-// TManagerStore manages tenant entities.
-type TManagerStore interface {
+// PaginationOptions defines pagination parameters for entity retrieval.
+type PaginationOptions struct {
+	// Offset is the number of items to skip from the beginning.
+	Offset int
+	// Limit is the maximum number of items to return. If 0, returns all items.
+	Limit int
+	// Cursor is an optional cursor for cursor-based pagination (implementation-specific).
+	Cursor string
+}
 
-	// GetCells returns all cells in the system.
-	GetCells() ([]api.Cell, error)
+// DefaultPaginationOptions returns default pagination settings (no pagination).
+func DefaultPaginationOptions() PaginationOptions {
+	return PaginationOptions{
+		Offset: 0,
+		Limit:  0, // 0 means no limit
+		Cursor: "",
+	}
+}
 
-	// GetDataspaceProfiles GetCells returns all dataspace profiles in the system.
-	GetDataspaceProfiles() ([]api.DataspaceProfile, error)
-
-	// FindDeployment returns a deployment record by ID. If not found, returns errors.NotFound.
-	FindDeployment(id string) (*api.DeploymentRecord, error)
-
-	// DeploymentExists returns true if a deployment record exists with the given ID.
-	DeploymentExists(id string) (bool, error)
-
-	// CreateDeployment creates a new deployment record.
-	CreateDeployment(record api.DeploymentRecord) (*api.DeploymentRecord, error)
-
-	// UpdateDeployment updates an existing deployment record.
-	UpdateDeployment(record api.DeploymentRecord) error
+// EntityStore defines the interface for entity storage.
+type EntityStore[T any] interface {
+	FindById(ctx context.Context, id string) *T
+	Exists(ctx context.Context, id string) (bool, error)
+	Create(ctx context.Context, entity *T) (*T, error)
+	Update(ctx context.Context, entity *T) error
+	GetAll(ctx context.Context) iter.Seq2[T, error]
+	GetAllPaginated(ctx context.Context, opts PaginationOptions) iter.Seq2[T, error]
 }

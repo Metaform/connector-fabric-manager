@@ -14,91 +14,29 @@ package tmstore
 
 import (
 	"context"
+	"iter"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
-// InMemoryTManagerStore is an in-memory implementation of the TManagerStore interface.
-type InMemoryTManagerStore struct {
-	dProfileStorage   storage[api.DataspaceProfile]
-	cellStorage       storage[api.Cell]
-	deploymentStorage storage[api.DeploymentRecord]
-}
-
-func NewInMemoryTManagerStore(seed bool) *InMemoryTManagerStore {
-	store := &InMemoryTManagerStore{
-		dProfileStorage:   newStorage(func(p *api.DataspaceProfile) string { return p.ID }),
-		cellStorage:       newStorage(func(c *api.Cell) string { return c.ID }),
-		deploymentStorage: newStorage(func(r *api.DeploymentRecord) string { return r.ID }),
-	}
-	if seed {
-		cells, profiles := seedData()
-		for _, cell := range cells {
-			store.cellStorage.Create(cell)
-		}
-		for _, profile := range profiles {
-			store.dProfileStorage.Create(profile)
-		}
+func NewInMemoryEntityStore[T any](idFunc func(*T) string) *InMemoryEntityStore[T] {
+	store := &InMemoryEntityStore[T]{
+		cache:  make(map[string]T),
+		idFunc: idFunc,
 	}
 	return store
 }
 
-func (s *InMemoryTManagerStore) GetCells() ([]api.Cell, error) {
-	return s.cellStorage.GetAll(), nil
-}
-
-func (s *InMemoryTManagerStore) GetDataspaceProfiles() ([]api.DataspaceProfile, error) {
-	return s.dProfileStorage.GetAll(), nil
-}
-
-func (s *InMemoryTManagerStore) FindDeployment(id string) (*api.DeploymentRecord, error) {
-	record := s.deploymentStorage.FindById(id)
-	if record == nil {
-		return nil, model.ErrNotFound
-	}
-	return record, nil
-}
-
-func (s *InMemoryTManagerStore) DeploymentExists(id string) (bool, error) {
-	record := s.deploymentStorage.FindById(id)
-	if record == nil {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (s *InMemoryTManagerStore) CreateDeployment(record api.DeploymentRecord) (*api.DeploymentRecord, error) {
-	record.ID = uuid.New().String()
-	err := s.deploymentStorage.Create(record)
-	if err != nil {
-		return nil, err
-	}
-	return &record, nil
-}
-
-func (s *InMemoryTManagerStore) UpdateDeployment(record api.DeploymentRecord) error {
-	return s.deploymentStorage.Save(&record)
-}
-
-type storage[T any] struct {
+type InMemoryEntityStore[T any] struct {
 	cache  map[string]T
-	idFunc func(*T) string
 	mu     sync.RWMutex
+	idFunc func(*T) string
 }
 
-func newStorage[T any](idFunc func(*T) string) storage[T] {
-	return storage[T]{
-		cache:  make(map[string]T),
-		idFunc: idFunc,
-		mu:     sync.RWMutex{},
-	}
-}
-
-func (s *storage[T]) FindById(id string) *T {
+func (s *InMemoryEntityStore[T]) FindById(_ context.Context, id string) *T {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -110,23 +48,30 @@ func (s *storage[T]) FindById(id string) *T {
 	return &entity
 }
 
-func (s *storage[T]) Create(entity T) error {
-	if s.idFunc(&entity) == "" {
-		return model.ErrInvalidInput
+func (s *InMemoryEntityStore[T]) Exists(_ context.Context, id string) (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, exists := s.cache[id]
+	return exists, nil
+}
+
+func (s *InMemoryEntityStore[T]) Create(_ context.Context, entity *T) (*T, error) {
+	if s.idFunc(entity) == "" {
+		return nil, model.ErrInvalidInput
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.cache[s.idFunc(&entity)]; exists {
-		return model.ErrConflict
+	if _, exists := s.cache[s.idFunc(entity)]; exists {
+		return nil, model.ErrConflict
 	}
 
-	s.cache[s.idFunc(&entity)] = entity
-	return nil
+	s.cache[s.idFunc(entity)] = *entity
+	return entity, nil
 }
 
-func (s *storage[T]) Save(entity *T) error {
+func (s *InMemoryEntityStore[T]) Update(_ context.Context, entity *T) error {
 	if entity == nil {
 		return model.ErrInvalidInput
 	}
@@ -145,7 +90,7 @@ func (s *storage[T]) Save(entity *T) error {
 	return nil
 }
 
-func (s *storage[T]) Delete(ctx context.Context, id string) error {
+func (s *InMemoryEntityStore[T]) Delete(_ context.Context, id string) error {
 	if id == "" {
 		return model.ErrInvalidInput
 	}
@@ -161,15 +106,56 @@ func (s *storage[T]) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *storage[T]) GetAll() []T {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+func (s *InMemoryEntityStore[T]) GetAll(ctx context.Context) iter.Seq2[T, error] {
+	return s.GetAllPaginated(ctx, DefaultPaginationOptions())
+}
 
-	result := make([]T, 0, len(s.cache))
-	for _, entity := range s.cache {
-		result = append(result, entity)
+func (s *InMemoryEntityStore[T]) GetAllPaginated(ctx context.Context, opts PaginationOptions) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+
+		// Convert map to slice for consistent ordering and pagination
+		entities := make([]T, 0, len(s.cache))
+		for _, entity := range s.cache {
+			entities = append(entities, entity)
+		}
+
+		// Apply offset
+		start := opts.Offset
+		if start < 0 {
+			start = 0
+		}
+		if start >= len(entities) {
+			return // No items to return
+		}
+
+		// Apply limit
+		end := len(entities)
+		if opts.Limit > 0 {
+			requestedEnd := start + opts.Limit
+			if requestedEnd < end {
+				end = requestedEnd
+			}
+		}
+
+		// Yield entities within the paginated range
+		for i := start; i < end; i++ {
+			// Check if context is cancelled
+			select {
+			case <-ctx.Done():
+				var zero T
+				yield(zero, ctx.Err())
+				return
+			default:
+			}
+
+			// Yield the entity with nil error
+			if !yield(entities[i], nil) {
+				return // Consumer stopped iteration
+			}
+		}
 	}
-	return result
 }
 
 // seedData temporary function to initialize and return sample cells and dataspace profiles for use in deployment workflows.

@@ -13,459 +13,394 @@
 package tmstore
 
 import (
+	"context"
+	"fmt"
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/collections"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestInMemoryTManagerStore_GetCells(t *testing.T) {
-	t.Run("returns empty list when no cells", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		cells, err := store.GetCells()
-
-		require.NoError(t, err)
-		assert.Empty(t, cells)
-	})
-
-	t.Run("returns all stored cells", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-		now := time.Now()
-
-		// Add test cells
-		cell1 := api.Cell{
-			DeployableEntity: api.DeployableEntity{
-				Entity: api.Entity{
-					ID:      "cell-1",
-					Version: 1,
-				},
-				State:          api.DeploymentStateActive,
-				StateTimestamp: now,
-			},
-			Properties: api.Properties{"type": "k8s"},
-		}
-
-		cell2 := api.Cell{
-			DeployableEntity: api.DeployableEntity{
-				Entity: api.Entity{
-					ID:      "cell-2",
-					Version: 1,
-				},
-				State:          api.DeploymentStatePending,
-				StateTimestamp: now,
-			},
-			Properties: api.Properties{"type": "docker"},
-		}
-
-		err := store.cellStorage.Create(cell1)
-		require.NoError(t, err)
-		err = store.cellStorage.Create(cell2)
-		require.NoError(t, err)
-
-		cells, err := store.GetCells()
-
-		require.NoError(t, err)
-		assert.Len(t, cells, 2)
-
-		// Verify both cells are returned
-		assert.ElementsMatch(t, []string{"cell-1", "cell-2"}, []string{cells[0].ID, cells[1].ID})
-		assert.Equal(t, "k8s", cells[0].Properties["type"])
-		assert.Equal(t, "docker", cells[1].Properties["type"])
-	})
+// testEntity is a simple test entity for testing the InMemoryEntityStore
+type testEntity struct {
+	ID    string
+	Value string
 }
 
-func TestInMemoryTManagerStore_GetDataspaceProfiles(t *testing.T) {
-	t.Run("returns empty list when no profiles", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		profiles, err := store.GetDataspaceProfiles()
-
-		require.NoError(t, err)
-		assert.Empty(t, profiles)
-	})
-
-	t.Run("returns all stored profiles", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		// Add test profiles
-		profile1 := api.DataspaceProfile{
-			Entity: api.Entity{
-				ID:      "profile-1",
-				Version: 1,
-			},
-			Artifacts:  []string{"artifact-1"},
-			Properties: api.Properties{"env": "prod"},
-		}
-
-		profile2 := api.DataspaceProfile{
-			Entity: api.Entity{
-				ID:      "profile-2",
-				Version: 2,
-			},
-			Artifacts:  []string{"artifact-2", "artifact-3"},
-			Properties: api.Properties{"env": "dev"},
-		}
-
-		err := store.dProfileStorage.Create(profile1)
-		require.NoError(t, err)
-		err = store.dProfileStorage.Create(profile2)
-		require.NoError(t, err)
-
-		profiles, err := store.GetDataspaceProfiles()
-
-		require.NoError(t, err)
-		assert.Len(t, profiles, 2)
-
-		// Verify profiles are returned (order may vary)
-		profileIDs := make(map[string]api.DataspaceProfile)
-		for _, profile := range profiles {
-			profileIDs[profile.ID] = profile
-		}
-
-		assert.Contains(t, profileIDs, "profile-1")
-		assert.Contains(t, profileIDs, "profile-2")
-		assert.Equal(t, "prod", profileIDs["profile-1"].Properties["env"])
-		assert.Equal(t, "dev", profileIDs["profile-2"].Properties["env"])
-		assert.Len(t, profileIDs["profile-1"].Artifacts, 1)
-		assert.Len(t, profileIDs["profile-2"].Artifacts, 2)
-	})
+func testIdFunc(e *testEntity) string {
+	return e.ID
 }
 
-func TestInMemoryTManagerStore_FindDeployment(t *testing.T) {
-	t.Run("returns error when deployment not found", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
+func TestNewInMemoryEntityStore(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
 
-		record, err := store.FindDeployment("non-existent-id")
+	require.NotNil(t, store)
+	require.NotNil(t, store.cache)
+	require.NotNil(t, store.idFunc)
+	assert.Equal(t, 0, len(store.cache))
+}
+
+func TestInMemoryEntityStore_Create(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
+
+	t.Run("successful create", func(t *testing.T) {
+		entity := &testEntity{ID: "test-1", Value: "value1"}
+
+		result, err := store.Create(ctx, entity)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "test-1", result.ID)
+		assert.Equal(t, "value1", result.Value)
+		assert.Equal(t, 1, len(store.cache))
+	})
+
+	t.Run("create with empty ID should fail", func(t *testing.T) {
+		entity := &testEntity{ID: "", Value: "value1"}
+
+		result, err := store.Create(ctx, entity)
 
 		require.Error(t, err)
-		assert.Nil(t, record)
-		assert.Equal(t, model.ErrNotFound, err)
+		require.Nil(t, result)
+		assert.Equal(t, model.ErrInvalidInput, err)
 	})
 
-	t.Run("returns deployment when found", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-		now := time.Now()
+	t.Run("create duplicate should fail", func(t *testing.T) {
+		entity := &testEntity{ID: "test-2", Value: "value1"}
+		duplicate := &testEntity{ID: "test-2", Value: "value2"}
 
-		// Create test deployment record
-		testRecord := api.DeploymentRecord{
-			ID:            "deployment-123",
-			CorrelationID: "corr-456",
-			State:         api.ProcessingStateRunning,
-			Timestamp:     now,
-			TenantID:      "tenant-789",
-			ManifestID:    "manifest-abc",
-			Success:       false,
-		}
+		// First create should succeed
+		result1, err1 := store.Create(ctx, entity)
+		require.NoError(t, err1)
+		require.NotNil(t, result1)
 
-		err := store.deploymentStorage.Create(testRecord)
-		require.NoError(t, err)
-
-		record, err := store.FindDeployment("deployment-123")
-
-		require.NoError(t, err)
-		require.NotNil(t, record)
-		assert.Equal(t, "deployment-123", record.ID)
-		assert.Equal(t, "corr-456", record.CorrelationID)
-		assert.Equal(t, api.ProcessingStateRunning, record.State)
-		assert.Equal(t, "tenant-789", record.TenantID)
-		assert.Equal(t, "manifest-abc", record.ManifestID)
-		assert.False(t, record.Success)
-	})
-
-	t.Run("returns error for empty ID", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		record, err := store.FindDeployment("")
-
-		require.Error(t, err)
-		assert.Nil(t, record)
-		assert.Equal(t, model.ErrNotFound, err)
+		// Second create with same ID should fail
+		result2, err2 := store.Create(ctx, duplicate)
+		require.Error(t, err2)
+		require.Nil(t, result2)
+		assert.Equal(t, model.ErrConflict, err2)
 	})
 }
 
-func TestInMemoryTManagerStore_DeploymentExists(t *testing.T) {
-	t.Run("returns false when deployment does not exist", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
+func TestInMemoryEntityStore_FindById(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
 
-		exists, err := store.DeploymentExists("non-existent-id")
-
+	t.Run("find existing entity", func(t *testing.T) {
+		entity := &testEntity{ID: "test-1", Value: "value1"}
+		_, err := store.Create(ctx, entity)
 		require.NoError(t, err)
-		assert.False(t, exists)
+
+		result := store.FindById(ctx, "test-1")
+
+		require.NotNil(t, result)
+		assert.Equal(t, "test-1", result.ID)
+		assert.Equal(t, "value1", result.Value)
 	})
 
-	t.Run("returns true when deployment exists", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
+	t.Run("find non-existing entity", func(t *testing.T) {
+		result := store.FindById(ctx, "non-existing")
 
-		testRecord := api.DeploymentRecord{
-			ID:        "deployment-123",
-			TenantID:  "tenant-789",
-			Timestamp: time.Now(),
-		}
+		assert.Nil(t, result)
+	})
+}
 
-		err := store.deploymentStorage.Create(testRecord)
+func TestInMemoryEntityStore_Exists(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
+
+	t.Run("entity exists", func(t *testing.T) {
+		entity := &testEntity{ID: "test-1", Value: "value1"}
+		_, err := store.Create(ctx, entity)
 		require.NoError(t, err)
 
-		exists, err := store.DeploymentExists("deployment-123")
+		exists, err := store.Exists(ctx, "test-1")
 
 		require.NoError(t, err)
 		assert.True(t, exists)
 	})
 
-	t.Run("returns false for empty ID", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		exists, err := store.DeploymentExists("")
+	t.Run("entity does not exist", func(t *testing.T) {
+		exists, err := store.Exists(ctx, "non-existing")
 
 		require.NoError(t, err)
 		assert.False(t, exists)
 	})
 }
 
-func TestInMemoryTManagerStore_CreateDeployment(t *testing.T) {
-	t.Run("creates deployment with generated ID", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-		now := time.Now()
+func TestInMemoryEntityStore_Update(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
 
-		inputRecord := api.DeploymentRecord{
-			CorrelationID: "corr-123",
-			State:         api.ProcessingStateInitialized,
-			Timestamp:     now,
-			TenantID:      "tenant-456",
-			ManifestID:    "manifest-789",
-			Success:       false,
-		}
+	t.Run("successful update", func(t *testing.T) {
+		entity := &testEntity{ID: "test-1", Value: "value1"}
+		_, err := store.Create(ctx, entity)
+		require.NoError(t, err)
 
-		createdRecord, err := store.CreateDeployment(inputRecord)
+		updatedEntity := &testEntity{ID: "test-1", Value: "updated-value"}
+		err = store.Update(ctx, updatedEntity)
 
 		require.NoError(t, err)
-		require.NotNil(t, createdRecord)
 
-		// Verify ID was generated
-		assert.NotEmpty(t, createdRecord.ID)
-		_, err = uuid.Parse(createdRecord.ID)
-		assert.NoError(t, err, "ID should be a valid UUID")
-
-		// Verify other fields are preserved
-		assert.Equal(t, "corr-123", createdRecord.CorrelationID)
-		assert.Equal(t, api.ProcessingStateInitialized, createdRecord.State)
-		assert.Equal(t, now, createdRecord.Timestamp)
-		assert.Equal(t, "tenant-456", createdRecord.TenantID)
-		assert.Equal(t, "manifest-789", createdRecord.ManifestID)
-		assert.False(t, createdRecord.Success)
-
-		// Verify record is stored
-		storedRecord, err := store.FindDeployment(createdRecord.ID)
-		require.NoError(t, err)
-		assert.Equal(t, createdRecord, storedRecord)
+		// Verify the update
+		result := store.FindById(ctx, "test-1")
+		require.NotNil(t, result)
+		assert.Equal(t, "updated-value", result.Value)
 	})
 
-	t.Run("creates multiple deployments with unique IDs", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		record1, err := store.CreateDeployment(api.DeploymentRecord{
-			CorrelationID: "corr-1",
-			TenantID:      "tenant-1",
-		})
-		require.NoError(t, err)
-
-		record2, err := store.CreateDeployment(api.DeploymentRecord{
-			CorrelationID: "corr-2",
-			TenantID:      "tenant-2",
-		})
-		require.NoError(t, err)
-
-		assert.NotEqual(t, record1.ID, record2.ID)
-		assert.NotEmpty(t, record1.ID)
-		assert.NotEmpty(t, record2.ID)
-	})
-
-	t.Run("preserves complex fields", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		responseProps := map[string]any{
-			"key1": "value1",
-			"key2": 42,
-			"nested": map[string]any{
-				"inner": "value",
-			},
-		}
-
-		inputRecord := api.DeploymentRecord{
-			CorrelationID:      "corr-complex",
-			TenantID:           "tenant-complex",
-			ErrorDetail:        "some error message",
-			ResponseProperties: responseProps,
-		}
-
-		createdRecord, err := store.CreateDeployment(inputRecord)
-
-		require.NoError(t, err)
-		assert.Equal(t, "some error message", createdRecord.ErrorDetail)
-		assert.Equal(t, responseProps, createdRecord.ResponseProperties)
-	})
-}
-
-func TestInMemoryTManagerStore_UpdateDeployment(t *testing.T) {
-	t.Run("updates existing deployment", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-		originalTime := time.Now()
-
-		// Create initial deployment
-		initialRecord := api.DeploymentRecord{
-			ID:        "deployment-update-test",
-			TenantID:  "tenant-123",
-			State:     api.ProcessingStateInitialized,
-			Timestamp: originalTime,
-			Success:   false,
-		}
-
-		err := store.deploymentStorage.Create(initialRecord)
-		require.NoError(t, err)
-
-		// Update the deployment
-		updatedTime := originalTime.Add(time.Hour)
-		updateRecord := api.DeploymentRecord{
-			ID:          "deployment-update-test",
-			TenantID:    "tenant-123",
-			State:       api.ProcessingStateCompleted,
-			Timestamp:   updatedTime,
-			Success:     true,
-			ErrorDetail: "",
-		}
-
-		err = store.UpdateDeployment(updateRecord)
-		require.NoError(t, err)
-
-		// Verify updates were applied
-		storedRecord, err := store.FindDeployment("deployment-update-test")
-		require.NoError(t, err)
-		assert.Equal(t, api.ProcessingStateCompleted, storedRecord.State)
-		assert.Equal(t, updatedTime, storedRecord.Timestamp)
-		assert.True(t, storedRecord.Success)
-		assert.Empty(t, storedRecord.ErrorDetail)
-	})
-
-	t.Run("returns error when deployment not found", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		updateRecord := api.DeploymentRecord{
-			ID:       "non-existent-deployment",
-			TenantID: "tenant-123",
-		}
-
-		err := store.UpdateDeployment(updateRecord)
-
-		require.Error(t, err)
-		assert.Equal(t, model.ErrNotFound, err)
-	})
-
-	t.Run("returns error for empty ID", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
-
-		updateRecord := api.DeploymentRecord{
-			ID:       "",
-			TenantID: "tenant-123",
-		}
-
-		err := store.UpdateDeployment(updateRecord)
+	t.Run("update nil entity should fail", func(t *testing.T) {
+		err := store.Update(ctx, nil)
 
 		require.Error(t, err)
 		assert.Equal(t, model.ErrInvalidInput, err)
 	})
 
-	t.Run("updates complex fields correctly", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
+	t.Run("update entity with empty ID should fail", func(t *testing.T) {
+		entity := &testEntity{ID: "", Value: "value1"}
 
-		initialRecord := api.DeploymentRecord{
-			ID:                 "deployment-complex-update",
-			TenantID:           "tenant-123",
-			ResponseProperties: map[string]any{"old": "value"},
-		}
+		err := store.Update(ctx, entity)
 
-		err := store.deploymentStorage.Create(initialRecord)
-		require.NoError(t, err)
+		require.Error(t, err)
+		assert.Equal(t, model.ErrInvalidInput, err)
+	})
 
-		// Update with new complex data
-		newResponseProps := map[string]any{
-			"updated": "value",
-			"nested": map[string]any{
-				"data": []string{"item1", "item2"},
-			},
-		}
+	t.Run("update non-existing entity should fail", func(t *testing.T) {
+		entity := &testEntity{ID: "non-existing", Value: "value1"}
 
-		updateRecord := api.DeploymentRecord{
-			ID:                 "deployment-complex-update",
-			TenantID:           "tenant-123",
-			ResponseProperties: newResponseProps,
-			ErrorDetail:        "updated error message",
-		}
+		err := store.Update(ctx, entity)
 
-		err = store.UpdateDeployment(updateRecord)
-		require.NoError(t, err)
-
-		// Verify complex fields were updated
-		storedRecord, err := store.FindDeployment("deployment-complex-update")
-		require.NoError(t, err)
-		assert.Equal(t, newResponseProps, storedRecord.ResponseProperties)
-		assert.Equal(t, "updated error message", storedRecord.ErrorDetail)
+		require.Error(t, err)
+		assert.Equal(t, model.ErrNotFound, err)
 	})
 }
 
-func TestInMemoryTManagerStore_ConcurrentAccess(t *testing.T) {
-	t.Run("handles concurrent reads and writes", func(t *testing.T) {
-		store := NewInMemoryTManagerStore(false)
+func TestInMemoryEntityStore_Delete(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
 
-		// This test verifies thread safety of the store
-		initialRecord := api.DeploymentRecord{
-			ID:       "concurrent-test",
-			TenantID: "tenant-concurrent",
+	t.Run("successful delete", func(t *testing.T) {
+		entity := &testEntity{ID: "test-1", Value: "value1"}
+		_, err := store.Create(ctx, entity)
+		require.NoError(t, err)
+
+		err = store.Delete(ctx, "test-1")
+
+		require.NoError(t, err)
+
+		// Verify deletion
+		result := store.FindById(ctx, "test-1")
+		assert.Nil(t, result)
+
+		exists, err := store.Exists(ctx, "test-1")
+		require.NoError(t, err)
+		assert.False(t, exists)
+	})
+
+	t.Run("delete with empty ID should fail", func(t *testing.T) {
+		err := store.Delete(ctx, "")
+
+		require.Error(t, err)
+		assert.Equal(t, model.ErrInvalidInput, err)
+	})
+
+	t.Run("delete non-existing entity should fail", func(t *testing.T) {
+		err := store.Delete(ctx, "non-existing")
+
+		require.Error(t, err)
+		assert.Equal(t, model.ErrNotFound, err)
+	})
+}
+
+func TestInMemoryEntityStore_GetAll(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
+
+	t.Run("get all from empty store", func(t *testing.T) {
+		entities, err := collections.CollectAll(store.GetAll(ctx))
+
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(entities))
+	})
+
+	t.Run("get all entities", func(t *testing.T) {
+		// Create test entities
+		entities := []*testEntity{
+			{ID: "test-1", Value: "value1"},
+			{ID: "test-2", Value: "value2"},
+			{ID: "test-3", Value: "value3"},
 		}
 
-		err := store.deploymentStorage.Create(initialRecord)
-		require.NoError(t, err)
+		for _, entity := range entities {
+			_, err := store.Create(ctx, entity)
+			require.NoError(t, err)
+		}
 
-		// Perform concurrent operations
+		result, err := collections.CollectAll(store.GetAll(ctx))
+
+		require.NoError(t, err)
+		assert.Equal(t, 3, len(result))
+
+		// Verify all entities are present
+		ids := make(map[string]bool)
+		for _, entity := range result {
+			ids[entity.ID] = true
+		}
+		assert.True(t, ids["test-1"])
+		assert.True(t, ids["test-2"])
+		assert.True(t, ids["test-3"])
+	})
+}
+
+func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
+
+	// Create test entities
+	entities := []*testEntity{
+		{ID: "test-1", Value: "value1"},
+		{ID: "test-2", Value: "value2"},
+		{ID: "test-3", Value: "value3"},
+		{ID: "test-4", Value: "value4"},
+		{ID: "test-5", Value: "value5"},
+	}
+
+	for _, entity := range entities {
+		_, err := store.Create(ctx, entity)
+		require.NoError(t, err)
+	}
+
+	t.Run("pagination with limit", func(t *testing.T) {
+		opts := PaginationOptions{Offset: 0, Limit: 3}
+		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+
+		require.NoError(t, err)
+		assert.Equal(t, 3, len(result))
+	})
+
+	t.Run("pagination with offset", func(t *testing.T) {
+		opts := PaginationOptions{Offset: 2, Limit: 2}
+		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(result))
+	})
+
+	t.Run("pagination with offset beyond range", func(t *testing.T) {
+		opts := PaginationOptions{Offset: 10, Limit: 2}
+		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(result))
+	})
+
+	t.Run("pagination with negative offset", func(t *testing.T) {
+		opts := PaginationOptions{Offset: -1, Limit: 2}
+		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(result))
+	})
+
+	t.Run("pagination with no limit", func(t *testing.T) {
+		opts := PaginationOptions{Offset: 0, Limit: 0}
+		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+
+		require.NoError(t, err)
+		assert.Equal(t, 5, len(result))
+	})
+}
+
+func TestInMemoryEntityStore_ConcurrentAccess(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
+
+	t.Run("concurrent create and read", func(t *testing.T) {
 		done := make(chan bool, 2)
 
-		// Concurrent reader
+		// Goroutine 1: Create entities
 		go func() {
-			defer func() { done <- true }()
-			for i := 0; i < 100; i++ {
-				_, err := store.FindDeployment("concurrent-test")
-				assert.NoError(t, err)
-
-				exists, err := store.DeploymentExists("concurrent-test")
-				assert.NoError(t, err)
-				assert.True(t, exists)
+			for i := 0; i < 10; i++ {
+				entity := &testEntity{ID: fmt.Sprintf("test-%d", i), Value: fmt.Sprintf("value%d", i)}
+				store.Create(ctx, entity)
 			}
+			done <- true
 		}()
 
-		// Concurrent writer
+		// Goroutine 2: Read entities
 		go func() {
-			defer func() { done <- true }()
-			for i := 0; i < 100; i++ {
-				updateRecord := api.DeploymentRecord{
-					ID:       "concurrent-test",
-					TenantID: "tenant-concurrent",
-					State:    api.ProcessingStateRunning,
-				}
-				err := store.UpdateDeployment(updateRecord)
-				assert.NoError(t, err)
+			for i := 0; i < 10; i++ {
+				store.FindById(ctx, fmt.Sprintf("test-%d", i))
 			}
+			done <- true
 		}()
 
-		// Wait for both goroutines to complete
+		// Wait for both goroutines
 		<-done
 		<-done
 
-		// Verify final state
-		finalRecord, err := store.FindDeployment("concurrent-test")
+		// Verify some entities were created
+		entities, err := collections.CollectAll(store.GetAll(ctx))
 		require.NoError(t, err)
-		assert.Equal(t, "concurrent-test", finalRecord.ID)
+		assert.True(t, len(entities) > 0)
 	})
+}
+
+func TestInMemoryEntityStore_ContextCancellation(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+
+	// Create some test data
+	for i := 0; i < 5; i++ {
+		entity := &testEntity{ID: fmt.Sprintf("test-%d", i), Value: fmt.Sprintf("value%d", i)}
+		_, err := store.Create(context.Background(), entity)
+		require.NoError(t, err)
+	}
+
+	t.Run("cancelled context in GetAllPaginated", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		var results []testEntity
+		var lastErr error
+
+		for entity, err := range store.GetAllPaginated(ctx, DefaultPaginationOptions()) {
+			if err != nil {
+				lastErr = err
+				break
+			}
+			results = append(results, entity)
+		}
+
+		// Should get a context cancellation error
+		require.Error(t, lastErr)
+		assert.Equal(t, context.Canceled, lastErr)
+	})
+}
+
+func TestInMemoryEntityStore_CopyIsolation(t *testing.T) {
+	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	ctx := context.Background()
+
+	entity := &testEntity{ID: "test-1", Value: "original-value"}
+	_, err := store.Create(ctx, entity)
+	require.NoError(t, err)
+
+	// Retrieve the entity (first retrieval)
+	retrieved1 := store.FindById(ctx, "test-1")
+	require.NotNil(t, retrieved1)
+	assert.Equal(t, "original-value", retrieved1.Value)
+
+	// Modify the retrieved copy
+	retrieved1.Value = "modified-value"
+
+	// Retrieve the entity again (second retrieval)
+	retrieved2 := store.FindById(ctx, "test-1")
+	require.NotNil(t, retrieved2)
+
+	// The second retrieval should still have the original value
+	// The modification to retrieved1 should not be visible in retrieved2
+	assert.Equal(t, "original-value", retrieved2.Value)
+	assert.NotEqual(t, retrieved1.Value, retrieved2.Value)
 }
