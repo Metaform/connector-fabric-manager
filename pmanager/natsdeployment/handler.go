@@ -18,16 +18,16 @@ import (
 	"sync/atomic"
 
 	"github.com/google/uuid"
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
 type natsDeploymentHandler struct {
-	natsclient.RetriableMessageProcessor[dmodel.DeploymentManifest]
+	natsclient.RetriableMessageProcessor[model.DeploymentManifest]
 }
 
 func newNatsDeploymentHandler(
@@ -35,20 +35,20 @@ func newNatsDeploymentHandler(
 	provisionManager api.ProvisionManager,
 	monitor system.LogMonitor) *natsDeploymentHandler {
 	return &natsDeploymentHandler{
-		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[dmodel.DeploymentManifest]{
+		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[model.DeploymentManifest]{
 			Client:     client,
 			Monitor:    monitor,
 			Processing: atomic.Bool{},
-			Dispatcher: func(ctx context.Context, manifest dmodel.DeploymentManifest) error {
+			Dispatcher: func(ctx context.Context, manifest model.DeploymentManifest) error {
 				_, err := provisionManager.Start(ctx, &manifest)
 				if err != nil {
 					switch {
-					case model.IsRecoverable(err):
+					case _type.IsRecoverable(err):
 						// Return error to NAK the message and retry
 						return err
 					default:
 						// return error response
-						m := &dmodel.DeploymentResponse{
+						m := &model.DeploymentResponse{
 							ID:             uuid.New().String(),
 							Success:        false,
 							ErrorDetail:    err.Error(),
@@ -58,11 +58,11 @@ func newNatsDeploymentHandler(
 						}
 						ser, err := json.Marshal(m)
 						if err != nil {
-							return model.NewRecoverableError("failed to marshal response: %s", err.Error())
+							return _type.NewRecoverableError("failed to marshal response: %s", err.Error())
 						}
 						_, err = client.Publish(ctx, natsclient.CFMDeploymentResponseSubject, ser)
 						if err != nil {
-							return model.NewRecoverableError("failed to publish response: %s", err.Error())
+							return _type.NewRecoverableError("failed to publish response: %s", err.Error())
 						}
 
 						return nil // ack message back

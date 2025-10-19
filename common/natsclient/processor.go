@@ -20,8 +20,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -74,7 +74,7 @@ func (n *RetriableMessageProcessor[T]) ProcessMessage(ctx context.Context, messa
 	}
 
 	switch {
-	case model.IsRecoverable(resultErr):
+	case _type.IsRecoverable(resultErr):
 		if err := message.Nak(); err != nil {
 			return fmt.Errorf("retriable failure when dispatching message and NAK response (errors: %w, %v)", resultErr, err)
 		}

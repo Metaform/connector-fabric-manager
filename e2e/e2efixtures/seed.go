@@ -13,7 +13,7 @@
 package e2efixtures
 
 import (
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -28,7 +28,7 @@ func CreateTestActivityDefinition(apiClient *ApiClient) error {
 
 func CreateTestDeploymentDefinition(apiClient *ApiClient) error {
 	requestBody := api.DeploymentDefinition{
-		Type:       dmodel.VpaDeploymentType,
+		Type:       model.VpaDeploymentType,
 		ApiVersion: "v1",
 		Resource: api.Resource{
 			Group:       "deployments.example.com",

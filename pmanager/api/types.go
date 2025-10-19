@@ -19,7 +19,7 @@ import (
 	"slices"
 
 	"github.com/metaform/connector-fabric-manager/common/dag"
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 )
 
 type OrchestrationState uint
@@ -36,9 +36,9 @@ const (
 //
 // As actions are completed, the orchestration system will update the Completed map.
 type Orchestration struct {
-	ID             string                `json:"id"`
-	State          OrchestrationState    `json:"state"`
-	DeploymentType dmodel.DeploymentType `json:"deploymentType"`
+	ID             string               `json:"id"`
+	State          OrchestrationState   `json:"state"`
+	DeploymentType model.DeploymentType `json:"deploymentType"`
 	Steps          []OrchestrationStep
 	Inputs         map[string]any
 	ProcessingData map[string]any
@@ -149,10 +149,10 @@ func (m *MappingEntry) UnmarshalJSON(data []byte) error {
 }
 
 type DeploymentDefinition struct {
-	Type       dmodel.DeploymentType `json:"type"`
-	ApiVersion string                `json:"apiVersion"`
-	Resource   Resource              `json:"resource"`
-	Versions   []Version             `json:"versions"`
+	Type       model.DeploymentType `json:"type"`
+	ApiVersion string               `json:"apiVersion"`
+	Resource   Resource             `json:"resource"`
+	Versions   []Version            `json:"versions"`
 }
 
 func (d *DeploymentDefinition) GetActiveVersion() (*Version, error) {
@@ -206,7 +206,7 @@ func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
 // It validates activity dependencies and organizes activities into parallel execution steps based on those dependencies.
 func InstantiateOrchestration(
 	deploymentID string,
-	deploymentType dmodel.DeploymentType,
+	deploymentType model.DeploymentType,
 	activities []Activity,
 	data map[string]any) (*Orchestration, error) {
 	orchestration := &Orchestration{

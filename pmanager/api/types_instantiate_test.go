@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +42,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 			"key2": 42,
 		}
 
-		orchestration, err := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, data)
+		orchestration, err := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, data)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
@@ -90,7 +90,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		}
 		data := map[string]any{"test": "data"}
 
-		orchestration, err := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, data)
+		orchestration, err := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, data)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
@@ -145,7 +145,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		}
 		data := map[string]any{"parallel": "test"}
 
-		orchestration, err := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, data)
+		orchestration, err := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, data)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
@@ -192,7 +192,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		}
 		data := map[string]any{"cycle": "test"}
 
-		orchestration, err := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, data)
+		orchestration, err := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, data)
 
 		assert.Error(t, err)
 		assert.Nil(t, orchestration)
@@ -204,7 +204,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		definition := []Activity{}
 		data := map[string]any{"empty": "test"}
 
-		orchestration, err := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, data)
+		orchestration, err := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, data)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
@@ -224,7 +224,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 			},
 		}
 
-		orchestration, err := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, nil)
+		orchestration, err := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, nil)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
@@ -280,7 +280,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 			},
 		}
 
-		orchestration, err := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, data)
+		orchestration, err := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, data)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, orchestration)
@@ -337,7 +337,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		}
 		data := map[string]any{"test": "data"}
 
-		orchestration, err1 := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, data)
+		orchestration, err1 := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, data)
 
 		assert.NoError(t, err1)
 		assert.NotNil(t, orchestration)
@@ -356,7 +356,7 @@ func TestInstantiateOrchestration(t *testing.T) {
 		}
 		data := map[string]any{"test": "data"}
 
-		orchestration, err := InstantiateOrchestration(deploymentID, dmodel.VpaDeploymentType, definition, data)
+		orchestration, err := InstantiateOrchestration(deploymentID, model.VpaDeploymentType, definition, data)
 
 		assert.Error(t, err)
 		assert.Nil(t, orchestration)

@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package dmodel
+package model
 
 import (
 	"encoding/json"

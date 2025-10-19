@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +27,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 	now := time.Now().UTC()
 
 	t.Run("successful generation", func(t *testing.T) {
-		mockCellSelector := func(deploymentType dmodel.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			return &api.Cell{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -48,9 +48,9 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		identifier := "participant-abc"
 
 		vpaProperties := make(api.VpaPropMap, 2)
-		vpaProperties[dmodel.ConnectorType] = map[string]any{"connector": "connector"}
-		vpaProperties[dmodel.CredentialServiceType] = map[string]any{"credentialservice": "credentialservice"}
-		vpaProperties[dmodel.DataPlaneType] = map[string]any{"dataplane": "dataplane"}
+		vpaProperties[model.ConnectorType] = map[string]any{"connector": "connector"}
+		vpaProperties[model.CredentialServiceType] = map[string]any{"credentialservice": "credentialservice"}
+		vpaProperties[model.DataPlaneType] = map[string]any{"dataplane": "dataplane"}
 
 		properties := api.Properties{
 			"test": "value",
@@ -97,12 +97,12 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		assert.Len(t, profile.VPAs, 3)
 
 		// Extract VPA types and verify they match expected types
-		expectedTypes := []dmodel.VPAType{
-			dmodel.ConnectorType,
-			dmodel.CredentialServiceType,
-			dmodel.DataPlaneType,
+		expectedTypes := []model.VPAType{
+			model.ConnectorType,
+			model.CredentialServiceType,
+			model.DataPlaneType,
 		}
-		actualTypes := make([]dmodel.VPAType, len(profile.VPAs))
+		actualTypes := make([]model.VPAType, len(profile.VPAs))
 		for i, vpa := range profile.VPAs {
 			actualTypes[i] = vpa.Type
 		}
@@ -123,7 +123,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 	})
 
 	t.Run("error when cell selector fails", func(t *testing.T) {
-		mockCellSelector := func(deploymentType dmodel.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			return nil, assert.AnError
 		}
 
@@ -144,8 +144,8 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 	})
 
 	t.Run("cell selector receives correct deployment type", func(t *testing.T) {
-		var receivedDeploymentType dmodel.DeploymentType
-		mockCellSelector := func(deploymentType dmodel.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		var receivedDeploymentType model.DeploymentType
+		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			receivedDeploymentType = deploymentType
 			return &api.Cell{
 				DeployableEntity: api.DeployableEntity{
@@ -172,14 +172,14 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			[]api.DataspaceProfile{})
 
 		require.NoError(t, err)
-		assert.Equal(t, dmodel.VpaDeploymentType, receivedDeploymentType)
+		assert.Equal(t, model.VpaDeploymentType, receivedDeploymentType)
 	})
 
 	t.Run("cell selector receives correct parameters", func(t *testing.T) {
 		var receivedCells []api.Cell
 		var receivedProfiles []api.DataspaceProfile
 
-		mockCellSelector := func(deploymentType dmodel.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			receivedCells = cells
 			receivedProfiles = dProfiles
 			return &api.Cell{
@@ -225,7 +225,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 	})
 
 	t.Run("multiple dataspace profiles are correctly assigned", func(t *testing.T) {
-		mockCellSelector := func(deploymentType dmodel.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			return &api.Cell{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -307,7 +307,7 @@ func TestParticipantProfileGenerator_generateConnector(t *testing.T) {
 			Properties: cellProperties,
 		}
 
-		connector := generator.generateVPA(dmodel.ConnectorType, make(api.VpaPropMap), inputCell)
+		connector := generator.generateVPA(model.ConnectorType, make(api.VpaPropMap), inputCell)
 
 		assert.Equal(t, cellProperties, connector.Cell.Properties)
 		assert.NotSame(t, &cellProperties, &connector.Cell.Properties, "Properties should be a copy, not the same reference")
@@ -328,9 +328,9 @@ func TestParticipantProfileGenerator_generateConnector(t *testing.T) {
 			Properties: make(api.Properties),
 		}
 
-		connector1 := generator.generateVPA(dmodel.ConnectorType, make(api.VpaPropMap), inputCell)
-		connector2 := generator.generateVPA(dmodel.ConnectorType, make(api.VpaPropMap), inputCell)
-		connector3 := generator.generateVPA(dmodel.ConnectorType, make(api.VpaPropMap), inputCell)
+		connector1 := generator.generateVPA(model.ConnectorType, make(api.VpaPropMap), inputCell)
+		connector2 := generator.generateVPA(model.ConnectorType, make(api.VpaPropMap), inputCell)
+		connector3 := generator.generateVPA(model.ConnectorType, make(api.VpaPropMap), inputCell)
 
 		ids := map[string]bool{
 			connector1.ID: true,

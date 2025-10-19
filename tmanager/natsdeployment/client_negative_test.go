@@ -18,9 +18,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -52,9 +52,9 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			name:        "dispatcher returns recoverable error",
 			messageData: []byte(`{"id":"test-id","success":true,"manifestID":"manifest-1"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r dmodel.DeploymentResponse) bool {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id"
-				})).Return(model.NewRecoverableError("temporary failure"))
+				})).Return(_type.NewRecoverableError("temporary failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
 				m.On("Data").Return([]byte(`{"id":"test-id","success":true,"manifestID":"manifest-1"}`))
@@ -66,9 +66,9 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			name:        "dispatcher returns recoverable error and NAK fails",
 			messageData: []byte(`{"id":"test-id-2","success":true,"manifestID":"manifest-2"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r dmodel.DeploymentResponse) bool {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-2"
-				})).Return(model.NewRecoverableError("temporary failure"))
+				})).Return(_type.NewRecoverableError("temporary failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
 				m.On("Data").Return([]byte(`{"id":"test-id-2","success":true,"manifestID":"manifest-2"}`))
@@ -80,9 +80,9 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			name:        "dispatcher returns fatal error",
 			messageData: []byte(`{"id":"test-id-3","success":false,"manifestID":"manifest-3"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r dmodel.DeploymentResponse) bool {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-3"
-				})).Return(model.NewFatalError("permanent failure"))
+				})).Return(_type.NewFatalError("permanent failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
 				m.On("Data").Return([]byte(`{"id":"test-id-3","success":false,"manifestID":"manifest-3"}`))
@@ -94,9 +94,9 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			name:        "dispatcher returns fatal error and ACK fails",
 			messageData: []byte(`{"id":"test-id-4","success":false,"manifestID":"manifest-4"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r dmodel.DeploymentResponse) bool {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-4"
-				})).Return(model.NewFatalError("permanent failure"))
+				})).Return(_type.NewFatalError("permanent failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
 				m.On("Data").Return([]byte(`{"id":"test-id-4","success":false,"manifestID":"manifest-4"}`))
@@ -108,7 +108,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			name:        "ACK message error after successful dispatch",
 			messageData: []byte(`{"id":"test-id-5","success":true,"manifestID":"manifest-5"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r dmodel.DeploymentResponse) bool {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-5"
 				})).Return(nil)
 			},
@@ -203,7 +203,7 @@ type mockDeploymentDispatcher struct {
 	mock.Mock
 }
 
-func (m *mockDeploymentDispatcher) Dispatch(ctx context.Context, response dmodel.DeploymentResponse) error {
+func (m *mockDeploymentDispatcher) Dispatch(ctx context.Context, response model.DeploymentResponse) error {
 	args := m.Called(ctx, response)
 	return args.Error(0)
 }

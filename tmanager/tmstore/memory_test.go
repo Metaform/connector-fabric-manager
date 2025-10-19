@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/common/collections"
-	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/collection"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,7 +65,7 @@ func TestInMemoryEntityStore_Create(t *testing.T) {
 
 		require.Error(t, err)
 		require.Nil(t, result)
-		assert.Equal(t, model.ErrInvalidInput, err)
+		assert.Equal(t, _type.ErrInvalidInput, err)
 	})
 
 	t.Run("create duplicate should fail", func(t *testing.T) {
@@ -81,7 +81,7 @@ func TestInMemoryEntityStore_Create(t *testing.T) {
 		result2, err2 := store.Create(ctx, duplicate)
 		require.Error(t, err2)
 		require.Nil(t, result2)
-		assert.Equal(t, model.ErrConflict, err2)
+		assert.Equal(t, _type.ErrConflict, err2)
 	})
 }
 
@@ -155,7 +155,7 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		err := store.Update(ctx, nil)
 
 		require.Error(t, err)
-		assert.Equal(t, model.ErrInvalidInput, err)
+		assert.Equal(t, _type.ErrInvalidInput, err)
 	})
 
 	t.Run("update entity with empty ID should fail", func(t *testing.T) {
@@ -164,7 +164,7 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		err := store.Update(ctx, entity)
 
 		require.Error(t, err)
-		assert.Equal(t, model.ErrInvalidInput, err)
+		assert.Equal(t, _type.ErrInvalidInput, err)
 	})
 
 	t.Run("update non-existing entity should fail", func(t *testing.T) {
@@ -173,7 +173,7 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		err := store.Update(ctx, entity)
 
 		require.Error(t, err)
-		assert.Equal(t, model.ErrNotFound, err)
+		assert.Equal(t, _type.ErrNotFound, err)
 	})
 }
 
@@ -203,14 +203,14 @@ func TestInMemoryEntityStore_Delete(t *testing.T) {
 		err := store.Delete(ctx, "")
 
 		require.Error(t, err)
-		assert.Equal(t, model.ErrInvalidInput, err)
+		assert.Equal(t, _type.ErrInvalidInput, err)
 	})
 
 	t.Run("delete non-existing entity should fail", func(t *testing.T) {
 		err := store.Delete(ctx, "non-existing")
 
 		require.Error(t, err)
-		assert.Equal(t, model.ErrNotFound, err)
+		assert.Equal(t, _type.ErrNotFound, err)
 	})
 }
 
@@ -219,7 +219,7 @@ func TestInMemoryEntityStore_GetAll(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("get all from empty store", func(t *testing.T) {
-		entities, err := collections.CollectAll(store.GetAll(ctx))
+		entities, err := collection.CollectAll(store.GetAll(ctx))
 
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(entities))
@@ -238,7 +238,7 @@ func TestInMemoryEntityStore_GetAll(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		result, err := collections.CollectAll(store.GetAll(ctx))
+		result, err := collection.CollectAll(store.GetAll(ctx))
 
 		require.NoError(t, err)
 		assert.Equal(t, 3, len(result))
@@ -274,7 +274,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 
 	t.Run("pagination with limit", func(t *testing.T) {
 		opts := PaginationOptions{Offset: 0, Limit: 3}
-		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
 		assert.Equal(t, 3, len(result))
@@ -282,7 +282,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 
 	t.Run("pagination with offset", func(t *testing.T) {
 		opts := PaginationOptions{Offset: 2, Limit: 2}
-		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(result))
@@ -290,7 +290,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 
 	t.Run("pagination with offset beyond range", func(t *testing.T) {
 		opts := PaginationOptions{Offset: 10, Limit: 2}
-		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(result))
@@ -298,7 +298,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 
 	t.Run("pagination with negative offset", func(t *testing.T) {
 		opts := PaginationOptions{Offset: -1, Limit: 2}
-		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(result))
@@ -306,7 +306,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 
 	t.Run("pagination with no limit", func(t *testing.T) {
 		opts := PaginationOptions{Offset: 0, Limit: 0}
-		result, err := collections.CollectAll(store.GetAllPaginated(ctx, opts))
+		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
 		assert.Equal(t, 5, len(result))
@@ -342,7 +342,7 @@ func TestInMemoryEntityStore_ConcurrentAccess(t *testing.T) {
 		<-done
 
 		// Verify some entities were created
-		entities, err := collections.CollectAll(store.GetAll(ctx))
+		entities, err := collection.CollectAll(store.GetAll(ctx))
 		require.NoError(t, err)
 		assert.True(t, len(entities) > 0)
 	})

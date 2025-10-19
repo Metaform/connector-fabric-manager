@@ -17,8 +17,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/metaform/connector-fabric-manager/common/collections"
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/collection"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
@@ -40,12 +40,12 @@ func (d participantDeployer) Deploy(
 
 	// TODO perform property validation against a custom schema
 	return d.trxContext.Execute(ctx, func(ctx context.Context) error {
-		cells, err := collections.CollectAll(d.cellStore.GetAll(ctx))
+		cells, err := collection.CollectAll(d.cellStore.GetAll(ctx))
 		if err != nil {
 			return err
 		}
 
-		dProfiles, err := collections.CollectAll(d.dProfileStore.GetAll(ctx))
+		dProfiles, err := collection.CollectAll(d.dProfileStore.GetAll(ctx))
 		if err != nil {
 			return err
 		}
@@ -59,15 +59,15 @@ func (d participantDeployer) Deploy(
 		if err != nil {
 			return err
 		}
-		dManifest := dmodel.DeploymentManifest{
+		dManifest := model.DeploymentManifest{
 			ID:             uuid.New().String(),
-			DeploymentType: dmodel.VpaDeploymentType,
+			DeploymentType: model.VpaDeploymentType,
 			Payload:        make(map[string]any),
 		}
 
-		vpaManifests := make([]dmodel.VPAManifest, 0, len(participantProfile.VPAs))
+		vpaManifests := make([]model.VPAManifest, 0, len(participantProfile.VPAs))
 		for _, vpa := range participantProfile.VPAs {
-			vpaManifest := dmodel.VPAManifest{
+			vpaManifest := model.VPAManifest{
 				ID:         vpa.ID,
 				VPAType:    vpa.Type,
 				Cell:       vpa.Cell.ID,
@@ -76,7 +76,7 @@ func (d participantDeployer) Deploy(
 			vpaManifests = append(vpaManifests, vpaManifest)
 		}
 
-		dManifest.Payload[dmodel.VpaPayloadType] = vpaManifests
+		dManifest.Payload[model.VpaPayloadType] = vpaManifests
 
 		err = d.deploymentClient.Deploy(ctx, dManifest)
 		if err != nil {
@@ -91,7 +91,7 @@ func (d participantDeployer) Deploy(
 type vpaDeploymentCallbackHandler struct {
 }
 
-func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response dmodel.DeploymentResponse) error {
+func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response model.DeploymentResponse) error {
 	if !response.Success {
 		fmt.Println("Deployment failed:" + response.ErrorDetail)
 		// TODO move to error state

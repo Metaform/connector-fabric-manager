@@ -15,8 +15,8 @@ package natsdeployment
 import (
 	"context"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -25,7 +25,7 @@ type deploymentCallbackDispatcher interface {
 
 	// Dispatch is invoked when a deployment is complete.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Dispatch(ctx context.Context, response dmodel.DeploymentResponse) error
+	Dispatch(ctx context.Context, response model.DeploymentResponse) error
 }
 
 // deploymentCallbackService registers api.DeploymentCallbackHandler instances and dispatches deployment responses.
@@ -36,14 +36,14 @@ type deploymentCallbackService struct {
 func newDeploymentCallbackService() *deploymentCallbackService {
 	return &deploymentCallbackService{handlers: make(map[string]api.DeploymentCallbackHandler)}
 }
-func (d deploymentCallbackService) RegisterDeploymentHandler(deploymentType dmodel.DeploymentType, handler api.DeploymentCallbackHandler) {
+func (d deploymentCallbackService) RegisterDeploymentHandler(deploymentType model.DeploymentType, handler api.DeploymentCallbackHandler) {
 	d.handlers[deploymentType.String()] = handler
 }
 
-func (d deploymentCallbackService) Dispatch(ctx context.Context, response dmodel.DeploymentResponse) error {
+func (d deploymentCallbackService) Dispatch(ctx context.Context, response model.DeploymentResponse) error {
 	handler, found := d.handlers[response.DeploymentType.String()]
 	if !found {
-		return model.NewFatalError("deployment handler not found for type: %s", response.DeploymentType)
+		return _type.NewFatalError("deployment handler not found for type: %s", response.DeploymentType)
 	}
 	return handler(ctx, response)
 }

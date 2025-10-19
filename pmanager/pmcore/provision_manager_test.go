@@ -19,7 +19,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -33,7 +33,7 @@ import (
 func TestProvisionManager_Start(t *testing.T) {
 	tests := []struct {
 		name           string
-		manifest       *dmodel.DeploymentManifest
+		manifest       *model.DeploymentManifest
 		setupStore     func(store api.DefinitionStore)
 		setupOrch      func(orch *mocks.MockDeploymentOrchestrator)
 		expectedError  string
@@ -41,7 +41,7 @@ func TestProvisionManager_Start(t *testing.T) {
 	}{
 		{
 			name: "successful deployment with new orchestration",
-			manifest: &dmodel.DeploymentManifest{
+			manifest: &model.DeploymentManifest{
 				ID:             "test-deployment-1",
 				DeploymentType: "test-type",
 				Payload:        map[string]interface{}{"key": "value"},
@@ -75,7 +75,7 @@ func TestProvisionManager_Start(t *testing.T) {
 		},
 		{
 			name: "deduplication - successful deployment with existing orchestration",
-			manifest: &dmodel.DeploymentManifest{
+			manifest: &model.DeploymentManifest{
 				ID:             "test-deployment-2",
 				DeploymentType: "test-type",
 				Payload:        map[string]interface{}{"key": "value"},
@@ -111,7 +111,7 @@ func TestProvisionManager_Start(t *testing.T) {
 		},
 		{
 			name: "deployment definition not found",
-			manifest: &dmodel.DeploymentManifest{
+			manifest: &model.DeploymentManifest{
 				ID:             "test-deployment-3",
 				DeploymentType: "non-existent-type",
 				Payload:        map[string]interface{}{"key": "value"},
@@ -126,7 +126,7 @@ func TestProvisionManager_Start(t *testing.T) {
 		},
 		{
 			name: "deployment definition has no active version",
-			manifest: &dmodel.DeploymentManifest{
+			manifest: &model.DeploymentManifest{
 				ID:             "test-deployment-4",
 				DeploymentType: "test-type-inactive",
 				Payload:        map[string]interface{}{"key": "value"},
@@ -157,7 +157,7 @@ func TestProvisionManager_Start(t *testing.T) {
 		},
 		{
 			name: "orchestrator get orchestration error",
-			manifest: &dmodel.DeploymentManifest{
+			manifest: &model.DeploymentManifest{
 				ID:             "test-deployment-5",
 				DeploymentType: "test-type",
 				Payload:        map[string]interface{}{"key": "value"},
@@ -188,7 +188,7 @@ func TestProvisionManager_Start(t *testing.T) {
 		},
 		{
 			name: "orchestrator execute orchestration error",
-			manifest: &dmodel.DeploymentManifest{
+			manifest: &model.DeploymentManifest{
 				ID:             "test-deployment-6",
 				DeploymentType: "test-type",
 				Payload:        map[string]interface{}{"key": "value"},
@@ -261,7 +261,7 @@ func TestProvisionManager_Start(t *testing.T) {
 // Helper function to create a test deployment definition
 func createTestDeploymentDefinition(deploymentType string, active bool) *api.DeploymentDefinition {
 	return &api.DeploymentDefinition{
-		Type:       dmodel.DeploymentType(deploymentType),
+		Type:       model.DeploymentType(deploymentType),
 		ApiVersion: "1.0",
 		Versions: []api.Version{
 			{
@@ -301,7 +301,7 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	}
 
 	// Create test manifest
-	manifest := &dmodel.DeploymentManifest{
+	manifest := &model.DeploymentManifest{
 		ID:             "test-deployment",
 		DeploymentType: "test-type",
 		Payload:        map[string]interface{}{"key": "value"},

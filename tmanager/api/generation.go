@@ -13,7 +13,7 @@
 package api
 
 import (
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
@@ -22,4 +22,4 @@ const (
 )
 
 // CellSelector selects a cell for resource deployment.
-type CellSelector func(dmodel.DeploymentType, []Cell, []DataspaceProfile) (*Cell, error)
+type CellSelector func(model.DeploymentType, []Cell, []DataspaceProfile) (*Cell, error)

@@ -19,7 +19,7 @@ import (
 
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
@@ -34,7 +34,7 @@ type ProvisionManager interface {
 
 	// Start initializes a new orchestration and starts its execution.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Start(ctx context.Context, manifest *dmodel.DeploymentManifest) (*Orchestration, error)
+	Start(ctx context.Context, manifest *model.DeploymentManifest) (*Orchestration, error)
 
 	// Cancel terminates an orchestration execution.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
@@ -99,7 +99,7 @@ type DefinitionStore interface {
 
 	// FindDeploymentDefinition retrieves the DeploymentDefinition associated with the given type.
 	// Returns the DeploymentDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindDeploymentDefinition(deploymentType dmodel.DeploymentType) (*DeploymentDefinition, error)
+	FindDeploymentDefinition(deploymentType model.DeploymentType) (*DeploymentDefinition, error)
 
 	// FindActivityDefinition retrieves the ActivityDefinition associated with the given type.
 	// Returns the ActivityDefinition object or store.ErrNotFound if the definition cannot be found.
@@ -112,7 +112,7 @@ type DefinitionStore interface {
 	StoreActivityDefinition(definition *ActivityDefinition)
 
 	// DeleteDeploymentDefinition removes a DeploymentDefinition for the given type, returning true if successful.
-	DeleteDeploymentDefinition(deploymentType dmodel.DeploymentType) bool
+	DeleteDeploymentDefinition(deploymentType model.DeploymentType) bool
 
 	// DeleteActivityDefinition removes an ActivityDefinition for the given type, returning true if successful.
 	DeleteActivityDefinition(activityType ActivityType) bool

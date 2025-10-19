@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -57,14 +57,14 @@ func (s *InMemoryEntityStore[T]) Exists(_ context.Context, id string) (bool, err
 
 func (s *InMemoryEntityStore[T]) Create(_ context.Context, entity *T) (*T, error) {
 	if s.idFunc(entity) == "" {
-		return nil, model.ErrInvalidInput
+		return nil, _type.ErrInvalidInput
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, exists := s.cache[s.idFunc(entity)]; exists {
-		return nil, model.ErrConflict
+		return nil, _type.ErrConflict
 	}
 
 	s.cache[s.idFunc(entity)] = *entity
@@ -73,17 +73,17 @@ func (s *InMemoryEntityStore[T]) Create(_ context.Context, entity *T) (*T, error
 
 func (s *InMemoryEntityStore[T]) Update(_ context.Context, entity *T) error {
 	if entity == nil {
-		return model.ErrInvalidInput
+		return _type.ErrInvalidInput
 	}
 	if s.idFunc(entity) == "" {
-		return model.ErrInvalidInput
+		return _type.ErrInvalidInput
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, exists := s.cache[s.idFunc(entity)]; !exists {
-		return model.ErrNotFound
+		return _type.ErrNotFound
 	}
 
 	s.cache[s.idFunc(entity)] = *entity
@@ -92,14 +92,14 @@ func (s *InMemoryEntityStore[T]) Update(_ context.Context, entity *T) error {
 
 func (s *InMemoryEntityStore[T]) Delete(_ context.Context, id string) error {
 	if id == "" {
-		return model.ErrInvalidInput
+		return _type.ErrInvalidInput
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, exists := s.cache[id]; !exists {
-		return model.ErrNotFound
+		return _type.ErrNotFound
 	}
 
 	delete(s.cache, id)

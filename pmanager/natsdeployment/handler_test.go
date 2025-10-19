@@ -18,11 +18,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natsclient/mocks"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -37,9 +37,9 @@ func TestNatsDeploymentHandler_Dispatcher_SuccessfulDispatch(t *testing.T) {
 	handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 	ctx := context.Background()
-	manifest := dmodel.DeploymentManifest{
+	manifest := model.DeploymentManifest{
 		ID:             "test-manifest-id",
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		Payload:        map[string]any{"key": "value"},
 	}
 
@@ -68,9 +68,9 @@ func TestNatsDeploymentHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 	handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 	ctx := context.Background()
-	manifest := dmodel.DeploymentManifest{
+	manifest := model.DeploymentManifest{
 		ID:             "test-manifest-id",
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		Payload:        map[string]any{"key": "value"},
 	}
 
@@ -90,14 +90,14 @@ func TestNatsDeploymentHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 
 	require.NoError(t, err)
 
-	var response dmodel.DeploymentResponse
+	var response model.DeploymentResponse
 	err = json.Unmarshal(capturedPayload, &response)
 	require.NoError(t, err)
 
 	assert.False(t, response.Success)
 	assert.Equal(t, "deployment failed", response.ErrorDetail)
 	assert.Equal(t, "test-manifest-id", response.ManifestID)
-	assert.Equal(t, dmodel.VpaDeploymentType, response.DeploymentType)
+	assert.Equal(t, model.VpaDeploymentType, response.DeploymentType)
 	assert.NotEmpty(t, response.ID) // Should have a generated UUID
 	assert.NotNil(t, response.Properties)
 	assert.Equal(t, 0, len(response.Properties)) // Should be empty map
@@ -112,9 +112,9 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 		error         error
 		shouldPublish bool
 	}{
-		{"RecoverableError", model.NewRecoverableError("network timeout"), false},
-		{"ClientError", model.NewClientError("invalid manifest"), true},
-		{"FatalError", model.NewFatalError("fatal processing error"), true},
+		{"RecoverableError", _type.NewRecoverableError("network timeout"), false},
+		{"ClientError", _type.NewClientError("invalid manifest"), true},
+		{"FatalError", _type.NewFatalError("fatal processing error"), true},
 		{"StandardError", errors.New("standard error"), true},
 	}
 
@@ -127,9 +127,9 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 			handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 			ctx := context.Background()
-			manifest := dmodel.DeploymentManifest{
+			manifest := model.DeploymentManifest{
 				ID:             "test-manifest-id",
-				DeploymentType: dmodel.VpaDeploymentType,
+				DeploymentType: model.VpaDeploymentType,
 				Payload:        map[string]any{"key": "value"},
 			}
 
@@ -147,7 +147,7 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 				assert.NoError(t, err, "Non-recoverable errors should result in ACK")
 			} else {
 				assert.Error(t, err, "Recoverable errors should be returned")
-				assert.True(t, model.IsRecoverable(err))
+				assert.True(t, _type.IsRecoverable(err))
 			}
 
 			mockProvisionManager.AssertExpectations(t)
@@ -160,7 +160,7 @@ type MockProvisionManager struct {
 	mock.Mock
 }
 
-func (m *MockProvisionManager) Start(ctx context.Context, manifest *dmodel.DeploymentManifest) (*api.Orchestration, error) {
+func (m *MockProvisionManager) Start(ctx context.Context, manifest *model.DeploymentManifest) (*api.Orchestration, error) {
 	args := m.Called(ctx, manifest)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

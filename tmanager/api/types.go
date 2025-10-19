@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 )
 
 // Entity is the base type for all entities.
@@ -66,7 +66,7 @@ type DataspaceProfile struct {
 // context could be a connector, credential service, or another component.
 type VirtualParticipantAgent struct {
 	DeployableEntity
-	Type       dmodel.VPAType
+	Type       model.VPAType
 	Cell       Cell
 	Properties Properties
 }
@@ -248,17 +248,17 @@ func (p *Properties) Set(key string, value any) {
 }
 
 type DeploymentRecord struct {
-	ID                 string                `json:"id"`
-	CorrelationID      string                `json:"correlationId"`
-	DeploymentType     dmodel.DeploymentType `json:"deploymentType"`
-	State              ProcessingState       `json:"state"`
-	Timestamp          time.Time             `json:"timestamp"`
-	TenantID           string                `json:"tenantId"`
-	ManifestID         string                `json:"manifestId"`
-	ResponseID         string                `json:"responseId"`
-	Success            bool                  `json:"success"`
-	ErrorDetail        string                `json:"errorDetail,omitempty"`
-	ResponseProperties map[string]any        `json:"reponseProperties,omitempty"`
+	ID                 string               `json:"id"`
+	CorrelationID      string               `json:"correlationId"`
+	DeploymentType     model.DeploymentType `json:"deploymentType"`
+	State              ProcessingState      `json:"state"`
+	Timestamp          time.Time            `json:"timestamp"`
+	TenantID           string               `json:"tenantId"`
+	ManifestID         string               `json:"manifestId"`
+	ResponseID         string               `json:"responseId"`
+	Success            bool                 `json:"success"`
+	ErrorDetail        string               `json:"errorDetail,omitempty"`
+	ResponseProperties map[string]any       `json:"reponseProperties,omitempty"`
 }
 
 type ProcessingState string

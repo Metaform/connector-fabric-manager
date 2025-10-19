@@ -13,7 +13,7 @@
 package tmcore
 
 import (
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
@@ -58,7 +58,7 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	registry := context.Registry.Resolve(api.DeploymentHandlerRegistryKey).(api.DeploymentHandlerRegistry)
 	handler := vpaDeploymentCallbackHandler{}
-	registry.RegisterDeploymentHandler(dmodel.VpaDeploymentType, handler.handle)
+	registry.RegisterDeploymentHandler(model.VpaDeploymentType, handler.handle)
 
 	return nil
 }

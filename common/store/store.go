@@ -15,8 +15,8 @@ package store
 import (
 	"context"
 
-	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 )
 
 const (
@@ -34,7 +34,7 @@ func (n NoOpTransactionContext) Execute(ctx context.Context, callback func(ctx c
 	return callback(ctx)
 }
 
-var ErrNotFound = &model.BadRequestError{Message: "not found"}
+var ErrNotFound = &_type.BadRequestError{Message: "not found"}
 
 type NoOpTrxAssembly struct {
 	system.DefaultServiceAssembly

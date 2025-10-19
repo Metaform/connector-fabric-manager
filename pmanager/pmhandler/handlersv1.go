@@ -19,9 +19,9 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -113,7 +113,7 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	// Deserialize the DeploymentManifest from JSON
-	var manifest dmodel.DeploymentManifest
+	var manifest model.DeploymentManifest
 	if err := json.Unmarshal(body, &manifest); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
@@ -122,15 +122,15 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 	orchestration, err := h.provisionManager.Start(req.Context(), &manifest)
 	if err != nil {
 		switch {
-		case model.IsClientError(err):
+		case _type.IsClientError(err):
 			http.Error(w, fmt.Sprintf("Invalid deployment: %s", err.Error()), http.StatusBadRequest)
 			return
-		case model.IsRecoverable(err):
+		case _type.IsRecoverable(err):
 			id := uuid.New().String()
 			h.monitor.Infof("Recoverable error encountered during deployment [%s]: %w ", id, err)
 			http.Error(w, fmt.Sprintf("Recoverable error encountered during deployment [%s]", id), http.StatusServiceUnavailable)
 			return
-		case model.IsFatal(err):
+		case _type.IsFatal(err):
 			id := uuid.New().String()
 			h.monitor.Infof("Fatal error encountered during deployment [%s]: %w ", id, err)
 			http.Error(w, fmt.Sprintf("Fatal error encountered during deployment [%s]", id), http.StatusInternalServerError)

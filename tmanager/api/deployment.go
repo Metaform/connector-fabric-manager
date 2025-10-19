@@ -15,7 +15,7 @@ package api
 import (
 	"context"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
@@ -25,7 +25,7 @@ const (
 	DeploymentClientKey          system.ServiceType = "tmapi:DeploymentClient"
 )
 
-type VpaPropMap = map[dmodel.VPAType]map[string]any
+type VpaPropMap = map[model.VPAType]map[string]any
 
 // ParticipantDeployer creates a participant profile and deploys its associated VPAs.
 type ParticipantDeployer interface {
@@ -37,14 +37,14 @@ type DeploymentClient interface {
 
 	// Deploy deploys the specified manifest.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Deploy(ctx context.Context, manifest dmodel.DeploymentManifest) error
+	Deploy(ctx context.Context, manifest model.DeploymentManifest) error
 }
 
 // DeploymentCallbackHandler is called when a deployment is complete.
 // If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-type DeploymentCallbackHandler func(context.Context, dmodel.DeploymentResponse) error
+type DeploymentCallbackHandler func(context.Context, model.DeploymentResponse) error
 
 // DeploymentHandlerRegistry registers deployment handlers by deployment type.
 type DeploymentHandlerRegistry interface {
-	RegisterDeploymentHandler(deploymentType dmodel.DeploymentType, handler DeploymentCallbackHandler)
+	RegisterDeploymentHandler(deploymentType model.DeploymentType, handler DeploymentCallbackHandler)
 }

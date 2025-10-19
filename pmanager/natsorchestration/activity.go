@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -212,7 +212,7 @@ func (e *NatsActivityExecutor) handleOrchestrationCompletion(
 }
 
 func (e *NatsActivityExecutor) publishResponse(activityContext api.ActivityContext, orchestration api.Orchestration) error {
-	dr := &dmodel.DeploymentResponse{
+	dr := &model.DeploymentResponse{
 		ID:             uuid.New().String(),
 		ManifestID:     orchestration.ID,
 		Success:        true,

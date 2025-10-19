@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -47,7 +47,7 @@ func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
 	orchestration := api.Orchestration{
 		ID:             "test-deployment-response",
 		State:          api.OrchestrationStateRunning,
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		ProcessingData: make(map[string]any),
 		Completed:      make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{
@@ -66,13 +66,13 @@ func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup message capture for deployment response
-	var capturedResponse *dmodel.DeploymentResponse
+	var capturedResponse *model.DeploymentResponse
 	var responseMutex sync.Mutex
 	responseCaptured := make(chan struct{})
 
 	// Subscribe to deployment response subject to capture the published message
 	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMDeploymentResponseSubject, func(msg *nats.Msg) {
-		var dr dmodel.DeploymentResponse
+		var dr model.DeploymentResponse
 		if err := json.Unmarshal(msg.Data, &dr); err == nil {
 			responseMutex.Lock()
 			capturedResponse = &dr
@@ -149,7 +149,7 @@ func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T
 	orchestration := api.Orchestration{
 		ID:             "test-deployment-error",
 		State:          api.OrchestrationStateRunning,
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		ProcessingData: make(map[string]any),
 		Completed:      make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{

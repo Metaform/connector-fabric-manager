@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -32,14 +32,14 @@ func (g participantGenerator) Generate(
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
 
-	cell, err := g.CellSelector(dmodel.VpaDeploymentType, cells, dProfiles)
+	cell, err := g.CellSelector(model.VpaDeploymentType, cells, dProfiles)
 	if err != nil {
 		return nil, err
 	}
 
-	connector := g.generateVPA(dmodel.ConnectorType, vpaProperties, cell)
-	cService := g.generateVPA(dmodel.CredentialServiceType, vpaProperties, cell)
-	dPlane := g.generateVPA(dmodel.DataPlaneType, vpaProperties, cell)
+	connector := g.generateVPA(model.ConnectorType, vpaProperties, cell)
+	cService := g.generateVPA(model.CredentialServiceType, vpaProperties, cell)
+	dPlane := g.generateVPA(model.DataPlaneType, vpaProperties, cell)
 	vpas := []api.VirtualParticipantAgent{connector, cService, dPlane}
 
 	pProfile := &api.ParticipantProfile{
@@ -57,7 +57,7 @@ func (g participantGenerator) Generate(
 
 // generateVPA creates a VPA targeted at given cell.
 func (g participantGenerator) generateVPA(
-	vpaType dmodel.VPAType,
+	vpaType model.VPAType,
 	vpaProperties api.VpaPropMap,
 	cell *api.Cell) api.VirtualParticipantAgent {
 

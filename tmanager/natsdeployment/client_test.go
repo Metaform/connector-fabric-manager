@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,9 +55,9 @@ func TestNatsDeploymentClient_Deploy(t *testing.T) {
 
 	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 
-	manifest := dmodel.DeploymentManifest{
+	manifest := model.DeploymentManifest{
 		ID:             "test-deployment-123",
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		Payload:        make(map[string]any),
 	}
 
@@ -77,7 +77,7 @@ func TestNatsDeploymentClient_Deploy(t *testing.T) {
 		messageFound = true
 
 		// Verify the message contains the deployment manifest
-		var receivedManifest dmodel.DeploymentManifest
+		var receivedManifest model.DeploymentManifest
 		err = json.Unmarshal(message.Data(), &receivedManifest)
 		require.NoError(t, err)
 
@@ -101,7 +101,7 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 
 	// Setup dispatcher with expectations
 	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan dmodel.DeploymentResponse, 1),
+		responses: make(chan model.DeploymentResponse, 1),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -111,11 +111,11 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create and publish the deployment response
-	response := dmodel.DeploymentResponse{
+	response := model.DeploymentResponse{
 		ID:             "test-deployment-response-123",
 		Success:        true,
 		ManifestID:     "manifest-456",
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		Properties:     map[string]any{"test": "value"},
 	}
 
@@ -152,9 +152,9 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 
 	// Setup dispatcher that returns recoverable error
 	dispatcher := &testDeploymentDispatcher{
-		responses:     make(chan dmodel.DeploymentResponse, 1),
+		responses:     make(chan model.DeploymentResponse, 1),
 		shouldError:   true,
-		errorToReturn: model.NewRecoverableError("test recoverable error"),
+		errorToReturn: _type.NewRecoverableError("test recoverable error"),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -163,12 +163,12 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create and publish the deployment response
-	response := dmodel.DeploymentResponse{
+	response := model.DeploymentResponse{
 		ID:             "test-deployment-response-456",
 		Success:        false,
 		ErrorDetail:    "deployment failed",
 		ManifestID:     "manifest-789",
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		Properties:     map[string]any{},
 	}
 
@@ -202,9 +202,9 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 
 	// Setup dispatcher that returns fatal error
 	dispatcher := &testDeploymentDispatcher{
-		responses:     make(chan dmodel.DeploymentResponse, 1),
+		responses:     make(chan model.DeploymentResponse, 1),
 		shouldError:   true,
-		errorToReturn: model.NewFatalError("test fatal error"),
+		errorToReturn: _type.NewFatalError("test fatal error"),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -212,12 +212,12 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
-	response := dmodel.DeploymentResponse{
+	response := model.DeploymentResponse{
 		ID:             "test-deployment-response-789",
 		Success:        false,
 		ErrorDetail:    "fatal deployment error",
 		ManifestID:     "manifest-999",
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		Properties:     map[string]any{},
 	}
 
@@ -250,7 +250,7 @@ func TestNatsDeploymentClient_ProcessLoop_ContextCancellation(t *testing.T) {
 	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
 
 	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan dmodel.DeploymentResponse, 1),
+		responses: make(chan model.DeploymentResponse, 1),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -285,7 +285,7 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 
 	const messageCount = 5
 	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan dmodel.DeploymentResponse, messageCount),
+		responses: make(chan model.DeploymentResponse, messageCount),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -295,14 +295,14 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 	require.NoError(t, err)
 
 	// Publish multiple messages
-	var expectedResponses []dmodel.DeploymentResponse
+	var expectedResponses []model.DeploymentResponse
 	for i := 0; i < messageCount; i++ {
-		response := dmodel.DeploymentResponse{
+		response := model.DeploymentResponse{
 			ID:             fmt.Sprintf("test-deployment-response-%d", i),
 			Success:        true,
 			ErrorDetail:    "",
 			ManifestID:     fmt.Sprintf("manifest-%d", i),
-			DeploymentType: dmodel.VpaDeploymentType,
+			DeploymentType: model.VpaDeploymentType,
 			Properties:     map[string]any{"index": float64(i)},
 		}
 		expectedResponses = append(expectedResponses, response)
@@ -315,7 +315,7 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 	}
 
 	// Collect all received responses
-	var receivedResponses []dmodel.DeploymentResponse
+	var receivedResponses []model.DeploymentResponse
 	for i := 0; i < messageCount; i++ {
 		select {
 		case response := <-dispatcher.responses:
@@ -358,7 +358,7 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 
 	// Setup dispatcher that should NOT be called as the test sends invalid JSON
 	dispatcher := &testDeploymentDispatcher{
-		onDispatch: func(ctx context.Context, response dmodel.DeploymentResponse) error {
+		onDispatch: func(ctx context.Context, response model.DeploymentResponse) error {
 			t.Error("Dispatcher should not be called for invalid JSON")
 			return nil
 		},
@@ -413,7 +413,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	var mu sync.Mutex
 
 	dispatcher := &testDeploymentDispatcher{
-		onDispatch: func(ctx context.Context, response dmodel.DeploymentResponse) error {
+		onDispatch: func(ctx context.Context, response model.DeploymentResponse) error {
 			mu.Lock()
 			processedCount++
 			mu.Unlock()
@@ -429,12 +429,12 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create and publish deployment response message
-	response := dmodel.DeploymentResponse{
+	response := model.DeploymentResponse{
 		ID:             "test-success-response",
 		Success:        true,
 		ErrorDetail:    "",
 		ManifestID:     "success-manifest",
-		DeploymentType: dmodel.VpaDeploymentType,
+		DeploymentType: model.VpaDeploymentType,
 		Properties:     map[string]any{"status": "success"},
 	}
 
@@ -455,14 +455,14 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 
 // testDeploymentDispatcher implements api.deploymentCallbackDispatcher for testing
 type testDeploymentDispatcher struct {
-	responses     chan dmodel.DeploymentResponse
+	responses     chan model.DeploymentResponse
 	shouldError   bool
 	errorToReturn error
-	onDispatch    func(ctx context.Context, response dmodel.DeploymentResponse) error
+	onDispatch    func(ctx context.Context, response model.DeploymentResponse) error
 	mu            sync.Mutex
 }
 
-func (t *testDeploymentDispatcher) Dispatch(ctx context.Context, response dmodel.DeploymentResponse) error {
+func (t *testDeploymentDispatcher) Dispatch(ctx context.Context, response model.DeploymentResponse) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 

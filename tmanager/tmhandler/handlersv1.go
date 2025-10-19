@@ -19,8 +19,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
@@ -70,13 +70,13 @@ func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request) 
 	err = h.participantDeployer.Deploy(req.Context(), identifier, make(api.VpaPropMap), make(map[string]interface{}))
 	if err != nil {
 		switch e := err.(type) {
-		case *model.BadRequestError:
+		case *_type.BadRequestError:
 			http.Error(w, fmt.Sprintf("Bad request: %s", e.Message), http.StatusBadRequest)
-		case *model.SystemError:
+		case *_type.SystemError:
 			id := uuid.New().String()
 			h.monitor.Infow("Internal Error [%s]: %v", id, err)
 			http.Error(w, fmt.Sprintf("Internal server error occurred during participant deployment [%s]", id), http.StatusInternalServerError)
-		case model.FatalError:
+		case _type.FatalError:
 			http.Error(w, "A fatal error occurred", http.StatusInternalServerError)
 		default:
 			http.Error(w, fmt.Sprintf("Failed to deploy participant: %s", err.Error()), http.StatusInternalServerError)

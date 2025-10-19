@@ -17,14 +17,14 @@ import (
 	"encoding/json"
 	"sync/atomic"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
 type natsDeploymentClient struct {
-	natsclient.RetriableMessageProcessor[dmodel.DeploymentResponse]
+	natsclient.RetriableMessageProcessor[model.DeploymentResponse]
 }
 
 func newNatsDeploymentClient(
@@ -32,11 +32,11 @@ func newNatsDeploymentClient(
 	dispatcher deploymentCallbackDispatcher,
 	monitor system.LogMonitor) *natsDeploymentClient {
 	return &natsDeploymentClient{
-		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[dmodel.DeploymentResponse]{
+		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[model.DeploymentResponse]{
 			Client:     client,
 			Monitor:    monitor,
 			Processing: atomic.Bool{},
-			Dispatcher: func(ctx context.Context, payload dmodel.DeploymentResponse) error {
+			Dispatcher: func(ctx context.Context, payload model.DeploymentResponse) error {
 				return dispatcher.Dispatch(ctx, payload)
 			},
 		},
@@ -53,7 +53,7 @@ func (n *natsDeploymentClient) Init(ctx context.Context, consumer jetstream.Cons
 	return nil
 }
 
-func (n *natsDeploymentClient) Deploy(ctx context.Context, manifest dmodel.DeploymentManifest) error {
+func (n *natsDeploymentClient) Deploy(ctx context.Context, manifest model.DeploymentManifest) error {
 	serialized, err := json.Marshal(manifest)
 	if err != nil {
 		return err

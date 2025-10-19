@@ -16,10 +16,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/type"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -29,7 +29,7 @@ type provisionManager struct {
 	monitor      system.LogMonitor
 }
 
-func (p provisionManager) Start(ctx context.Context, manifest *dmodel.DeploymentManifest) (*api.Orchestration, error) {
+func (p provisionManager) Start(ctx context.Context, manifest *model.DeploymentManifest) (*api.Orchestration, error) {
 
 	deploymentID := manifest.ID
 
@@ -37,29 +37,29 @@ func (p provisionManager) Start(ctx context.Context, manifest *dmodel.Deployment
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			// Not found is a client error
-			return nil, model.NewClientError("deployment type '%s' not found", manifest.DeploymentType)
+			return nil, _type.NewClientError("deployment type '%s' not found", manifest.DeploymentType)
 		}
-		return nil, model.NewFatalWrappedError(err, "unable to find deployment definition for deployment %s", deploymentID)
+		return nil, _type.NewFatalWrappedError(err, "unable to find deployment definition for deployment %s", deploymentID)
 	}
 
 	activeVersion, err := definition.GetActiveVersion()
 	if err != nil {
-		return nil, model.NewFatalError("error deploying %s: unable to get active version", deploymentID)
+		return nil, _type.NewFatalError("error deploying %s: unable to get active version", deploymentID)
 	}
 
 	// Validate required fields
 	if manifest.ID == "" {
-		return nil, model.NewClientError("Missing required field: id")
+		return nil, _type.NewClientError("Missing required field: id")
 	}
 
 	if manifest.DeploymentType == "" {
-		return nil, model.NewClientError("Missing required field: deploymentType")
+		return nil, _type.NewClientError("Missing required field: deploymentType")
 	}
 
 	// perform de-duplication
 	orchestration, err := p.orchestrator.GetOrchestration(ctx, deploymentID)
 	if err != nil {
-		return nil, model.NewFatalWrappedError(err, "error checking for orchestration %s", deploymentID)
+		return nil, _type.NewFatalWrappedError(err, "error checking for orchestration %s", deploymentID)
 	}
 
 	if orchestration != nil {
@@ -70,11 +70,11 @@ func (p provisionManager) Start(ctx context.Context, manifest *dmodel.Deployment
 	// Does not exist, create the orchestration
 	orchestration, err = api.InstantiateOrchestration(manifest.ID, manifest.DeploymentType, activeVersion.Activities, manifest.Payload)
 	if err != nil {
-		return nil, model.NewFatalWrappedError(err, "error instantiating orchestration for deployment %s", deploymentID)
+		return nil, _type.NewFatalWrappedError(err, "error instantiating orchestration for deployment %s", deploymentID)
 	}
 	err = p.orchestrator.ExecuteOrchestration(ctx, orchestration)
 	if err != nil {
-		return nil, model.NewFatalWrappedError(err, "error executing orchestration %s for deployment %s", orchestration.ID, deploymentID)
+		return nil, _type.NewFatalWrappedError(err, "error executing orchestration %s for deployment %s", orchestration.ID, deploymentID)
 	}
 	return orchestration, nil
 }

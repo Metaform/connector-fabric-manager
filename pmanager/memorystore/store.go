@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
@@ -36,7 +36,7 @@ func NewDefinitionStore() *MemoryDefinitionStore {
 	}
 }
 
-func (d *MemoryDefinitionStore) FindDeploymentDefinition(deploymentType dmodel.DeploymentType) (*api.DeploymentDefinition, error) {
+func (d *MemoryDefinitionStore) FindDeploymentDefinition(deploymentType model.DeploymentType) (*api.DeploymentDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
@@ -82,7 +82,7 @@ func (d *MemoryDefinitionStore) StoreActivityDefinition(definition *api.Activity
 	d.activityDefinitions[definitionCopy.Type.String()] = &definitionCopy
 }
 
-func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(deploymentType dmodel.DeploymentType) bool {
+func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(deploymentType model.DeploymentType) bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 

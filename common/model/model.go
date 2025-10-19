@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package dmodel
+package model
 
 // DeploymentManifest represents the configuration details for a system deployment. An Orchestration is instantiated
 // from the manifest and executed.
