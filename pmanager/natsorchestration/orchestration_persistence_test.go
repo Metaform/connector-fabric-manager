@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,7 +67,7 @@ func Test_ValuePersistence(t *testing.T) {
 
 	orchestrator := &natsDeploymentOrchestrator{
 		Client:  adapter,
-		Monitor: monitor.NoopMonitor{},
+		Monitor: system.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
@@ -78,7 +78,7 @@ func Test_ValuePersistence(t *testing.T) {
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.context.persistence",
 		ActivityProcessor: processor,
-		Monitor:           monitor.NoopMonitor{},
+		Monitor:           system.NoopMonitor{},
 	}
 
 	err = executor.Execute(ctx)
@@ -157,7 +157,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 
 	orchestrator := &natsDeploymentOrchestrator{
 		Client:  adapter,
-		Monitor: monitor.NoopMonitor{},
+		Monitor: system.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
@@ -168,7 +168,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.retry.persistence",
 		ActivityProcessor: processor,
-		Monitor:           monitor.NoopMonitor{},
+		Monitor:           system.NoopMonitor{},
 	}
 
 	err = executor.Execute(ctx)
@@ -246,7 +246,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 
 	orchestrator := &natsDeploymentOrchestrator{
 		Client:  adapter,
-		Monitor: monitor.NoopMonitor{},
+		Monitor: system.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
@@ -259,7 +259,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 			StreamName:        "cfm-activity",
 			ActivityType:      "test.multi.persistence",
 			ActivityProcessor: processor,
-			Monitor:           monitor.NoopMonitor{},
+			Monitor:           system.NoopMonitor{},
 		}
 		err = executor.Execute(ctx)
 		require.NoError(t, err)
@@ -318,7 +318,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 
 	orchestrator := &natsDeploymentOrchestrator{
 		Client:  adapter,
-		Monitor: monitor.NoopMonitor{},
+		Monitor: system.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
@@ -329,7 +329,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.wait.persistence",
 		ActivityProcessor: processor,
-		Monitor:           monitor.NoopMonitor{},
+		Monitor:           system.NoopMonitor{},
 	}
 
 	err = executor.Execute(ctx)
@@ -365,7 +365,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
 	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := &natsDeploymentOrchestrator{
 		Client:  adapter,
-		Monitor: monitor.NoopMonitor{},
+		Monitor: system.NoopMonitor{},
 	}
 
 	// Create and execute an orchestration
@@ -405,7 +405,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_NotFound(t *testing.T) {
 	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := &natsDeploymentOrchestrator{
 		Client:  adapter,
-		Monitor: monitor.NoopMonitor{},
+		Monitor: system.NoopMonitor{},
 	}
 
 	// Test GetOrchestration for non-existent orchestration

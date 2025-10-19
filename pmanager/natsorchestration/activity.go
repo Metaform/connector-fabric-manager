@@ -21,8 +21,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -32,7 +32,7 @@ type NatsActivityExecutor struct {
 	StreamName        string
 	ActivityType      string
 	ActivityProcessor api.ActivityProcessor
-	Monitor           monitor.LogMonitor
+	Monitor           system.LogMonitor
 }
 
 // Execute starts a goroutine to process messages from the activity queue.

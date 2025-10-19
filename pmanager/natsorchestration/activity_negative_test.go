@@ -19,8 +19,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient/mocks"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -103,7 +103,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 
 			orchestrator := &natsDeploymentOrchestrator{
 				Client:  mockClient,
-				Monitor: monitor.NoopMonitor{},
+				Monitor: system.NoopMonitor{},
 			}
 
 			err := orchestrator.ExecuteOrchestration(context.Background(), &tt.orchestration)

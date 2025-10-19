@@ -20,7 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/tmstore"
 )
@@ -29,19 +29,19 @@ type TMHandler struct {
 	participantDeployer api.ParticipantDeployer
 	cellStore           tmstore.EntityStore[api.Cell]
 	dProfileStore       tmstore.EntityStore[api.DataspaceProfile]
-	logMonitor          monitor.LogMonitor
+	monitor             system.LogMonitor
 }
 
 func NewHandler(
 	participantDeployer api.ParticipantDeployer,
 	cellStore tmstore.EntityStore[api.Cell],
 	dProfileStore tmstore.EntityStore[api.DataspaceProfile],
-	logMonitor monitor.LogMonitor) *TMHandler {
+	monitor system.LogMonitor) *TMHandler {
 	return &TMHandler{
 		participantDeployer: participantDeployer,
 		cellStore:           cellStore,
 		dProfileStore:       dProfileStore,
-		logMonitor:          logMonitor,
+		monitor:             monitor,
 	}
 }
 
@@ -74,7 +74,7 @@ func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request) 
 			http.Error(w, fmt.Sprintf("Bad request: %s", e.Message), http.StatusBadRequest)
 		case *model.SystemError:
 			id := uuid.New().String()
-			h.logMonitor.Infow("Internal Error [%s]: %v", id, err)
+			h.monitor.Infow("Internal Error [%s]: %v", id, err)
 			http.Error(w, fmt.Sprintf("Internal server error occurred during participant deployment [%s]", id), http.StatusInternalServerError)
 		case model.FatalError:
 			http.Error(w, "A fatal error occurred", http.StatusInternalServerError)

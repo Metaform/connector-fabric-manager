@@ -20,8 +20,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -33,7 +33,7 @@ type natsDeploymentHandler struct {
 func newNatsDeploymentHandler(
 	client natsclient.MsgClient,
 	provisionManager api.ProvisionManager,
-	monitor monitor.LogMonitor) *natsDeploymentHandler {
+	monitor system.LogMonitor) *natsDeploymentHandler {
 	return &natsDeploymentHandler{
 		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[dmodel.DeploymentManifest]{
 			Client:     client,

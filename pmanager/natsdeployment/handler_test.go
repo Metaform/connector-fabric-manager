@@ -20,9 +20,9 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natsclient/mocks"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +34,7 @@ func TestNatsDeploymentHandler_Dispatcher_SuccessfulDispatch(t *testing.T) {
 	mockClient := mocks.NewMockMsgClient(t)
 	mockProvisionManager := &MockProvisionManager{}
 
-	handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, monitor.NoopMonitor{})
+	handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 	ctx := context.Background()
 	manifest := dmodel.DeploymentManifest{
@@ -65,7 +65,7 @@ func TestNatsDeploymentHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 	mockClient := mocks.NewMockMsgClient(t)
 	mockProvisionManager := &MockProvisionManager{}
 
-	handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, monitor.NoopMonitor{})
+	handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 	ctx := context.Background()
 	manifest := dmodel.DeploymentManifest{
@@ -124,7 +124,7 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			mockProvisionManager := &MockProvisionManager{}
 
-			handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, monitor.NoopMonitor{})
+			handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 			ctx := context.Background()
 			manifest := dmodel.DeploymentManifest{

@@ -18,9 +18,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -233,7 +233,7 @@ func TestExecuteOrchestration(t *testing.T) {
 				close(resultCh)
 			}()
 
-			noOpMonitor := monitor.NoopMonitor{}
+			noOpMonitor := system.NoopMonitor{}
 			adapter := natsclient.NewMsgClient(nt.Client)
 
 			// Create executors
@@ -309,7 +309,7 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 	// Create and start the orchestrator
 	orchestrator := &natsDeploymentOrchestrator{
 		Client:  adapter,
-		Monitor: monitor.NoopMonitor{},
+		Monitor: system.NoopMonitor{},
 	}
 
 	err = orchestrator.ExecuteOrchestration(context.Background(), &orchestration)
@@ -321,7 +321,7 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 		StreamName:        "cfm-activity",
 		ActivityType:      "test.schedule.continue",
 		ActivityProcessor: processor,
-		Monitor:           monitor.NoopMonitor{},
+		Monitor:           system.NoopMonitor{},
 	}
 
 	// Start executor

@@ -21,21 +21,21 @@ import (
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
 type PMHandler struct {
 	provisionManager api.ProvisionManager
 	definitionStore  api.DefinitionStore
-	logMonitor       monitor.LogMonitor
+	monitor          system.LogMonitor
 }
 
-func NewHandler(provisionManager api.ProvisionManager, definitionStore api.DefinitionStore, logMonitor monitor.LogMonitor) *PMHandler {
+func NewHandler(provisionManager api.ProvisionManager, definitionStore api.DefinitionStore, monitor system.LogMonitor) *PMHandler {
 	return &PMHandler{
 		provisionManager: provisionManager,
 		definitionStore:  definitionStore,
-		logMonitor:       logMonitor,
+		monitor:          monitor,
 	}
 }
 
@@ -127,12 +127,12 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 			return
 		case model.IsRecoverable(err):
 			id := uuid.New().String()
-			h.logMonitor.Infof("Recoverable error encountered during deployment [%s]: %w ", id, err)
+			h.monitor.Infof("Recoverable error encountered during deployment [%s]: %w ", id, err)
 			http.Error(w, fmt.Sprintf("Recoverable error encountered during deployment [%s]", id), http.StatusServiceUnavailable)
 			return
 		case model.IsFatal(err):
 			id := uuid.New().String()
-			h.logMonitor.Infof("Fatal error encountered during deployment [%s]: %w ", id, err)
+			h.monitor.Infof("Fatal error encountered during deployment [%s]: %w ", id, err)
 			http.Error(w, fmt.Sprintf("Fatal error encountered during deployment [%s]", id), http.StatusInternalServerError)
 			return
 		default:
@@ -144,6 +144,6 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(orchestration); err != nil {
-		h.logMonitor.Infow("Error encoding response: %v", err)
+		h.monitor.Infow("Error encoding response: %v", err)
 	}
 }

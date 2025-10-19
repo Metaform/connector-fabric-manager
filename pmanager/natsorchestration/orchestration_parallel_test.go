@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -83,7 +83,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 		},
 	}
 
-	noOpMonitor := monitor.NoopMonitor{}
+	noOpMonitor := system.NoopMonitor{}
 
 	// Create executor for failing activity
 	failExecutor := NatsActivityExecutor{

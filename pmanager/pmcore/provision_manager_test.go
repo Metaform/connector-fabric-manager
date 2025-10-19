@@ -20,11 +20,11 @@ import (
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/api/mocks"
 	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
@@ -234,7 +234,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			pm := &provisionManager{
 				orchestrator: mockOrch,
 				store:        store,
-				logMonitor:   &monitor.NoopMonitor{},
+				monitor:      &system.NoopMonitor{},
 			}
 
 			// Execute test
@@ -297,7 +297,7 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	pm := &provisionManager{
 		orchestrator: mockOrch,
 		store:        store,
-		logMonitor:   &monitor.NoopMonitor{},
+		monitor:      &system.NoopMonitor{},
 	}
 
 	// Create test manifest

@@ -37,7 +37,7 @@ func (m PMCoreServiceAssembly) Init(context *system.InitContext) error {
 	context.Registry.Register(api.ProvisionManagerKey, provisionManager{
 		orchestrator: context.Registry.Resolve(api.DeploymentOrchestratorKey).(api.DeploymentOrchestrator),
 		store:        context.Registry.Resolve(api.DefinitionStoreKey).(api.DefinitionStore),
-		logMonitor:   context.LogMonitor,
+		monitor:      context.LogMonitor,
 	})
 	return nil
 }

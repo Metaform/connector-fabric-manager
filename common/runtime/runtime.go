@@ -21,7 +21,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -31,7 +30,7 @@ const (
 	mode = "mode"
 )
 
-func LoadLogMonitor(name string, mode system.RuntimeMode) monitor.LogMonitor {
+func LoadLogMonitor(name string, mode system.RuntimeMode) system.LogMonitor {
 	var config zap.Config
 	var options []zap.Option
 
@@ -97,11 +96,11 @@ type SugaredLogMonitor struct {
 }
 
 // NewSugaredLogMonitor creates a new LogMonitor that wraps a zap.SugaredLogger
-func NewSugaredLogMonitor(logger *zap.SugaredLogger) monitor.LogMonitor {
+func NewSugaredLogMonitor(logger *zap.SugaredLogger) system.LogMonitor {
 	return &SugaredLogMonitor{logger: logger}
 }
 
-func (s *SugaredLogMonitor) Named(name string) monitor.LogMonitor {
+func (s *SugaredLogMonitor) Named(name string) system.LogMonitor {
 	return &SugaredLogMonitor{logger: s.logger.Named(name)}
 }
 
@@ -143,22 +142,22 @@ func (s *SugaredLogMonitor) Sync() error {
 
 // AssembleAndLaunch assembles and launches the runtime with the given name and configuration.
 // The runtime will be shutdown when the program is terminated.
-func AssembleAndLaunch(assembler *system.ServiceAssembler, name string, logMonitor monitor.LogMonitor, shutdown <-chan struct{}) {
+func AssembleAndLaunch(assembler *system.ServiceAssembler, name string, monitor system.LogMonitor, shutdown <-chan struct{}) {
 	err := assembler.Assemble()
 	if err != nil {
 		panic(fmt.Errorf("error assembling runtime: %w", err))
 	}
 
-	logMonitor.Infof("%s started", name)
+	monitor.Infof("%s started", name)
 
 	// wait for interrupt signal
 	<-shutdown
 
 	if err := assembler.Shutdown(); err != nil {
-		logMonitor.Severew("Error attempting shutdown", "error", err)
+		monitor.Severew("Error attempting shutdown", "error", err)
 	}
 
-	logMonitor.Infof("%s shutdown", name)
+	monitor.Infof("%s shutdown", name)
 }
 
 // CreateSignalShutdownChan creates and returns a channel that signals when the application receives SIGINT or SIGTERM signals.

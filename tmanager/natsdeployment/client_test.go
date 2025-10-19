@@ -22,9 +22,9 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +53,7 @@ func TestNatsDeploymentClient_Deploy(t *testing.T) {
 	msgClient := natsclient.NewMsgClient(nt.Client)
 	dispatcher := &testDeploymentDispatcher{}
 
-	client := newNatsDeploymentClient(msgClient, dispatcher, monitor.NoopMonitor{})
+	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	manifest := dmodel.DeploymentManifest{
 		ID:             "test-deployment-123",
@@ -105,7 +105,7 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, monitor.NoopMonitor{})
+	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
@@ -158,7 +158,7 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, monitor.NoopMonitor{})
+	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
@@ -208,7 +208,7 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, monitor.NoopMonitor{})
+	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
@@ -254,7 +254,7 @@ func TestNatsDeploymentClient_ProcessLoop_ContextCancellation(t *testing.T) {
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, monitor.NoopMonitor{})
+	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	// Create a context that can be cancelled
 	shortCtx, shortCancel := context.WithCancel(context.Background())
@@ -289,7 +289,7 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, monitor.NoopMonitor{})
+	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
@@ -365,7 +365,7 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, monitor.NoopMonitor{})
+	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
@@ -422,7 +422,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, monitor.NoopMonitor{})
+	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	// Initialize client with consumer
 	err = client.Init(ctx, consumer)

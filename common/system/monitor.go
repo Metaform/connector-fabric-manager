@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package monitor
+package system
 
 // LogMonitor is a sink for sending log messages to a destination where they can be monitored.
 type LogMonitor interface {

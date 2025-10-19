@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +24,7 @@ import (
 
 func TestServiceAssembler(t *testing.T) {
 	t.Run("Register", func(t *testing.T) {
-		logMonitor := monitor.NoopMonitor{}
+		logMonitor := NoopMonitor{}
 		assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 		mock := &MockServiceAssembly{name: "Test Assembly"}
 
@@ -37,7 +36,7 @@ func TestServiceAssembler(t *testing.T) {
 
 	t.Run("Assemble", func(t *testing.T) {
 		t.Run("Simple", func(t *testing.T) {
-			logMonitor := monitor.NoopMonitor{}
+			logMonitor := NoopMonitor{}
 			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 			mock := &MockServiceAssembly{
 				name:     "Test Assembly",
@@ -51,7 +50,7 @@ func TestServiceAssembler(t *testing.T) {
 		})
 
 		t.Run("WithDependencies", func(t *testing.T) {
-			logMonitor := monitor.NoopMonitor{}
+			logMonitor := NoopMonitor{}
 			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 			mock1 := &MockServiceAssembly{
@@ -73,7 +72,7 @@ func TestServiceAssembler(t *testing.T) {
 		})
 
 		t.Run("MissingDependency", func(t *testing.T) {
-			logMonitor := monitor.NoopMonitor{}
+			logMonitor := NoopMonitor{}
 			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 			mock := &MockServiceAssembly{
@@ -88,7 +87,7 @@ func TestServiceAssembler(t *testing.T) {
 		})
 
 		t.Run("CyclicDependency", func(t *testing.T) {
-			logMonitor := monitor.NoopMonitor{}
+			logMonitor := NoopMonitor{}
 			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 			mock1 := &MockServiceAssembly{
@@ -111,7 +110,7 @@ func TestServiceAssembler(t *testing.T) {
 		})
 
 		t.Run("InitializationError", func(t *testing.T) {
-			logMonitor := monitor.NoopMonitor{}
+			logMonitor := NoopMonitor{}
 			assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 			expectedError := errors.New("initialization failed")
@@ -131,7 +130,7 @@ func TestServiceAssembler(t *testing.T) {
 	})
 
 	t.Run("LifecycleMethods", func(t *testing.T) {
-		logMonitor := monitor.NoopMonitor{}
+		logMonitor := NoopMonitor{}
 		assembler := NewServiceAssembler(logMonitor, viper.New(), DebugMode)
 
 		preparedCh := make(chan bool, 1)

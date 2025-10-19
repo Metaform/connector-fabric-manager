@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/metaform/connector-fabric-manager/common/dag"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/spf13/viper"
 )
 
@@ -104,7 +103,7 @@ type InitContext struct {
 }
 
 type StartContext struct {
-	LogMonitor monitor.LogMonitor
+	LogMonitor LogMonitor
 	Config     *viper.Viper
 	Mode       RuntimeMode
 }
@@ -128,16 +127,16 @@ func (c InitContext) GetConfigStrOrDefault(key string, defaultValue string) stri
 // ServiceAssembler manages the registration, dependency resolution, and initialization of service assemblies in a runtime.
 type ServiceAssembler struct {
 	assemblies []ServiceAssembly
-	logMonitor monitor.LogMonitor
+	monitor    LogMonitor
 	mode       RuntimeMode
 	vConfig    *viper.Viper
 	registry   *ServiceRegistry
 }
 
-func NewServiceAssembler(logMonitor monitor.LogMonitor, vConfig *viper.Viper, mode RuntimeMode) *ServiceAssembler {
+func NewServiceAssembler(monitor LogMonitor, vConfig *viper.Viper, mode RuntimeMode) *ServiceAssembler {
 	return &ServiceAssembler{
 		assemblies: make([]ServiceAssembly, 0),
-		logMonitor: logMonitor,
+		monitor:    monitor,
 		mode:       mode,
 		vConfig:    vConfig,
 		registry:   NewServiceRegistry(),
@@ -186,7 +185,7 @@ func (a *ServiceAssembler) Assemble() error {
 	reverse(reverseOrder)
 
 	startCtx := &StartContext{
-		LogMonitor: a.logMonitor,
+		LogMonitor: a.monitor,
 		Config:     a.vConfig,
 		Mode:       a.mode,
 	}
@@ -197,7 +196,7 @@ func (a *ServiceAssembler) Assemble() error {
 
 	for _, v := range reverseOrder {
 		e := v.Value.Init(initCtx)
-		a.logMonitor.Debugf("Initialized: " + v.Value.Name())
+		a.monitor.Debugf("Initialized: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error initializing assembly %s: %w", v.Value.Name(), e)
 		}
@@ -205,7 +204,7 @@ func (a *ServiceAssembler) Assemble() error {
 
 	for _, v := range reverseOrder {
 		e := v.Value.Prepare(initCtx)
-		a.logMonitor.Debugf("Prepared: " + v.Value.Name())
+		a.monitor.Debugf("Prepared: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error preparing assembly %s: %w", v.Value.Name(), e)
 		}
@@ -213,7 +212,7 @@ func (a *ServiceAssembler) Assemble() error {
 
 	for _, v := range reverseOrder {
 		e := v.Value.Start(startCtx)
-		a.logMonitor.Debugf("Started: " + v.Value.Name())
+		a.monitor.Debugf("Started: " + v.Value.Name())
 		if e != nil {
 			return fmt.Errorf("error starting assembly %s: %w", v.Value.Name(), e)
 		}
@@ -227,14 +226,14 @@ func (a *ServiceAssembler) Assemble() error {
 func (a *ServiceAssembler) Shutdown() error {
 	for _, v := range a.assemblies {
 		e := v.Finalize()
-		a.logMonitor.Debugf("Finalized: " + v.Name())
+		a.monitor.Debugf("Finalized: " + v.Name())
 		if e != nil {
 			return fmt.Errorf("error finalizing assembly %s: %w", v.Name(), e)
 		}
 	}
 	for _, v := range a.assemblies {
 		e := v.Shutdown()
-		a.logMonitor.Debugf("Shutdown: " + v.Name())
+		a.monitor.Debugf("Shutdown: " + v.Name())
 		if e != nil {
 			return fmt.Errorf("error shutting down assembly %s: %w", v.Name(), e)
 		}

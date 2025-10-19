@@ -19,8 +19,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -30,10 +30,10 @@ import (
 // and reliably processed by a NatsActivityExecutor that handles the activity type.
 type natsDeploymentOrchestrator struct {
 	Client  natsclient.MsgClient
-	Monitor monitor.LogMonitor
+	Monitor system.LogMonitor
 }
 
-func newNatsDeploymentOrchestrator(client natsclient.MsgClient, monitor monitor.LogMonitor) *natsDeploymentOrchestrator {
+func newNatsDeploymentOrchestrator(client natsclient.MsgClient, monitor system.LogMonitor) *natsDeploymentOrchestrator {
 	return &natsDeploymentOrchestrator{Client: client, Monitor: monitor}
 }
 

@@ -20,9 +20,9 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
@@ -90,7 +90,7 @@ func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
 		StreamName:        testStream,
 		ActivityType:      "test.response.activity",
 		ActivityProcessor: processor,
-		Monitor:           monitor.NoopMonitor{},
+		Monitor:           system.NoopMonitor{},
 	}
 
 	err = executor.Execute(ctx)
@@ -183,7 +183,7 @@ func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T
 		StreamName:        testStream,
 		ActivityType:      "test.error.activity",
 		ActivityProcessor: processor,
-		Monitor:           monitor.NoopMonitor{},
+		Monitor:           system.NoopMonitor{},
 	}
 
 	err = executor.Execute(ctx)

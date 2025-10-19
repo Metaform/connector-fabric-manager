@@ -20,7 +20,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -140,7 +140,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			mockMessage := &mockJetStreamMsg{}
 			tt.setupMessage(mockMessage)
 
-			client := newNatsDeploymentClient(nil, mockDispatcher, monitor.NoopMonitor{})
+			client := newNatsDeploymentClient(nil, mockDispatcher, system.NoopMonitor{})
 
 			err := client.ProcessMessage(context.Background(), mockMessage)
 
@@ -182,7 +182,7 @@ func TestNatsDeploymentClient_ProcessLoop_Errors(t *testing.T) {
 			tt.setupConsumer(mockConsumer)
 
 			mockDispatcher := &mockDeploymentDispatcher{}
-			client := newNatsDeploymentClient(nil, mockDispatcher, monitor.NoopMonitor{})
+			client := newNatsDeploymentClient(nil, mockDispatcher, system.NoopMonitor{})
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

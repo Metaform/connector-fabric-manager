@@ -18,15 +18,15 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/dmodel"
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/store"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
 type provisionManager struct {
 	orchestrator api.DeploymentOrchestrator
 	store        api.DefinitionStore
-	logMonitor   monitor.LogMonitor
+	monitor      system.LogMonitor
 }
 
 func (p provisionManager) Start(ctx context.Context, manifest *dmodel.DeploymentManifest) (*api.Orchestration, error) {

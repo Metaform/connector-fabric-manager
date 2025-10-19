@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/config"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -94,7 +93,7 @@ func (t testAgentServiceAssembly) Start(startCtx *system.StartContext) error {
 		StreamName:        t.streamName,
 		ActivityType:      activityType,
 		ActivityProcessor: TestActivityProcessor{startCtx.LogMonitor},
-		Monitor:           monitor.NoopMonitor{},
+		Monitor:           system.NoopMonitor{},
 	}
 
 	ctx := context.Background()
@@ -102,7 +101,7 @@ func (t testAgentServiceAssembly) Start(startCtx *system.StartContext) error {
 }
 
 type TestActivityProcessor struct {
-	monitor monitor.LogMonitor
+	monitor system.LogMonitor
 }
 
 func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {

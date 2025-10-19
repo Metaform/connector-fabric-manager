@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/monitor"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -29,7 +29,7 @@ import (
 type RetriableMessageProcessor[T any] struct {
 	Client     MsgClient
 	Dispatcher func(ctx context.Context, payload T) error
-	Monitor    monitor.LogMonitor
+	Monitor    system.LogMonitor
 	Processing atomic.Bool
 }
 
