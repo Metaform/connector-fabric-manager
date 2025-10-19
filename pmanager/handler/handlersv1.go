@@ -21,7 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -122,15 +122,15 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 	orchestration, err := h.provisionManager.Start(req.Context(), &manifest)
 	if err != nil {
 		switch {
-		case _type.IsClientError(err):
+		case types.IsClientError(err):
 			http.Error(w, fmt.Sprintf("Invalid deployment: %s", err.Error()), http.StatusBadRequest)
 			return
-		case _type.IsRecoverable(err):
+		case types.IsRecoverable(err):
 			id := uuid.New().String()
 			h.monitor.Infof("Recoverable error encountered during deployment [%s]: %w ", id, err)
 			http.Error(w, fmt.Sprintf("Recoverable error encountered during deployment [%s]", id), http.StatusServiceUnavailable)
 			return
-		case _type.IsFatal(err):
+		case types.IsFatal(err):
 			id := uuid.New().String()
 			h.monitor.Infof("Fatal error encountered during deployment [%s]: %w ", id, err)
 			http.Error(w, fmt.Sprintf("Fatal error encountered during deployment [%s]", id), http.StatusInternalServerError)

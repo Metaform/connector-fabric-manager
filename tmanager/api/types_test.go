@@ -15,6 +15,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -363,4 +364,230 @@ func TestDeploymentState_EdgeCases(t *testing.T) {
 		}
 	})
 
+}
+
+func TestToDeploymentState(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         string
+		expected      DeploymentState
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:        "valid initial state",
+			input:       "initial",
+			expected:    DeploymentStateInitial,
+			expectError: false,
+		},
+		{
+			name:        "valid pending state",
+			input:       "pending",
+			expected:    DeploymentStatePending,
+			expectError: false,
+		},
+		{
+			name:        "valid active state",
+			input:       "active",
+			expected:    DeploymentStateActive,
+			expectError: false,
+		},
+		{
+			name:        "valid locked state",
+			input:       "locked",
+			expected:    DeploymentStateLocked,
+			expectError: false,
+		},
+		{
+			name:        "valid offline state",
+			input:       "offline",
+			expected:    DeploymentStateOffline,
+			expectError: false,
+		},
+		{
+			name:        "valid error state",
+			input:       "error",
+			expected:    DeploymentStateError,
+			expectError: false,
+		},
+		{
+			name:          "invalid state",
+			input:         "invalid",
+			expected:      "",
+			expectError:   true,
+			errorContains: "invalid deployment state: invalid",
+		},
+		{
+			name:          "empty state",
+			input:         "",
+			expected:      "",
+			expectError:   true,
+			errorContains: "invalid deployment state:",
+		},
+		{
+			name:        "uppercase state",
+			input:       "ACTIVE",
+			expected:    "active",
+			expectError: false,
+		},
+		{
+			name:        "mixed case state",
+			input:       "Initial",
+			expected:    "initial",
+			expectError: false,
+		},
+		{
+			name:          "whitespace state",
+			input:         " active ",
+			expected:      "",
+			expectError:   true,
+			errorContains: "invalid deployment state:  active ",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ToDeploymentState(tt.input)
+
+			if tt.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+				assert.Empty(t, result)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+				assert.True(t, result.IsValid())
+			}
+		})
+	}
+}
+
+func TestToDeploymentState_AllValidStates(t *testing.T) {
+	validStates := map[string]DeploymentState{
+		"initial": DeploymentStateInitial,
+		"pending": DeploymentStatePending,
+		"active":  DeploymentStateActive,
+		"locked":  DeploymentStateLocked,
+		"offline": DeploymentStateOffline,
+		"error":   DeploymentStateError,
+	}
+
+	for input, expected := range validStates {
+		t.Run("valid_"+input, func(t *testing.T) {
+			result, err := ToDeploymentState(input)
+
+			require.NoError(t, err)
+			assert.Equal(t, expected, result)
+			assert.Equal(t, input, result.String())
+		})
+	}
+}
+
+func TestToDeploymentState_ConsistencyWithEnum(t *testing.T) {
+	// Test that our function is consistent with the enum's validation
+	testCases := []string{
+		"initial", "pending", "active", "locked", "offline", "error",
+		"invalid", "", "unknown", "ACTIVE", "Initial",
+	}
+
+	for _, input := range testCases {
+		t.Run("consistency_"+input, func(t *testing.T) {
+			result, err := ToDeploymentState(input)
+			enumState := DeploymentState(strings.ToLower(input)) // Enum states are lowercase
+
+			if enumState.IsValid() {
+				require.NoError(t, err)
+				assert.Equal(t, enumState, result)
+			} else {
+				require.Error(t, err)
+				assert.Empty(t, result)
+			}
+		})
+	}
+}
+
+func TestToProperties(t *testing.T) {
+	t.Run("convert nil map", func(t *testing.T) {
+		var m map[string]any
+
+		result := ToProperties(m)
+
+		require.NotNil(t, result)
+		require.Len(t, result, 0)
+	})
+
+	t.Run("convert empty map", func(t *testing.T) {
+		m := make(map[string]any)
+
+		result := ToProperties(m)
+
+		require.NotNil(t, result)
+		require.Len(t, result, 0)
+	})
+
+	t.Run("convert map with string values", func(t *testing.T) {
+		m := map[string]any{
+			"environment": "production",
+			"region":      "us-east-1",
+		}
+
+		result := ToProperties(m)
+
+		require.NotNil(t, result)
+		require.Len(t, result, 2)
+		require.Equal(t, "production", result["environment"])
+		require.Equal(t, "us-east-1", result["region"])
+	})
+
+	t.Run("convert map with multiple types", func(t *testing.T) {
+		m := map[string]any{
+			"environment": "production",
+			"capacity":    100,
+			"enabled":     true,
+			"tags":        []string{"critical", "monitored"},
+			"metadata": map[string]any{
+				"owner": "platform-team",
+			},
+		}
+
+		result := ToProperties(m)
+
+		require.NotNil(t, result)
+		require.Len(t, result, 5)
+		require.Equal(t, "production", result["environment"])
+		require.Equal(t, 100, result["capacity"])
+		require.Equal(t, true, result["enabled"])
+
+		tags, ok := result["tags"].([]string)
+		require.True(t, ok)
+		require.Len(t, tags, 2)
+		require.Equal(t, "critical", tags[0])
+		require.Equal(t, "monitored", tags[1])
+
+		metadata, ok := result["metadata"].(map[string]any)
+		require.True(t, ok)
+		require.Equal(t, "platform-team", metadata["owner"])
+	})
+
+	t.Run("convert map preserves original", func(t *testing.T) {
+		m := map[string]any{
+			"environment": "production",
+			"capacity":    100,
+		}
+
+		result := ToProperties(m)
+
+		// Modify result to ensure original is not affected
+		result["environment"] = "staging"
+		result["new_key"] = "new_value"
+
+		require.Equal(t, "production", m["environment"])
+		require.Equal(t, 100, m["capacity"])
+		_, exists := m["new_key"]
+		require.False(t, exists)
+
+		// Verify result has the modifications
+		require.Equal(t, "staging", result["environment"])
+		require.Equal(t, "new_value", result["new_key"])
+	})
 }

@@ -26,6 +26,7 @@ import (
 	alauncher "github.com/metaform/connector-fabric-manager/pmanager/agent/testagent/launcher"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"
+	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -89,6 +90,21 @@ func Test_VerifyE2E(t *testing.T) {
 	err = e2efixtures.CreateTestDeploymentDefinition(client)
 	require.NoError(t, err)
 
+	cell, err := e2efixtures.CreateCell(client)
+	require.NoError(t, err)
+
+	profile, err := e2efixtures.CreateDataspaceProfile(client)
+	require.NoError(t, err)
+
+	deployment := v1alpha1.NewDataspaceProfileDeployment{
+		ProfileID: profile.ID,
+		CellID:    cell.ID,
+	}
+	err = e2efixtures.DeployDataspaceProfile(deployment, client)
+	require.NoError(t, err)
+
+	fmt.Println(cell)
+	fmt.Println(profile)
 	err = client.PostToTManager("participant/"+uuid.New().String(), "{}")
 
 	require.NoError(t, err)

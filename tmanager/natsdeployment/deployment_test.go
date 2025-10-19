@@ -17,7 +17,7 @@ import (
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,7 +49,7 @@ func TestDeploymentCallbackService_RegisterDeploymentHandler(t *testing.T) {
 			return nil
 		}
 		handler2 := func(ctx context.Context, response model.DeploymentResponse) error {
-			return _type.NewClientError("test error")
+			return types.NewClientError("test error")
 		}
 
 		service.RegisterDeploymentHandler("type1", handler1)
@@ -66,10 +66,10 @@ func TestDeploymentCallbackService_RegisterDeploymentHandler(t *testing.T) {
 		}
 
 		originalHandler := func(ctx context.Context, response model.DeploymentResponse) error {
-			return _type.NewClientError("original")
+			return types.NewClientError("original")
 		}
 		newHandler := func(ctx context.Context, response model.DeploymentResponse) error {
-			return _type.NewClientError("new")
+			return types.NewClientError("new")
 		}
 
 		service.RegisterDeploymentHandler("test-type", originalHandler)
@@ -115,7 +115,7 @@ func TestDeploymentCallbackService_Dispatch(t *testing.T) {
 			handlers: make(map[string]api.DeploymentCallbackHandler),
 		}
 
-		expectedError := _type.NewClientError("deployment failed")
+		expectedError := types.NewClientError("deployment failed")
 		handler := func(ctx context.Context, response model.DeploymentResponse) error {
 			return expectedError
 		}
@@ -148,7 +148,7 @@ func TestDeploymentCallbackService_Dispatch(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "deployment handler not found for type: nonexistent-type")
 
-		require.True(t, _type.IsFatal(err))
+		require.True(t, types.IsFatal(err))
 
 	})
 
@@ -199,7 +199,7 @@ func TestDeploymentCallbackService_Integration(t *testing.T) {
 
 		dataspaceHandler := func(ctx context.Context, response model.DeploymentResponse) error {
 			dataspaceCalls++
-			return _type.NewRecoverableError("temporary failure")
+			return types.NewRecoverableError("temporary failure")
 		}
 
 		service.RegisterDeploymentHandler("vpa", connectorHandler)
@@ -217,7 +217,7 @@ func TestDeploymentCallbackService_Integration(t *testing.T) {
 		assert.Equal(t, 1, connectorCalls)
 		assert.Equal(t, 1, dataspaceCalls)
 
-		require.True(t, _type.IsRecoverable(err))
+		require.True(t, types.IsRecoverable(err))
 	})
 
 }

@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/collection"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +66,7 @@ func TestInMemoryEntityStore_Create(t *testing.T) {
 
 		require.Error(t, err)
 		require.Nil(t, result)
-		assert.Equal(t, _type.ErrInvalidInput, err)
+		assert.Equal(t, types.ErrInvalidInput, err)
 	})
 
 	t.Run("create duplicate should fail", func(t *testing.T) {
@@ -82,7 +82,7 @@ func TestInMemoryEntityStore_Create(t *testing.T) {
 		result2, err2 := store.Create(ctx, duplicate)
 		require.Error(t, err2)
 		require.Nil(t, result2)
-		assert.Equal(t, _type.ErrConflict, err2)
+		assert.Equal(t, types.ErrConflict, err2)
 	})
 }
 
@@ -95,16 +95,18 @@ func TestInMemoryEntityStore_FindById(t *testing.T) {
 		_, err := store.Create(ctx, entity)
 		require.NoError(t, err)
 
-		result := store.FindById(ctx, "test-1")
+		result, err := store.FindById(ctx, "test-1")
 
+		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.Equal(t, "test-1", result.ID)
 		assert.Equal(t, "value1", result.Value)
 	})
 
 	t.Run("find non-existing entity", func(t *testing.T) {
-		result := store.FindById(ctx, "non-existing")
+		result, err := store.FindById(ctx, "non-existing")
 
+		require.Error(t, err)
 		assert.Nil(t, result)
 	})
 }
@@ -147,7 +149,8 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify the update
-		result := store.FindById(ctx, "test-1")
+		result, err := store.FindById(ctx, "test-1")
+		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.Equal(t, "updated-value", result.Value)
 	})
@@ -156,7 +159,7 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		err := store.Update(ctx, nil)
 
 		require.Error(t, err)
-		assert.Equal(t, _type.ErrInvalidInput, err)
+		assert.Equal(t, types.ErrInvalidInput, err)
 	})
 
 	t.Run("update entity with empty ID should fail", func(t *testing.T) {
@@ -165,7 +168,7 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		err := store.Update(ctx, entity)
 
 		require.Error(t, err)
-		assert.Equal(t, _type.ErrInvalidInput, err)
+		assert.Equal(t, types.ErrInvalidInput, err)
 	})
 
 	t.Run("update non-existing entity should fail", func(t *testing.T) {
@@ -174,7 +177,7 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		err := store.Update(ctx, entity)
 
 		require.Error(t, err)
-		assert.Equal(t, _type.ErrNotFound, err)
+		assert.Equal(t, types.ErrNotFound, err)
 	})
 }
 
@@ -192,7 +195,8 @@ func TestInMemoryEntityStore_Delete(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify deletion
-		result := store.FindById(ctx, "test-1")
+		result, err := store.FindById(ctx, "test-1")
+		require.Error(t, err)
 		assert.Nil(t, result)
 
 		exists, err := store.Exists(ctx, "test-1")
@@ -204,14 +208,14 @@ func TestInMemoryEntityStore_Delete(t *testing.T) {
 		err := store.Delete(ctx, "")
 
 		require.Error(t, err)
-		assert.Equal(t, _type.ErrInvalidInput, err)
+		assert.Equal(t, types.ErrInvalidInput, err)
 	})
 
 	t.Run("delete non-existing entity should fail", func(t *testing.T) {
 		err := store.Delete(ctx, "non-existing")
 
 		require.Error(t, err)
-		assert.Equal(t, _type.ErrNotFound, err)
+		assert.Equal(t, types.ErrNotFound, err)
 	})
 }
 
@@ -389,7 +393,8 @@ func TestInMemoryEntityStore_CopyIsolation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Retrieve the entity (first retrieval)
-	retrieved1 := store.FindById(ctx, "test-1")
+	retrieved1, err := store.FindById(ctx, "test-1")
+	require.NoError(t, err)
 	require.NotNil(t, retrieved1)
 	assert.Equal(t, "original-value", retrieved1.Value)
 
@@ -397,7 +402,8 @@ func TestInMemoryEntityStore_CopyIsolation(t *testing.T) {
 	retrieved1.Value = "modified-value"
 
 	// Retrieve the entity again (second retrieval)
-	retrieved2 := store.FindById(ctx, "test-1")
+	retrieved2, err := store.FindById(ctx, "test-1")
+	require.NoError(t, err)
 	require.NotNil(t, retrieved2)
 
 	// The second retrieval should still have the original value

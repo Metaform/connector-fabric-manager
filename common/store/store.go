@@ -16,7 +16,7 @@ import (
 	"context"
 
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 )
 
 const (
@@ -28,13 +28,43 @@ type TransactionContext interface {
 	Execute(ctx context.Context, callback func(ctx context.Context) error) error
 }
 
+// TxFunc represents a transactional function wrapper allowing execution with a TransactionContext.
+// For example:
+//
+//	store.Tx(ctx).AndReturn(ctx, func(ctx context.Context) (*MyType, error) {
+//		return store.FindById(ctx, "my-id")
+//	})
+type TxFunc[T any] struct {
+	ctx TransactionContext
+}
+
+func Tx[T any](ctx TransactionContext) TxFunc[T] {
+	return TxFunc[T]{ctx: ctx}
+}
+
+func (tf TxFunc[T]) AndReturn(ctx context.Context, callback func(context.Context) (*T, error)) (*T, error) {
+	var result *T
+	var callbackErr error
+
+	err := tf.ctx.Execute(ctx, func(ctx context.Context) error {
+		result, callbackErr = callback(ctx)
+		return callbackErr
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, callbackErr
+}
+
 type NoOpTransactionContext struct{}
 
 func (n NoOpTransactionContext) Execute(ctx context.Context, callback func(ctx context.Context) error) error {
 	return callback(ctx)
 }
 
-var ErrNotFound = &_type.BadRequestError{Message: "not found"}
+var ErrNotFound = &types.BadRequestError{Message: "not found"}
 
 type NoOpTrxAssembly struct {
 	system.DefaultServiceAssembly

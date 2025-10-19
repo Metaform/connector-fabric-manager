@@ -16,6 +16,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
@@ -109,6 +110,15 @@ func (c DeploymentState) IsValid() bool {
 	default:
 		return false
 	}
+}
+
+// ToDeploymentState converts a string state to a DeploymentState enum
+func ToDeploymentState(state string) (DeploymentState, error) {
+	deploymentState := DeploymentState(strings.ToLower(state))
+	if !deploymentState.IsValid() {
+		return "", fmt.Errorf("invalid deployment state: %s", state)
+	}
+	return deploymentState, nil
 }
 
 // MarshalJSON implements json.Marshaler
@@ -245,6 +255,18 @@ func (p *Properties) Set(key string, value any) {
 		*p = make(Properties)
 	}
 	(*p)[key] = value
+}
+
+func ToProperties(props map[string]any) Properties {
+	if props == nil {
+		return make(Properties)
+	}
+
+	converted := make(Properties)
+	for k, v := range props {
+		converted[k] = v
+	}
+	return converted
 }
 
 type DeploymentRecord struct {

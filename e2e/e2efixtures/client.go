@@ -48,6 +48,19 @@ func (c *ApiClient) PostToTManager(endpoint string, payload any) error {
 	return err
 }
 
+func (c *ApiClient) PostToTManagerWithResponse(endpoint string, payload any, result any) error {
+	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
+	return c.postWithResponse(url, payload, result)
+}
+
+func (c *ApiClient) postWithResponse(url string, payload any, result any) error {
+	ser, err := c.postRequest(url, payload, nil)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(ser, result)
+}
+
 // postRequest handles POST requests with JSON payload
 func (c *ApiClient) postRequest(url string, payload any, headers map[string]string) ([]byte, error) {
 	jsonData, err := json.Marshal(payload)

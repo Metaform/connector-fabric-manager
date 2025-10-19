@@ -13,8 +13,12 @@
 package e2efixtures
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 )
 
 func CreateTestActivityDefinition(apiClient *ApiClient) error {
@@ -51,4 +55,35 @@ func CreateTestDeploymentDefinition(apiClient *ApiClient) error {
 	}
 
 	return apiClient.PostToPManager("deployment-definition", requestBody)
+}
+
+func CreateCell(apiClient *ApiClient) (*v1alpha1.Cell, error) {
+	requestBody := v1alpha1.NewCell{
+		State:          "active",
+		StateTimestamp: time.Time{}.UTC(),
+		Properties:     make(map[string]any),
+	}
+	var cell v1alpha1.Cell
+	err := apiClient.PostToTManagerWithResponse("cells", requestBody, &cell)
+	if err != nil {
+		return nil, err
+	}
+	return &cell, nil
+}
+
+func CreateDataspaceProfile(apiClient *ApiClient) (*v1alpha1.DataspaceProfile, error) {
+	requestBody := v1alpha1.NewDataspaceProfile{
+		Artifacts:  make([]string, 0),
+		Properties: make(map[string]any),
+	}
+	var profile v1alpha1.DataspaceProfile
+	err := apiClient.PostToTManagerWithResponse("dataspace-profiles", requestBody, &profile)
+	if err != nil {
+		return nil, err
+	}
+	return &profile, nil
+}
+
+func DeployDataspaceProfile(deployment v1alpha1.NewDataspaceProfileDeployment, apiClient *ApiClient) error {
+	return apiClient.PostToTManager(fmt.Sprintf("dataspace-profiles/%s/deployments", deployment.ProfileID), deployment)
 }

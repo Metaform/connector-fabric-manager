@@ -66,7 +66,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -143,7 +143,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -192,7 +192,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.Error(t, err)
 		require.Nil(t, result)
@@ -241,7 +241,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.Error(t, err)
 		require.Nil(t, result)
@@ -279,7 +279,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.Error(t, err)
 		require.Nil(t, result)
@@ -302,7 +302,7 @@ func TestResolveCell(t *testing.T) {
 
 		dProfiles := []api.DataspaceProfile{}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.Error(t, err)
 		require.Nil(t, result)
@@ -333,7 +333,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.Error(t, err)
 		require.Nil(t, result)
@@ -407,7 +407,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -477,7 +477,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		result, err := defaultVPASelector("test", cells, dProfiles)
+		result, err := defaultCellSelector("test", cells, dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)

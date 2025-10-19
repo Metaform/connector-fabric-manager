@@ -22,6 +22,8 @@ import (
 const (
 	DeploymentHandlerRegistryKey system.ServiceType = "tmapi:DeploymentHandlerRegistry"
 	ParticipantDeployerKey       system.ServiceType = "tmapi:ParticipantDeployer"
+	CellDeployerKey              system.ServiceType = "tmapi:CellDeployer"
+	DataspaceProfileDeployerKey  system.ServiceType = "tmapi:DataspaceProfileDeployer"
 	DeploymentClientKey          system.ServiceType = "tmapi:DeploymentClient"
 )
 
@@ -47,4 +49,13 @@ type DeploymentCallbackHandler func(context.Context, model.DeploymentResponse) e
 // DeploymentHandlerRegistry registers deployment handlers by deployment type.
 type DeploymentHandlerRegistry interface {
 	RegisterDeploymentHandler(deploymentType model.DeploymentType, handler DeploymentCallbackHandler)
+}
+
+type CellDeployer interface {
+	RecordExternalDeployment(ctx context.Context, cell Cell) (*Cell, error)
+}
+
+type DataspaceProfileDeployer interface {
+	CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*DataspaceProfile, error)
+	DeployProfile(ctx context.Context, profileID string, cellID string) error
 }

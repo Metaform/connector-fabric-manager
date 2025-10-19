@@ -45,7 +45,7 @@ func DefaultPaginationOptions() PaginationOptions {
 
 // EntityStore defines the interface for entity storage.
 type EntityStore[T any] interface {
-	FindById(ctx context.Context, id string) *T
+	FindById(ctx context.Context, id string) (*T, error)
 	Exists(ctx context.Context, id string) (bool, error)
 	Create(ctx context.Context, entity *T) (*T, error)
 	Update(ctx context.Context, entity *T) error

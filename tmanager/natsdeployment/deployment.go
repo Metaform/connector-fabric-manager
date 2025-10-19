@@ -16,7 +16,7 @@ import (
 	"context"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -43,7 +43,7 @@ func (d deploymentCallbackService) RegisterDeploymentHandler(deploymentType mode
 func (d deploymentCallbackService) Dispatch(ctx context.Context, response model.DeploymentResponse) error {
 	handler, found := d.handlers[response.DeploymentType.String()]
 	if !found {
-		return _type.NewFatalError("deployment handler not found for type: %s", response.DeploymentType)
+		return types.NewFatalError("deployment handler not found for type: %s", response.DeploymentType)
 	}
 	return handler(ctx, response)
 }

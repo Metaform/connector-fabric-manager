@@ -29,16 +29,20 @@ func (a *TMCoreServiceAssembly) Name() string {
 }
 
 func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{api.DeploymentClientKey, store.TransactionContextKey, api.CellStoreKey, api.DataspaceProfileStoreKey}
+	return []system.ServiceType{
+		api.DeploymentClientKey,
+		store.TransactionContextKey,
+		api.CellStoreKey,
+		api.DataspaceProfileStoreKey}
 }
 
 func (a *TMCoreServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{api.ParticipantDeployerKey}
+	return []system.ServiceType{api.ParticipantDeployerKey, api.CellDeployerKey, api.DataspaceProfileDeployerKey}
 }
 
 func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	a.vpaGenerator = participantGenerator{
-		CellSelector: defaultVPASelector, // Register the default selector, which may be overridden
+		CellSelector: defaultCellSelector, // Register the default selector, which may be overridden
 	}
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
@@ -54,6 +58,17 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 		dProfileStore:        dProfileStore,
 	}
 	context.Registry.Register(api.ParticipantDeployerKey, participantDeployer)
+
+	context.Registry.Register(api.CellDeployerKey, cellDeployer{
+		trxContext: trxContext,
+		store:      cellStore,
+	})
+
+	context.Registry.Register(api.DataspaceProfileDeployerKey, dataspaceProfileDeployer{
+		trxContext:   trxContext,
+		profileStore: dProfileStore,
+		cellStore:    cellStore,
+	})
 
 	registry := context.Registry.Resolve(api.DeploymentHandlerRegistryKey).(api.DeploymentHandlerRegistry)
 	handler := vpaDeploymentCallbackHandler{}

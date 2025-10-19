@@ -19,7 +19,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -37,29 +37,29 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.DeploymentM
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			// Not found is a client error
-			return nil, _type.NewClientError("deployment type '%s' not found", manifest.DeploymentType)
+			return nil, types.NewClientError("deployment type '%s' not found", manifest.DeploymentType)
 		}
-		return nil, _type.NewFatalWrappedError(err, "unable to find deployment definition for deployment %s", deploymentID)
+		return nil, types.NewFatalWrappedError(err, "unable to find deployment definition for deployment %s", deploymentID)
 	}
 
 	activeVersion, err := definition.GetActiveVersion()
 	if err != nil {
-		return nil, _type.NewFatalError("error deploying %s: unable to get active version", deploymentID)
+		return nil, types.NewFatalError("error deploying %s: unable to get active version", deploymentID)
 	}
 
 	// Validate required fields
 	if manifest.ID == "" {
-		return nil, _type.NewClientError("Missing required field: id")
+		return nil, types.NewClientError("Missing required field: id")
 	}
 
 	if manifest.DeploymentType == "" {
-		return nil, _type.NewClientError("Missing required field: deploymentType")
+		return nil, types.NewClientError("Missing required field: deploymentType")
 	}
 
 	// perform de-duplication
 	orchestration, err := p.orchestrator.GetOrchestration(ctx, deploymentID)
 	if err != nil {
-		return nil, _type.NewFatalWrappedError(err, "error checking for orchestration %s", deploymentID)
+		return nil, types.NewFatalWrappedError(err, "error checking for orchestration %s", deploymentID)
 	}
 
 	if orchestration != nil {
@@ -70,11 +70,11 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.DeploymentM
 	// Does not exist, create the orchestration
 	orchestration, err = api.InstantiateOrchestration(manifest.ID, manifest.DeploymentType, activeVersion.Activities, manifest.Payload)
 	if err != nil {
-		return nil, _type.NewFatalWrappedError(err, "error instantiating orchestration for deployment %s", deploymentID)
+		return nil, types.NewFatalWrappedError(err, "error instantiating orchestration for deployment %s", deploymentID)
 	}
 	err = p.orchestrator.ExecuteOrchestration(ctx, orchestration)
 	if err != nil {
-		return nil, _type.NewFatalWrappedError(err, "error executing orchestration %s for deployment %s", orchestration.ID, deploymentID)
+		return nil, types.NewFatalWrappedError(err, "error executing orchestration %s for deployment %s", orchestration.ID, deploymentID)
 	}
 	return orchestration, nil
 }

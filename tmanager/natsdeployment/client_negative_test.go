@@ -20,7 +20,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -54,7 +54,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id"
-				})).Return(_type.NewRecoverableError("temporary failure"))
+				})).Return(types.NewRecoverableError("temporary failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
 				m.On("Data").Return([]byte(`{"id":"test-id","success":true,"manifestID":"manifest-1"}`))
@@ -68,7 +68,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-2"
-				})).Return(_type.NewRecoverableError("temporary failure"))
+				})).Return(types.NewRecoverableError("temporary failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
 				m.On("Data").Return([]byte(`{"id":"test-id-2","success":true,"manifestID":"manifest-2"}`))
@@ -82,7 +82,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-3"
-				})).Return(_type.NewFatalError("permanent failure"))
+				})).Return(types.NewFatalError("permanent failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
 				m.On("Data").Return([]byte(`{"id":"test-id-3","success":false,"manifestID":"manifest-3"}`))
@@ -96,7 +96,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-4"
-				})).Return(_type.NewFatalError("permanent failure"))
+				})).Return(types.NewFatalError("permanent failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
 				m.On("Data").Return([]byte(`{"id":"test-id-4","success":false,"manifestID":"manifest-4"}`))

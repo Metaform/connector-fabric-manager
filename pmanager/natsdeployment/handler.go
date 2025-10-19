@@ -21,7 +21,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -43,7 +43,7 @@ func newNatsDeploymentHandler(
 				_, err := provisionManager.Start(ctx, &manifest)
 				if err != nil {
 					switch {
-					case _type.IsRecoverable(err):
+					case types.IsRecoverable(err):
 						// Return error to NAK the message and retry
 						return err
 					default:
@@ -58,11 +58,11 @@ func newNatsDeploymentHandler(
 						}
 						ser, err := json.Marshal(m)
 						if err != nil {
-							return _type.NewRecoverableError("failed to marshal response: %s", err.Error())
+							return types.NewRecoverableError("failed to marshal response: %s", err.Error())
 						}
 						_, err = client.Publish(ctx, natsclient.CFMDeploymentResponseSubject, ser)
 						if err != nil {
-							return _type.NewRecoverableError("failed to publish response: %s", err.Error())
+							return types.NewRecoverableError("failed to publish response: %s", err.Error())
 						}
 
 						return nil // ack message back

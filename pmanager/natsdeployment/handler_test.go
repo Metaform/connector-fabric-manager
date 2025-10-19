@@ -22,7 +22,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natsclient/mocks"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -112,9 +112,9 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 		error         error
 		shouldPublish bool
 	}{
-		{"RecoverableError", _type.NewRecoverableError("network timeout"), false},
-		{"ClientError", _type.NewClientError("invalid manifest"), true},
-		{"FatalError", _type.NewFatalError("fatal processing error"), true},
+		{"RecoverableError", types.NewRecoverableError("network timeout"), false},
+		{"ClientError", types.NewClientError("invalid manifest"), true},
+		{"FatalError", types.NewFatalError("fatal processing error"), true},
 		{"StandardError", errors.New("standard error"), true},
 	}
 
@@ -147,7 +147,7 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 				assert.NoError(t, err, "Non-recoverable errors should result in ACK")
 			} else {
 				assert.Error(t, err, "Recoverable errors should be returned")
-				assert.True(t, _type.IsRecoverable(err))
+				assert.True(t, types.IsRecoverable(err))
 			}
 
 			mockProvisionManager.AssertExpectations(t)

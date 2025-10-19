@@ -16,9 +16,8 @@ import (
 	"context"
 	"iter"
 	"sync"
-	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -36,16 +35,16 @@ type InMemoryEntityStore[T any] struct {
 	idFunc func(*T) string
 }
 
-func (s *InMemoryEntityStore[T]) FindById(_ context.Context, id string) *T {
+func (s *InMemoryEntityStore[T]) FindById(_ context.Context, id string) (*T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	entity, exists := s.cache[id]
 	if !exists {
-		return nil
+		return nil, types.ErrNotFound
 	}
 
-	return &entity
+	return &entity, nil
 }
 
 func (s *InMemoryEntityStore[T]) Exists(_ context.Context, id string) (bool, error) {
@@ -57,14 +56,14 @@ func (s *InMemoryEntityStore[T]) Exists(_ context.Context, id string) (bool, err
 
 func (s *InMemoryEntityStore[T]) Create(_ context.Context, entity *T) (*T, error) {
 	if s.idFunc(entity) == "" {
-		return nil, _type.ErrInvalidInput
+		return nil, types.ErrInvalidInput
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, exists := s.cache[s.idFunc(entity)]; exists {
-		return nil, _type.ErrConflict
+		return nil, types.ErrConflict
 	}
 
 	s.cache[s.idFunc(entity)] = *entity
@@ -73,17 +72,17 @@ func (s *InMemoryEntityStore[T]) Create(_ context.Context, entity *T) (*T, error
 
 func (s *InMemoryEntityStore[T]) Update(_ context.Context, entity *T) error {
 	if entity == nil {
-		return _type.ErrInvalidInput
+		return types.ErrInvalidInput
 	}
 	if s.idFunc(entity) == "" {
-		return _type.ErrInvalidInput
+		return types.ErrInvalidInput
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, exists := s.cache[s.idFunc(entity)]; !exists {
-		return _type.ErrNotFound
+		return types.ErrNotFound
 	}
 
 	s.cache[s.idFunc(entity)] = *entity
@@ -92,14 +91,14 @@ func (s *InMemoryEntityStore[T]) Update(_ context.Context, entity *T) error {
 
 func (s *InMemoryEntityStore[T]) Delete(_ context.Context, id string) error {
 	if id == "" {
-		return _type.ErrInvalidInput
+		return types.ErrInvalidInput
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, exists := s.cache[id]; !exists {
-		return _type.ErrNotFound
+		return types.ErrNotFound
 	}
 
 	delete(s.cache, id)
@@ -156,50 +155,4 @@ func (s *InMemoryEntityStore[T]) GetAllPaginated(ctx context.Context, opts api.P
 			}
 		}
 	}
-}
-
-// seedData temporary function to initialize and return sample cells and dataspace profiles for use in deployment workflows.
-func seedData() ([]api.Cell, []api.DataspaceProfile) {
-	cells := []api.Cell{
-		{
-			DeployableEntity: api.DeployableEntity{
-				Entity: api.Entity{
-					ID:      "cell-001",
-					Version: 1,
-				},
-				State:          api.DeploymentStateActive,
-				StateTimestamp: time.Now(),
-			},
-			Properties: api.Properties{
-				"region": "us-east-1",
-				"type":   "kubernetes",
-			},
-		},
-	}
-
-	dProfiles := []api.DataspaceProfile{
-		{
-			Entity: api.Entity{
-				ID:      "dataspace-profile-001",
-				Version: 1,
-			},
-			Artifacts: []string{"connector-runtime", "policy-engine"},
-			Deployments: []api.DataspaceDeployment{
-				{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "deployment-001",
-							Version: 1,
-						},
-						State:          api.DeploymentStateActive,
-						StateTimestamp: time.Now(),
-					},
-					Cell:       cells[0], // Reference to the first cell
-					Properties: api.Properties{},
-				},
-			},
-			Properties: api.Properties{},
-		},
-	}
-	return cells, dProfiles
 }

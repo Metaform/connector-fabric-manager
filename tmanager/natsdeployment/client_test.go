@@ -24,7 +24,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/type"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -154,7 +154,7 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 	dispatcher := &testDeploymentDispatcher{
 		responses:     make(chan model.DeploymentResponse, 1),
 		shouldError:   true,
-		errorToReturn: _type.NewRecoverableError("test recoverable error"),
+		errorToReturn: types.NewRecoverableError("test recoverable error"),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
@@ -204,7 +204,7 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 	dispatcher := &testDeploymentDispatcher{
 		responses:     make(chan model.DeploymentResponse, 1),
 		shouldError:   true,
-		errorToReturn: _type.NewFatalError("test fatal error"),
+		errorToReturn: types.NewFatalError("test fatal error"),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
