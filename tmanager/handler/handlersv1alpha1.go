@@ -180,18 +180,7 @@ func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	// move to transformer
-	mProfile := v1alpha1.DataspaceProfile{
-		Entity: v1alpha1.Entity{
-			ID:      result.ID,
-			Version: result.Version,
-		},
-		Artifacts:   result.Artifacts,
-		Deployments: []v1alpha1.DataspaceDeployment{
-			// TODO finish
-		},
-		Properties: result.Properties,
-	}
+	mProfile := v1alpha1.ToDataspaceProfile(result)
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", json_content)
 	if err := json.NewEncoder(w).Encode(mProfile); err != nil {

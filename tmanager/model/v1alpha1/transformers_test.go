@@ -13,6 +13,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -547,4 +548,503 @@ func TestEmptyAndNilInputs(t *testing.T) {
 		result = ToParticipantProfile(input)
 		assert.Empty(t, result.Properties)
 	})
+}
+
+func TestToDataspaceProfile(t *testing.T) {
+	testTime := time.Date(2025, 1, 15, 10, 30, 45, 0, time.UTC)
+
+	input := &api.DataspaceProfile{
+		Entity: api.Entity{
+			ID:      "dataspace-profile-123",
+			Version: 5,
+		},
+		Artifacts: []string{
+			"artifact-1",
+			"artifact-2",
+			"artifact-3",
+		},
+		Deployments: []api.DataspaceDeployment{
+			{
+				DeployableEntity: api.DeployableEntity{
+					Entity: api.Entity{
+						ID:      "deployment-1",
+						Version: 2,
+					},
+					State:          api.DeploymentStateActive,
+					StateTimestamp: testTime,
+				},
+				Cell: api.Cell{
+					DeployableEntity: api.DeployableEntity{
+						Entity: api.Entity{
+							ID:      "cell-1",
+							Version: 1,
+						},
+						State:          api.DeploymentStateActive,
+						StateTimestamp: testTime,
+					},
+					Properties: api.Properties{"cell-type": "kubernetes"},
+				},
+				Properties: api.Properties{
+					"deployment-env": "production",
+					"replicas":       3,
+				},
+			},
+			{
+				DeployableEntity: api.DeployableEntity{
+					Entity: api.Entity{
+						ID:      "deployment-2",
+						Version: 1,
+					},
+					State:          api.DeploymentStatePending,
+					StateTimestamp: testTime,
+				},
+				Cell: api.Cell{
+					DeployableEntity: api.DeployableEntity{
+						Entity: api.Entity{
+							ID:      "cell-2",
+							Version: 3,
+						},
+						State:          api.DeploymentStatePending,
+						StateTimestamp: testTime,
+					},
+					Properties: api.Properties{"cell-type": "docker"},
+				},
+				Properties: api.Properties{
+					"deployment-env": "staging",
+					"replicas":       1,
+				},
+			},
+		},
+		Properties: api.Properties{
+			"dataspace-name":   "TestDataspace",
+			"protocol-version": "2025-1",
+			"policy-version":   2,
+		},
+	}
+
+	result := ToDataspaceProfile(input)
+
+	require.NotNil(t, result)
+
+	// Test Entity fields
+	assert.Equal(t, "dataspace-profile-123", result.ID)
+	assert.Equal(t, int64(5), result.Version)
+
+	// Test Artifacts
+	assert.Len(t, result.Artifacts, 3)
+	assert.Equal(t, []string{
+		"artifact-1",
+		"artifact-2",
+		"artifact-3",
+	}, result.Artifacts)
+
+	// Test Properties
+	assert.Len(t, result.Properties, 3)
+	assert.Equal(t, "TestDataspace", result.Properties["dataspace-name"])
+	assert.Equal(t, "2025-1", result.Properties["protocol-version"])
+	assert.Equal(t, 2, result.Properties["policy-version"])
+
+	// Test Deployments
+	assert.Len(t, result.Deployments, 2)
+
+	// First deployment
+	deployment1 := result.Deployments[0]
+	assert.Equal(t, "deployment-1", deployment1.ID)
+	assert.Equal(t, int64(2), deployment1.Version)
+	assert.Equal(t, "active", deployment1.State)
+	assert.Equal(t, testTime.UTC(), deployment1.StateTimestamp)
+	assert.Equal(t, time.UTC, deployment1.StateTimestamp.Location())
+	assert.Equal(t, "cell-1", deployment1.CellID)
+	assert.Equal(t, map[string]any{
+		"deployment-env": "production",
+		"replicas":       3,
+	}, deployment1.Properties)
+
+	// Second deployment
+	deployment2 := result.Deployments[1]
+	assert.Equal(t, "deployment-2", deployment2.ID)
+	assert.Equal(t, int64(1), deployment2.Version)
+	assert.Equal(t, "pending", deployment2.State)
+	assert.Equal(t, testTime.UTC(), deployment2.StateTimestamp)
+	assert.Equal(t, time.UTC, deployment2.StateTimestamp.Location())
+	assert.Equal(t, "cell-2", deployment2.CellID)
+	assert.Equal(t, map[string]any{
+		"deployment-env": "staging",
+		"replicas":       1,
+	}, deployment2.Properties)
+}
+
+func TestToDataspaceProfile_EmptyDeployments(t *testing.T) {
+	input := &api.DataspaceProfile{
+		Entity: api.Entity{
+			ID:      "dataspace-empty-deployments",
+			Version: 1,
+		},
+		Artifacts:   []string{"artifact-1"},
+		Deployments: []api.DataspaceDeployment{}, // Empty deployments
+		Properties: api.Properties{
+			"test-key": "test-value",
+		},
+	}
+
+	result := ToDataspaceProfile(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "dataspace-empty-deployments", result.ID)
+	assert.Equal(t, int64(1), result.Version)
+	assert.Len(t, result.Artifacts, 1)
+	assert.Equal(t, "artifact-1", result.Artifacts[0])
+	assert.Len(t, result.Deployments, 0)
+	assert.Equal(t, "test-value", result.Properties["test-key"])
+}
+
+func TestToDataspaceProfile_NilAndEmptyValues(t *testing.T) {
+	input := &api.DataspaceProfile{
+		Entity: api.Entity{
+			ID:      "dataspace-minimal",
+			Version: 0,
+		},
+		Artifacts:   nil, // nil artifacts
+		Deployments: nil, // nil deployments
+		Properties:  nil, // nil properties
+	}
+
+	result := ToDataspaceProfile(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "dataspace-minimal", result.ID)
+	assert.Equal(t, int64(0), result.Version)
+	assert.Nil(t, result.Artifacts)
+	assert.Len(t, result.Deployments, 0) // Should create empty slice
+	assert.Nil(t, result.Properties)
+}
+
+func TestToDataspaceProfile_EmptyProperties(t *testing.T) {
+	testTime := time.Date(2025, 3, 20, 14, 45, 0, 0, time.FixedZone("PST", -8*60*60))
+
+	input := &api.DataspaceProfile{
+		Entity: api.Entity{
+			ID:      "dataspace-empty-props",
+			Version: 2,
+		},
+		Artifacts: []string{"artifact-1"},
+		Deployments: []api.DataspaceDeployment{
+			{
+				DeployableEntity: api.DeployableEntity{
+					Entity: api.Entity{
+						ID:      "deployment-empty-props",
+						Version: 1,
+					},
+					State:          api.DeploymentStateInitial,
+					StateTimestamp: testTime,
+				},
+				Cell: api.Cell{
+					DeployableEntity: api.DeployableEntity{
+						Entity: api.Entity{
+							ID:      "cell-empty-props",
+							Version: 1,
+						},
+						State:          api.DeploymentStateInitial,
+						StateTimestamp: testTime,
+					},
+					Properties: api.Properties{}, // Empty properties
+				},
+				Properties: api.Properties{}, // Empty properties
+			},
+		},
+		Properties: api.Properties{}, // Empty properties
+	}
+
+	result := ToDataspaceProfile(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "dataspace-empty-props", result.ID)
+	assert.Equal(t, int64(2), result.Version)
+	assert.Len(t, result.Deployments, 1)
+	assert.Equal(t, "deployment-empty-props", result.Deployments[0].ID)
+	assert.Equal(t, "cell-empty-props", result.Deployments[0].CellID)
+	assert.Equal(t, testTime.UTC(), result.Deployments[0].StateTimestamp)
+	assert.Equal(t, time.UTC, result.Deployments[0].StateTimestamp.Location())
+	assert.Empty(t, result.Properties)
+	assert.Empty(t, result.Deployments[0].Properties)
+}
+
+func TestToDataspaceProfile_MultipleArtifacts(t *testing.T) {
+	input := &api.DataspaceProfile{
+		Entity: api.Entity{
+			ID:      "dataspace-many-artifacts",
+			Version: 3,
+		},
+		Artifacts: []string{
+			"artifact-1",
+			"artifact-2",
+			"artifact-3",
+			"artifact-4",
+			"artifact-5",
+			"artifact-6",
+			"artifact-7",
+		},
+		Deployments: []api.DataspaceDeployment{},
+		Properties: api.Properties{
+			"artifact-count": 7,
+			"version-range":  "v1-v2",
+		},
+	}
+
+	result := ToDataspaceProfile(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "dataspace-many-artifacts", result.ID)
+	assert.Len(t, result.Artifacts, 7)
+	assert.Contains(t, result.Artifacts, "artifact-1")
+	assert.Contains(t, result.Artifacts, "artifact-2")
+	assert.Contains(t, result.Artifacts, "artifact-3")
+	assert.Contains(t, result.Artifacts, "artifact-4")
+	assert.Contains(t, result.Artifacts, "artifact-5")
+	assert.Contains(t, result.Artifacts, "artifact-6")
+	assert.Contains(t, result.Artifacts, "artifact-7")
+	assert.Equal(t, 7, result.Properties["artifact-count"])
+}
+
+func TestToDataspaceProfile_AllDeploymentStates(t *testing.T) {
+	testTime := time.Date(2025, 2, 10, 9, 15, 30, 0, time.FixedZone("JST", 9*60*60))
+
+	allStates := []api.DeploymentState{
+		api.DeploymentStateInitial,
+		api.DeploymentStatePending,
+		api.DeploymentStateActive,
+		api.DeploymentStateLocked,
+		api.DeploymentStateOffline,
+		api.DeploymentStateError,
+	}
+
+	expectedStateStrings := []string{
+		"initial",
+		"pending",
+		"active",
+		"locked",
+		"offline",
+		"error",
+	}
+
+	deployments := make([]api.DataspaceDeployment, len(allStates))
+	for i, state := range allStates {
+		deployments[i] = api.DataspaceDeployment{
+			DeployableEntity: api.DeployableEntity{
+				Entity: api.Entity{
+					ID:      fmt.Sprintf("deployment-%d", i),
+					Version: int64(i + 1),
+				},
+				State:          state,
+				StateTimestamp: testTime,
+			},
+			Cell: api.Cell{
+				DeployableEntity: api.DeployableEntity{
+					Entity: api.Entity{
+						ID:      fmt.Sprintf("cell-%d", i),
+						Version: 1,
+					},
+					State:          state,
+					StateTimestamp: testTime,
+				},
+				Properties: api.Properties{},
+			},
+			Properties: api.Properties{
+				"state-test": true,
+			},
+		}
+	}
+
+	input := &api.DataspaceProfile{
+		Entity: api.Entity{
+			ID:      "dataspace-all-states",
+			Version: 1,
+		},
+		Artifacts:   []string{"artifact-1"},
+		Deployments: deployments,
+		Properties:  api.Properties{},
+	}
+
+	result := ToDataspaceProfile(input)
+
+	require.NotNil(t, result)
+	assert.Len(t, result.Deployments, len(allStates))
+
+	for i, expectedState := range expectedStateStrings {
+		deployment := result.Deployments[i]
+		assert.Equal(t, fmt.Sprintf("deployment-%d", i), deployment.ID)
+		assert.Equal(t, int64(i+1), deployment.Version)
+		assert.Equal(t, expectedState, deployment.State)
+		assert.Equal(t, testTime.UTC(), deployment.StateTimestamp)
+		assert.Equal(t, time.UTC, deployment.StateTimestamp.Location())
+		assert.Equal(t, fmt.Sprintf("cell-%d", i), deployment.CellID)
+		assert.Equal(t, true, deployment.Properties["state-test"])
+	}
+}
+
+func TestToDataspaceProfile_ComplexProperties(t *testing.T) {
+	testTime := time.Date(2025, 4, 25, 16, 20, 0, 0, time.FixedZone("CET", 1*60*60))
+
+	input := &api.DataspaceProfile{
+		Entity: api.Entity{
+			ID:      "dataspace-complex-props",
+			Version: 10,
+		},
+		Artifacts: []string{"artifact-1"},
+		Deployments: []api.DataspaceDeployment{
+			{
+				DeployableEntity: api.DeployableEntity{
+					Entity: api.Entity{
+						ID:      "complex-deployment",
+						Version: 5,
+					},
+					State:          api.DeploymentStateActive,
+					StateTimestamp: testTime,
+				},
+				Cell: api.Cell{
+					DeployableEntity: api.DeployableEntity{
+						Entity: api.Entity{
+							ID:      "complex-cell",
+							Version: 2,
+						},
+						State:          api.DeploymentStateActive,
+						StateTimestamp: testTime,
+					},
+					Properties: api.Properties{
+						"nested": map[string]any{
+							"level1": map[string]any{
+								"level2": "deep-value",
+								"array":  []string{"item1", "item2"},
+							},
+						},
+						"boolean": true,
+						"number":  42.5,
+					},
+				},
+				Properties: api.Properties{
+					"config": map[string]any{
+						"timeout":     30,
+						"retry_count": 3,
+						"endpoints":   []string{"http://api1.com", "http://api2.com"},
+					},
+					"metadata": map[string]any{
+						"created_by": "test-system",
+						"tags":       []string{"production", "critical"},
+					},
+				},
+			},
+		},
+		Properties: api.Properties{
+			"profile_config": map[string]any{
+				"version":  "2.1.0",
+				"features": []string{"feature1", "feature2", "feature3"},
+				"limits":   map[string]any{"max_connections": 1000, "timeout_seconds": 60},
+				"flags":    map[string]any{"enable_cache": true, "debug_mode": false},
+			},
+			"environment": "production",
+			"owner":       "platform-team",
+		},
+	}
+
+	result := ToDataspaceProfile(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "dataspace-complex-props", result.ID)
+	assert.Equal(t, int64(10), result.Version)
+
+	// Test complex profile properties
+	profileConfig, exists := result.Properties["profile_config"]
+	require.True(t, exists)
+	configMap, ok := profileConfig.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "2.1.0", configMap["version"])
+
+	features, exists := configMap["features"]
+	require.True(t, exists)
+	featuresSlice, ok := features.([]string)
+	require.True(t, ok)
+	assert.Len(t, featuresSlice, 3)
+	assert.Contains(t, featuresSlice, "feature1")
+
+	// Test deployment properties preservation and UTC conversion
+	deployment := result.Deployments[0]
+	assert.Equal(t, "complex-deployment", deployment.ID)
+	assert.Equal(t, "complex-cell", deployment.CellID)
+	assert.Equal(t, testTime.UTC(), deployment.StateTimestamp)
+	assert.Equal(t, time.UTC, deployment.StateTimestamp.Location())
+
+	config, exists := deployment.Properties["config"]
+	require.True(t, exists)
+	configDeployMap, ok := config.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, 30, configDeployMap["timeout"])
+	assert.Equal(t, 3, configDeployMap["retry_count"])
+}
+
+func TestToDataspaceProfile_TimestampUTCConversion(t *testing.T) {
+	// Test different timezone handling - all should be converted to UTC
+	baseTime := time.Date(2025, 6, 10, 12, 0, 0, 0, time.UTC)
+
+	timezones := []struct {
+		name string
+		time time.Time
+	}{
+		{"UTC", baseTime.In(time.UTC)},
+		{"EST", baseTime.In(time.FixedZone("EST", -5*60*60))},
+		{"PST", baseTime.In(time.FixedZone("PST", -8*60*60))},
+		{"JST", baseTime.In(time.FixedZone("JST", 9*60*60))},
+		{"CET", baseTime.In(time.FixedZone("CET", 1*60*60))},
+		{"Local", baseTime.In(time.Local)},
+	}
+
+	for _, tz := range timezones {
+		t.Run(tz.name, func(t *testing.T) {
+			input := &api.DataspaceProfile{
+				Entity: api.Entity{
+					ID:      "dataspace-" + tz.name,
+					Version: 1,
+				},
+				Artifacts: []string{"artifact-1"},
+				Deployments: []api.DataspaceDeployment{
+					{
+						DeployableEntity: api.DeployableEntity{
+							Entity: api.Entity{
+								ID:      "deployment-" + tz.name,
+								Version: 1,
+							},
+							State:          api.DeploymentStateActive,
+							StateTimestamp: tz.time,
+						},
+						Cell: api.Cell{
+							DeployableEntity: api.DeployableEntity{
+								Entity: api.Entity{
+									ID:      "cell-" + tz.name,
+									Version: 1,
+								},
+								State:          api.DeploymentStateActive,
+								StateTimestamp: tz.time,
+							},
+							Properties: api.Properties{},
+						},
+						Properties: api.Properties{},
+					},
+				},
+				Properties: api.Properties{},
+			}
+
+			result := ToDataspaceProfile(input)
+
+			require.NotNil(t, result)
+			assert.Len(t, result.Deployments, 1)
+
+			// Timestamps should be converted to UTC
+			deployment := result.Deployments[0]
+			assert.Equal(t, baseTime.UTC(), deployment.StateTimestamp)
+			assert.Equal(t, time.UTC, deployment.StateTimestamp.Location())
+
+			// Verify the time value is correct regardless of input timezone
+			expectedUTCTime := tz.time.UTC()
+			assert.Equal(t, expectedUTCTime, deployment.StateTimestamp)
+		})
+	}
 }

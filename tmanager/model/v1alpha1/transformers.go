@@ -133,3 +133,31 @@ func NewAPICell(input NewCell) *api.Cell {
 		Properties: api.ToProperties(input.Properties),
 	}
 }
+
+func ToDataspaceProfile(input *api.DataspaceProfile) *DataspaceProfile {
+	deployments := make([]DataspaceDeployment, len(input.Deployments))
+	for i, deployment := range input.Deployments {
+		deployments[i] = DataspaceDeployment{
+			DeployableEntity: DeployableEntity{
+				Entity: Entity{
+					ID:      deployment.ID,
+					Version: deployment.Version,
+				},
+				State:          deployment.State.String(),
+				StateTimestamp: deployment.StateTimestamp.UTC(), // Convert to UTC
+			},
+			CellID:     deployment.Cell.ID,
+			Properties: deployment.Properties,
+		}
+	}
+
+	return &DataspaceProfile{
+		Entity: Entity{
+			ID:      input.ID,
+			Version: input.Version,
+		},
+		Artifacts:   input.Artifacts,
+		Deployments: deployments,
+		Properties:  input.Properties,
+	}
+}
