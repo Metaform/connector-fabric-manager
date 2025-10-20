@@ -56,14 +56,16 @@ type DataspaceProfile struct {
 }
 
 type NewParticipantProfileDeployment struct {
-	Identifier string `json:"identifier"`
-	CellID     string `json:"cellId"`
+	Identifier    string                    `json:"identifier"`
+	CellID        string                    `json:"cellId"`
+	VPAProperties map[string]map[string]any `json:"vpaProperties,omitempty"`
+	Properties    map[string]any            `json:"properties,omitempty"`
 }
 
 type ParticipantProfile struct {
 	Entity
 	Identifier string                    `json:"identifier"`
-	VPAs       []VirtualParticipantAgent `json:"vpas,omitempty""`
+	VPAs       []VirtualParticipantAgent `json:"vpas,omitempty"`
 	Properties map[string]any            `json:"properties,omitempty"`
 }
 

@@ -47,7 +47,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		identifier := "participant-abc"
 
-		vpaProperties := make(api.VpaPropMap, 2)
+		vpaProperties := make(api.VPAPropMap, 2)
 		vpaProperties[model.ConnectorType] = map[string]any{"connector": "connector"}
 		vpaProperties[model.CredentialServiceType] = map[string]any{"credentialservice": "credentialservice"}
 		vpaProperties[model.DataPlaneType] = map[string]any{"dataplane": "dataplane"}
@@ -133,7 +133,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		profile, err := generator.Generate(
 			"test-participant",
-			make(api.VpaPropMap),
+			make(api.VPAPropMap),
 			make(map[string]any),
 			[]api.Cell{},
 			[]api.DataspaceProfile{})
@@ -166,7 +166,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		_, err := generator.Generate(
 			"test",
-			make(api.VpaPropMap),
+			make(api.VPAPropMap),
 			make(map[string]any),
 			[]api.Cell{},
 			[]api.DataspaceProfile{})
@@ -214,7 +214,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		_, err := generator.Generate(
 			"test",
-			make(api.VpaPropMap),
+			make(api.VPAPropMap),
 			make(map[string]any),
 			inputCells,
 			inputProfiles)
@@ -266,7 +266,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		profile, err := generator.Generate(
 			"multi-profile-test",
-			make(api.VpaPropMap),
+			make(api.VPAPropMap),
 			make(map[string]any),
 			[]api.Cell{},
 			dProfiles)
@@ -307,7 +307,7 @@ func TestParticipantProfileGenerator_generateConnector(t *testing.T) {
 			Properties: cellProperties,
 		}
 
-		connector := generator.generateVPA(model.ConnectorType, make(api.VpaPropMap), inputCell)
+		connector := generator.generateVPA(model.ConnectorType, make(api.VPAPropMap), inputCell)
 
 		assert.Equal(t, cellProperties, connector.Cell.Properties)
 		assert.NotSame(t, &cellProperties, &connector.Cell.Properties, "Properties should be a copy, not the same reference")
@@ -328,9 +328,9 @@ func TestParticipantProfileGenerator_generateConnector(t *testing.T) {
 			Properties: make(api.Properties),
 		}
 
-		connector1 := generator.generateVPA(model.ConnectorType, make(api.VpaPropMap), inputCell)
-		connector2 := generator.generateVPA(model.ConnectorType, make(api.VpaPropMap), inputCell)
-		connector3 := generator.generateVPA(model.ConnectorType, make(api.VpaPropMap), inputCell)
+		connector1 := generator.generateVPA(model.ConnectorType, make(api.VPAPropMap), inputCell)
+		connector2 := generator.generateVPA(model.ConnectorType, make(api.VPAPropMap), inputCell)
+		connector3 := generator.generateVPA(model.ConnectorType, make(api.VPAPropMap), inputCell)
 
 		ids := map[string]bool{
 			connector1.ID: true,

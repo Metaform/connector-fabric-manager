@@ -40,7 +40,7 @@ func (d participantDeployer) GetProfile(ctx context.Context, profileID string) (
 func (d participantDeployer) DeployProfile(
 	ctx context.Context,
 	identifier string,
-	vpaProperties api.VpaPropMap,
+	vpaProperties api.VPAPropMap,
 	properties map[string]any) (*api.ParticipantProfile, error) {
 
 	// TODO perform property validation against a custom schema

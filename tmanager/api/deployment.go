@@ -27,7 +27,7 @@ const (
 	CellDeployerKey               system.ServiceType = "tmapi:CellDeployer"
 )
 
-type VpaPropMap = map[model.VPAType]map[string]any
+type VPAPropMap = map[model.VPAType]map[string]any
 
 // DeploymentClient asynchronously deploys a manifest to the provision manager. Implementations may use different wire protocols.
 type DeploymentClient interface {
@@ -47,7 +47,7 @@ type DeploymentHandlerRegistry interface {
 
 // ParticipantProfileDeployer performs participant profile operations, including deploying associated VPAs.
 type ParticipantProfileDeployer interface {
-	DeployProfile(ctx context.Context, identifier string, vpaProperties VpaPropMap, properties map[string]any) (*ParticipantProfile, error)
+	DeployProfile(ctx context.Context, identifier string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
 	GetProfile(ctx context.Context, id string) (*ParticipantProfile, error)
 }
 
@@ -61,4 +61,13 @@ type DataspaceProfileDeployer interface {
 // CellDeployer performs cell operations.
 type CellDeployer interface {
 	RecordExternalDeployment(ctx context.Context, cell Cell) (*Cell, error)
+}
+
+func ToVPAMap(vpaProperties map[string]map[string]any) *VPAPropMap {
+	vpaPropsMap := make(VPAPropMap)
+	for vpaTypeStr, props := range vpaProperties {
+		vpaType := model.VPAType(vpaTypeStr)
+		vpaPropsMap[vpaType] = props
+	}
+	return &vpaPropsMap
 }

@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/common/testfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
@@ -104,7 +105,8 @@ func Test_VerifyE2E(t *testing.T) {
 	require.NoError(t, err)
 
 	newProfile := v1alpha1.NewParticipantProfileDeployment{
-		Identifier: "did:web:foo.com",
+		Identifier:    "did:web:foo.com",
+		VPAProperties: map[string]map[string]any{string(model.ConnectorType): {"connectorkey": "connectorvalue"}},
 	}
 	var participantProfile v1alpha1.ParticipantProfile
 	err = client.PostToTManagerWithResponse("participants", newProfile, &participantProfile)
@@ -127,6 +129,22 @@ func Test_VerifyE2E(t *testing.T) {
 		}
 	}
 	require.Equal(t, 3, deployCount, "Expected 3 deployments to be active")
+
+	// Verify round-tripping of VPA properties - these are supplied during profile creation and are added to the VPA
+	//
+	// Check for VPA that contains a key with "cfm.connector" value and verify it has "connectorkey"
+	var connectorVPA *v1alpha1.VirtualParticipantAgent
+	for _, vpa := range statusProfile.VPAs {
+		if vpa.Type == model.ConnectorType {
+			connectorVPA = &vpa
+			break
+		}
+	}
+
+	require.NotNil(t, connectorVPA, "Expected to find a VPA with cfm.connector type")
+	require.NotNil(t, connectorVPA.Properties, "Connector VPA properties should not be nil")
+	require.Contains(t, connectorVPA.Properties, "connectorkey", "Connector VPA should contain 'connectorkey' property")
+
 }
 
 func cleanup() {
