@@ -71,17 +71,13 @@ func (h *TMHandler) createParticipant(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// TODO support specific cell selection
-	result, err := h.participantDeployer.DeployProfile(req.Context(), profileDeployment.Identifier, make(api.VpaPropMap), make(map[string]interface{}))
+	profile, err := h.participantDeployer.DeployProfile(req.Context(), profileDeployment.Identifier, make(api.VpaPropMap), make(map[string]interface{}))
 	if err != nil {
 		handleError(w, err, h)
 	}
-	output := v1alpha1.ToParticipantProfile(result)
-	w.WriteHeader(http.StatusAccepted)
-	w.Header().Set("Content-Type", json_content)
-	if err := json.NewEncoder(w).Encode(output); err != nil {
-		h.monitor.Infow("Failed to serialize profile response: %v", err)
-		http.Error(w, "Failed to serialize response", http.StatusInternalServerError)
-	}
+	result := v1alpha1.ToParticipantProfile(profile)
+
+	h.writeOutput(w, http.StatusAccepted, result)
 }
 
 func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request) {
@@ -97,20 +93,15 @@ func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	result, err := h.participantDeployer.GetProfile(req.Context(), id)
+	profile, err := h.participantDeployer.GetProfile(req.Context(), id)
 
 	if err != nil {
 		handleError(w, err, h)
 		return
 	}
 
-	output := v1alpha1.ToParticipantProfile(result)
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", json_content)
-	if err := json.NewEncoder(w).Encode(output); err != nil {
-		h.monitor.Infow("Failed to serialize cell response: %v", err)
-		http.Error(w, "Failed to serialize response", http.StatusInternalServerError)
-	}
+	result := v1alpha1.ToParticipantProfile(profile)
+	h.writeOutput(w, http.StatusOK, result)
 }
 
 func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
@@ -136,20 +127,15 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 	// TODO NewCell validation
 	cell := v1alpha1.NewAPICell(newCell)
 
-	result, err := h.cellDeployer.RecordExternalDeployment(req.Context(), *cell)
+	cell, err = h.cellDeployer.RecordExternalDeployment(req.Context(), *cell)
 
 	if err != nil {
 		handleError(w, err, h)
 		return
 	}
-	mCell := v1alpha1.ToCell(*result)
+	result := v1alpha1.ToCell(*cell)
 
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", json_content)
-	if err := json.NewEncoder(w).Encode(mCell); err != nil {
-		h.monitor.Infow("Failed to serialize cell response: %v", err)
-		http.Error(w, "Failed to serialize response", http.StatusInternalServerError)
-	}
+	h.writeOutput(w, http.StatusCreated, result)
 }
 
 func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Request) {
@@ -173,20 +159,15 @@ func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Requ
 	}
 
 	// TODO validation
-	result, err := h.dataspaceDeployer.CreateProfile(req.Context(), newProfile.Artifacts, newProfile.Properties)
+	profile, err := h.dataspaceDeployer.CreateProfile(req.Context(), newProfile.Artifacts, newProfile.Properties)
 
 	if err != nil {
 		handleError(w, err, h)
 		return
 	}
 
-	mProfile := v1alpha1.ToDataspaceProfile(result)
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", json_content)
-	if err := json.NewEncoder(w).Encode(mProfile); err != nil {
-		h.monitor.Infow("Failed to serialize cell response: %v", err)
-		http.Error(w, "Failed to serialize response", http.StatusInternalServerError)
-	}
+	result := v1alpha1.ToDataspaceProfile(profile)
+	h.writeOutput(w, http.StatusCreated, result)
 }
 
 func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Request) {
@@ -213,6 +194,15 @@ func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Requ
 	if err != nil {
 		handleError(w, err, h)
 		return
+	}
+}
+
+func (h *TMHandler) writeOutput(w http.ResponseWriter, status int, output any) {
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", json_content)
+	if err := json.NewEncoder(w).Encode(output); err != nil {
+		h.monitor.Infow("Failed to serialize cell response: %v", err)
+		http.Error(w, "Failed to serialize response", http.StatusInternalServerError)
 	}
 }
 
