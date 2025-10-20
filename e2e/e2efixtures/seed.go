@@ -85,5 +85,9 @@ func CreateDataspaceProfile(apiClient *ApiClient) (*v1alpha1.DataspaceProfile, e
 }
 
 func DeployDataspaceProfile(deployment v1alpha1.NewDataspaceProfileDeployment, apiClient *ApiClient) error {
-	return apiClient.PostToTManager(fmt.Sprintf("dataspace-profiles/%s/deployments", deployment.ProfileID), deployment)
+	err := apiClient.PostToTManager(fmt.Sprintf("dataspace-profiles/%s/deployments", deployment.ProfileID), deployment)
+	if err != nil {
+		return err
+	}
+	return nil
 }

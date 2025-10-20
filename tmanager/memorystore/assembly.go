@@ -26,18 +26,22 @@ func (a *InMemoryServiceAssembly) Name() string {
 }
 
 func (a *InMemoryServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{api.CellStoreKey, api.DataspaceProfileStoreKey}
+	return []system.ServiceType{api.CellStoreKey, api.DataspaceProfileStoreKey, api.ParticipantProfileStoreKey}
 }
 
 func (a *InMemoryServiceAssembly) Init(ictx *system.InitContext) error {
 	cellStore := NewInMemoryEntityStore[api.Cell](func(c *api.Cell) string {
 		return c.ID
 	})
-	profileStore := NewInMemoryEntityStore[api.DataspaceProfile](func(p *api.DataspaceProfile) string {
+	dataspaceStore := NewInMemoryEntityStore[api.DataspaceProfile](func(p *api.DataspaceProfile) string {
+		return p.ID
+	})
+	participantStore := NewInMemoryEntityStore[api.ParticipantProfile](func(p *api.ParticipantProfile) string {
 		return p.ID
 	})
 
+	ictx.Registry.Register(api.ParticipantProfileStoreKey, participantStore)
+	ictx.Registry.Register(api.DataspaceProfileStoreKey, dataspaceStore)
 	ictx.Registry.Register(api.CellStoreKey, cellStore)
-	ictx.Registry.Register(api.DataspaceProfileStoreKey, profileStore)
 	return nil
 }

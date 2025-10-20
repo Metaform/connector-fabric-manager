@@ -215,6 +215,7 @@ func (e *NatsActivityExecutor) publishResponse(activityContext api.ActivityConte
 	dr := &model.DeploymentResponse{
 		ID:             uuid.New().String(),
 		ManifestID:     orchestration.ID,
+		CorrelationID:  orchestration.CorrelationID,
 		Success:        true,
 		DeploymentType: orchestration.DeploymentType,
 		Properties:     make(map[string]any),

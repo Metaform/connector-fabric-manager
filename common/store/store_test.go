@@ -31,7 +31,7 @@ func TestAndReturn_Success(t *testing.T) {
 	expectedModel := &TestModel{ID: "test-id", Name: "test-name"}
 	noOpTrx := NoOpTransactionContext{}
 
-	result, err := Tx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
+	result, err := Trx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
 		return expectedModel, nil
 	})
 
@@ -44,7 +44,7 @@ func TestAndReturn_CallbackError(t *testing.T) {
 	callbackErr := errors.New("callback error")
 	noOpTrx := NoOpTransactionContext{}
 
-	result, err := Tx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
+	result, err := Trx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
 		return nil, callbackErr
 	})
 
@@ -57,7 +57,7 @@ func TestAndReturn_NilResult(t *testing.T) {
 	ctx := context.Background()
 	noOpTrx := NoOpTransactionContext{}
 
-	result, err := Tx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
+	result, err := Trx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
 		return nil, nil
 	})
 
@@ -72,7 +72,7 @@ func TestAndReturn_ContextPropagation(t *testing.T) {
 	ctx := context.WithValue(parentCtx, ctxKey, ctxValue)
 	noOpTrx := NoOpTransactionContext{}
 
-	_, err := Tx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
+	_, err := Trx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
 		assert.Equal(t, ctxValue, ctx.Value(ctxKey))
 		return &TestModel{}, nil
 	})
@@ -86,7 +86,7 @@ func TestAndReturn_WithStructPointer(t *testing.T) {
 
 	originalModel := TestModel{ID: "original-id", Name: "original-name"}
 
-	result, err := Tx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
+	result, err := Trx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
 		// Simulate modifying the model
 		model := originalModel
 		model.Name = "modified-name"
@@ -129,7 +129,7 @@ func TestNoOpTransactionContext_WithError(t *testing.T) {
 func TestTxFunction_Creation(t *testing.T) {
 	noOpTrx := NoOpTransactionContext{}
 
-	txFunc := Tx[TestModel](noOpTrx)
+	txFunc := Trx[TestModel](noOpTrx)
 
 	assert.NotNil(t, txFunc)
 	assert.Equal(t, noOpTrx, txFunc.ctx)
@@ -139,7 +139,7 @@ func TestAndReturn_CallbackReturnsNewInstance(t *testing.T) {
 	ctx := context.Background()
 	noOpTrx := NoOpTransactionContext{}
 
-	result, err := Tx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
+	result, err := Trx[TestModel](noOpTrx).AndReturn(ctx, func(ctx context.Context) (*TestModel, error) {
 		// Create a new instance each time
 		return &TestModel{
 			ID:   "dynamic-id",

@@ -28,21 +28,21 @@ type TransactionContext interface {
 	Execute(ctx context.Context, callback func(ctx context.Context) error) error
 }
 
-// TxFunc represents a transactional function wrapper allowing execution with a TransactionContext.
+// TrxFunc represents a transactional function wrapper allowing execution with a TransactionContext.
 // For example:
 //
-//	store.Tx(ctx).AndReturn(ctx, func(ctx context.Context) (*MyType, error) {
+//	store.Trx(ctx).AndReturn(ctx, func(ctx context.Context) (*MyType, error) {
 //		return store.FindById(ctx, "my-id")
 //	})
-type TxFunc[T any] struct {
+type TrxFunc[T any] struct {
 	ctx TransactionContext
 }
 
-func Tx[T any](ctx TransactionContext) TxFunc[T] {
-	return TxFunc[T]{ctx: ctx}
+func Trx[T any](ctx TransactionContext) TrxFunc[T] {
+	return TrxFunc[T]{ctx: ctx}
 }
 
-func (tf TxFunc[T]) AndReturn(ctx context.Context, callback func(context.Context) (*T, error)) (*T, error) {
+func (tf TrxFunc[T]) AndReturn(ctx context.Context, callback func(context.Context) (*T, error)) (*T, error) {
 	var result *T
 	var callbackErr error
 

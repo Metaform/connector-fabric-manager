@@ -19,12 +19,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/common/testfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	alauncher "github.com/metaform/connector-fabric-manager/pmanager/agent/testagent/launcher"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
+	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 	"github.com/stretchr/testify/require"
@@ -93,21 +93,40 @@ func Test_VerifyE2E(t *testing.T) {
 	cell, err := e2efixtures.CreateCell(client)
 	require.NoError(t, err)
 
-	profile, err := e2efixtures.CreateDataspaceProfile(client)
+	dProfile, err := e2efixtures.CreateDataspaceProfile(client)
 	require.NoError(t, err)
 
 	deployment := v1alpha1.NewDataspaceProfileDeployment{
-		ProfileID: profile.ID,
+		ProfileID: dProfile.ID,
 		CellID:    cell.ID,
 	}
 	err = e2efixtures.DeployDataspaceProfile(deployment, client)
 	require.NoError(t, err)
 
-	fmt.Println(cell)
-	fmt.Println(profile)
-	err = client.PostToTManager("participant/"+uuid.New().String(), "{}")
-
+	newProfile := v1alpha1.NewParticipantProfileDeployment{
+		Identifier: "did:web:foo.com",
+	}
+	var participantProfile v1alpha1.ParticipantProfile
+	err = client.PostToTManagerWithResponse("participants", newProfile, &participantProfile)
 	require.NoError(t, err)
+
+	var statusProfile v1alpha1.ParticipantProfile
+
+	// Verify all VPAs are active
+	deployCount := 0
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		err = client.GetTManager(fmt.Sprintf("participants/%s", participantProfile.ID), &statusProfile)
+		require.NoError(t, err)
+		for _, vpa := range statusProfile.VPAs {
+			if vpa.State == api.DeploymentStateActive.String() {
+				deployCount++
+			}
+		}
+		if deployCount == 3 {
+			break
+		}
+	}
+	require.Equal(t, 3, deployCount, "Expected 3 deployments to be active")
 }
 
 func cleanup() {

@@ -20,23 +20,17 @@ import (
 )
 
 const (
-	DeploymentHandlerRegistryKey system.ServiceType = "tmapi:DeploymentHandlerRegistry"
-	ParticipantDeployerKey       system.ServiceType = "tmapi:ParticipantDeployer"
-	CellDeployerKey              system.ServiceType = "tmapi:CellDeployer"
-	DataspaceProfileDeployerKey  system.ServiceType = "tmapi:DataspaceProfileDeployer"
-	DeploymentClientKey          system.ServiceType = "tmapi:DeploymentClient"
+	DeploymentHandlerRegistryKey  system.ServiceType = "tmapi:DeploymentHandlerRegistry"
+	DeploymentClientKey           system.ServiceType = "tmapi:DeploymentClient"
+	ParticipantProfileDeployerKey system.ServiceType = "tmapi:ParticipantProfileDeployer"
+	DataspaceProfileDeployerKey   system.ServiceType = "tmapi:DataspaceProfileDeployer"
+	CellDeployerKey               system.ServiceType = "tmapi:CellDeployer"
 )
 
 type VpaPropMap = map[model.VPAType]map[string]any
 
-// ParticipantDeployer creates a participant profile and deploys its associated VPAs.
-type ParticipantDeployer interface {
-	Deploy(ctx context.Context, identifier string, vpaProperties VpaPropMap, properties map[string]any) error
-}
-
 // DeploymentClient asynchronously deploys a manifest to the provision manager. Implementations may use different wire protocols.
 type DeploymentClient interface {
-
 	// Deploy deploys the specified manifest.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
 	Deploy(ctx context.Context, manifest model.DeploymentManifest) error
@@ -51,11 +45,20 @@ type DeploymentHandlerRegistry interface {
 	RegisterDeploymentHandler(deploymentType model.DeploymentType, handler DeploymentCallbackHandler)
 }
 
-type CellDeployer interface {
-	RecordExternalDeployment(ctx context.Context, cell Cell) (*Cell, error)
+// ParticipantProfileDeployer performs participant profile operations, including deploying associated VPAs.
+type ParticipantProfileDeployer interface {
+	DeployProfile(ctx context.Context, identifier string, vpaProperties VpaPropMap, properties map[string]any) (*ParticipantProfile, error)
+	GetProfile(ctx context.Context, id string) (*ParticipantProfile, error)
 }
 
+// DataspaceProfileDeployer performs dataspace profile operations.
 type DataspaceProfileDeployer interface {
 	CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*DataspaceProfile, error)
 	DeployProfile(ctx context.Context, profileID string, cellID string) error
+	GetProfile(ctx context.Context, profileID string) (*DataspaceProfile, error)
+}
+
+// CellDeployer performs cell operations.
+type CellDeployer interface {
+	RecordExternalDeployment(ctx context.Context, cell Cell) (*Cell, error)
 }

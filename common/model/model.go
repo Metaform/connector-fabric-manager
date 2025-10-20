@@ -19,6 +19,7 @@ package model
 // of deployment-specific data, which will be passed as input to the Orchestration.
 type DeploymentManifest struct {
 	ID             string         `json:"id"`
+	CorrelationID  string         `json:"correlationId"`
 	DeploymentType DeploymentType `json:"deploymentType"`
 	Payload        map[string]any `json:"payload"`
 }
@@ -26,10 +27,11 @@ type DeploymentManifest struct {
 // DeploymentResponse returned when a system deployment completes.
 type DeploymentResponse struct {
 	ID             string         `json:"id"`
+	ManifestID     string         `json:"manifestId"`
+	CorrelationID  string         `json:"correlationId"`
+	DeploymentType DeploymentType `json:"deploymentType"`
 	Success        bool           `json:"success"`
 	ErrorDetail    string         `json:"errorDetail,omitempty"`
-	ManifestID     string         `json:"manifestId"`
-	DeploymentType DeploymentType `json:"deploymentType"`
 	Properties     map[string]any `json:"properties"`
 }
 

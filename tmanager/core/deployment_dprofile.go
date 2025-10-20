@@ -27,8 +27,12 @@ type dataspaceProfileDeployer struct {
 	cellStore    api.EntityStore[api.Cell]
 }
 
+func (d dataspaceProfileDeployer) GetProfile(ctx context.Context, profileID string) (*api.DataspaceProfile, error) {
+	return d.profileStore.FindById(ctx, profileID)
+}
+
 func (d dataspaceProfileDeployer) CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*api.DataspaceProfile, error) {
-	return store.Tx[api.DataspaceProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.DataspaceProfile, error) {
+	return store.Trx[api.DataspaceProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.DataspaceProfile, error) {
 		profile := api.DataspaceProfile{
 			Entity: api.Entity{
 				ID:      uuid.New().String(),

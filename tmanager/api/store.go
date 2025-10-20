@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	CellStoreKey             system.ServiceType = "tmstore:CellStore"
-	DataspaceProfileStoreKey system.ServiceType = "tmstore:DataspaceProfileStore"
+	ParticipantProfileStoreKey system.ServiceType = "tmstore:ParticipantProfileStore"
+	CellStoreKey               system.ServiceType = "tmstore:CellStore"
+	DataspaceProfileStoreKey   system.ServiceType = "tmstore:DataspaceProfileStore"
 )
 
 // PaginationOptions defines pagination parameters for entity retrieval.

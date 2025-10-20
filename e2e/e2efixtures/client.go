@@ -53,6 +53,31 @@ func (c *ApiClient) PostToTManagerWithResponse(endpoint string, payload any, res
 	return c.postWithResponse(url, payload, result)
 }
 
+func (c *ApiClient) GetTManager(endpoint string, result any) error {
+	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return json.Unmarshal(body, result)
+}
+
 func (c *ApiClient) postWithResponse(url string, payload any, result any) error {
 	ser, err := c.postRequest(url, payload, nil)
 	if err != nil {
@@ -89,7 +114,10 @@ func (c *ApiClient) postRequest(url string, payload any, headers map[string]stri
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusOK &&
+		resp.StatusCode != http.StatusCreated &&
+		resp.StatusCode != http.StatusNoContent &&
+		resp.StatusCode != http.StatusAccepted {
 		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 

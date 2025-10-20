@@ -38,7 +38,7 @@ func (h *HandlerServiceAssembly) Provides() []system.ServiceType {
 
 func (h *HandlerServiceAssembly) Requires() []system.ServiceType {
 	return []system.ServiceType{
-		api.ParticipantDeployerKey,
+		api.ParticipantProfileDeployerKey,
 		api.CellDeployerKey,
 		api.DataspaceProfileDeployerKey,
 		routing.RouterKey}
@@ -48,13 +48,14 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	router := context.Registry.Resolve(routing.RouterKey).(chi.Router)
 	router.Use(middleware.Recoverer)
 
-	partcipantDeployer := context.Registry.Resolve(api.ParticipantDeployerKey).(api.ParticipantDeployer)
+	participantDeployer := context.Registry.Resolve(api.ParticipantProfileDeployerKey).(api.ParticipantProfileDeployer)
 	cellDeployer := context.Registry.Resolve(api.CellDeployerKey).(api.CellDeployer)
-	profileDeployer := context.Registry.Resolve(api.DataspaceProfileDeployerKey).(api.DataspaceProfileDeployer)
+	dataspaceDeployer := context.Registry.Resolve(api.DataspaceProfileDeployerKey).(api.DataspaceProfileDeployer)
 
-	handler := NewHandler(partcipantDeployer, cellDeployer, profileDeployer, context.LogMonitor)
+	handler := NewHandler(participantDeployer, cellDeployer, dataspaceDeployer, context.LogMonitor)
 
-	router.Post("/participant/{id}", handler.createParticipant)
+	router.Get("/participants/{id}", handler.getParticipantProfile)
+	router.Post("/participants", handler.createParticipant)
 	router.Post("/cells", handler.createCell)
 	router.Post("/dataspace-profiles", handler.createDataspaceProfile)
 	router.Post("/dataspace-profiles/{id}/deployments", handler.deployDataspaceProfile)

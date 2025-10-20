@@ -20,6 +20,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/collection"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -27,26 +28,31 @@ type participantDeployer struct {
 	participantGenerator participantGenerator
 	deploymentClient     api.DeploymentClient
 	trxContext           store.TransactionContext
+	participantStore     api.EntityStore[api.ParticipantProfile]
 	cellStore            api.EntityStore[api.Cell]
-	dProfileStore        api.EntityStore[api.DataspaceProfile]
+	dataspaceStore       api.EntityStore[api.DataspaceProfile]
 }
 
-func (d participantDeployer) Deploy(
+func (d participantDeployer) GetProfile(ctx context.Context, profileID string) (*api.ParticipantProfile, error) {
+	return d.participantStore.FindById(ctx, profileID)
+}
+
+func (d participantDeployer) DeployProfile(
 	ctx context.Context,
 	identifier string,
 	vpaProperties api.VpaPropMap,
-	properties map[string]any) error {
+	properties map[string]any) (*api.ParticipantProfile, error) {
 
 	// TODO perform property validation against a custom schema
-	return d.trxContext.Execute(ctx, func(ctx context.Context) error {
+	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
 		cells, err := collection.CollectAll(d.cellStore.GetAll(ctx))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		dProfiles, err := collection.CollectAll(d.dProfileStore.GetAll(ctx))
+		dProfiles, err := collection.CollectAll(d.dataspaceStore.GetAll(ctx))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		participantProfile, err := d.participantGenerator.Generate(
@@ -56,10 +62,12 @@ func (d participantDeployer) Deploy(
 			cells,
 			dProfiles)
 		if err != nil {
-			return err
+			return nil, err
 		}
+
 		dManifest := model.DeploymentManifest{
 			ID:             uuid.New().String(),
+			CorrelationID:  participantProfile.ID,
 			DeploymentType: model.VpaDeploymentType,
 			Payload:        make(map[string]any),
 		}
@@ -77,25 +85,50 @@ func (d participantDeployer) Deploy(
 
 		dManifest.Payload[model.VpaPayloadType] = vpaManifests
 
-		err = d.deploymentClient.Deploy(ctx, dManifest)
+		result, err := d.participantStore.Create(ctx, participantProfile)
 		if err != nil {
-			return fmt.Errorf("error deploying participant %s: %w", identifier, err)
+			return nil, fmt.Errorf("error creating participant %s: %w", identifier, err)
 		}
 
-		// TODO persist
-		return nil
+		// Only send the deployment message if the storage operation succeeded. If the deployment fails, the transaction
+		// will be rolled back.
+		err = d.deploymentClient.Deploy(ctx, dManifest)
+		if err != nil {
+			return nil, fmt.Errorf("error deploying participant %s: %w", identifier, err)
+		}
+
+		return result, nil
 	})
 }
 
 type vpaDeploymentCallbackHandler struct {
+	participantStore api.EntityStore[api.ParticipantProfile]
+	trxContext       store.TransactionContext
+	monitor          system.LogMonitor
 }
 
-func (h vpaDeploymentCallbackHandler) handle(_ context.Context, response model.DeploymentResponse) error {
-	if !response.Success {
-		fmt.Println("Deployment failed:" + response.ErrorDetail)
-		// TODO move to error state
+func (h vpaDeploymentCallbackHandler) handle(ctx context.Context, response model.DeploymentResponse) error {
+	return h.trxContext.Execute(ctx, func(c context.Context) error {
+		// Note de-duplication does not need to be performed as this operation is idempotent
+		profile, err := h.participantStore.FindById(c, response.CorrelationID)
+		if err != nil {
+			h.monitor.Infof("Error retrieving participant profile %s for manifest %s: %w", response.CorrelationID, response.ManifestID, err)
+			// Do not return error as this is fatal and the message must be acked
+			return nil
+		}
+		switch {
+		case response.Success:
+			for _, vpa := range profile.VPAs {
+				vpa.State = api.DeploymentStateActive
+				// TODO update timestamp based on returned data
+			}
+		default:
+			// TODO handle error and update VPA status
+		}
+		err = h.participantStore.Update(c, profile)
+		if err != nil {
+			return fmt.Errorf("error updating participant profile %s processing response for manifest %s: %w", response.CorrelationID, response.ManifestID, err)
+		}
 		return nil
-	}
-	fmt.Println("Deployment succeeded:" + response.ManifestID)
-	return nil
+	})
 }

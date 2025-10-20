@@ -37,6 +37,7 @@ const (
 // As actions are completed, the orchestration system will update the Completed map.
 type Orchestration struct {
 	ID             string               `json:"id"`
+	CorrelationID  string               `json:"correlationId"`
 	State          OrchestrationState   `json:"state"`
 	DeploymentType model.DeploymentType `json:"deploymentType"`
 	Steps          []OrchestrationStep
@@ -206,11 +207,13 @@ func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
 // It validates activity dependencies and organizes activities into parallel execution steps based on those dependencies.
 func InstantiateOrchestration(
 	deploymentID string,
+	correlationID string,
 	deploymentType model.DeploymentType,
 	activities []Activity,
 	data map[string]any) (*Orchestration, error) {
 	orchestration := &Orchestration{
 		ID:             deploymentID,
+		CorrelationID:  correlationID,
 		DeploymentType: deploymentType,
 		State:          OrchestrationStateInitialized,
 		Steps:          make([]OrchestrationStep, 0, len(activities)),

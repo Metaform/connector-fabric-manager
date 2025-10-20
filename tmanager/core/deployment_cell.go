@@ -25,7 +25,7 @@ type cellDeployer struct {
 }
 
 func (d cellDeployer) RecordExternalDeployment(ctx context.Context, cell api.Cell) (*api.Cell, error) {
-	return store.Tx[api.Cell](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.Cell, error) {
+	return store.Trx[api.Cell](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.Cell, error) {
 		return d.store.Create(ctx, &cell)
 	})
 }

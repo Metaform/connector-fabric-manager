@@ -32,12 +32,13 @@ func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
 	return []system.ServiceType{
 		api.DeploymentClientKey,
 		store.TransactionContextKey,
-		api.CellStoreKey,
-		api.DataspaceProfileStoreKey}
+		api.ParticipantProfileStoreKey,
+		api.DataspaceProfileStoreKey,
+		api.CellStoreKey}
 }
 
 func (a *TMCoreServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{api.ParticipantDeployerKey, api.CellDeployerKey, api.DataspaceProfileDeployerKey}
+	return []system.ServiceType{api.ParticipantProfileDeployerKey, api.CellDeployerKey, api.DataspaceProfileDeployerKey}
 }
 
 func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
@@ -47,17 +48,19 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
 	deploymentClient := context.Registry.Resolve(api.DeploymentClientKey).(api.DeploymentClient)
+	participantStore := context.Registry.Resolve(api.ParticipantProfileStoreKey).(api.EntityStore[api.ParticipantProfile])
 	cellStore := context.Registry.Resolve(api.CellStoreKey).(api.EntityStore[api.Cell])
-	dProfileStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(api.EntityStore[api.DataspaceProfile])
+	dataspaceStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(api.EntityStore[api.DataspaceProfile])
 
 	participantDeployer := participantDeployer{
 		participantGenerator: a.vpaGenerator,
 		deploymentClient:     deploymentClient,
 		trxContext:           trxContext,
+		participantStore:     participantStore,
+		dataspaceStore:       dataspaceStore,
 		cellStore:            cellStore,
-		dProfileStore:        dProfileStore,
 	}
-	context.Registry.Register(api.ParticipantDeployerKey, participantDeployer)
+	context.Registry.Register(api.ParticipantProfileDeployerKey, participantDeployer)
 
 	context.Registry.Register(api.CellDeployerKey, cellDeployer{
 		trxContext: trxContext,
@@ -66,12 +69,16 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	context.Registry.Register(api.DataspaceProfileDeployerKey, dataspaceProfileDeployer{
 		trxContext:   trxContext,
-		profileStore: dProfileStore,
+		profileStore: dataspaceStore,
 		cellStore:    cellStore,
 	})
 
 	registry := context.Registry.Resolve(api.DeploymentHandlerRegistryKey).(api.DeploymentHandlerRegistry)
-	handler := vpaDeploymentCallbackHandler{}
+	handler := vpaDeploymentCallbackHandler{
+		trxContext:       trxContext,
+		participantStore: participantStore,
+		monitor:          context.LogMonitor,
+	}
 	registry.RegisterDeploymentHandler(model.VpaDeploymentType, handler.handle)
 
 	return nil

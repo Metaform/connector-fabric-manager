@@ -12,7 +12,11 @@
 
 package v1alpha1
 
-import "time"
+import (
+	"time"
+
+	"github.com/metaform/connector-fabric-manager/common/model"
+)
 
 type Entity struct {
 	ID      string `json:"id"`
@@ -40,15 +44,38 @@ type NewDataspaceProfileDeployment struct {
 }
 
 type DataspaceDeployment struct {
-	Entity
-	State          string         `json:"state"`
-	StateTimestamp time.Time      `json:"stateTimestamp"`
-	CellID         string         `json:"cellId"`
-	Properties     map[string]any `json:"properties,omitempty"`
+	DeployableEntity
+	CellID     string         `json:"cellId"`
+	Properties map[string]any `json:"properties,omitempty"`
 }
 type DataspaceProfile struct {
 	Entity
 	Artifacts   []string
 	Deployments []DataspaceDeployment
 	Properties  map[string]any `json:"properties,omitempty"`
+}
+
+type NewParticipantProfileDeployment struct {
+	Identifier string `json:"identifier"`
+	CellID     string `json:"cellId"`
+}
+
+type ParticipantProfile struct {
+	Entity
+	Identifier string                    `json:"identifier"`
+	VPAs       []VirtualParticipantAgent `json:"vpas,omitempty""`
+	Properties map[string]any            `json:"properties,omitempty"`
+}
+
+type VirtualParticipantAgent struct {
+	DeployableEntity
+	Type       model.VPAType  `json:"type"`
+	Cell       Cell           `json:"cell"`
+	Properties map[string]any `json:"properties,omitempty"`
+}
+
+type DeployableEntity struct {
+	Entity
+	State          string    `json:"state"`
+	StateTimestamp time.Time `json:"stateTimestamp"`
 }
