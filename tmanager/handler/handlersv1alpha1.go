@@ -82,7 +82,6 @@ func (h *TMHandler) createParticipant(w http.ResponseWriter, req *http.Request) 
 		h.monitor.Infow("Failed to serialize profile response: %v", err)
 		http.Error(w, "Failed to serialize response", http.StatusInternalServerError)
 	}
-
 }
 
 func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request) {
@@ -143,18 +142,8 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 		handleError(w, err, h)
 		return
 	}
+	mCell := v1alpha1.ToCell(*result)
 
-	mCell := v1alpha1.Cell{
-		Entity: v1alpha1.Entity{
-			ID:      result.ID,
-			Version: result.Version,
-		},
-		NewCell: v1alpha1.NewCell{
-			State:          result.State.String(),
-			StateTimestamp: result.StateTimestamp,
-			Properties:     result.Properties,
-		},
-	}
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", json_content)
 	if err := json.NewEncoder(w).Encode(mCell); err != nil {
