@@ -71,7 +71,7 @@ func (h *TMHandler) createParticipant(w http.ResponseWriter, req *http.Request) 
 	}
 
 	// TODO support specific cell selection
-	profile, err := h.participantDeployer.DeployProfile(req.Context(), profileDeployment.Identifier, make(api.VpaPropMap), make(map[string]interface{}))
+	profile, err := h.participantDeployer.DeployProfile(req.Context(), profileDeployment.Identifier, make(api.VpaPropMap), make(map[string]any))
 	if err != nil {
 		handleError(w, err, h)
 	}
