@@ -37,8 +37,7 @@ func TestDefinitionStore_DeploymentDefinition_StoreAndFind(t *testing.T) {
 
 	var dType model.DeploymentType = "test-deployment-1"
 	definition := &api.DeploymentDefinition{
-		Type:       dType,
-		ApiVersion: "v1",
+		Type: dType,
 	}
 
 	definitionStore.StoreDeploymentDefinition(definition)
@@ -48,7 +47,6 @@ func TestDefinitionStore_DeploymentDefinition_StoreAndFind(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, definition.Type, result.Type)
-	assert.Equal(t, definition.ApiVersion, result.ApiVersion)
 
 	// Verify it's a copy (different memory address)
 	assert.NotSame(t, definition, result)
@@ -143,8 +141,7 @@ func TestDefinitionStore_DataIsolation(t *testing.T) {
 
 	var originalType model.DeploymentType = "original-type"
 	originalDef := &api.DeploymentDefinition{
-		Type:       originalType,
-		ApiVersion: "v1",
+		Type: originalType,
 	}
 	definitionStore.StoreDeploymentDefinition(originalDef)
 
@@ -170,15 +167,13 @@ func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 
 	// Store first definition
 	definition1 := &api.DeploymentDefinition{
-		Type:       dType,
-		ApiVersion: "v1",
+		Type: dType,
 	}
 	definitionStore.StoreDeploymentDefinition(definition1)
 
 	// Store second definition with same ID (overwrite)
 	definition2 := &api.DeploymentDefinition{
-		Type:       dType,
-		ApiVersion: "v2",
+		Type: dType,
 	}
 	definitionStore.StoreDeploymentDefinition(definition2)
 
@@ -186,7 +181,6 @@ func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 	result, err := definitionStore.FindDeploymentDefinition(dType)
 	require.NoError(t, err)
 	assert.Equal(t, dType, result.Type)
-	assert.Equal(t, "v2", result.ApiVersion)
 
 	// Verify only one definition exists
 	defintions, _, err := definitionStore.ListDeploymentDefinitions(0, 1000)
@@ -203,11 +197,11 @@ func TestDefinitionStore_ListDeploymentDefinitions_WithPagination(t *testing.T) 
 	assert.False(t, hasMore)
 
 	// Add test data
-	def1 := &api.DeploymentDefinition{Type: "type1", ApiVersion: "v1"}
-	def2 := &api.DeploymentDefinition{Type: "type2", ApiVersion: "v2"}
-	def3 := &api.DeploymentDefinition{Type: "type3", ApiVersion: "v3"}
-	def4 := &api.DeploymentDefinition{Type: "type4", ApiVersion: "v4"}
-	def5 := &api.DeploymentDefinition{Type: "type5", ApiVersion: "v5"}
+	def1 := &api.DeploymentDefinition{Type: "type1"}
+	def2 := &api.DeploymentDefinition{Type: "type2"}
+	def3 := &api.DeploymentDefinition{Type: "type3"}
+	def4 := &api.DeploymentDefinition{Type: "type4"}
+	def5 := &api.DeploymentDefinition{Type: "type5"}
 
 	definitionStore.StoreDeploymentDefinition(def1)
 	definitionStore.StoreDeploymentDefinition(def2)
@@ -275,7 +269,7 @@ func TestDefinitionStore_ListDeploymentDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
 	var originalType model.DeploymentType = "original"
-	originalDef := &api.DeploymentDefinition{Type: originalType, ApiVersion: "v1"}
+	originalDef := &api.DeploymentDefinition{Type: originalType}
 	definitionStore.StoreDeploymentDefinition(originalDef)
 
 	definitions, hasMore, err := definitionStore.ListDeploymentDefinitions(0, 10)

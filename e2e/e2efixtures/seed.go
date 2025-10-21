@@ -18,7 +18,8 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
+	pv1alpha1 "github.com/metaform/connector-fabric-manager/pmanager/model/v1alpha1"
+	tv1alpha1 "github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 )
 
 func CreateTestActivityDefinition(apiClient *ApiClient) error {
@@ -31,25 +32,12 @@ func CreateTestActivityDefinition(apiClient *ApiClient) error {
 }
 
 func CreateTestDeploymentDefinition(apiClient *ApiClient) error {
-	requestBody := api.DeploymentDefinition{
-		Type:       model.VpaDeploymentType,
-		ApiVersion: "v1",
-		Resource: api.Resource{
-			Group:       "deployments.example.com",
-			Singular:    "TestDeployment",
-			Plural:      "TestDeployments",
-			Description: "Test deployment",
-		},
-		Versions: []api.Version{
+	requestBody := pv1alpha1.DeploymentDefinition{
+		Type: model.VpaDeploymentType.String(),
+		Activities: []pv1alpha1.Activity{
 			{
-				Version: "1.0.0",
-				Active:  true,
-				Activities: []api.Activity{
-					{
-						ID:   "activity1",
-						Type: "test-activity",
-					},
-				},
+				ID:   "activity1",
+				Type: "test-activity",
 			},
 		},
 	}
@@ -57,13 +45,13 @@ func CreateTestDeploymentDefinition(apiClient *ApiClient) error {
 	return apiClient.PostToPManager("deployment-definition", requestBody)
 }
 
-func CreateCell(apiClient *ApiClient) (*v1alpha1.Cell, error) {
-	requestBody := v1alpha1.NewCell{
+func CreateCell(apiClient *ApiClient) (*tv1alpha1.Cell, error) {
+	requestBody := tv1alpha1.NewCell{
 		State:          "active",
 		StateTimestamp: time.Time{}.UTC(),
 		Properties:     make(map[string]any),
 	}
-	var cell v1alpha1.Cell
+	var cell tv1alpha1.Cell
 	err := apiClient.PostToTManagerWithResponse("cells", requestBody, &cell)
 	if err != nil {
 		return nil, err
@@ -71,12 +59,12 @@ func CreateCell(apiClient *ApiClient) (*v1alpha1.Cell, error) {
 	return &cell, nil
 }
 
-func CreateDataspaceProfile(apiClient *ApiClient) (*v1alpha1.DataspaceProfile, error) {
-	requestBody := v1alpha1.NewDataspaceProfile{
+func CreateDataspaceProfile(apiClient *ApiClient) (*tv1alpha1.DataspaceProfile, error) {
+	requestBody := tv1alpha1.NewDataspaceProfile{
 		Artifacts:  make([]string, 0),
 		Properties: make(map[string]any),
 	}
-	var profile v1alpha1.DataspaceProfile
+	var profile tv1alpha1.DataspaceProfile
 	err := apiClient.PostToTManagerWithResponse("dataspace-profiles", requestBody, &profile)
 	if err != nil {
 		return nil, err
@@ -84,7 +72,7 @@ func CreateDataspaceProfile(apiClient *ApiClient) (*v1alpha1.DataspaceProfile, e
 	return &profile, nil
 }
 
-func DeployDataspaceProfile(deployment v1alpha1.NewDataspaceProfileDeployment, apiClient *ApiClient) error {
+func DeployDataspaceProfile(deployment tv1alpha1.NewDataspaceProfileDeployment, apiClient *ApiClient) error {
 	err := apiClient.PostToTManager(fmt.Sprintf("dataspace-profiles/%s/deployments", deployment.ProfileID), deployment)
 	if err != nil {
 		return err

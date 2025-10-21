@@ -101,7 +101,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
-			orchestrator := &natsDeploymentOrchestrator{
+			orchestrator := &NatsDeploymentOrchestrator{
 				Client:  mockClient,
 				Monitor: system.NoopMonitor{},
 			}
@@ -160,7 +160,7 @@ func TestEnqueueMessages_Errors(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
-			err := enqueueActivityMessages(context.Background(), "test-oid", tt.activities, mockClient)
+			err := EnqueueActivityMessages(context.Background(), "test-oid", tt.activities, mockClient)
 
 			if tt.wantErr {
 				assert.Error(t, err)

@@ -22,11 +22,11 @@ import (
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
-// enqueueActivityMessages enqueues the given activities for processing.
+// EnqueueActivityMessages enqueues the given activities for processing.
 //
 // Messages are sent to a named durable queue corresponding to the activity type. For example, messages for the
 // 'test-activity' type will be routed to the 'event.test-activity' queue.
-func enqueueActivityMessages(ctx context.Context, orchestrationID string, activities []api.Activity, client natsclient.MsgClient) error {
+func EnqueueActivityMessages(ctx context.Context, orchestrationID string, activities []api.Activity, client natsclient.MsgClient) error {
 	for _, activity := range activities {
 		// route to queue
 		payload, err := json.Marshal(api.ActivityMessage{
@@ -47,8 +47,8 @@ func enqueueActivityMessages(ctx context.Context, orchestrationID string, activi
 	return nil
 }
 
-// readOrchestration reads the orchestration state from the KV store.
-func readOrchestration(ctx context.Context, orchestrationID string, client natsclient.MsgClient) (api.Orchestration, uint64, error) {
+// ReadOrchestration reads the orchestration state from the KV store.
+func ReadOrchestration(ctx context.Context, orchestrationID string, client natsclient.MsgClient) (api.Orchestration, uint64, error) {
 	oEntry, err := client.Get(ctx, orchestrationID)
 	if err != nil {
 		return api.Orchestration{}, 0, fmt.Errorf("failed to get orchestration state %s: %w", orchestrationID, err)
@@ -62,9 +62,9 @@ func readOrchestration(ctx context.Context, orchestrationID string, client natsc
 	return orchestration, oEntry.Revision(), nil
 }
 
-// updateOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the
+// UpdateOrchestration updates the orchestration state in the KV store using optimistic concurrency by comparing the
 // last known revision.
-func updateOrchestration(
+func UpdateOrchestration(
 	ctx context.Context,
 	orchestration api.Orchestration,
 	revision uint64,
@@ -81,7 +81,7 @@ func updateOrchestration(
 		if err == nil {
 			break
 		}
-		orchestration, revision, err = readOrchestration(ctx, orchestration.ID, client)
+		orchestration, revision, err = ReadOrchestration(ctx, orchestration.ID, client)
 		if err != nil {
 			return api.Orchestration{}, 0, fmt.Errorf("failed to read orchestration data for update: %w", err)
 		}

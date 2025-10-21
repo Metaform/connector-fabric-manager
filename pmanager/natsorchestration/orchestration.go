@@ -25,20 +25,20 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-// natsDeploymentOrchestrator is responsible for executing an orchestration using NATS for reliable messaging. For each
+// NatsDeploymentOrchestrator is responsible for executing an orchestration using NATS for reliable messaging. For each
 // activity, a message is published to a durable queue based on the activity type. Activity messages are then dequeued
 // and reliably processed by a NatsActivityExecutor that handles the activity type.
-type natsDeploymentOrchestrator struct {
+type NatsDeploymentOrchestrator struct {
 	Client  natsclient.MsgClient
 	Monitor system.LogMonitor
 }
 
-func newNatsDeploymentOrchestrator(client natsclient.MsgClient, monitor system.LogMonitor) *natsDeploymentOrchestrator {
-	return &natsDeploymentOrchestrator{Client: client, Monitor: monitor}
+func NewNatsDeploymentOrchestrator(client natsclient.MsgClient, monitor system.LogMonitor) *NatsDeploymentOrchestrator {
+	return &NatsDeploymentOrchestrator{Client: client, Monitor: monitor}
 }
 
-func (o *natsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {
-	orchestration, _, err := readOrchestration(ctx, id, o.Client)
+func (o *NatsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {
+	orchestration, _, err := ReadOrchestration(ctx, id, o.Client)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			// Doesn't exist return nil
@@ -56,7 +56,7 @@ func (o *natsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id st
 // A Jetstream KV entry is used to maintain durable state and is updated as the orchestration progresses. This
 // state is passed to the executors, which access and update it.
 
-func (o *natsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration *api.Orchestration) error {
+func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration *api.Orchestration) error {
 	// TODO validate orchestration - this should include a check to see if there are no steps or steps with no activities
 
 	serializedOrchestration, err := json.Marshal(orchestration)
@@ -81,7 +81,7 @@ func (o *natsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, o
 	if len(activities) == 0 {
 		return fmt.Errorf("orchestration has no activities: %s", orchestration.ID)
 	}
-	err = enqueueActivityMessages(ctx, orchestration.ID, activities, o.Client)
+	err = EnqueueActivityMessages(ctx, orchestration.ID, activities, o.Client)
 	if err != nil {
 		return err
 	}

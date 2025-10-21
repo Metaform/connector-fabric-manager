@@ -23,6 +23,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/pmanager/model/v1alpha1"
 )
 
 type PMHandler struct {
@@ -60,13 +61,13 @@ func (h *PMHandler) activityDefinition(w http.ResponseWriter, req *http.Request)
 	}
 	defer req.Body.Close()
 
-	var definition api.ActivityDefinition
+	var definition v1alpha1.ActivityDefinition
 	if err := json.Unmarshal(body, &definition); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
-	h.definitionStore.StoreActivityDefinition(&definition)
+	h.definitionStore.StoreActivityDefinition(v1alpha1.ToAPIActivityDefinition(&definition))
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 }
@@ -86,13 +87,13 @@ func (h *PMHandler) deploymentDefinition(w http.ResponseWriter, req *http.Reques
 	}
 	defer req.Body.Close()
 
-	var definition api.DeploymentDefinition
+	var definition v1alpha1.DeploymentDefinition
 	if err := json.Unmarshal(body, &definition); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
-	h.definitionStore.StoreDeploymentDefinition(&definition)
+	h.definitionStore.StoreDeploymentDefinition(v1alpha1.ToAPIDeploymentDefinition(&definition))
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 }
@@ -121,29 +122,28 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 
 	orchestration, err := h.provisionManager.Start(req.Context(), &manifest)
 	if err != nil {
-		switch {
-		case types.IsClientError(err):
-			http.Error(w, fmt.Sprintf("Invalid deployment: %s", err.Error()), http.StatusBadRequest)
-			return
-		case types.IsRecoverable(err):
-			id := uuid.New().String()
-			h.monitor.Infof("Recoverable error encountered during deployment [%s]: %w ", id, err)
-			http.Error(w, fmt.Sprintf("Recoverable error encountered during deployment [%s]", id), http.StatusServiceUnavailable)
-			return
-		case types.IsFatal(err):
-			id := uuid.New().String()
-			h.monitor.Infof("Fatal error encountered during deployment [%s]: %w ", id, err)
-			http.Error(w, fmt.Sprintf("Fatal error encountered during deployment [%s]", id), http.StatusInternalServerError)
-			return
-		default:
-			http.Error(w, "Failed to initiate orchestration", http.StatusInternalServerError)
-			return
-		}
+		h.handleError(w, err)
+		return
 	}
 	// Return success response
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(orchestration); err != nil {
 		h.monitor.Infow("Error encoding response: %v", err)
+	}
+}
+
+func (h *PMHandler) handleError(w http.ResponseWriter, err error) {
+	switch e := err.(type) {
+	case *types.BadRequestError:
+		http.Error(w, fmt.Sprintf("Bad request: %s", e.Message), http.StatusBadRequest)
+	case *types.SystemError:
+		id := uuid.New().String()
+		h.monitor.Infow("Internal Error [%s]: %v", id, err)
+		http.Error(w, fmt.Sprintf("Internal server error occurred [%s]", id), http.StatusInternalServerError)
+	case types.FatalError:
+		http.Error(w, "A fatal error occurred", http.StatusInternalServerError)
+	default:
+		http.Error(w, fmt.Sprintf("Operation failed: %s", err.Error()), http.StatusInternalServerError)
 	}
 }

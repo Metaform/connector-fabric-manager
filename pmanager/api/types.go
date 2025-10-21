@@ -151,56 +151,18 @@ func (m *MappingEntry) UnmarshalJSON(data []byte) error {
 
 type DeploymentDefinition struct {
 	Type       model.DeploymentType `json:"type"`
-	ApiVersion string               `json:"apiVersion"`
-	Resource   Resource             `json:"resource"`
-	Versions   []Version            `json:"versions"`
-}
-
-func (d *DeploymentDefinition) GetActiveVersion() (*Version, error) {
-	var activeVersion *Version
-	for _, version := range d.Versions {
-		if version.Active {
-			activeVersion = &version
-			break
-		}
-	}
-	if activeVersion == nil {
-		return nil, fmt.Errorf("no active version found for deployment type %s", d.Type)
-	}
-	return activeVersion, nil
-}
-
-type Resource struct {
-	Group       string `json:"group"`
-	Singular    string `json:"singular"`
-	Plural      string `json:"plural"`
-	Description string `json:"description"`
-}
-
-type Version struct {
-	Version    string         `json:"version"`
-	Active     bool           `json:"active"`
-	Schema     map[string]any `json:"schema"`
-	Activities []Activity     `json:"activities"`
+	Active     bool                 `json:"active"`
+	Schema     map[string]any       `json:"schema"`
+	Activities []Activity           `json:"activities"`
 }
 
 // ActivityDefinition represents a single activity in the orchestration
 type ActivityDefinition struct {
-	Type         ActivityType `json:"type"`
-	Provider     string       `json:"provider"`
-	Description  string       `json:"description"`
-	InputSchema  string       `json:"inputSchema"`
-	OutputSchema string       `json:"outputSchema"`
-}
-
-func ParseDeploymentDefinition(data []byte) (*DeploymentDefinition, error) {
-	var definition DeploymentDefinition
-
-	if err := json.Unmarshal(data, &definition); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
-	}
-
-	return &definition, nil
+	Type         ActivityType   `json:"type"`
+	Provider     string         `json:"provider"`
+	Description  string         `json:"description"`
+	InputSchema  map[string]any `json:"inputSchema"`
+	OutputSchema map[string]any `json:"outputSchema"`
 }
 
 // InstantiateOrchestration creates and returns an initialized Orchestration based on the provided definition and inputs.

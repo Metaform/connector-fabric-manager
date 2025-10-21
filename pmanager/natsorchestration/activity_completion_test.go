@@ -214,7 +214,7 @@ func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T
 	}
 
 	// Verify orchestration is marked as errored
-	updatedOrchestration, _, err := readOrchestration(ctx, orchestration.ID, adapter)
+	updatedOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 	require.NoError(t, err)
 	assert.Equal(t, api.OrchestrationStateErrored, updatedOrchestration.State, "Orchestration should be in error state")
 }

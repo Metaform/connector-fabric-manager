@@ -48,18 +48,11 @@ func TestProvisionManager_Start(t *testing.T) {
 			},
 			setupStore: func(store api.DefinitionStore) {
 				definition := &api.DeploymentDefinition{
-					Type:       "test-type",
-					ApiVersion: "1.0",
-					Versions: []api.Version{
+					Type: "test-type",
+					Activities: []api.Activity{
 						{
-							Version: "1.0.0",
-							Active:  true,
-							Activities: []api.Activity{
-								{
-									ID:   "activity1",
-									Type: "test-activity",
-								},
-							},
+							ID:   "activity1",
+							Type: "test-activity",
 						},
 					},
 				}
@@ -82,18 +75,11 @@ func TestProvisionManager_Start(t *testing.T) {
 			},
 			setupStore: func(store api.DefinitionStore) {
 				definition := &api.DeploymentDefinition{
-					Type:       "test-type",
-					ApiVersion: "1.0",
-					Versions: []api.Version{
+					Type: "test-type",
+					Activities: []api.Activity{
 						{
-							Version: "1.0.0",
-							Active:  true,
-							Activities: []api.Activity{
-								{
-									ID:   "activity1",
-									Type: "test-activity",
-								},
-							},
+							ID:   "activity1",
+							Type: "test-activity",
 						},
 					},
 				}
@@ -125,37 +111,6 @@ func TestProvisionManager_Start(t *testing.T) {
 			expectedError: "deployment type 'non-existent-type' not found",
 		},
 		{
-			name: "deployment definition has no active version",
-			manifest: &model.DeploymentManifest{
-				ID:             "test-deployment-4",
-				DeploymentType: "test-type-inactive",
-				Payload:        map[string]interface{}{"key": "value"},
-			},
-			setupStore: func(store api.DefinitionStore) {
-				definition := &api.DeploymentDefinition{
-					Type:       "test-type-inactive",
-					ApiVersion: "1.0",
-					Versions: []api.Version{
-						{
-							Version: "1.0.0",
-							Active:  false,
-							Activities: []api.Activity{
-								{
-									ID:   "activity1",
-									Type: "test-activity",
-								},
-							},
-						},
-					},
-				}
-				store.StoreDeploymentDefinition(definition)
-			},
-			setupOrch: func(orch *mocks.MockDeploymentOrchestrator) {
-				// No orchestrator calls expected
-			},
-			expectedError: "error deploying test-deployment-4",
-		},
-		{
 			name: "orchestrator get orchestration error",
 			manifest: &model.DeploymentManifest{
 				ID:             "test-deployment-5",
@@ -164,18 +119,11 @@ func TestProvisionManager_Start(t *testing.T) {
 			},
 			setupStore: func(store api.DefinitionStore) {
 				definition := &api.DeploymentDefinition{
-					Type:       "test-type",
-					ApiVersion: "1.0",
-					Versions: []api.Version{
+					Type: "test-type",
+					Activities: []api.Activity{
 						{
-							Version: "1.0.0",
-							Active:  true,
-							Activities: []api.Activity{
-								{
-									ID:   "activity1",
-									Type: "test-activity",
-								},
-							},
+							ID:   "activity1",
+							Type: "test-activity",
 						},
 					},
 				}
@@ -195,18 +143,11 @@ func TestProvisionManager_Start(t *testing.T) {
 			},
 			setupStore: func(store api.DefinitionStore) {
 				definition := &api.DeploymentDefinition{
-					Type:       "test-type",
-					ApiVersion: "1.0",
-					Versions: []api.Version{
+					Type: "test-type",
+					Activities: []api.Activity{
 						{
-							Version: "1.0.0",
-							Active:  true,
-							Activities: []api.Activity{
-								{
-									ID:   "activity1",
-									Type: "test-activity",
-								},
-							},
+							ID:   "activity1",
+							Type: "test-activity",
 						},
 					},
 				}
@@ -261,18 +202,11 @@ func TestProvisionManager_Start(t *testing.T) {
 // Helper function to create a test deployment definition
 func createTestDeploymentDefinition(deploymentType string, active bool) *api.DeploymentDefinition {
 	return &api.DeploymentDefinition{
-		Type:       model.DeploymentType(deploymentType),
-		ApiVersion: "1.0",
-		Versions: []api.Version{
+		Type: model.DeploymentType(deploymentType),
+		Activities: []api.Activity{
 			{
-				Version: "1.0.0",
-				Active:  active,
-				Activities: []api.Activity{
-					{
-						ID:   "activity1",
-						Type: "test-activity",
-					},
-				},
+				ID:   "activity1",
+				Type: "test-activity",
 			},
 		},
 	}

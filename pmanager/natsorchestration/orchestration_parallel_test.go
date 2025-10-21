@@ -113,7 +113,7 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start orchestration
-	orchestrator := natsDeploymentOrchestrator{Client: adapter}
+	orchestrator := NatsDeploymentOrchestrator{Client: adapter}
 	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
 	require.NoError(t, err)
 
@@ -129,7 +129,7 @@ outerLoop:
 		case <-timeout:
 			t.Fatalf("Timeout waiting for activity A2 to complete after 3 seconds")
 		default:
-			finalOrchestration, _, err = readOrchestration(ctx, orchestration.ID, adapter)
+			finalOrchestration, _, err = ReadOrchestration(ctx, orchestration.ID, adapter)
 			require.NoError(t, err)
 			if _, found := finalOrchestration.Completed["A2"]; found {
 				break outerLoop

@@ -65,7 +65,7 @@ func Test_ValuePersistence(t *testing.T) {
 	orchestration := createTestOrchestration("test-context-persistence", "test.context.persistence")
 	adapter := natsclient.NewMsgClient(nt.Client)
 
-	orchestrator := &natsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}
@@ -89,7 +89,7 @@ func Test_ValuePersistence(t *testing.T) {
 
 	// Verify values were persisted
 	require.Eventually(t, func() bool {
-		updatedOrchestration, _, err := readOrchestration(ctx, orchestration.ID, adapter)
+		updatedOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 		if err != nil {
 			return false
 		}
@@ -155,7 +155,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 	orchestration := createTestOrchestration("test-retry-persistence", "test.retry.persistence")
 	adapter := natsclient.NewMsgClient(nt.Client)
 
-	orchestrator := &natsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}
@@ -182,7 +182,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 
 	// Verify values were persisted
 	require.Eventually(t, func() bool {
-		finalOrchestration, _, err := readOrchestration(ctx, orchestration.ID, adapter)
+		finalOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 		if err != nil || finalOrchestration.ProcessingData["retry_count"] == nil {
 			return false
 		}
@@ -244,7 +244,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 
 	adapter := natsclient.NewMsgClient(nt.Client)
 
-	orchestrator := &natsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}
@@ -269,7 +269,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 
 	// Verify values were persisted
 	require.Eventually(t, func() bool {
-		finalOrchestration, _, err := readOrchestration(ctx, orchestration.ID, adapter)
+		finalOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 		if err != nil {
 			return false
 		}
@@ -316,7 +316,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 	orchestration := createTestOrchestration("test-wait-persistence", "test.wait.persistence")
 	adapter := natsclient.NewMsgClient(nt.Client)
 
-	orchestrator := &natsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}
@@ -339,7 +339,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 
 	// Verify values were persisted
 	require.Eventually(t, func() bool {
-		waitOrchestration, _, err := readOrchestration(ctx, orchestration.ID, adapter)
+		waitOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, adapter)
 		if err != nil || waitOrchestration.ProcessingData["wait_state"] == nil {
 			return false
 		}
@@ -363,7 +363,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
 	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
 
 	adapter := natsclient.NewMsgClient(nt.Client)
-	orchestrator := &natsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}
@@ -403,7 +403,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_NotFound(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	adapter := natsclient.NewMsgClient(nt.Client)
-	orchestrator := &natsDeploymentOrchestrator{
+	orchestrator := &NatsDeploymentOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}

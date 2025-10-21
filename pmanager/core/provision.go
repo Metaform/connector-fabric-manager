@@ -42,11 +42,6 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.DeploymentM
 		return nil, types.NewFatalWrappedError(err, "unable to find deployment definition for deployment %s", deploymentID)
 	}
 
-	activeVersion, err := definition.GetActiveVersion()
-	if err != nil {
-		return nil, types.NewFatalError("error deploying %s: unable to get active version", deploymentID)
-	}
-
 	// Validate required fields
 	if manifest.ID == "" {
 		return nil, types.NewClientError("Missing required field: id")
@@ -68,7 +63,7 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.DeploymentM
 	}
 
 	// Does not exist, create the orchestration
-	orchestration, err = api.InstantiateOrchestration(manifest.ID, manifest.CorrelationID, manifest.DeploymentType, activeVersion.Activities, manifest.Payload)
+	orchestration, err = api.InstantiateOrchestration(manifest.ID, manifest.CorrelationID, manifest.DeploymentType, definition.Activities, manifest.Payload)
 	if err != nil {
 		return nil, types.NewFatalWrappedError(err, "error instantiating orchestration for deployment %s", deploymentID)
 	}

@@ -74,7 +74,7 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 		}
 	}
 
-	ctx.Registry.Register(api.DeploymentOrchestratorKey, newNatsDeploymentOrchestrator(natsclient.NewMsgClient(natsClient), ctx.LogMonitor))
+	ctx.Registry.Register(api.DeploymentOrchestratorKey, NewNatsDeploymentOrchestrator(natsclient.NewMsgClient(natsClient), ctx.LogMonitor))
 
 	return nil
 }

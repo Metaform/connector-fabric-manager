@@ -77,7 +77,7 @@ func (h *TMHandler) createParticipant(w http.ResponseWriter, req *http.Request) 
 		*api.ToVPAMap(profileDeployment.VPAProperties),
 		profileDeployment.Properties)
 	if err != nil {
-		handleError(w, err, h)
+		h.handleError(w, err)
 	}
 	result := v1alpha1.ToParticipantProfile(profile)
 
@@ -100,7 +100,7 @@ func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Reque
 	profile, err := h.participantDeployer.GetProfile(req.Context(), id)
 
 	if err != nil {
-		handleError(w, err, h)
+		h.handleError(w, err)
 		return
 	}
 
@@ -134,7 +134,7 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 	cell, err = h.cellDeployer.RecordExternalDeployment(req.Context(), *cell)
 
 	if err != nil {
-		handleError(w, err, h)
+		h.handleError(w, err)
 		return
 	}
 	result := v1alpha1.ToCell(*cell)
@@ -166,7 +166,7 @@ func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Requ
 	profile, err := h.dataspaceDeployer.CreateProfile(req.Context(), newProfile.Artifacts, newProfile.Properties)
 
 	if err != nil {
-		handleError(w, err, h)
+		h.handleError(w, err)
 		return
 	}
 
@@ -196,7 +196,7 @@ func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Requ
 
 	err = h.dataspaceDeployer.DeployProfile(req.Context(), deployment.ProfileID, deployment.CellID)
 	if err != nil {
-		handleError(w, err, h)
+		h.handleError(w, err)
 		return
 	}
 }
@@ -210,7 +210,7 @@ func (h *TMHandler) writeOutput(w http.ResponseWriter, status int, output any) {
 	}
 }
 
-func handleError(w http.ResponseWriter, err error, h *TMHandler) {
+func (h *TMHandler) handleError(w http.ResponseWriter, err error) {
 	switch e := err.(type) {
 	case *types.BadRequestError:
 		http.Error(w, fmt.Sprintf("Bad request: %s", e.Message), http.StatusBadRequest)
