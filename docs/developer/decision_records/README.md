@@ -23,4 +23,4 @@ the following sections:
 | 2025-05-14 | [Testing and Test Frameworks](2025-05-14-testing-frameworks/README.md) | Testing and test frameworks guidelines                                            |
 | 2025-05-14 | [NATS Orchestration](2025-06-19-nats-orchestration/README.md)          | Selection of NATS for orchestration                                               |
 | 2025-07-13 | [Error Handling](2025-07-13-errors/README.md)                          | Raising and handling errors                                                       |
-
+| 2025-10-20 | [Model, Type, and API Packages](2025-10-20-model-type-api/README.md)   | Model, Type, and API Packages                                                     |
