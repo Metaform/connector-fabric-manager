@@ -39,7 +39,7 @@ func TestNatsDeploymentHandler_Dispatcher_SuccessfulDispatch(t *testing.T) {
 	ctx := context.Background()
 	manifest := model.DeploymentManifest{
 		ID:             "test-manifest-id",
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		Payload:        map[string]any{"key": "value"},
 	}
 
@@ -70,7 +70,7 @@ func TestNatsDeploymentHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 	ctx := context.Background()
 	manifest := model.DeploymentManifest{
 		ID:             "test-manifest-id",
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		Payload:        map[string]any{"key": "value"},
 	}
 
@@ -97,7 +97,7 @@ func TestNatsDeploymentHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 	assert.False(t, response.Success)
 	assert.Equal(t, "deployment failed", response.ErrorDetail)
 	assert.Equal(t, "test-manifest-id", response.ManifestID)
-	assert.Equal(t, model.VpaDeploymentType, response.DeploymentType)
+	assert.Equal(t, model.VPADeploymentType, response.DeploymentType)
 	assert.NotEmpty(t, response.ID) // Should have a generated UUID
 	assert.NotNil(t, response.Properties)
 	assert.Equal(t, 0, len(response.Properties)) // Should be empty map
@@ -129,7 +129,7 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 			ctx := context.Background()
 			manifest := model.DeploymentManifest{
 				ID:             "test-manifest-id",
-				DeploymentType: model.VpaDeploymentType,
+				DeploymentType: model.VPADeploymentType,
 				Payload:        map[string]any{"key": "value"},
 			}
 

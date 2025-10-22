@@ -139,11 +139,11 @@ func (h HttpHandler) write(w http.ResponseWriter, response any) {
 	}
 }
 
-func (h HttpHandler) ExtractPathVariable(w http.ResponseWriter, req *http.Request, key string) (bool, string) {
+func (h HttpHandler) ExtractPathVariable(w http.ResponseWriter, req *http.Request, key string) (string, bool) {
 	value := chi.URLParam(req, key)
 	if value == "" {
 		h.WriteError(w, fmt.Sprintf("Missing %s parameter", key), http.StatusBadRequest)
-		return false, ""
+		return "", false
 	}
-	return true, value
+	return value, true
 }

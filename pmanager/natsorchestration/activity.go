@@ -100,7 +100,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return fmt.Errorf("failed to read orchestration data: %w", err)
 	}
 
-	activityContext := newActivityContext(ctx, orchestration.ID, oMessage.Activity)
+	activityContext := newActivityContext(ctx, orchestration.ID, oMessage.Activity, orchestration.InputData)
 	e.Monitor.Debugf("Received activity message %s for orchestration %s", oMessage.Activity.ID, oMessage.OrchestrationID)
 	result := e.ActivityProcessor.Process(activityContext)
 
@@ -131,6 +131,9 @@ func (e *NatsActivityExecutor) persistState(activityContext api.ActivityContext,
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
 		}
+		for key, value := range activityContext.OutputValues() {
+			orchestration.OutputData[key] = value
+		}
 	}); err != nil {
 		e.Monitor.Warnf("Failed to persist orchestration state for %s: %v", orchestration.ID, err)
 	}
@@ -147,6 +150,10 @@ func (e *NatsActivityExecutor) processOnActivityCompletion(
 	orchestration, revision, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
+		}
+
+		for key, value := range activityContext.OutputValues() {
+			orchestration.OutputData[key] = value
 		}
 		o.Completed[oMessage.Activity.ID] = struct{}{} // Mark current activity as completed
 	})
@@ -218,7 +225,7 @@ func (e *NatsActivityExecutor) publishResponse(activityContext api.ActivityConte
 		CorrelationID:  orchestration.CorrelationID,
 		Success:        true,
 		DeploymentType: orchestration.DeploymentType,
-		Properties:     make(map[string]any),
+		Properties:     orchestration.OutputData,
 	}
 	ser, err := json.Marshal(dr)
 	if err != nil {
@@ -259,6 +266,9 @@ func (e *NatsActivityExecutor) handleFatalError(
 		for key, value := range activityContext.Values() {
 			orchestration.ProcessingData[key] = value
 		}
+		for key, value := range activityContext.OutputValues() {
+			orchestration.OutputData[key] = value
+		}
 		o.State = api.OrchestrationStateErrored
 	}); err != nil {
 		e.Monitor.Warnf("Failed to mark orchestration %s as fatal: %v", orchestration.ID, err)
@@ -272,18 +282,22 @@ func (e *NatsActivityExecutor) handleFatalError(
 }
 
 type defaultActivityContext struct {
-	activity api.Activity
-	oID      string
-	context  context.Context
-	data     map[string]any
+	activity       api.Activity
+	oID            string
+	context        context.Context
+	inputData      api.ImmutableMap
+	processingData map[string]any
+	outputData     map[string]any
 }
 
-func newActivityContext(ctx context.Context, oID string, activity api.Activity) api.ActivityContext {
+func newActivityContext(ctx context.Context, oID string, activity api.Activity, inputData map[string]any) api.ActivityContext {
 	return defaultActivityContext{
-		activity: activity,
-		oID:      oID,
-		context:  ctx,
-		data:     make(map[string]any),
+		activity:       activity,
+		oID:            oID,
+		context:        ctx,
+		inputData:      NewImmutableMap(inputData),
+		processingData: make(map[string]any),
+		outputData:     make(map[string]any),
 	}
 }
 
@@ -303,14 +317,59 @@ func (d defaultActivityContext) OID() string {
 }
 
 func (d defaultActivityContext) SetValue(key string, value any) {
-	d.data[key] = value
+	d.processingData[key] = value
 }
 
 func (d defaultActivityContext) Value(key string) (any, bool) {
-	value, ok := d.data[key]
+	value, ok := d.processingData[key]
 	return value, ok
 }
 
 func (d defaultActivityContext) Values() map[string]any {
-	return d.data
+	return d.processingData
+}
+
+func (d defaultActivityContext) Delete(key string) {
+	delete(d.processingData, key)
+}
+
+func (d defaultActivityContext) InputData() api.ImmutableMap {
+	return d.inputData
+}
+
+func (d defaultActivityContext) SetOutputValue(key string, value any) {
+	d.outputData[key] = value
+}
+
+func (d defaultActivityContext) OutputValues() map[string]any {
+	return d.outputData
+}
+
+type immutableMap struct {
+	data map[string]interface{}
+}
+
+func NewImmutableMap(initial map[string]interface{}) api.ImmutableMap {
+	data := make(map[string]interface{})
+	for k, v := range initial {
+		data[k] = v
+	}
+	return &immutableMap{data: data}
+}
+
+func (im *immutableMap) Get(key string) (interface{}, bool) {
+	val, ok := im.data[key]
+	return val, ok
+}
+
+func (im *immutableMap) Keys() []string {
+	keys := make([]string, 0, len(im.data))
+	for k := range im.data {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func (im *immutableMap) Size() int {
+	return len(im.data)
 }

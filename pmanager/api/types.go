@@ -44,8 +44,9 @@ type Orchestration struct {
 	State          OrchestrationState   `json:"state"`
 	DeploymentType model.DeploymentType `json:"deploymentType"`
 	Steps          []OrchestrationStep
-	Inputs         map[string]any
+	InputData      map[string]any
 	ProcessingData map[string]any
+	OutputData     map[string]any
 	Completed      map[string]struct{}
 }
 
@@ -181,8 +182,9 @@ func InstantiateOrchestration(
 		DeploymentType: deploymentType,
 		State:          OrchestrationStateInitialized,
 		Steps:          make([]OrchestrationStep, 0, len(activities)),
-		Inputs:         data,
+		InputData:      data,
 		ProcessingData: make(map[string]any),
+		OutputData:     make(map[string]any),
 		Completed:      make(map[string]struct{}),
 	}
 

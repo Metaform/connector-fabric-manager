@@ -56,9 +56,10 @@ func (dt VPAType) String() string {
 }
 
 const (
-	VpaDeploymentType     DeploymentType = "cfm.vpa"
+	VPADeploymentType     DeploymentType = "cfm.vpa"
 	ConnectorType         VPAType        = "cfm.connector"
 	CredentialServiceType VPAType        = "cfm.credentialservice"
 	DataPlaneType         VPAType        = "cfm.dataplane"
-	VpaPayloadType                       = "cfm.vpas"
+	VPAPayloadType                       = "cfm.vpas"
+	VPAResponseData                      = "cfm.vpa.response"
 )

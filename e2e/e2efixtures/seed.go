@@ -33,7 +33,7 @@ func CreateTestActivityDefinition(apiClient *ApiClient) error {
 
 func CreateTestDeploymentDefinition(apiClient *ApiClient) error {
 	requestBody := pv1alpha1.DeploymentDefinition{
-		Type: model.VpaDeploymentType.String(),
+		Type: model.VPADeploymentType.String(),
 		Activities: []pv1alpha1.Activity{
 			{
 				ID:   "activity1",

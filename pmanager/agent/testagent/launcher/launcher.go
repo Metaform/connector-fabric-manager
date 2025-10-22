@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -104,6 +105,12 @@ type TestActivityProcessor struct {
 }
 
 func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	input := ctx.InputData()
+	// Echo values to output
+	data, found := input.Get(model.VPAPayloadType)
+	if found {
+		ctx.SetOutputValue(model.VPAResponseData, data)
+	}
 	t.monitor.Infof("Processed activity")
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }

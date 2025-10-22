@@ -144,7 +144,7 @@ func Test_VerifyE2E(t *testing.T) {
 	require.NotNil(t, connectorVPA, "Expected to find a VPA with cfm.connector type")
 	require.NotNil(t, connectorVPA.Properties, "Connector VPA properties should not be nil")
 	require.Contains(t, connectorVPA.Properties, "connectorkey", "Connector VPA should contain 'connectorkey' property")
-
+	//time.Sleep(10 * time.Second)
 }
 
 func cleanup() {

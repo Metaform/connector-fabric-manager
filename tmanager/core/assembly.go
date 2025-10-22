@@ -79,7 +79,7 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 		participantStore: participantStore,
 		monitor:          context.LogMonitor,
 	}
-	registry.RegisterDeploymentHandler(model.VpaDeploymentType, handler.handle)
+	registry.RegisterDeploymentHandler(model.VPADeploymentType, handler.handle)
 
 	return nil
 }

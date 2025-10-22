@@ -57,7 +57,7 @@ func TestNatsDeploymentClient_Deploy(t *testing.T) {
 
 	manifest := model.DeploymentManifest{
 		ID:             "test-deployment-123",
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		Payload:        make(map[string]any),
 	}
 
@@ -115,7 +115,7 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 		ID:             "test-deployment-response-123",
 		Success:        true,
 		ManifestID:     "manifest-456",
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		Properties:     map[string]any{"test": "value"},
 	}
 
@@ -168,7 +168,7 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 		Success:        false,
 		ErrorDetail:    "deployment failed",
 		ManifestID:     "manifest-789",
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		Properties:     map[string]any{},
 	}
 
@@ -217,7 +217,7 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 		Success:        false,
 		ErrorDetail:    "fatal deployment error",
 		ManifestID:     "manifest-999",
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		Properties:     map[string]any{},
 	}
 
@@ -302,7 +302,7 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 			Success:        true,
 			ErrorDetail:    "",
 			ManifestID:     fmt.Sprintf("manifest-%d", i),
-			DeploymentType: model.VpaDeploymentType,
+			DeploymentType: model.VPADeploymentType,
 			Properties:     map[string]any{"index": float64(i)},
 		}
 		expectedResponses = append(expectedResponses, response)
@@ -434,7 +434,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 		Success:        true,
 		ErrorDetail:    "",
 		ManifestID:     "success-manifest",
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		Properties:     map[string]any{"status": "success"},
 	}
 

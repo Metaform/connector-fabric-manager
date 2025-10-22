@@ -57,7 +57,7 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	handler := NewHandler(participantDeployer, cellDeployer, dataspaceDeployer, context.LogMonitor)
 
 	router.Get("/participants/{id}", func(w http.ResponseWriter, req *http.Request) {
-		found, id := handler.ExtractPathVariable(w, req, "id")
+		id, found := handler.ExtractPathVariable(w, req, "id")
 		if !found {
 			return
 		}

@@ -53,12 +53,16 @@ func (h *TMHandler) createDeployParticipant(w http.ResponseWriter, req *http.Req
 		return
 	}
 
+	properties := newDeployment.Properties
+	if properties == nil {
+		properties = make(map[string]any)
+	}
 	// TODO support specific cell selection
 	profile, err := h.participantDeployer.DeployProfile(
 		req.Context(),
 		newDeployment.Identifier,
 		*api.ToVPAMap(newDeployment.VPAProperties),
-		newDeployment.Properties)
+		properties)
 	if err != nil {
 		h.HandleError(w, err)
 	}

@@ -47,8 +47,9 @@ func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
 	orchestration := api.Orchestration{
 		ID:             "test-deployment-response",
 		State:          api.OrchestrationStateRunning,
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		ProcessingData: make(map[string]any),
+		OutputData:     make(map[string]any),
 		Completed:      make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{
 			{
@@ -149,7 +150,7 @@ func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T
 	orchestration := api.Orchestration{
 		ID:             "test-deployment-error",
 		State:          api.OrchestrationStateRunning,
-		DeploymentType: model.VpaDeploymentType,
+		DeploymentType: model.VPADeploymentType,
 		ProcessingData: make(map[string]any),
 		Completed:      make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{

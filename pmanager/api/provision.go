@@ -88,10 +88,20 @@ type ActivityResult struct {
 type ActivityContext interface {
 	OID() string
 	ID() string
+	InputData() ImmutableMap
 	SetValue(key string, value any)
 	Value(key string) (any, bool)
 	Values() map[string]any
+	Delete(key string)
+	SetOutputValue(key string, value any)
+	OutputValues() map[string]any
 	Context() context.Context
+}
+
+type ImmutableMap interface {
+	Get(key string) (any, bool)
+	Keys() []string
+	Size() int
 }
 
 // DefinitionStore manages DeploymentDefinitions and ActivityDefinitions.

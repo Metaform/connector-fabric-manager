@@ -32,7 +32,7 @@ func (g participantGenerator) Generate(
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
 
-	cell, err := g.CellSelector(model.VpaDeploymentType, cells, dProfiles)
+	cell, err := g.CellSelector(model.VPADeploymentType, cells, dProfiles)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (g participantGenerator) generateVPA(
 				ID:      uuid.New().String(),
 				Version: 0,
 			},
-			State:          api.DeploymentStateActive,
+			State:          api.DeploymentStatePending,
 			StateTimestamp: time.Now().UTC(),
 		},
 		Type:       vpaType,

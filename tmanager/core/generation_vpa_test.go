@@ -114,7 +114,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			_, err = uuid.Parse(vpa.ID)
 			assert.NoError(t, err, "VPA ID should be a valid UUID")
 			assert.Equal(t, int64(0), vpa.Version)
-			assert.Equal(t, api.DeploymentStateActive, vpa.State)
+			assert.Equal(t, api.DeploymentStatePending, vpa.State)
 			assert.Equal(t, "cell-123", vpa.Cell.ID)
 			assert.NotNil(t, vpa.Properties)
 			assert.NotNil(t, vpa.StateTimestamp)
@@ -172,7 +172,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			[]api.DataspaceProfile{})
 
 		require.NoError(t, err)
-		assert.Equal(t, model.VpaDeploymentType, receivedDeploymentType)
+		assert.Equal(t, model.VPADeploymentType, receivedDeploymentType)
 	})
 
 	t.Run("cell selector receives correct parameters", func(t *testing.T) {
