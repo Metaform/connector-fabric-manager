@@ -18,9 +18,12 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/metaform/connector-fabric-manager/common/dag"
 	"github.com/metaform/connector-fabric-manager/common/model"
 )
+
+var Validator = validator.New()
 
 type OrchestrationState uint
 
@@ -159,7 +162,6 @@ type DeploymentDefinition struct {
 // ActivityDefinition represents a single activity in the orchestration
 type ActivityDefinition struct {
 	Type         ActivityType   `json:"type"`
-	Provider     string         `json:"provider"`
 	Description  string         `json:"description"`
 	InputSchema  map[string]any `json:"inputSchema"`
 	OutputSchema map[string]any `json:"outputSchema"`

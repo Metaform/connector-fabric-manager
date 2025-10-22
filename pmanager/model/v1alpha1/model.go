@@ -13,27 +13,26 @@
 package v1alpha1
 
 type ActivityDefinition struct {
-	Type         string         `json:"type"`
-	Provider     string         `json:"provider"`
-	Description  string         `json:"description"`
-	InputSchema  map[string]any `json:"inputSchema"`
-	OutputSchema map[string]any `json:"outputSchema"`
+	Type         string         `json:"type" validate:"required"`
+	Description  string         `json:"description omitempty"`
+	InputSchema  map[string]any `json:"inputSchema omitempty"`
+	OutputSchema map[string]any `json:"outputSchema omitempty"`
 }
 
 type Activity struct {
-	ID        string         `json:"id"`
-	Type      string         `json:"type"`
-	Inputs    []MappingEntry `json:"inputs"`
-	DependsOn []string       `json:"dependsOn"`
+	ID        string         `json:"id" validate:"required"`
+	Type      string         `json:"type" validate:"required"`
+	Inputs    []MappingEntry `json:"inputs omitempty"`
+	DependsOn []string       `json:"dependsOn omitempty"`
 }
 
 type MappingEntry struct {
-	Source string `json:"source"`
-	Target string `json:"target"`
+	Source string `json:"source" validate:"required"`
+	Target string `json:"target" validate:"required"`
 }
 
 type DeploymentDefinition struct {
-	Type       string         `json:"type"`
-	Schema     map[string]any `json:"schema"`
-	Activities []Activity     `json:"activities"`
+	Type       string         `json:"type" validate:"required"`
+	Schema     map[string]any `json:"schema omitempty"`
+	Activities []Activity     `json:"activities" validate:"required,min=1"`
 }

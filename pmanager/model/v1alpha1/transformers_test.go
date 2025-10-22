@@ -30,14 +30,12 @@ func TestToAPIActivityDefinition(t *testing.T) {
 			name: "complete activity definition",
 			definition: &ActivityDefinition{
 				Type:         "http-request",
-				Provider:     "http-provider",
 				Description:  "Makes HTTP requests",
 				InputSchema:  map[string]any{"url": "string"},
 				OutputSchema: map[string]any{"response": "object"},
 			},
 			expected: &api.ActivityDefinition{
 				Type:         api.ActivityType("http-request"),
-				Provider:     "http-provider",
 				Description:  "Makes HTTP requests",
 				InputSchema:  map[string]interface{}{"url": "string"},
 				OutputSchema: map[string]interface{}{"response": "object"},
@@ -46,12 +44,10 @@ func TestToAPIActivityDefinition(t *testing.T) {
 		{
 			name: "minimal activity definition",
 			definition: &ActivityDefinition{
-				Type:     "basic-task",
-				Provider: "basic-provider",
+				Type: "basic-task",
 			},
 			expected: &api.ActivityDefinition{
-				Type:     api.ActivityType("basic-task"),
-				Provider: "basic-provider",
+				Type: api.ActivityType("basic-task"),
 			},
 		},
 		{
@@ -76,7 +72,6 @@ func TestToAPIActivityDefinition_NilInput(t *testing.T) {
 	assert.NotPanics(t, func() {
 		result := ToAPIActivityDefinition(nil)
 		assert.Empty(t, result.Type)
-		assert.Empty(t, result.Provider)
 		assert.Empty(t, result.Description)
 		assert.Nil(t, result.InputSchema)
 		assert.Nil(t, result.OutputSchema)
@@ -270,7 +265,6 @@ func TestToAPIMappingEntries_NilInput(t *testing.T) {
 func BenchmarkToAPIActivityDefinition(b *testing.B) {
 	definition := &ActivityDefinition{
 		Type:         "http-request",
-		Provider:     "http-provider",
 		Description:  "Makes HTTP requests",
 		InputSchema:  map[string]interface{}{"url": "string"},
 		OutputSchema: map[string]interface{}{"response": "object"},

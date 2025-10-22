@@ -68,7 +68,6 @@ func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
 	var activityType api.ActivityType = "test-activity-1"
 	definition := &api.ActivityDefinition{
 		Type:        activityType,
-		Provider:    "test-provider",
 		Description: "Test activity",
 	}
 
@@ -79,7 +78,6 @@ func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, definition.Type, result.Type)
-	assert.Equal(t, definition.Provider, result.Provider)
 	assert.Equal(t, definition.Description, result.Description)
 
 	// Verify it's a copy (different memory address)
@@ -302,11 +300,11 @@ func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
 	assert.False(t, hasMore)
 
 	// Add test data
-	def1 := &api.ActivityDefinition{Type: "type1", Provider: "provider1", Description: "desc1"}
-	def2 := &api.ActivityDefinition{Type: "type2", Provider: "provider2", Description: "desc2"}
-	def3 := &api.ActivityDefinition{Type: "type3", Provider: "provider3", Description: "desc3"}
-	def4 := &api.ActivityDefinition{Type: "type4", Provider: "provider4", Description: "desc4"}
-	def5 := &api.ActivityDefinition{Type: "type5", Provider: "provider5", Description: "desc5"}
+	def1 := &api.ActivityDefinition{Type: "type1", Description: "desc1"}
+	def2 := &api.ActivityDefinition{Type: "type2", Description: "desc2"}
+	def3 := &api.ActivityDefinition{Type: "type3", Description: "desc3"}
+	def4 := &api.ActivityDefinition{Type: "type4", Description: "desc4"}
+	def5 := &api.ActivityDefinition{Type: "type5", Description: "desc5"}
 
 	definitionStore.StoreActivityDefinition(def1)
 	definitionStore.StoreActivityDefinition(def2)
@@ -374,7 +372,7 @@ func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
 	var originalType api.ActivityType = "original"
-	originalDef := &api.ActivityDefinition{Type: originalType, Provider: "provider1", Description: "desc1"}
+	originalDef := &api.ActivityDefinition{Type: originalType, Description: "desc1"}
 	definitionStore.StoreActivityDefinition(originalDef)
 
 	definitions, hasMore, err := definitionStore.ListActivityDefinitions(0, 10)

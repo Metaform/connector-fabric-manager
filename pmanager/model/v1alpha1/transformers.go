@@ -23,7 +23,6 @@ func ToAPIActivityDefinition(definition *ActivityDefinition) *api.ActivityDefini
 	}
 	return &api.ActivityDefinition{
 		Type:         api.ActivityType(definition.Type),
-		Provider:     definition.Provider,
 		Description:  definition.Description,
 		InputSchema:  definition.InputSchema,
 		OutputSchema: definition.OutputSchema,

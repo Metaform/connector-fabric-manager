@@ -18,29 +18,29 @@ package model
 // The manifest includes a unique identifier, the type of deployment specified by a DeploymentDefinition, and a payload
 // of deployment-specific data, which will be passed as input to the Orchestration.
 type DeploymentManifest struct {
-	ID             string         `json:"id"`
-	CorrelationID  string         `json:"correlationId"`
-	DeploymentType DeploymentType `json:"deploymentType"`
-	Payload        map[string]any `json:"payload"`
+	ID             string         `json:"id" validate:"required"`
+	CorrelationID  string         `json:"correlationId" validate:"required"`
+	DeploymentType DeploymentType `json:"deploymentType" validate:"required"`
+	Payload        map[string]any `json:"payload omitempty"`
 }
 
 // DeploymentResponse returned when a system deployment completes.
 type DeploymentResponse struct {
-	ID             string         `json:"id"`
-	ManifestID     string         `json:"manifestId"`
-	CorrelationID  string         `json:"correlationId"`
-	DeploymentType DeploymentType `json:"deploymentType"`
+	ID             string         `json:"id" validate:"required"`
+	ManifestID     string         `json:"manifestId" validate:"required"`
+	CorrelationID  string         `json:"correlationId" validate:"required"`
+	DeploymentType DeploymentType `json:"deploymentType" validate:"required"`
 	Success        bool           `json:"success"`
 	ErrorDetail    string         `json:"errorDetail,omitempty"`
-	Properties     map[string]any `json:"properties"`
+	Properties     map[string]any `json:"properties omitempty"`
 }
 
 // VPAManifest represents the configuration details for a VPA deployment.
 type VPAManifest struct {
-	ID         string         `json:"id"`
-	VPAType    VPAType        `json:"vpaType"`
-	Cell       string         `json:"cell"`
-	Properties map[string]any `json:"properties"`
+	ID         string         `json:"id" validate:"required"`
+	VPAType    VPAType        `json:"vpaType" validate:"required"`
+	Cell       string         `json:"cell" validate:"required"`
+	Properties map[string]any `json:"properties omitempty"`
 }
 
 type DeploymentType string
