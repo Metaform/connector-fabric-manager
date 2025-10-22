@@ -13,26 +13,19 @@
 package handler
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/handler"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 )
-
-const json_content = "application/json"
 
 type TMHandler struct {
 	participantDeployer api.ParticipantProfileDeployer
 	cellDeployer        api.CellDeployer
 	dataspaceDeployer   api.DataspaceProfileDeployer
-	monitor             system.LogMonitor
+	handler.HttpHandler
 }
 
 func NewHandler(
@@ -41,186 +34,116 @@ func NewHandler(
 	dataspaceDeployer api.DataspaceProfileDeployer,
 	monitor system.LogMonitor) *TMHandler {
 	return &TMHandler{
+		HttpHandler: handler.HttpHandler{
+			Monitor: monitor,
+		},
 		participantDeployer: participantDeployer,
 		cellDeployer:        cellDeployer,
 		dataspaceDeployer:   dataspaceDeployer,
-		monitor:             monitor,
 	}
 }
 
-// FIXME should take a type with properties
-func (h *TMHandler) createParticipant(w http.ResponseWriter, req *http.Request) {
-	// Only allow POST requests
-	if req.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (h *TMHandler) createDeployParticipant(w http.ResponseWriter, req *http.Request) {
+	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
 
-	// Read the request body
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer req.Body.Close()
-
-	var profileDeployment v1alpha1.NewParticipantProfileDeployment
-	if err := json.Unmarshal(body, &profileDeployment); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	var newDeployment v1alpha1.NewParticipantProfileDeployment
+	if !h.ReadPayload(w, req, &newDeployment) {
 		return
 	}
 
 	// TODO support specific cell selection
 	profile, err := h.participantDeployer.DeployProfile(
 		req.Context(),
-		profileDeployment.Identifier,
-		*api.ToVPAMap(profileDeployment.VPAProperties),
-		profileDeployment.Properties)
+		newDeployment.Identifier,
+		*api.ToVPAMap(newDeployment.VPAProperties),
+		newDeployment.Properties)
 	if err != nil {
-		h.handleError(w, err)
+		h.HandleError(w, err)
 	}
-	result := v1alpha1.ToParticipantProfile(profile)
 
-	h.writeOutput(w, http.StatusAccepted, result)
+	response := v1alpha1.ToParticipantProfile(profile)
+	h.ResponseAccepted(w, response)
 }
 
-func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// TODO externalize and pass as a parameter
-	id := chi.URLParam(req, "id")
-	if id == "" {
-		http.Error(w, "Missing identifier parameter", http.StatusBadRequest)
+func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request, id string) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
 		return
 	}
 
 	profile, err := h.participantDeployer.GetProfile(req.Context(), id)
-
 	if err != nil {
-		h.handleError(w, err)
+		h.HandleError(w, err)
 		return
 	}
 
-	result := v1alpha1.ToParticipantProfile(profile)
-	h.writeOutput(w, http.StatusOK, result)
+	response := v1alpha1.ToParticipantProfile(profile)
+	h.ResponseOK(w, response)
 }
 
 func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
-	// Only allow POST requests
-	if req.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
-	// Read the request body
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer req.Body.Close()
 
 	var newCell v1alpha1.NewCell
-	if err := json.Unmarshal(body, &newCell); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	if !h.ReadPayload(w, req, &newCell) {
 		return
 	}
 
-	// TODO NewCell validation
 	cell := v1alpha1.NewAPICell(newCell)
 
-	cell, err = h.cellDeployer.RecordExternalDeployment(req.Context(), *cell)
-
+	recordedCell, err := h.cellDeployer.RecordExternalDeployment(req.Context(), *cell)
 	if err != nil {
-		h.handleError(w, err)
+		h.HandleError(w, err)
 		return
 	}
-	result := v1alpha1.ToCell(*cell)
 
-	h.writeOutput(w, http.StatusCreated, result)
+	response := v1alpha1.ToCell(*recordedCell)
+	h.ResponseOK(w, response)
 }
 
 func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Request) {
-	// Only allow POST requests
-	if req.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
-	// Read the request body
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer req.Body.Close()
 
 	var newProfile v1alpha1.NewDataspaceProfile
-	if err := json.Unmarshal(body, &newProfile); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	if !h.ReadPayload(w, req, &newProfile) {
 		return
 	}
 
-	// TODO validation
 	profile, err := h.dataspaceDeployer.CreateProfile(req.Context(), newProfile.Artifacts, newProfile.Properties)
-
 	if err != nil {
-		h.handleError(w, err)
+		h.HandleError(w, err)
 		return
 	}
 
-	result := v1alpha1.ToDataspaceProfile(profile)
-	h.writeOutput(w, http.StatusCreated, result)
+	response := v1alpha1.ToDataspaceProfile(profile)
+	h.ResponseOK(w, response)
 }
 
 func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Request) {
-	// Only allow POST requests
-	if req.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	// Read the request body
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer req.Body.Close()
-
-	var deployment v1alpha1.NewDataspaceProfileDeployment
-	if err := json.Unmarshal(body, &deployment); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
 
-	err = h.dataspaceDeployer.DeployProfile(req.Context(), deployment.ProfileID, deployment.CellID)
-	if err != nil {
-		h.handleError(w, err)
+	var newDeployment v1alpha1.NewDataspaceProfileDeployment
+	if !h.ReadPayload(w, req, &newDeployment) {
 		return
 	}
+
+	err := h.dataspaceDeployer.DeployProfile(req.Context(), newDeployment.ProfileID, newDeployment.CellID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.Accepted(w)
 }
 
-func (h *TMHandler) writeOutput(w http.ResponseWriter, status int, output any) {
-	w.WriteHeader(status)
-	w.Header().Set("Content-Type", json_content)
-	if err := json.NewEncoder(w).Encode(output); err != nil {
-		h.monitor.Infow("Failed to serialize cell response: %v", err)
-		http.Error(w, "Failed to serialize response", http.StatusInternalServerError)
-	}
-}
-
-func (h *TMHandler) handleError(w http.ResponseWriter, err error) {
-	switch e := err.(type) {
-	case *types.BadRequestError:
-		http.Error(w, fmt.Sprintf("Bad request: %s", e.Message), http.StatusBadRequest)
-	case *types.SystemError:
-		id := uuid.New().String()
-		h.monitor.Infow("Internal Error [%s]: %v", id, err)
-		http.Error(w, fmt.Sprintf("Internal server error occurred [%s]", id), http.StatusInternalServerError)
-	case types.FatalError:
-		http.Error(w, "A fatal error occurred", http.StatusInternalServerError)
-	default:
-		http.Error(w, fmt.Sprintf("Operation failed: %s", err.Error()), http.StatusInternalServerError)
-	}
+func (h *TMHandler) health(w http.ResponseWriter, _ *http.Request) {
+	response := response{Message: "OK"}
+	h.ResponseOK(w, response)
 }

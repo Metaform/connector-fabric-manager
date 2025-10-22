@@ -42,7 +42,7 @@ func (h HttpHandler) WriteError(w http.ResponseWriter, message string, statusCod
 	h.WriteErrorWithID(w, message, statusCode, "")
 }
 
-// WriteJSONError writes a JSON error response to the response writer
+// WriteErrorWithID writes a JSON error response to the response writer
 func (h HttpHandler) WriteErrorWithID(w http.ResponseWriter, message string, statusCode int, errorID string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -77,6 +77,7 @@ func (h HttpHandler) ReadPayload(w http.ResponseWriter, req *http.Request, defin
 		h.WriteError(w, "Failed to read request body", http.StatusBadRequest)
 		return false
 	}
+
 	defer req.Body.Close()
 
 	if err := json.Unmarshal(body, definition); err != nil {
@@ -118,12 +119,21 @@ func (h HttpHandler) Accepted(w http.ResponseWriter) {
 
 func (h HttpHandler) ResponseAccepted(w http.ResponseWriter, response any) {
 	h.Accepted(w)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		h.Monitor.Infow("Error encoding response: %v", err)
-	}
+	h.write(w, response)
 }
 
 func (h HttpHandler) OK(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", contentType)
+}
+
+func (h HttpHandler) ResponseOK(w http.ResponseWriter, response any) {
+	h.OK(w)
+	h.write(w, response)
+}
+
+func (h HttpHandler) write(w http.ResponseWriter, response any) {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		h.Monitor.Infow("Error encoding response: %v", err)
+	}
 }

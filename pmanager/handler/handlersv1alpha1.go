@@ -13,7 +13,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/metaform/connector-fabric-manager/common/handler"
@@ -37,12 +36,6 @@ func NewHandler(provisionManager api.ProvisionManager, definitionStore api.Defin
 		provisionManager: provisionManager,
 		definitionStore:  definitionStore,
 	}
-}
-
-func (h *PMHandler) health(w http.ResponseWriter, _ *http.Request) {
-	response := response{Message: "OK"}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
 }
 
 func (h *PMHandler) activityDefinition(w http.ResponseWriter, req *http.Request) {
@@ -91,4 +84,9 @@ func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	h.ResponseAccepted(w, orchestration)
+}
+
+func (h *PMHandler) health(w http.ResponseWriter, _ *http.Request) {
+	response := response{Message: "OK"}
+	h.ResponseOK(w, response)
 }

@@ -15,10 +15,12 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -131,5 +133,181 @@ func TestWriteError(t *testing.T) {
 		assert.Equal(t, "Test message", response.Message)
 		assert.Equal(t, 500, response.Code)
 		assert.Empty(t, response.ID)
+	})
+}
+
+func TestInvalidMethod(t *testing.T) {
+	t.Run("returns false when method matches", func(t *testing.T) {
+		w := newMockResponseWriter()
+		req, err := http.NewRequest(http.MethodPost, "/test", nil)
+		require.NoError(t, err)
+
+		handler := HttpHandler{Monitor: system.NoopMonitor{}}
+		result := handler.InvalidMethod(w, req, http.MethodPost)
+
+		assert.False(t, result)
+		assert.Equal(t, 0, w.statusCode)
+	})
+
+	t.Run("returns true and writes error when method doesn't match", func(t *testing.T) {
+		w := newMockResponseWriter()
+		req, err := http.NewRequest(http.MethodGet, "/test", nil)
+		require.NoError(t, err)
+
+		handler := HttpHandler{Monitor: system.NoopMonitor{}}
+		result := handler.InvalidMethod(w, req, http.MethodPost)
+
+		assert.True(t, result)
+		assert.Equal(t, http.StatusMethodNotAllowed, w.statusCode)
+
+		var response ErrorResponse
+		err = json.Unmarshal(w.body.Bytes(), &response)
+		require.NoError(t, err)
+
+		assert.Equal(t, "Method not allowed", response.Message)
+		assert.Equal(t, 405, response.Code)
+	})
+}
+
+func TestHandleError(t *testing.T) {
+	handler := HttpHandler{Monitor: system.NoopMonitor{}}
+
+	t.Run("handles BadRequestError", func(t *testing.T) {
+		w := newMockResponseWriter()
+		err := &types.BadRequestError{Message: "invalid input"}
+
+		handler.HandleError(w, err)
+
+		assert.Equal(t, http.StatusBadRequest, w.statusCode)
+
+		var response ErrorResponse
+		jsonErr := json.Unmarshal(w.body.Bytes(), &response)
+		require.NoError(t, jsonErr)
+
+		assert.NotEmpty(t, response.Message)
+		assert.Equal(t, 400, response.Code)
+	})
+
+	t.Run("handles SystemError", func(t *testing.T) {
+		w := newMockResponseWriter()
+		err := &types.SystemError{Message: "database connection failed"}
+
+		handler.HandleError(w, err)
+
+		assert.Equal(t, http.StatusInternalServerError, w.statusCode)
+
+		var response ErrorResponse
+		jsonErr := json.Unmarshal(w.body.Bytes(), &response)
+		require.NoError(t, jsonErr)
+
+		assert.Contains(t, response.Message, "Internal server error occurred")
+		assert.Equal(t, 500, response.Code)
+	})
+
+	t.Run("handles FatalError", func(t *testing.T) {
+		w := newMockResponseWriter()
+		err := types.SystemError{Message: "fatal system error"}
+
+		handler.HandleError(w, err)
+
+		assert.Equal(t, http.StatusInternalServerError, w.statusCode)
+
+		var response ErrorResponse
+		jsonErr := json.Unmarshal(w.body.Bytes(), &response)
+		require.NoError(t, jsonErr)
+
+		assert.Contains(t, "A fatal error occurred", response.Message)
+		assert.Equal(t, 500, response.Code)
+	})
+
+	t.Run("handles generic error", func(t *testing.T) {
+		w := newMockResponseWriter()
+		err := errors.New("generic error message")
+
+		handler.HandleError(w, err)
+
+		assert.Equal(t, http.StatusInternalServerError, w.statusCode)
+
+		var response ErrorResponse
+		jsonErr := json.Unmarshal(w.body.Bytes(), &response)
+		require.NoError(t, jsonErr)
+
+		assert.NotEmpty(t, response.Message)
+		assert.Equal(t, 500, response.Code)
+	})
+}
+
+func TestCreated(t *testing.T) {
+	t.Run("sets correct status code and content type", func(t *testing.T) {
+		w := newMockResponseWriter()
+		handler := HttpHandler{Monitor: system.NoopMonitor{}}
+
+		handler.Created(w)
+
+		assert.Equal(t, http.StatusCreated, w.statusCode)
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+		assert.Empty(t, w.body.String())
+	})
+}
+
+func TestAccepted(t *testing.T) {
+	t.Run("sets correct status code and content type", func(t *testing.T) {
+		w := newMockResponseWriter()
+		handler := HttpHandler{Monitor: system.NoopMonitor{}}
+
+		handler.Accepted(w)
+
+		assert.Equal(t, http.StatusAccepted, w.statusCode)
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+		assert.Empty(t, w.body.String())
+	})
+}
+
+func TestResponseAccepted(t *testing.T) {
+	t.Run("sets accepted status and writes response", func(t *testing.T) {
+		w := newMockResponseWriter()
+		handler := HttpHandler{Monitor: system.NoopMonitor{}}
+		response := map[string]string{"message": "accepted"}
+
+		handler.ResponseAccepted(w, response)
+
+		assert.Equal(t, http.StatusAccepted, w.statusCode)
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+
+		var result map[string]string
+		err := json.Unmarshal(w.body.Bytes(), &result)
+		require.NoError(t, err)
+		assert.Equal(t, "accepted", result["message"])
+	})
+}
+
+func TestOK(t *testing.T) {
+	t.Run("sets correct status code and content type", func(t *testing.T) {
+		w := newMockResponseWriter()
+		handler := HttpHandler{Monitor: system.NoopMonitor{}}
+
+		handler.OK(w)
+
+		assert.Equal(t, http.StatusOK, w.statusCode)
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+		assert.Empty(t, w.body.String())
+	})
+}
+
+func TestResponseOK(t *testing.T) {
+	t.Run("sets OK status and writes response", func(t *testing.T) {
+		w := newMockResponseWriter()
+		handler := HttpHandler{Monitor: system.NoopMonitor{}}
+		response := map[string]string{"status": "ok"}
+
+		handler.ResponseOK(w, response)
+
+		assert.Equal(t, http.StatusOK, w.statusCode)
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+
+		var result map[string]string
+		err := json.Unmarshal(w.body.Bytes(), &result)
+		require.NoError(t, err)
+		assert.Equal(t, "ok", result["status"])
 	})
 }

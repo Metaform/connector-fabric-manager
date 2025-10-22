@@ -13,6 +13,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
@@ -54,8 +56,16 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 
 	handler := NewHandler(participantDeployer, cellDeployer, dataspaceDeployer, context.LogMonitor)
 
-	router.Get("/participants/{id}", handler.getParticipantProfile)
-	router.Post("/participants", handler.createParticipant)
+	router.Get("/participants/{id}", func(w http.ResponseWriter, req *http.Request) {
+		id := chi.URLParam(req, "id")
+		if id == "" {
+			http.Error(w, "Missing identifier parameter", http.StatusBadRequest)
+			return
+		}
+		handler.getParticipantProfile(w, req, id)
+	})
+
+	router.Post("/participants", handler.createDeployParticipant)
 	router.Post("/cells", handler.createCell)
 	router.Post("/dataspace-profiles", handler.createDataspaceProfile)
 	router.Post("/dataspace-profiles/{id}/deployments", handler.deployDataspaceProfile)
