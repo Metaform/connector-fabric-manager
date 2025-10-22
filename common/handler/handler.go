@@ -18,6 +18,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
@@ -136,4 +137,13 @@ func (h HttpHandler) write(w http.ResponseWriter, response any) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		h.Monitor.Infow("Error encoding response: %v", err)
 	}
+}
+
+func (h HttpHandler) ExtractPathVariable(w http.ResponseWriter, req *http.Request, key string) (bool, string) {
+	value := chi.URLParam(req, key)
+	if value == "" {
+		h.WriteError(w, fmt.Sprintf("Missing %s parameter", key), http.StatusBadRequest)
+		return false, ""
+	}
+	return true, value
 }

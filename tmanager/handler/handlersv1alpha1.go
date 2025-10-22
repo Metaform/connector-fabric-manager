@@ -22,10 +22,10 @@ import (
 )
 
 type TMHandler struct {
+	handler.HttpHandler
 	participantDeployer api.ParticipantProfileDeployer
 	cellDeployer        api.CellDeployer
 	dataspaceDeployer   api.DataspaceProfileDeployer
-	handler.HttpHandler
 }
 
 func NewHandler(
