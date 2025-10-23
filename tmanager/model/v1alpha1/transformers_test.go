@@ -57,7 +57,9 @@ func TestToParticipantProfile(t *testing.T) {
 				Properties: api.Properties{"vpa-key": "vpa-value"},
 			},
 		},
-		Properties: api.Properties{"participant-key": "participant-value"},
+		Properties:  api.Properties{"participant-key": "participant-value"},
+		Error:       true,
+		ErrorDetail: "error",
 	}
 
 	result := ToParticipantProfile(input)
@@ -66,6 +68,8 @@ func TestToParticipantProfile(t *testing.T) {
 	assert.Equal(t, "participant-123", result.ID)
 	assert.Equal(t, int64(1), result.Version)
 	assert.Equal(t, "test-participant", result.Identifier)
+	assert.True(t, result.Error)
+	assert.Equal(t, "error", result.ErrorDetail)
 	assert.Len(t, result.VPAs, 1)
 	assert.Equal(t, map[string]any{"participant-key": "participant-value"}, result.Properties)
 }
@@ -254,7 +258,9 @@ func TestToAPIParticipantProfile(t *testing.T) {
 				Properties: map[string]any{"vpa-key": "vpa-value"},
 			},
 		},
-		Properties: map[string]any{"participant-key": "participant-value"},
+		Properties:  map[string]any{"participant-key": "participant-value"},
+		Error:       true,
+		ErrorDetail: "error",
 	}
 
 	result := ToAPIParticipantProfile(input)
@@ -265,6 +271,8 @@ func TestToAPIParticipantProfile(t *testing.T) {
 	assert.Equal(t, "api-test-participant", result.Identifier)
 	assert.Len(t, result.VPAs, 1)
 	assert.Contains(t, result.Properties, "participant-key")
+	assert.True(t, result.Error)
+	assert.Equal(t, "error", result.ErrorDetail)
 	assert.Equal(t, "participant-value", result.Properties["participant-key"])
 }
 

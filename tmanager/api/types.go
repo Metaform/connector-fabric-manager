@@ -52,6 +52,8 @@ type ParticipantProfile struct {
 	DataSpaceProfiles []DataspaceProfile
 	VPAs              []VirtualParticipantAgent
 	Properties        Properties
+	Error             bool
+	ErrorDetail       string
 }
 
 // DataspaceProfile represents a specific dataspace, protocol, and policies tuple. For example, The Foo Dataspace that

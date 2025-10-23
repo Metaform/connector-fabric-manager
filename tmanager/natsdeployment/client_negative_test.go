@@ -50,70 +50,71 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 		},
 		{
 			name:        "dispatcher returns recoverable error",
-			messageData: []byte(`{"id":"test-id","success":true,"manifestID":"manifest-1"}`),
+			messageData: []byte(`{"id":"test-id","success":true,"manifestId":"manifest-1","correlationId":"123","deploymentType":"cfm.vpa"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id"
 				})).Return(types.NewRecoverableError("temporary failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id","success":true,"manifestID":"manifest-1"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id","success":true,"manifestId":"manifest-1","correlationId":"123","deploymentType":"cfm.vpa"}`))
 				m.On("Nak").Return(nil)
 			},
 			expectedError: "retriable failure when dispatching ",
 		},
 		{
 			name:        "dispatcher returns recoverable error and NAK fails",
-			messageData: []byte(`{"id":"test-id-2","success":true,"manifestID":"manifest-2"}`),
+			messageData: []byte(`{"id":"test-id-2","success":true,"manifestId":"manifest-2","correlationId":"corr-2","deploymentType":"cfm.vpa"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-2"
 				})).Return(types.NewRecoverableError("temporary failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id-2","success":true,"manifestID":"manifest-2"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id-2","success":true,"manifestId":"manifest-2","correlationId":"corr-2","deploymentType":"cfm.vpa"}`))
 				m.On("Nak").Return(errors.New("NAK failed"))
 			},
 			expectedError: "retriable failure when dispatching ",
 		},
+
 		{
 			name:        "dispatcher returns fatal error",
-			messageData: []byte(`{"id":"test-id-3","success":false,"manifestID":"manifest-3"}`),
+			messageData: []byte(`{"id":"test-id-3","success":false,"manifestId":"manifest-3","correlationId":"corr-3","deploymentType":"cfm.vpa"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-3"
 				})).Return(types.NewFatalError("permanent failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id-3","success":false,"manifestID":"manifest-3"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id-3","success":false,"manifestId":"manifest-3","correlationId":"corr-3","deploymentType":"cfm.vpa"}`))
 				m.On("Ack").Return(nil)
 			},
 			expectedError: "fatal failure when dispatching ",
 		},
 		{
 			name:        "dispatcher returns fatal error and ACK fails",
-			messageData: []byte(`{"id":"test-id-4","success":false,"manifestID":"manifest-4"}`),
+			messageData: []byte(`{"id":"test-id-4","success":false,"manifestId":"manifest-4","correlationId":"corr-4","deploymentType":"cfm.vpa"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-4"
 				})).Return(types.NewFatalError("permanent failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id-4","success":false,"manifestID":"manifest-4"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id-4","success":false,"manifestId":"manifest-4","correlationId":"corr-4","deploymentType":"cfm.vpa"}`))
 				m.On("Ack").Return(errors.New("ACK failed"))
 			},
 			expectedError: "fatal failure when dispatching ",
 		},
 		{
 			name:        "ACK message error after successful dispatch",
-			messageData: []byte(`{"id":"test-id-5","success":true,"manifestID":"manifest-5"}`),
+			messageData: []byte(`{"id":"test-id-5","success":true,"manifestId":"manifest-5","correlationId":"corr-5","deploymentType":"cfm.vpa"}`),
 			setupDispatcher: func(d *mockDeploymentDispatcher) {
 				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
 					return r.ID == "test-id-5"
 				})).Return(nil)
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id-5","success":true,"manifestID":"manifest-5"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id-5","success":true,"manifestId":"manifest-5","correlationId":"corr-5","deploymentType":"cfm.vpa"}`))
 				m.On("Ack").Return(errors.New("ACK failed"))
 			},
 			expectedError: "failed to ACK ",
@@ -129,6 +130,18 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 				m.On("Ack").Return(errors.New("ACK failed"))
 			},
 			expectedError: "failed to unmarshal ",
+		},
+		{
+			name:        "validation error - missing CorrelationID",
+			messageData: []byte(`{"id":"test-id","manifestId":"manifest-1","deploymentType":"cfm.vpa","success":true}`),
+			setupDispatcher: func(d *mockDeploymentDispatcher) {
+				// Dispatcher should not be called for validation failure
+			},
+			setupMessage: func(m *mockJetStreamMsg) {
+				m.On("Data").Return([]byte(`{"id":"test-id","manifestId":"manifest-1","deploymentType":"cfm.vpa","success":true}`))
+				m.On("Ack").Return(nil)
+			},
+			expectedError: "invalid response: ",
 		},
 	}
 

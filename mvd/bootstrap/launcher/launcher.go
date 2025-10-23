@@ -20,13 +20,16 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	dnsauncher "github.com/metaform/connector-fabric-manager/mvd/dns/launcher"
-	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	papi "github.com/metaform/connector-fabric-manager/pmanager/api"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	pv1alpha1 "github.com/metaform/connector-fabric-manager/pmanager/model/v1alpha1"
+	tapi "github.com/metaform/connector-fabric-manager/tmanager/api"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"
+	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 )
 
 const (
@@ -85,6 +88,52 @@ func LaunchMVD() {
 	if err != nil {
 		panic(err)
 	}
+
+	cell, err := e2efixtures.CreateCell(client)
+	if err != nil {
+		panic(err)
+	}
+
+	dProfile, err := e2efixtures.CreateDataspaceProfile(client)
+	if err != nil {
+		panic(err)
+	}
+
+	deployment := v1alpha1.NewDataspaceProfileDeployment{
+		ProfileID: dProfile.ID,
+		CellID:    cell.ID,
+	}
+	err = e2efixtures.DeployDataspaceProfile(deployment, client)
+	if err != nil {
+		panic(err)
+	}
+
+	newProfile := v1alpha1.NewParticipantProfileDeployment{
+		Identifier:    "did:web:foo.com",
+		VPAProperties: map[string]map[string]any{string(model.ConnectorType): {"connectorkey": "connectorvalue"}},
+	}
+	var participantProfile v1alpha1.ParticipantProfile
+	err = client.PostToTManagerWithResponse("participants", newProfile, &participantProfile)
+	if err != nil {
+		panic(err)
+	}
+
+	var statusProfile v1alpha1.ParticipantProfile
+
+	// Verify all VPAs are active
+	deployCount := 0
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		err = client.GetTManager(fmt.Sprintf("participants/%s", participantProfile.ID), &statusProfile)
+		for _, vpa := range statusProfile.VPAs {
+			if vpa.State == tapi.DeploymentStateActive.String() {
+				deployCount++
+			}
+		}
+		if deployCount == 3 {
+			break
+		}
+	}
+
 }
 
 func GetRandomPort() int {
@@ -100,7 +149,7 @@ func GetRandomPort() int {
 }
 
 func CreateActivityDefinitions(apiClient *e2efixtures.ApiClient) error {
-	requestBody := api.ActivityDefinition{
+	requestBody := papi.ActivityDefinition{
 		Type:        dnsauncher.ActivityType,
 		Description: "Provisions A DNS subdomain and ingress routing",
 	}

@@ -42,9 +42,8 @@ type FatalError interface {
 }
 
 type GeneralRecoverableError struct {
-	Message    string
-	Cause      error
-	badRequest bool
+	Message string
+	Cause   error
 }
 
 func (e GeneralRecoverableError) Error() string       { return e.Message }

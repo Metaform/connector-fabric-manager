@@ -47,10 +47,12 @@ func newNatsDeploymentHandler(
 						// Return error to NAK the message and retry
 						return err
 					default:
+
 						// return error response
 						m := &model.DeploymentResponse{
 							ID:             uuid.New().String(),
 							Success:        false,
+							CorrelationID:  manifest.CorrelationID,
 							ErrorDetail:    err.Error(),
 							ManifestID:     manifest.ID,
 							DeploymentType: manifest.DeploymentType,

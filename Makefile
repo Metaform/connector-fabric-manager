@@ -8,6 +8,7 @@
 COMMON_DIR=common
 PMANAGER_DIR=pmanager
 TMANAGER_DIR=tmanager
+E2E_DIR=e2e
 
 # Docker settings
 DOCKER_REGISTRY=
@@ -75,6 +76,7 @@ test:
 	$(MAKE) -C $(COMMON_DIR) test
 	$(MAKE) -C $(PMANAGER_DIR) test
 	$(MAKE) -C $(TMANAGER_DIR) test
+	$(MAKE) -C $(E2E_DIR) test
 
 test-common:
 	@echo "Testing common..."

@@ -112,7 +112,7 @@ func (h vpaDeploymentCallbackHandler) handle(ctx context.Context, response model
 		// Note de-duplication does not need to be performed as this operation is idempotent
 		profile, err := h.participantStore.FindById(c, response.CorrelationID)
 		if err != nil {
-			h.monitor.Infof("Error retrieving participant profile %s for manifest %s: %w", response.CorrelationID, response.ManifestID, err)
+			h.monitor.Infof("Error retrieving participant profile '%s' for manifest %s: %w", response.CorrelationID, response.ManifestID, err)
 			// Do not return error as this is fatal and the message must be acked
 			return nil
 		}
@@ -128,7 +128,9 @@ func (h vpaDeploymentCallbackHandler) handle(ctx context.Context, response model
 				profile.VPAs[i] = vpa // Use range index because vpa is a copy
 			}
 		default:
-			// TODO handle error and update VPA status
+			// TODO update VPA status
+			profile.Error = true
+			profile.ErrorDetail = response.ErrorDetail
 		}
 		err = h.participantStore.Update(c, profile)
 		if err != nil {

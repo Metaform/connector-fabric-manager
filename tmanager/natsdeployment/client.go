@@ -20,6 +20,8 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/types"
+	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -37,6 +39,10 @@ func newNatsDeploymentClient(
 			Monitor:    monitor,
 			Processing: atomic.Bool{},
 			Dispatcher: func(ctx context.Context, payload model.DeploymentResponse) error {
+				err := api.Validator.Struct(payload)
+				if err != nil {
+					return types.NewClientError("invalid response: %s", err.Error())
+				}
 				return dispatcher.Dispatch(ctx, payload)
 			},
 		},

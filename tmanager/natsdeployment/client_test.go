@@ -115,6 +115,7 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 		ID:             "test-deployment-response-123",
 		Success:        true,
 		ManifestID:     "manifest-456",
+		CorrelationID:  "test-correlation-id",
 		DeploymentType: model.VPADeploymentType,
 		Properties:     map[string]any{"test": "value"},
 	}
@@ -168,6 +169,7 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 		Success:        false,
 		ErrorDetail:    "deployment failed",
 		ManifestID:     "manifest-789",
+		CorrelationID:  "test-correlation-id",
 		DeploymentType: model.VPADeploymentType,
 		Properties:     map[string]any{},
 	}
@@ -217,6 +219,7 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 		Success:        false,
 		ErrorDetail:    "fatal deployment error",
 		ManifestID:     "manifest-999",
+		CorrelationID:  "test-correlation-id",
 		DeploymentType: model.VPADeploymentType,
 		Properties:     map[string]any{},
 	}
@@ -302,6 +305,7 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 			Success:        true,
 			ErrorDetail:    "",
 			ManifestID:     fmt.Sprintf("manifest-%d", i),
+			CorrelationID:  "test-correlation-id",
 			DeploymentType: model.VPADeploymentType,
 			Properties:     map[string]any{"index": float64(i)},
 		}
@@ -434,6 +438,7 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 		Success:        true,
 		ErrorDetail:    "",
 		ManifestID:     "success-manifest",
+		CorrelationID:  "test-correlation-id",
 		DeploymentType: model.VPADeploymentType,
 		Properties:     map[string]any{"status": "success"},
 	}

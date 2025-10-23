@@ -64,9 +64,11 @@ type NewParticipantProfileDeployment struct {
 
 type ParticipantProfile struct {
 	Entity
-	Identifier string                    `json:"identifier" required:"true"`
-	VPAs       []VirtualParticipantAgent `json:"vpas,omitempty"`
-	Properties map[string]any            `json:"properties,omitempty"`
+	Identifier  string                    `json:"identifier" required:"true"`
+	VPAs        []VirtualParticipantAgent `json:"vpas,omitempty"`
+	Properties  map[string]any            `json:"properties,omitempty"`
+	Error       bool                      `json:"error"`
+	ErrorDetail string                    `json:"errorDetail,omitempty"`
 }
 
 type VirtualParticipantAgent struct {

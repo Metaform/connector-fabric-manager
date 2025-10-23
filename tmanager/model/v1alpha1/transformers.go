@@ -23,9 +23,11 @@ func ToParticipantProfile(input *api.ParticipantProfile) *ParticipantProfile {
 			ID:      input.ID,
 			Version: input.Version,
 		},
-		Identifier: input.Identifier,
-		VPAs:       ToVPACollection(input),
-		Properties: input.Properties,
+		Identifier:  input.Identifier,
+		VPAs:        ToVPACollection(input),
+		Properties:  input.Properties,
+		Error:       input.Error,
+		ErrorDetail: input.ErrorDetail,
 	}
 }
 
@@ -73,9 +75,11 @@ func ToAPIParticipantProfile(input *ParticipantProfile) *api.ParticipantProfile 
 			ID:      input.ID,
 			Version: input.Version,
 		},
-		Identifier: input.Identifier,
-		VPAs:       ToAPIVPACollection(input.VPAs),
-		Properties: api.ToProperties(input.Properties),
+		Identifier:  input.Identifier,
+		VPAs:        ToAPIVPACollection(input.VPAs),
+		Properties:  api.ToProperties(input.Properties),
+		Error:       input.Error,
+		ErrorDetail: input.ErrorDetail,
 	}
 }
 
