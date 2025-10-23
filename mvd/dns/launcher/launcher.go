@@ -14,6 +14,7 @@ package launcher
 
 import (
 	"context"
+	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -75,12 +76,12 @@ type DNSActivityProcessor struct {
 
 func (t DNSActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
 	count, found := ctx.Value("dns.count")
-	if (found) && (count.(int) > 0) {
+	if (found) && (count.(float64) > 0) {
 		t.monitor.Infof("DNS provisioning complete")
 		ctx.Delete("dns.count")
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}
 	t.monitor.Infof("DNS provisioning requested")
 	ctx.SetValue("dns.count", 1)
-	return api.ActivityResult{Result: api.ActivityResultSchedule, WaitMillis: 1000}
+	return api.ActivityResult{Result: api.ActivityResultSchedule, WaitOnReschedule: 1 * time.Second}
 }

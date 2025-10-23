@@ -10,7 +10,7 @@ import (
 
 func TestActivityContext_Delete(t *testing.T) {
 	activity := api.Activity{ID: "test-activity"}
-	activityContext := newActivityContext(context.TODO(), "test-oid", activity, map[string]any{})
+	activityContext := newActivityContext(context.TODO(), "test-oid", activity, map[string]any{}, map[string]any{}, map[string]any{})
 
 	// Set a value
 	activityContext.SetValue("key", "value")

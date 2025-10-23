@@ -63,7 +63,7 @@ type DeploymentOrchestrator interface {
 // If the processor returns ActivityResultWait, the activity will remain outstanding until completion is asynchronously signaled.
 //
 // If the processor returns ActivityResultSchedule, the orchestration engine will reschedule message delivery in the duration
-// defined by WaitMillis.
+// defined by WaitOnReschedule.
 //
 // If the processor encounters an error, it returns an ActivityResultRetryError or an ActivityResultFatalError.
 type ActivityProcessor interface {
@@ -81,9 +81,9 @@ const (
 )
 
 type ActivityResult struct {
-	Result     ActivityResultType
-	WaitMillis time.Duration
-	Error      error
+	Result           ActivityResultType
+	WaitOnReschedule time.Duration
+	Error            error
 }
 
 type ActivityContext interface {

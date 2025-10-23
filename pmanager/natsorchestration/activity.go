@@ -100,7 +100,14 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return fmt.Errorf("failed to read orchestration data: %w", err)
 	}
 
-	activityContext := newActivityContext(ctx, orchestration.ID, oMessage.Activity, orchestration.InputData)
+	activityContext := newActivityContext(
+		ctx,
+		orchestration.ID,
+		oMessage.Activity,
+		orchestration.InputData,
+		orchestration.ProcessingData,
+		orchestration.OutputData)
+
 	e.Monitor.Debugf("Received activity message %s for orchestration %s", oMessage.Activity.ID, oMessage.OrchestrationID)
 	result := e.ActivityProcessor.Process(activityContext)
 
@@ -117,7 +124,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 
 	case api.ActivityResultSchedule:
 		e.persistState(activityContext, orchestration, revision)
-		if err := message.NakWithDelay(result.WaitMillis); err != nil {
+		if err := message.NakWithDelay(result.WaitOnReschedule); err != nil {
 			return fmt.Errorf("failed to reschedule schedule activity %s: %w", oMessage.OrchestrationID, err)
 		}
 		return nil
@@ -290,14 +297,20 @@ type defaultActivityContext struct {
 	outputData     map[string]any
 }
 
-func newActivityContext(ctx context.Context, oID string, activity api.Activity, inputData map[string]any) api.ActivityContext {
+func newActivityContext(
+	ctx context.Context,
+	oID string,
+	activity api.Activity,
+	inputData map[string]any,
+	processingData map[string]any,
+	outputData map[string]any) api.ActivityContext {
 	return defaultActivityContext{
 		activity:       activity,
 		oID:            oID,
 		context:        ctx,
 		inputData:      NewImmutableMap(inputData),
-		processingData: make(map[string]any),
-		outputData:     make(map[string]any),
+		processingData: processingData,
+		outputData:     outputData,
 	}
 }
 

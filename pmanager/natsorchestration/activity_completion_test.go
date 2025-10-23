@@ -220,6 +220,122 @@ func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T
 	assert.Equal(t, api.OrchestrationStateErrored, updatedOrchestration.State, "Orchestration should be in error state")
 }
 
+func TestNatsActivityExecutor_RescheduleWithCounter(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
+	defer cancel()
+
+	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-reschedule-bucket")
+	require.NoError(t, err)
+
+	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+
+	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.reschedule.activity")
+
+	msgClient := natsclient.NewMsgClient(nt.Client)
+
+	// Create orchestration with single activity that will reschedule once then complete
+	orchestration := api.Orchestration{
+		ID:             "test-reschedule-counter",
+		CorrelationID:  "correlation-123",
+		State:          api.OrchestrationStateRunning,
+		DeploymentType: model.VPADeploymentType,
+		ProcessingData: make(map[string]any),
+		OutputData:     make(map[string]any),
+		Completed:      make(map[string]struct{}),
+		Steps: []api.OrchestrationStep{
+			{
+				Activities: []api.Activity{
+					{ID: "A1", Type: "test.reschedule.activity"},
+				},
+			},
+		},
+	}
+
+	serializedOrchestration, err := json.Marshal(orchestration)
+	require.NoError(t, err)
+
+	_, err = msgClient.Update(ctx, orchestration.ID, serializedOrchestration, 0)
+	require.NoError(t, err)
+
+	// Setup message capture for deployment response
+	var capturedResponse *model.DeploymentResponse
+	var responseMutex sync.Mutex
+	responseCaptured := make(chan struct{})
+
+	// Subscribe to deployment response subject to capture the published message
+	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMDeploymentResponseSubject, func(msg *nats.Msg) {
+		var dr model.DeploymentResponse
+		if err := json.Unmarshal(msg.Data, &dr); err == nil {
+			responseMutex.Lock()
+			capturedResponse = &dr
+			responseMutex.Unlock()
+			close(responseCaptured)
+		}
+	})
+	require.NoError(t, err)
+	defer subscription.Unsubscribe()
+
+	// Create and start activity executor with a processor that reschedules once using a counter
+	processor := &TestRescheduleCounterActivityProcessor{}
+	executor := &NatsActivityExecutor{
+		Client:            msgClient,
+		StreamName:        testStream,
+		ActivityType:      "test.reschedule.activity",
+		ActivityProcessor: processor,
+		Monitor:           system.NoopMonitor{},
+	}
+
+	err = executor.Execute(ctx)
+	require.NoError(t, err)
+
+	// Trigger orchestration by publishing activity message
+	activityMessage := api.ActivityMessage{
+		OrchestrationID: orchestration.ID,
+		Activity: api.Activity{
+			ID:   "A1",
+			Type: "test.reschedule.activity",
+		},
+	}
+
+	msgData, err := json.Marshal(activityMessage)
+	require.NoError(t, err)
+
+	subject := natsclient.CFMSubjectPrefix + ".test-reschedule-activity"
+	_, err = msgClient.Publish(ctx, subject, msgData)
+	require.NoError(t, err)
+
+	// Wait for deployment response to be published (should happen after reschedule and completion)
+	select {
+	case <-responseCaptured:
+		// Response was captured successfully
+	case <-time.After(10 * time.Second):
+		t.Fatal("Timeout waiting for deployment response after reschedule")
+	}
+
+	// Verify the deployment response
+	responseMutex.Lock()
+	require.NotNil(t, capturedResponse, "Deployment response should have been captured after reschedule")
+	assert.NotEmpty(t, capturedResponse.ID, "Response should have an ID")
+	assert.Equal(t, orchestration.ID, capturedResponse.ManifestID, "ManifestID should match orchestration ID")
+	assert.Equal(t, orchestration.CorrelationID, capturedResponse.CorrelationID, "CorrelationID should match")
+	assert.True(t, capturedResponse.Success, "Response should indicate success")
+	assert.Equal(t, orchestration.DeploymentType, capturedResponse.DeploymentType, "DeploymentType should match")
+	responseMutex.Unlock()
+
+	// Verify the orchestration completed successfully
+	updatedOrchestration, _, err := ReadOrchestration(ctx, orchestration.ID, msgClient)
+	require.NoError(t, err)
+	assert.Equal(t, api.OrchestrationStateCompleted, updatedOrchestration.State, "Orchestration should be completed")
+
+	// Verify the counter was used and then deleted from processing data
+	_, counterExists := updatedOrchestration.ProcessingData["dns.count"]
+	assert.False(t, counterExists, "Counter should be deleted after completion")
+
+	// Verify processor was called twice (once for reschedule, once for completion)
+	assert.Equal(t, 2, processor.CallCount, "Processor should have been called twice")
+}
+
 // TestCompleteActivityProcessor always returns complete
 type TestCompleteActivityProcessor struct{}
 
@@ -236,5 +352,28 @@ func (p *TestFatalErrorActivityProcessor) Process(ctx api.ActivityContext) api.A
 	return api.ActivityResult{
 		Result: api.ActivityResultFatalError,
 		Error:  assert.AnError,
+	}
+}
+
+// TestRescheduleCounterActivityProcessor reschedules once using a counter, then completes
+type TestRescheduleCounterActivityProcessor struct {
+	CallCount int
+}
+
+func (p *TestRescheduleCounterActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	p.CallCount++
+
+	count, found := ctx.Value("dns.count")
+	if found && count.(float64) > 0 {
+		// Second call - complete the activity
+		ctx.Delete("dns.count")
+		return api.ActivityResult{Result: api.ActivityResultComplete}
+	}
+
+	// First call - set counter and reschedule
+	ctx.SetValue("dns.count", 1.0)
+	return api.ActivityResult{
+		Result:           api.ActivityResultSchedule,
+		WaitOnReschedule: 10 * time.Millisecond,
 	}
 }

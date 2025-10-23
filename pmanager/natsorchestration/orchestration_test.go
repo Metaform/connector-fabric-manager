@@ -353,17 +353,17 @@ func (p *ScheduleThenContinueProcessor) Process(_ api.ActivityContext) api.Activ
 	if p.callCount == 1 {
 		// First call: return schedule result with 1 second delay for faster testing
 		return api.ActivityResult{
-			Result:     api.ActivityResultSchedule,
-			WaitMillis: 100 * time.Millisecond,
-			Error:      nil,
+			Result:           api.ActivityResultSchedule,
+			WaitOnReschedule: 100 * time.Millisecond,
+			Error:            nil,
 		}
 	}
 
 	// Subsequent calls: return continue result
 	return api.ActivityResult{
-		Result:     api.ActivityResultComplete,
-		WaitMillis: 0,
-		Error:      nil,
+		Result:           api.ActivityResultComplete,
+		WaitOnReschedule: 0,
+		Error:            nil,
 	}
 }
 

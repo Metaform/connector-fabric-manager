@@ -159,7 +159,7 @@ func CreateActivityDefinitions(apiClient *e2efixtures.ApiClient) error {
 
 func CreateDeploymentDefinition(apiClient *e2efixtures.ApiClient) error {
 	requestBody := pv1alpha1.DeploymentDefinition{
-		Type: dnsauncher.ActivityType,
+		Type: model.VPADeploymentType.String(),
 		Activities: []pv1alpha1.Activity{
 			{
 				ID:   "dns-provisioner",
