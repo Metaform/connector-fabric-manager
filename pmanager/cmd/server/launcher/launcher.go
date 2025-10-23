@@ -18,6 +18,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/core"
 	"github.com/metaform/connector-fabric-manager/pmanager/handler"
@@ -73,6 +74,7 @@ func Launch(shutdown <-chan struct{}) {
 		// TODO add SQL assembly
 		panic("SQL storage not yet implemented")
 	} else {
+		assembler.Register(&store.NoOpTrxAssembly{})
 		assembler.Register(&memorystore.MemoryStoreServiceAssembly{})
 	}
 

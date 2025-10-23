@@ -82,3 +82,45 @@ func (p provisionManager) Cancel(ctx context.Context, deploymentID string) error
 func (p provisionManager) GetOrchestration(ctx context.Context, deploymentID string) (*api.Orchestration, error) {
 	return p.orchestrator.GetOrchestration(ctx, deploymentID)
 }
+
+type definitionManager struct {
+	trxContext store.TransactionContext
+	store      api.DefinitionStore
+}
+
+func (d definitionManager) CreateDeploymentDefinition(ctx context.Context, definition *api.DeploymentDefinition) (*api.DeploymentDefinition, error) {
+	return store.Trx[api.DeploymentDefinition](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.DeploymentDefinition, error) {
+		var missingErrors []error
+
+		// Verify that all referenced activities exist
+		for _, activity := range definition.Activities {
+			exists, err := d.store.ExistsActivityDefinition(activity.Type)
+			if err != nil {
+				return nil, err
+			}
+			if !exists {
+				missingErrors = append(missingErrors, types.NewClientError("activity type '%s' not found", activity.Type))
+			}
+		}
+
+		if len(missingErrors) > 0 {
+			return nil, errors.Join(missingErrors...)
+		}
+
+		definition, err := d.store.StoreDeploymentDefinition(definition)
+		if err != nil {
+			return nil, err
+		}
+		return definition, nil
+	})
+}
+
+func (d definitionManager) CreateActivityDefinition(ctx context.Context, definition *api.ActivityDefinition) (*api.ActivityDefinition, error) {
+	return store.Trx[api.ActivityDefinition](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ActivityDefinition, error) {
+		definition, err := d.store.StoreActivityDefinition(definition)
+		if err != nil {
+			return nil, err
+		}
+		return definition, nil
+	})
+}

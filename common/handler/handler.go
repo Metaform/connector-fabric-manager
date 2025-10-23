@@ -14,6 +14,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -94,15 +95,19 @@ func (h HttpHandler) ReadPayload(w http.ResponseWriter, req *http.Request, defin
 }
 
 func (h HttpHandler) HandleError(w http.ResponseWriter, err error) {
-	switch e := err.(type) {
-	case *types.BadRequestError:
-		h.WriteError(w, fmt.Sprintf("Bad request: %s", e.Message), http.StatusBadRequest)
-	case *types.SystemError:
+	switch {
+	case types.IsClientError(err):
+		var clientErr types.ClientError
+		errors.As(err, &clientErr)
+		if badReq, ok := clientErr.(types.BadRequestError); ok {
+			h.WriteError(w, fmt.Sprintf("Bad request: %s", badReq.Message), http.StatusBadRequest)
+		} else {
+			h.WriteError(w, fmt.Sprintf("Client error: %v", clientErr), http.StatusBadRequest)
+		}
+	case types.IsFatal(err):
 		id := uuid.New().String()
 		h.Monitor.Infow("Internal Error [%s]: %v", id, err)
 		h.WriteError(w, fmt.Sprintf("Internal server error occurred [%s]", id), http.StatusInternalServerError)
-	case types.FatalError:
-		h.WriteError(w, "A fatal error occurred", http.StatusInternalServerError)
 	default:
 		h.WriteError(w, fmt.Sprintf("Operation failed: %s", err.Error()), http.StatusInternalServerError)
 	}

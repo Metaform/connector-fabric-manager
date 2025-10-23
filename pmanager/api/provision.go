@@ -27,6 +27,7 @@ const (
 	ProvisionManagerKey       system.ServiceType = "pmapi:ProvisionManager"
 	DefinitionStoreKey        system.ServiceType = "pmapi:DefinitionStore"
 	DeploymentOrchestratorKey system.ServiceType = "pmapi:DeploymentOrchestrator"
+	DefinitionManagerKey      system.ServiceType = "pmapi:DefinitionManager"
 )
 
 // ProvisionManager handles deployments to the system.
@@ -104,32 +105,7 @@ type ImmutableMap interface {
 	Size() int
 }
 
-// DefinitionStore manages DeploymentDefinitions and ActivityDefinitions.
-type DefinitionStore interface {
-
-	// FindDeploymentDefinition retrieves the DeploymentDefinition associated with the given type.
-	// Returns the DeploymentDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindDeploymentDefinition(deploymentType model.DeploymentType) (*DeploymentDefinition, error)
-
-	// FindActivityDefinition retrieves the ActivityDefinition associated with the given type.
-	// Returns the ActivityDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindActivityDefinition(activityType ActivityType) (*ActivityDefinition, error)
-
-	// StoreDeploymentDefinition saves or updates a DeploymentDefinition
-	StoreDeploymentDefinition(definition *DeploymentDefinition)
-
-	// StoreActivityDefinition saves or updates a ActivityDefinition
-	StoreActivityDefinition(definition *ActivityDefinition)
-
-	// DeleteDeploymentDefinition removes a DeploymentDefinition for the given type, returning true if successful.
-	DeleteDeploymentDefinition(deploymentType model.DeploymentType) bool
-
-	// DeleteActivityDefinition removes an ActivityDefinition for the given type, returning true if successful.
-	DeleteActivityDefinition(activityType ActivityType) bool
-
-	// ListDeploymentDefinitions returns DeploymentDefinition instances with pagination support
-	ListDeploymentDefinitions(offset, limit int) ([]*DeploymentDefinition, bool, error)
-
-	// ListActivityDefinitions returns ActivityDefinition instances with pagination support
-	ListActivityDefinitions(offset, limit int) ([]*ActivityDefinition, bool, error)
+type DefinitionManager interface {
+	CreateDeploymentDefinition(ctx context.Context, definition *DeploymentDefinition) (*DeploymentDefinition, error)
+	CreateActivityDefinition(ctx context.Context, definition *ActivityDefinition) (*ActivityDefinition, error)
 }

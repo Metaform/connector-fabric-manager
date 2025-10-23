@@ -24,7 +24,7 @@ import (
 
 func CreateTestActivityDefinition(apiClient *ApiClient) error {
 	requestBody := api.ActivityDefinition{
-		Type:        "test.activity",
+		Type:        "test-activity",
 		Description: "Performs a test activity",
 	}
 

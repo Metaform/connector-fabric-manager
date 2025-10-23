@@ -41,8 +41,8 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	router.Use(middleware.Recoverer)
 
 	provisionManager := context.Registry.Resolve(api.ProvisionManagerKey).(api.ProvisionManager)
-	definitionStore := context.Registry.Resolve(api.DefinitionStoreKey).(api.DefinitionStore)
-	handler := NewHandler(provisionManager, definitionStore, context.LogMonitor)
+	definitionManager := context.Registry.Resolve(api.DefinitionManagerKey).(api.DefinitionManager)
+	handler := NewHandler(provisionManager, definitionManager, context.LogMonitor)
 
 	router.Get("/health", handler.health)
 	router.Post("/deployment", handler.deployment)

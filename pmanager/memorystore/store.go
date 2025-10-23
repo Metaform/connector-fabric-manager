@@ -18,6 +18,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -50,6 +51,13 @@ func (d *MemoryDefinitionStore) FindDeploymentDefinition(deploymentType model.De
 	return &definitionCopy, nil
 }
 
+func (d *MemoryDefinitionStore) ExistsDeploymentDefinition(deploymentType model.DeploymentType) (bool, error) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	_, exists := d.deploymentDefinitions[deploymentType.String()]
+	return exists, nil
+}
+
 func (d *MemoryDefinitionStore) FindActivityDefinition(activityType api.ActivityType) (*api.ActivityDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
@@ -64,25 +72,41 @@ func (d *MemoryDefinitionStore) FindActivityDefinition(activityType api.Activity
 	return &definitionCopy, nil
 }
 
-func (d *MemoryDefinitionStore) StoreDeploymentDefinition(definition *api.DeploymentDefinition) {
+func (d *MemoryDefinitionStore) ExistsActivityDefinition(activityType api.ActivityType) (bool, error) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	_, exists := d.activityDefinitions[activityType.String()]
+	return exists, nil
+}
+
+func (d *MemoryDefinitionStore) StoreDeploymentDefinition(definition *api.DeploymentDefinition) (*api.DeploymentDefinition, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
+
+	if d.deploymentDefinitions[definition.Type.String()] != nil {
+		return nil, types.ErrConflict
+	}
 
 	// Store a copy to prevent external modifications
 	definitionCopy := *definition
 	d.deploymentDefinitions[definitionCopy.Type.String()] = &definitionCopy
+	return definition, nil
 }
 
-func (d *MemoryDefinitionStore) StoreActivityDefinition(definition *api.ActivityDefinition) {
+func (d *MemoryDefinitionStore) StoreActivityDefinition(definition *api.ActivityDefinition) (*api.ActivityDefinition, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
+	if d.activityDefinitions[definition.Type.String()] != nil {
+		return nil, types.ErrConflict
+	}
 	// Store a copy to prevent external modifications
 	definitionCopy := *definition
 	d.activityDefinitions[definitionCopy.Type.String()] = &definitionCopy
+	return definition, nil
 }
 
-func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(deploymentType model.DeploymentType) bool {
+func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(deploymentType model.DeploymentType) (bool, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -90,10 +114,10 @@ func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(deploymentType model.
 	if exists {
 		delete(d.deploymentDefinitions, deploymentType.String())
 	}
-	return exists
+	return exists, nil
 }
 
-func (d *MemoryDefinitionStore) DeleteActivityDefinition(activityType api.ActivityType) bool {
+func (d *MemoryDefinitionStore) DeleteActivityDefinition(activityType api.ActivityType) (bool, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -101,7 +125,7 @@ func (d *MemoryDefinitionStore) DeleteActivityDefinition(activityType api.Activi
 	if exists {
 		delete(d.activityDefinitions, activityType.String())
 	}
-	return exists
+	return exists, nil
 }
 
 func (d *MemoryDefinitionStore) ListDeploymentDefinitions(offset, limit int) ([]*api.DeploymentDefinition, bool, error) {

@@ -10,22 +10,10 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package testfixtures
+package main
 
-import (
-	"net"
-	"testing"
-)
+import "github.com/metaform/connector-fabric-manager/mvd/bootstrap/launcher"
 
-// GetRandomPort returns a random available port or fails the test
-func GetRandomPort(t *testing.T) int {
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	//goland:noinspection GoUnhandledErrorResult
-	defer listener.Close()
-
-	addr := listener.Addr().(*net.TCPAddr)
-	return addr.Port
+func main() {
+	launcher.LaunchMVD()
 }

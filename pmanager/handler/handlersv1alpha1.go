@@ -24,17 +24,17 @@ import (
 
 type PMHandler struct {
 	handler.HttpHandler
-	provisionManager api.ProvisionManager
-	definitionStore  api.DefinitionStore
+	provisionManager  api.ProvisionManager
+	definitionManager api.DefinitionManager
 }
 
-func NewHandler(provisionManager api.ProvisionManager, definitionStore api.DefinitionStore, monitor system.LogMonitor) *PMHandler {
+func NewHandler(provisionManager api.ProvisionManager, definitionManager api.DefinitionManager, monitor system.LogMonitor) *PMHandler {
 	return &PMHandler{
 		HttpHandler: handler.HttpHandler{
 			Monitor: monitor,
 		},
-		provisionManager: provisionManager,
-		definitionStore:  definitionStore,
+		provisionManager:  provisionManager,
+		definitionManager: definitionManager,
 	}
 }
 
@@ -48,7 +48,11 @@ func (h *PMHandler) activityDefinition(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	h.definitionStore.StoreActivityDefinition(v1alpha1.ToAPIActivityDefinition(&definition))
+	_, err := h.definitionManager.CreateActivityDefinition(req.Context(), v1alpha1.ToAPIActivityDefinition(&definition))
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
 
 	h.Created(w)
 }
@@ -63,7 +67,11 @@ func (h *PMHandler) deploymentDefinition(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	h.definitionStore.StoreDeploymentDefinition(v1alpha1.ToAPIDeploymentDefinition(&definition))
+	_, err := h.definitionManager.CreateDeploymentDefinition(req.Context(), v1alpha1.ToAPIDeploymentDefinition(&definition))
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
 
 	h.Created(w)
 }

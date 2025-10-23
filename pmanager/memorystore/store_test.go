@@ -104,13 +104,15 @@ func TestDefinitionStore_DeploymentDefinition_Delete(t *testing.T) {
 	_, err := definitionStore.FindDeploymentDefinition(dType)
 	assert.NoError(t, err)
 
-	deleted := definitionStore.DeleteDeploymentDefinition(dType)
+	deleted, err := definitionStore.DeleteDeploymentDefinition(dType)
+	assert.Nil(t, err)
 	assert.True(t, deleted)
 
 	_, err = definitionStore.FindDeploymentDefinition(dType)
 	assert.Equal(t, store.ErrNotFound, err)
 
-	deleted = definitionStore.DeleteDeploymentDefinition(dType)
+	deleted, err = definitionStore.DeleteDeploymentDefinition(dType)
+	assert.Nil(t, err)
 	assert.False(t, deleted)
 }
 
@@ -124,13 +126,15 @@ func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
 	_, err := definitionStore.FindActivityDefinition(activityType)
 	assert.NoError(t, err)
 
-	deleted := definitionStore.DeleteActivityDefinition(activityType)
+	deleted, err := definitionStore.DeleteActivityDefinition(activityType)
+	assert.Nil(t, err)
 	assert.True(t, deleted)
 
 	_, err = definitionStore.FindActivityDefinition(activityType)
 	assert.Equal(t, store.ErrNotFound, err)
 
-	deleted = definitionStore.DeleteActivityDefinition(activityType)
+	deleted, err = definitionStore.DeleteActivityDefinition(activityType)
+	assert.Nil(t, err)
 	assert.False(t, deleted)
 }
 

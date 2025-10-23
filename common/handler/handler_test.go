@@ -200,7 +200,7 @@ func TestHandleError(t *testing.T) {
 		jsonErr := json.Unmarshal(w.body.Bytes(), &response)
 		require.NoError(t, jsonErr)
 
-		assert.Contains(t, response.Message, "Internal server error occurred")
+		assert.Contains(t, response.Message, "Internal server error occurred [")
 		assert.Equal(t, 500, response.Code)
 	})
 
@@ -216,7 +216,7 @@ func TestHandleError(t *testing.T) {
 		jsonErr := json.Unmarshal(w.body.Bytes(), &response)
 		require.NoError(t, jsonErr)
 
-		assert.Contains(t, "A fatal error occurred", response.Message)
+		assert.Contains(t, response.Message, "Internal server error occurred [") // Do not report internal error details
 		assert.Equal(t, 500, response.Code)
 	})
 

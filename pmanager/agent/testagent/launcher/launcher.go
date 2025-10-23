@@ -48,8 +48,6 @@ func Launch(shutdown <-chan struct{}) {
 
 	vConfig := system.LoadConfigOrPanic(configPrefix)
 
-	assembler := system.NewServiceAssembler(monitor, vConfig, mode)
-
 	uri := vConfig.GetString(uriKey)
 	bucketValue := vConfig.GetString(bucketKey)
 	streamValue := vConfig.GetString(streamKey)
@@ -62,6 +60,7 @@ func Launch(shutdown <-chan struct{}) {
 		panic(fmt.Errorf("error launching test agent: %w", err))
 	}
 
+	assembler := system.NewServiceAssembler(monitor, vConfig, mode)
 	assembler.Register(&testAgentServiceAssembly{uri: uri, bucket: bucketValue, streamName: streamValue})
 	runtime.AssembleAndLaunch(assembler, "Test Agent", monitor, shutdown)
 }
