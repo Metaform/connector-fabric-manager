@@ -13,41 +13,32 @@
 package launcher
 
 import (
-	"time"
-
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/mvd/common"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
 const (
-	ActivityType = "dns-activity"
+	ActivityType = "connector-activity"
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 	config := common.LauncherConfig{
-		AgentName:    "DNS Agent",
-		ConfigPrefix: "dnsagent",
+		AgentName:    "Connector Agent",
+		ConfigPrefix: "cagent",
 		ActivityType: ActivityType,
 		NewProcessor: func(monitor system.LogMonitor) api.ActivityProcessor {
-			return &DNSActivityProcessor{monitor}
+			return &ConnectorActivityProcessor{monitor}
 		},
 	}
 	common.LaunchAgent(shutdown, config)
 }
 
-type DNSActivityProcessor struct {
+type ConnectorActivityProcessor struct {
 	monitor system.LogMonitor
 }
 
-func (t DNSActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	count, found := ctx.Value("dns.count")
-	if (found) && (count.(float64) > 0) {
-		t.monitor.Infof("DNS provisioning complete")
-		ctx.Delete("dns.count")
-		return api.ActivityResult{Result: api.ActivityResultComplete}
-	}
-	t.monitor.Infof("DNS provisioning requested")
-	ctx.SetValue("dns.count", 1)
-	return api.ActivityResult{Result: api.ActivityResultSchedule, WaitOnReschedule: 1 * time.Second}
+func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	t.monitor.Infof("Connector provisioning complete")
+	return api.ActivityResult{Result: api.ActivityResultComplete}
 }

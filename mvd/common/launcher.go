@@ -13,13 +13,12 @@
 package common
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/spf13/viper"
 )
 
@@ -30,21 +29,45 @@ const (
 	timeout   = 10 * time.Second
 )
 
-func Launch(shutdown <-chan struct{}, aConfig AgentConfig, assemblies ...system.ServiceAssembly) {
+type LauncherConfig struct {
+	AgentName    string
+	ConfigPrefix string
+	ActivityType string
+	NewProcessor func(monitor system.LogMonitor) api.ActivityProcessor
+}
+
+type agentConfig struct {
+	Name       string
+	URI        string
+	Bucket     string
+	StreamName string
+	VConfig    *viper.Viper
+}
+
+func LaunchAgent(shutdown <-chan struct{}, config LauncherConfig) {
+	cfg := loadAgentConfig(config.AgentName, config.ConfigPrefix)
+
+	assembly := &AgentServiceAssembly{
+		agentName:    config.AgentName,
+		activityType: config.ActivityType,
+		uri:          cfg.URI,
+		bucket:       cfg.Bucket,
+		streamName:   cfg.StreamName,
+		newProcessor: config.NewProcessor,
+	}
+
 	mode := runtime.LoadMode()
 
-	monitor := runtime.LoadLogMonitor(aConfig.LogPrefix, mode)
+	monitor := runtime.LoadLogMonitor(config.ConfigPrefix, mode)
 	//goland:noinspection GoUnhandledErrorResult
 	defer monitor.Sync()
 
-	assembler := system.NewServiceAssembler(monitor, aConfig.VConfig, mode)
-	for _, assembly := range assemblies {
-		assembler.Register(assembly)
-	}
-	runtime.AssembleAndLaunch(assembler, aConfig.Name, monitor, shutdown)
+	assembler := system.NewServiceAssembler(monitor, cfg.VConfig, mode)
+	assembler.Register(assembly)
+	runtime.AssembleAndLaunch(assembler, cfg.Name, monitor, shutdown)
 }
 
-func LoadAgentConfig(name string, logPrefix string, configPrefix string) *AgentConfig {
+func loadAgentConfig(name string, configPrefix string) *agentConfig {
 	vConfig := system.LoadConfigOrPanic(configPrefix)
 	uri := vConfig.GetString(uriKey)
 	bucketValue := vConfig.GetString(bucketKey)
@@ -55,42 +78,13 @@ func LoadAgentConfig(name string, logPrefix string, configPrefix string) *AgentC
 		fmt.Sprintf("%s.%s", configPrefix, bucketKey), bucketValue,
 		fmt.Sprintf("%s.%s", configPrefix, streamKey), streamValue)
 	if err != nil {
-		panic(fmt.Errorf("error launching test agent: %w", err))
+		panic(fmt.Errorf("error loading agent configuration: %w", err))
 	}
-	return &AgentConfig{
+	return &agentConfig{
 		Name:       name,
-		LogPrefix:  logPrefix,
-		VConfig:    vConfig,
 		URI:        uri,
 		Bucket:     bucketValue,
 		StreamName: streamValue,
+		VConfig:    vConfig,
 	}
-}
-
-type AgentConfig struct {
-	Name       string
-	LogPrefix  string
-	VConfig    *viper.Viper
-	URI        string
-	Bucket     string
-	StreamName string
-}
-
-func SetupConsumer(natsClient *natsclient.NatsClient, streamName string, activityType string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	stream, err := natsclient.SetupStream(ctx, natsClient, streamName)
-
-	if err != nil {
-		return fmt.Errorf("error setting up agent stream: %w", err)
-	}
-
-	_, err = natsclient.SetupConsumer(ctx, stream, activityType)
-
-	if err != nil {
-		return fmt.Errorf("error setting up agent consumer: %w", err)
-	}
-
-	return nil
 }

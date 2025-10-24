@@ -123,6 +123,21 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return natsclient.AckMessage(message)
 
 	case api.ActivityResultSchedule:
+		// IMPORTANT: Must persist state BEFORE scheduling the reschedule
+		// This ensures processing data is saved for the next invocation
+		//_, _, err := UpdateOrchestration(ctx, orchestration, revision, e.Client, func(o *api.Orchestration) {
+		//	for key, value := range activityContext.Values() {
+		//		o.ProcessingData[key] = value
+		//	}
+		//	for key, value := range activityContext.OutputValues() {
+		//		o.OutputData[key] = value
+		//	}
+		//})
+		//if err != nil {
+		//	e.Monitor.Warnf("Failed to persist orchestration state before reschedule for %s: %v", orchestration.ID, err)
+		//	return fmt.Errorf("failed to persist state for reschedule: %w", err)
+		//}
+
 		e.persistState(activityContext, orchestration, revision)
 		if err := message.NakWithDelay(result.WaitOnReschedule); err != nil {
 			return fmt.Errorf("failed to reschedule schedule activity %s: %w", oMessage.OrchestrationID, err)
@@ -136,10 +151,10 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 func (e *NatsActivityExecutor) persistState(activityContext api.ActivityContext, orchestration api.Orchestration, revision uint64) {
 	if _, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
-			orchestration.ProcessingData[key] = value
+			o.ProcessingData[key] = value
 		}
 		for key, value := range activityContext.OutputValues() {
-			orchestration.OutputData[key] = value
+			o.OutputData[key] = value
 		}
 	}); err != nil {
 		e.Monitor.Warnf("Failed to persist orchestration state for %s: %v", orchestration.ID, err)
@@ -156,11 +171,11 @@ func (e *NatsActivityExecutor) processOnActivityCompletion(
 	// The orchestration state must be saved and re-read to determine if activities completed after the last read and the orchestration is complete.
 	orchestration, revision, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
 		for key, value := range activityContext.Values() {
-			orchestration.ProcessingData[key] = value
+			o.ProcessingData[key] = value
 		}
 
 		for key, value := range activityContext.OutputValues() {
-			orchestration.OutputData[key] = value
+			o.OutputData[key] = value
 		}
 		o.Completed[oMessage.Activity.ID] = struct{}{} // Mark current activity as completed
 	})

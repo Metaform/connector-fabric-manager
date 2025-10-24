@@ -21,33 +21,34 @@ import (
 )
 
 const (
-	ActivityType = "dns-activity"
+	ActivityType = "onboard-service-activity"
+	countKey     = "ob.count"
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 	config := common.LauncherConfig{
-		AgentName:    "DNS Agent",
-		ConfigPrefix: "dnsagent",
+		AgentName:    "Onboarding Agent",
+		ConfigPrefix: "obagent",
 		ActivityType: ActivityType,
 		NewProcessor: func(monitor system.LogMonitor) api.ActivityProcessor {
-			return &DNSActivityProcessor{monitor}
+			return &ConnectorActivityProcessor{monitor}
 		},
 	}
 	common.LaunchAgent(shutdown, config)
 }
 
-type DNSActivityProcessor struct {
+type ConnectorActivityProcessor struct {
 	monitor system.LogMonitor
 }
 
-func (t DNSActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	count, found := ctx.Value("dns.count")
+func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	count, found := ctx.Value(countKey)
 	if (found) && (count.(float64) > 0) {
-		t.monitor.Infof("DNS provisioning complete")
-		ctx.Delete("dns.count")
+		t.monitor.Infof("Onboarding and credential setup complete")
+		ctx.Delete(countKey)
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}
-	t.monitor.Infof("DNS provisioning requested")
-	ctx.SetValue("dns.count", 1)
-	return api.ActivityResult{Result: api.ActivityResultSchedule, WaitOnReschedule: 1 * time.Second}
+	t.monitor.Infof("Onboarding Initiated")
+	ctx.SetValue(countKey, 1)
+	return api.ActivityResult{Result: api.ActivityResultSchedule, WaitOnReschedule: 2 * time.Second}
 }

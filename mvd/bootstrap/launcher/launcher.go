@@ -23,7 +23,9 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
-	dnsauncher "github.com/metaform/connector-fabric-manager/mvd/dns/launcher"
+	clauncher "github.com/metaform/connector-fabric-manager/mvd/connector/launcher"
+	dnslauncher "github.com/metaform/connector-fabric-manager/mvd/dns/launcher"
+	oblauncher "github.com/metaform/connector-fabric-manager/mvd/onboard/launcher"
 	papi "github.com/metaform/connector-fabric-manager/pmanager/api"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	pv1alpha1 "github.com/metaform/connector-fabric-manager/pmanager/model/v1alpha1"
@@ -50,6 +52,14 @@ func LaunchMVD() {
 	_ = os.Setenv("DNSAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("DNSAGENT_STREAM", streamName)
 
+	_ = os.Setenv("CAGENT_URI", nt.Uri)
+	_ = os.Setenv("CAGENT_BUCKET", cfmBucket)
+	_ = os.Setenv("CAGENT_STREAM", streamName)
+
+	_ = os.Setenv("OBAGENT_URI", nt.Uri)
+	_ = os.Setenv("OBAGENT_BUCKET", cfmBucket)
+	_ = os.Setenv("OBAGENT_STREAM", streamName)
+
 	_ = os.Setenv("TM_URI", nt.Uri)
 	_ = os.Setenv("TM_BUCKET", cfmBucket)
 	_ = os.Setenv("TM_STREAM", streamName)
@@ -73,7 +83,15 @@ func LaunchMVD() {
 	}()
 
 	go func() {
-		dnsauncher.LaunchAndWaitSignal(shutdownChannel)
+		dnslauncher.LaunchAndWaitSignal(shutdownChannel)
+	}()
+
+	go func() {
+		clauncher.LaunchAndWaitSignal(shutdownChannel)
+	}()
+
+	go func() {
+		oblauncher.LaunchAndWaitSignal(shutdownChannel)
 	}()
 
 	client := e2efixtures.NewApiClient(fmt.Sprintf("http://localhost:%d", tPort), fmt.Sprintf("http://localhost:%d", pPort))
@@ -133,7 +151,6 @@ func LaunchMVD() {
 			break
 		}
 	}
-
 }
 
 func GetRandomPort() int {
@@ -149,11 +166,23 @@ func GetRandomPort() int {
 }
 
 func CreateActivityDefinitions(apiClient *e2efixtures.ApiClient) error {
-	requestBody := papi.ActivityDefinition{
-		Type:        dnsauncher.ActivityType,
-		Description: "Provisions A DNS subdomain and ingress routing",
+	err := CreateActivityDefinition(apiClient, dnslauncher.ActivityType, "Provisions a DNS subdomain and ingress routing")
+	if err != nil {
+		return err
+	}
+	err = CreateActivityDefinition(apiClient, clauncher.ActivityType, "Provisions Connector VPA")
+	if err != nil {
+		return err
 	}
 
+	return CreateActivityDefinition(apiClient, oblauncher.ActivityType, "Performs onboarding")
+}
+
+func CreateActivityDefinition(apiClient *e2efixtures.ApiClient, activityType string, description string) error {
+	requestBody := papi.ActivityDefinition{
+		Type:        papi.ActivityType(activityType),
+		Description: description,
+	}
 	return apiClient.PostToPManager("activity-definition", requestBody)
 }
 
@@ -163,7 +192,22 @@ func CreateDeploymentDefinition(apiClient *e2efixtures.ApiClient) error {
 		Activities: []pv1alpha1.Activity{
 			{
 				ID:   "dns-provisioner",
-				Type: dnsauncher.ActivityType,
+				Type: dnslauncher.ActivityType,
+			},
+			{
+				ID:   "connector-provisioner",
+				Type: clauncher.ActivityType,
+				DependsOn: []string{
+					"dns-provisioner",
+				},
+			},
+			{
+				ID:   "onboarder",
+				Type: oblauncher.ActivityType,
+				DependsOn: []string{
+					"connector-provisioner",
+					//"dns-provisioner",
+				},
 			},
 		},
 	}
