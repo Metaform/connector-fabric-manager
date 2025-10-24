@@ -22,6 +22,7 @@ import (
 
 const (
 	ActivityType = "dns-activity"
+	key          = "dns.count"
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
@@ -41,13 +42,13 @@ type DNSActivityProcessor struct {
 }
 
 func (t DNSActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	count, found := ctx.Value("dns.count")
+	count, found := ctx.Value(key)
 	if (found) && (count.(float64) > 0) {
 		t.monitor.Infof("DNS provisioning complete")
-		ctx.Delete("dns.count")
+		ctx.Delete(key)
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}
 	t.monitor.Infof("DNS provisioning requested")
-	ctx.SetValue("dns.count", 1)
+	ctx.SetValue(key, 1)
 	return api.ActivityResult{Result: api.ActivityResultSchedule, WaitOnReschedule: 1 * time.Second}
 }
