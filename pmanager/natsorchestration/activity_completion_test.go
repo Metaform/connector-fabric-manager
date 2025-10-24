@@ -363,15 +363,15 @@ type TestRescheduleCounterActivityProcessor struct {
 func (p *TestRescheduleCounterActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
 	p.CallCount++
 
-	count, found := ctx.Value("dns.count")
+	count, found := ctx.Value("test.count")
 	if found && count.(float64) > 0 {
 		// Second call - complete the activity
-		ctx.Delete("dns.count")
+		ctx.Delete("test.count")
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}
 
 	// First call - set counter and reschedule
-	ctx.SetValue("dns.count", 1.0)
+	ctx.SetValue("test.count", 1.0)
 	return api.ActivityResult{
 		Result:           api.ActivityResultSchedule,
 		WaitOnReschedule: 10 * time.Millisecond,
