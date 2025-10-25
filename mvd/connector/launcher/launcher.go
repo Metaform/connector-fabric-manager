@@ -14,8 +14,8 @@ package launcher
 
 import (
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/pmanager/agent"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsagent"
 )
 
 const (
@@ -23,7 +23,7 @@ const (
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
-	config := agent.LauncherConfig{
+	config := natsagent.LauncherConfig{
 		AgentName:    "Connector Agent",
 		ConfigPrefix: "cagent",
 		ActivityType: ActivityType,
@@ -31,7 +31,7 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 			return &ConnectorActivityProcessor{monitor}
 		},
 	}
-	agent.LaunchAgent(shutdown, config)
+	natsagent.LaunchAgent(shutdown, config)
 }
 
 type ConnectorActivityProcessor struct {

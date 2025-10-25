@@ -16,8 +16,8 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/pmanager/agent"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsagent"
 )
 
 const (
@@ -31,7 +31,7 @@ func LaunchAndWaitSignal() {
 }
 
 func Launch(shutdown <-chan struct{}) {
-	config := agent.LauncherConfig{
+	config := natsagent.LauncherConfig{
 		AgentName:    agentName,
 		ConfigPrefix: configPrefix,
 		ActivityType: activityType,
@@ -39,7 +39,7 @@ func Launch(shutdown <-chan struct{}) {
 			return &TestActivityProcessor{monitor}
 		},
 	}
-	agent.LaunchAgent(shutdown, config)
+	natsagent.LaunchAgent(shutdown, config)
 }
 
 type TestActivityProcessor struct {

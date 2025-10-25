@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/pmanager/agent"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsagent"
 )
 
 const (
@@ -26,7 +26,7 @@ const (
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
-	config := agent.LauncherConfig{
+	config := natsagent.LauncherConfig{
 		AgentName:    "DNS Agent",
 		ConfigPrefix: "dnsagent",
 		ActivityType: ActivityType,
@@ -34,7 +34,7 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 			return &DNSActivityProcessor{monitor}
 		},
 	}
-	agent.LaunchAgent(shutdown, config)
+	natsagent.LaunchAgent(shutdown, config)
 }
 
 type DNSActivityProcessor struct {

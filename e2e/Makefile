@@ -2,6 +2,12 @@
 
 # Build settings
 COVER_PROFILE=coverage.out
+TEST_AGENT_BINARY=testagent
+BUILD_DIR=bin
+TEST_AGENT_PATH=./testagent/main.go
+
+build-test-agent:
+	go build -o $(BUILD_DIR)/$(TEST_AGENT_BINARY) $(TEST_AGENT_PATH)
 
 # Run all tests
 test:
