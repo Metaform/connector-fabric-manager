@@ -206,7 +206,6 @@ func CreateDeploymentDefinition(apiClient *e2efixtures.ApiClient) error {
 				Type: oblauncher.ActivityType,
 				DependsOn: []string{
 					"connector-provisioner",
-					//"dns-provisioner",
 				},
 			},
 		},
