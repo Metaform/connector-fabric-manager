@@ -23,7 +23,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
 	"github.com/metaform/connector-fabric-manager/common/testfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
-	alauncher "github.com/metaform/connector-fabric-manager/pmanager/agent/testagent/launcher"
+	alauncher "github.com/metaform/connector-fabric-manager/e2e/testagent/launcher"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"

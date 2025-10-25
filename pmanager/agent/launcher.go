@@ -10,11 +10,10 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package common
+package agent
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -26,7 +25,6 @@ const (
 	uriKey    = "uri"
 	bucketKey = "bucket"
 	streamKey = "stream"
-	timeout   = 10 * time.Second
 )
 
 type LauncherConfig struct {

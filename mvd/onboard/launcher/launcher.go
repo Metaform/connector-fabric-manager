@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/mvd/common"
+	"github.com/metaform/connector-fabric-manager/pmanager/agent"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
@@ -26,7 +26,7 @@ const (
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
-	config := common.LauncherConfig{
+	config := agent.LauncherConfig{
 		AgentName:    "Onboarding Agent",
 		ConfigPrefix: "obagent",
 		ActivityType: ActivityType,
@@ -34,7 +34,7 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 			return &ConnectorActivityProcessor{monitor}
 		},
 	}
-	common.LaunchAgent(shutdown, config)
+	agent.LaunchAgent(shutdown, config)
 }
 
 type ConnectorActivityProcessor struct {

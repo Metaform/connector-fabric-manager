@@ -13,32 +13,46 @@
 package launcher
 
 import (
+	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/agent"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
 const (
-	ActivityType = "connector-activity"
+	agentName    = "Test Agent"
+	activityType = "test.activity"
+	configPrefix = "testagent"
 )
 
-func LaunchAndWaitSignal(shutdown <-chan struct{}) {
+func LaunchAndWaitSignal() {
+	Launch(runtime.CreateSignalShutdownChan())
+}
+
+func Launch(shutdown <-chan struct{}) {
 	config := agent.LauncherConfig{
-		AgentName:    "Connector Agent",
-		ConfigPrefix: "cagent",
-		ActivityType: ActivityType,
+		AgentName:    agentName,
+		ConfigPrefix: configPrefix,
+		ActivityType: activityType,
 		NewProcessor: func(monitor system.LogMonitor) api.ActivityProcessor {
-			return &ConnectorActivityProcessor{monitor}
+			return &TestActivityProcessor{monitor}
 		},
 	}
 	agent.LaunchAgent(shutdown, config)
 }
 
-type ConnectorActivityProcessor struct {
+type TestActivityProcessor struct {
 	monitor system.LogMonitor
 }
 
-func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	t.monitor.Infof("Connector provisioning complete")
+func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	input := ctx.InputData()
+	// Echo values to output
+	data, found := input.Get(model.VPAPayloadType)
+	if found {
+		ctx.SetOutputValue(model.VPAResponseData, data)
+	}
+	t.monitor.Infof("Processed activity")
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
