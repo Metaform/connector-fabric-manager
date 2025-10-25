@@ -170,7 +170,7 @@ func CreateActivityDefinitions(apiClient *e2efixtures.ApiClient) error {
 	if err != nil {
 		return err
 	}
-	err = CreateActivityDefinition(apiClient, clauncher.ActivityType, "Provisions Connector VPA")
+	err = CreateActivityDefinition(apiClient, clauncher.ActivityType, "Provisions a Connector VPA")
 	if err != nil {
 		return err
 	}
