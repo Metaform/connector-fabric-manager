@@ -13,8 +13,10 @@
 package launcher
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsagent"
@@ -42,13 +44,17 @@ type DNSActivityProcessor struct {
 }
 
 func (t DNSActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	identifier, found := ctx.InputData().Get(model.ParticipantIdentifier)
+	if !found {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
+	}
 	count, found := ctx.Value(key)
 	if (found) && (count.(float64) > 0) {
-		t.monitor.Infof("DNS provisioning complete")
+		t.monitor.Infof("DNS provisioning complete: %s", identifier)
 		ctx.Delete(key)
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}
-	t.monitor.Infof("DNS provisioning requested")
+	t.monitor.Infof("DNS provisioning requested: %s", identifier)
 	ctx.SetValue(key, 1)
 	return api.ActivityResult{Result: api.ActivityResultSchedule, WaitOnReschedule: 1 * time.Second}
 }

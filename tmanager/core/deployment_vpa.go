@@ -72,6 +72,8 @@ func (d participantDeployer) DeployProfile(
 			Payload:        make(map[string]any),
 		}
 
+		dManifest.Payload[model.ParticipantIdentifier] = participantProfile.Identifier
+
 		vpaManifests := make([]model.VPAManifest, 0, len(participantProfile.VPAs))
 		for _, vpa := range participantProfile.VPAs {
 			vpaManifest := model.VPAManifest{
@@ -84,7 +86,6 @@ func (d participantDeployer) DeployProfile(
 		}
 
 		dManifest.Payload[model.VPAPayloadType] = vpaManifests
-
 		result, err := d.participantStore.Create(ctx, participantProfile)
 		if err != nil {
 			return nil, fmt.Errorf("error creating participant %s: %w", identifier, err)
@@ -118,10 +119,13 @@ func (h vpaDeploymentCallbackHandler) handle(ctx context.Context, response model
 		}
 		switch {
 		case response.Success:
-			props, found := response.Properties[model.VPAResponseData]
-			if found {
-				profile.Properties[model.VPAResponseData] = props
+			// Place all output values under VPStateData key
+			vpaProps := make(map[string]any)
+			for key, value := range response.Properties {
+				vpaProps[key] = value
 			}
+			profile.Properties[model.VPAStateData] = vpaProps
+
 			for i, vpa := range profile.VPAs {
 				vpa.State = api.DeploymentStateActive
 				// TODO update timestamp based on returned data

@@ -13,7 +13,6 @@
 package launcher
 
 import (
-	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -47,12 +46,7 @@ type TestActivityProcessor struct {
 }
 
 func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	input := ctx.InputData()
-	// Echo values to output
-	data, found := input.Get(model.VPAPayloadType)
-	if found {
-		ctx.SetOutputValue(model.VPAResponseData, data)
-	}
+	ctx.SetOutputValue("agent.test.output", "test output")
 	t.monitor.Infof("Processed activity")
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }

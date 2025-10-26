@@ -13,6 +13,10 @@
 package launcher
 
 import (
+	"fmt"
+
+	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsagent"
@@ -39,6 +43,14 @@ type ConnectorActivityProcessor struct {
 }
 
 func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	t.monitor.Infof("Connector provisioning complete")
+	identifier, found := ctx.InputData().Get(model.ParticipantIdentifier)
+	if !found {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
+	}
+
+	// Return state data
+	ctx.SetOutputValue(model.ConnectorId, uuid.New().String())
+
+	t.monitor.Infof("Connector provisioning complete: %s", identifier)
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }

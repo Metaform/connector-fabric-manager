@@ -151,6 +151,20 @@ func LaunchMVD() {
 			break
 		}
 	}
+
+	// Validate return data
+	stateData, found := statusProfile.Properties[model.VPAStateData]
+	if !found {
+		panic("Expected VPA state data to be returned")
+	}
+	stateDataMap, ok := stateData.(map[string]any)
+	if !ok {
+		panic("Expected VPA state data to be a map")
+	}
+	_, found = stateDataMap[model.ConnectorId]
+	if !found {
+		panic("Expected VPA state data to contain " + model.ConnectorId)
+	}
 }
 
 func GetRandomPort() int {

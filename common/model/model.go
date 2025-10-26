@@ -60,6 +60,9 @@ const (
 	ConnectorType         VPAType        = "cfm.connector"
 	CredentialServiceType VPAType        = "cfm.credentialservice"
 	DataPlaneType         VPAType        = "cfm.dataplane"
+	ParticipantIdentifier                = "cfm.participant.id"
 	VPAPayloadType                       = "cfm.vpas"
-	VPAResponseData                      = "cfm.vpa.response"
+	VPAStateData                         = "cfm.vpa.state"
+	ConnectorId                          = "cfm.connector.id"
+	CredentialService                    = "cfm.credentialservice.id"
 )
