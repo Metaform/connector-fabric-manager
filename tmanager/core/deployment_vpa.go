@@ -33,11 +33,6 @@ type participantDeployer struct {
 	dataspaceStore       api.EntityStore[api.DataspaceProfile]
 }
 
-func (d participantDeployer) DisposeProfile(ctx context.Context, identifier string) error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (d participantDeployer) GetProfile(ctx context.Context, profileID string) (*api.ParticipantProfile, error) {
 	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
 		return d.participantStore.FindById(ctx, profileID)
@@ -107,6 +102,11 @@ func (d participantDeployer) DeployProfile(
 
 		return result, nil
 	})
+}
+
+func (d participantDeployer) DisposeProfile(ctx context.Context, identifier string) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 type vpaDeploymentCallbackHandler struct {
