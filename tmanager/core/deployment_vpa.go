@@ -33,8 +33,15 @@ type participantDeployer struct {
 	dataspaceStore       api.EntityStore[api.DataspaceProfile]
 }
 
+func (d participantDeployer) DisposeProfile(ctx context.Context, identifier string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (d participantDeployer) GetProfile(ctx context.Context, profileID string) (*api.ParticipantProfile, error) {
-	return d.participantStore.FindById(ctx, profileID)
+	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
+		return d.participantStore.FindById(ctx, profileID)
+	})
 }
 
 func (d participantDeployer) DeployProfile(
@@ -93,7 +100,7 @@ func (d participantDeployer) DeployProfile(
 
 		// Only send the deployment message if the storage operation succeeded. If the deployment fails, the transaction
 		// will be rolled back.
-		err = d.deploymentClient.Deploy(ctx, dManifest)
+		err = d.deploymentClient.Send(ctx, dManifest)
 		if err != nil {
 			return nil, fmt.Errorf("error deploying participant %s: %w", identifier, err)
 		}

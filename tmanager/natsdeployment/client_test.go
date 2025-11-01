@@ -61,8 +61,8 @@ func TestNatsDeploymentClient_Deploy(t *testing.T) {
 		Payload:        make(map[string]any),
 	}
 
-	// Deploy the manifest
-	err = client.Deploy(ctx, manifest)
+	// Send the manifest
+	err = client.Send(ctx, manifest)
 	require.NoError(t, err)
 
 	// Verify the message was published by consuming it

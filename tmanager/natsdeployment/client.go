@@ -59,7 +59,7 @@ func (n *natsDeploymentClient) Init(ctx context.Context, consumer jetstream.Cons
 	return nil
 }
 
-func (n *natsDeploymentClient) Deploy(ctx context.Context, manifest model.DeploymentManifest) error {
+func (n *natsDeploymentClient) Send(ctx context.Context, manifest model.DeploymentManifest) error {
 	serialized, err := json.Marshal(manifest)
 	if err != nil {
 		return err

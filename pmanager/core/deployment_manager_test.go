@@ -283,7 +283,7 @@ func TestDefinitionManager_Integration_CompleteWorkflow(t *testing.T) {
 
 	activityDef2 := &api.ActivityDefinition{
 		Type:         "deploy",
-		Description:  "Deploy application",
+		Description:  "Send application",
 		InputSchema:  map[string]any{"type": "object"},
 		OutputSchema: map[string]any{"type": "object"},
 	}

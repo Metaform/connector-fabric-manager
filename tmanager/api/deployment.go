@@ -31,9 +31,9 @@ type VPAPropMap = map[model.VPAType]map[string]any
 
 // DeploymentClient asynchronously deploys a manifest to the provision manager. Implementations may use different wire protocols.
 type DeploymentClient interface {
-	// Deploy deploys the specified manifest.
+	// Send deploys the specified manifest.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Deploy(ctx context.Context, manifest model.DeploymentManifest) error
+	Send(ctx context.Context, manifest model.DeploymentManifest) error
 }
 
 // DeploymentCallbackHandler is called when a deployment is complete.
@@ -48,6 +48,7 @@ type DeploymentHandlerRegistry interface {
 // ParticipantProfileDeployer performs participant profile operations, including deploying associated VPAs.
 type ParticipantProfileDeployer interface {
 	DeployProfile(ctx context.Context, identifier string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
+	DisposeProfile(ctx context.Context, identifier string) error
 	GetProfile(ctx context.Context, id string) (*ParticipantProfile, error)
 }
 
