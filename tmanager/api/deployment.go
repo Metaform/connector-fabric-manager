@@ -20,11 +20,11 @@ import (
 )
 
 const (
-	DeploymentHandlerRegistryKey  system.ServiceType = "tmapi:DeploymentHandlerRegistry"
-	DeploymentClientKey           system.ServiceType = "tmapi:DeploymentClient"
-	ParticipantProfileDeployerKey system.ServiceType = "tmapi:ParticipantProfileDeployer"
-	DataspaceProfileDeployerKey   system.ServiceType = "tmapi:DataspaceProfileDeployer"
-	CellDeployerKey               system.ServiceType = "tmapi:CellDeployer"
+	DeploymentHandlerRegistryKey system.ServiceType = "tmapi:DeploymentHandlerRegistry"
+	DeploymentClientKey          system.ServiceType = "tmapi:DeploymentClient"
+	ParticipantProfileServiceKey system.ServiceType = "tmapi:ParticipantProfileService"
+	DataspaceProfileServiceKey   system.ServiceType = "tmapi:DataspaceProfileService"
+	CellServiceKey               system.ServiceType = "tmapi:CellService"
 )
 
 type VPAPropMap = map[model.VPAType]map[string]any
@@ -45,22 +45,22 @@ type DeploymentHandlerRegistry interface {
 	RegisterDeploymentHandler(deploymentType model.DeploymentType, handler DeploymentCallbackHandler)
 }
 
-// ParticipantProfileDeployer performs participant profile operations, including deploying associated VPAs.
-type ParticipantProfileDeployer interface {
+// ParticipantProfileService performs participant profile operations, including deploying associated VPAs.
+type ParticipantProfileService interface {
 	DeployProfile(ctx context.Context, identifier string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
 	DisposeProfile(ctx context.Context, identifier string) error
 	GetProfile(ctx context.Context, id string) (*ParticipantProfile, error)
 }
 
-// DataspaceProfileDeployer performs dataspace profile operations.
-type DataspaceProfileDeployer interface {
+// DataspaceProfileService performs dataspace profile operations.
+type DataspaceProfileService interface {
 	CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*DataspaceProfile, error)
 	DeployProfile(ctx context.Context, profileID string, cellID string) error
 	GetProfile(ctx context.Context, profileID string) (*DataspaceProfile, error)
 }
 
-// CellDeployer performs cell operations.
-type CellDeployer interface {
+// CellService performs cell operations.
+type CellService interface {
 	RecordExternalDeployment(ctx context.Context, cell Cell) (*Cell, error)
 }
 

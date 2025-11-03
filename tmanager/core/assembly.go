@@ -38,7 +38,7 @@ func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
 }
 
 func (a *TMCoreServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{api.ParticipantProfileDeployerKey, api.CellDeployerKey, api.DataspaceProfileDeployerKey}
+	return []system.ServiceType{api.ParticipantProfileServiceKey, api.CellServiceKey, api.DataspaceProfileServiceKey}
 }
 
 func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
@@ -52,7 +52,7 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	cellStore := context.Registry.Resolve(api.CellStoreKey).(api.EntityStore[api.Cell])
 	dataspaceStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(api.EntityStore[api.DataspaceProfile])
 
-	participantDeployer := participantDeployer{
+	participantService := participantService{
 		participantGenerator: a.vpaGenerator,
 		deploymentClient:     deploymentClient,
 		trxContext:           trxContext,
@@ -60,14 +60,14 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 		dataspaceStore:       dataspaceStore,
 		cellStore:            cellStore,
 	}
-	context.Registry.Register(api.ParticipantProfileDeployerKey, participantDeployer)
+	context.Registry.Register(api.ParticipantProfileServiceKey, participantService)
 
-	context.Registry.Register(api.CellDeployerKey, cellDeployer{
+	context.Registry.Register(api.CellServiceKey, cellService{
 		trxContext: trxContext,
 		store:      cellStore,
 	})
 
-	context.Registry.Register(api.DataspaceProfileDeployerKey, dataspaceProfileDeployer{
+	context.Registry.Register(api.DataspaceProfileServiceKey, dataspaceProfileService{
 		trxContext:   trxContext,
 		profileStore: dataspaceStore,
 		cellStore:    cellStore,

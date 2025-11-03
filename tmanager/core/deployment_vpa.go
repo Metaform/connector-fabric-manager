@@ -24,7 +24,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
-type participantDeployer struct {
+type participantService struct {
 	participantGenerator participantGenerator
 	deploymentClient     api.DeploymentClient
 	trxContext           store.TransactionContext
@@ -33,13 +33,13 @@ type participantDeployer struct {
 	dataspaceStore       api.EntityStore[api.DataspaceProfile]
 }
 
-func (d participantDeployer) GetProfile(ctx context.Context, profileID string) (*api.ParticipantProfile, error) {
+func (d participantService) GetProfile(ctx context.Context, profileID string) (*api.ParticipantProfile, error) {
 	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
 		return d.participantStore.FindById(ctx, profileID)
 	})
 }
 
-func (d participantDeployer) DeployProfile(
+func (d participantService) DeployProfile(
 	ctx context.Context,
 	identifier string,
 	vpaProperties api.VPAPropMap,
@@ -104,7 +104,7 @@ func (d participantDeployer) DeployProfile(
 	})
 }
 
-func (d participantDeployer) DisposeProfile(ctx context.Context, identifier string) error {
+func (d participantService) DisposeProfile(ctx context.Context, identifier string) error {
 	//TODO implement me
 	panic("implement me")
 }

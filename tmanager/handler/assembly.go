@@ -40,9 +40,9 @@ func (h *HandlerServiceAssembly) Provides() []system.ServiceType {
 
 func (h *HandlerServiceAssembly) Requires() []system.ServiceType {
 	return []system.ServiceType{
-		api.ParticipantProfileDeployerKey,
-		api.CellDeployerKey,
-		api.DataspaceProfileDeployerKey,
+		api.ParticipantProfileServiceKey,
+		api.CellServiceKey,
+		api.DataspaceProfileServiceKey,
 		routing.RouterKey}
 }
 
@@ -50,11 +50,11 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	router := context.Registry.Resolve(routing.RouterKey).(chi.Router)
 	router.Use(middleware.Recoverer)
 
-	participantDeployer := context.Registry.Resolve(api.ParticipantProfileDeployerKey).(api.ParticipantProfileDeployer)
-	cellDeployer := context.Registry.Resolve(api.CellDeployerKey).(api.CellDeployer)
-	dataspaceDeployer := context.Registry.Resolve(api.DataspaceProfileDeployerKey).(api.DataspaceProfileDeployer)
+	participantService := context.Registry.Resolve(api.ParticipantProfileServiceKey).(api.ParticipantProfileService)
+	cellService := context.Registry.Resolve(api.CellServiceKey).(api.CellService)
+	dataspaceService := context.Registry.Resolve(api.DataspaceProfileServiceKey).(api.DataspaceProfileService)
 
-	handler := NewHandler(participantDeployer, cellDeployer, dataspaceDeployer, context.LogMonitor)
+	handler := NewHandler(participantService, cellService, dataspaceService, context.LogMonitor)
 
 	router.Get("/participants/{id}", func(w http.ResponseWriter, req *http.Request) {
 		id, found := handler.ExtractPathVariable(w, req, "id")

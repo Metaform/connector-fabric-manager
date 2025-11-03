@@ -23,23 +23,23 @@ import (
 
 type TMHandler struct {
 	handler.HttpHandler
-	participantDeployer api.ParticipantProfileDeployer
-	cellDeployer        api.CellDeployer
-	dataspaceDeployer   api.DataspaceProfileDeployer
+	participantService api.ParticipantProfileService
+	cellService        api.CellService
+	dataspaceService   api.DataspaceProfileService
 }
 
 func NewHandler(
-	participantDeployer api.ParticipantProfileDeployer,
-	cellDeployer api.CellDeployer,
-	dataspaceDeployer api.DataspaceProfileDeployer,
+	participantService api.ParticipantProfileService,
+	cellService api.CellService,
+	dataspaceService api.DataspaceProfileService,
 	monitor system.LogMonitor) *TMHandler {
 	return &TMHandler{
 		HttpHandler: handler.HttpHandler{
 			Monitor: monitor,
 		},
-		participantDeployer: participantDeployer,
-		cellDeployer:        cellDeployer,
-		dataspaceDeployer:   dataspaceDeployer,
+		participantService: participantService,
+		cellService:        cellService,
+		dataspaceService:   dataspaceService,
 	}
 }
 
@@ -58,7 +58,7 @@ func (h *TMHandler) createDeployParticipant(w http.ResponseWriter, req *http.Req
 		properties = make(map[string]any)
 	}
 	// TODO support specific cell selection
-	profile, err := h.participantDeployer.DeployProfile(
+	profile, err := h.participantService.DeployProfile(
 		req.Context(),
 		newDeployment.Identifier,
 		*api.ToVPAMap(newDeployment.VPAProperties),
@@ -76,7 +76,7 @@ func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	profile, err := h.participantDeployer.GetProfile(req.Context(), id)
+	profile, err := h.participantService.GetProfile(req.Context(), id)
 	if err != nil {
 		h.HandleError(w, err)
 		return
@@ -98,7 +98,7 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 
 	cell := v1alpha1.NewAPICell(newCell)
 
-	recordedCell, err := h.cellDeployer.RecordExternalDeployment(req.Context(), *cell)
+	recordedCell, err := h.cellService.RecordExternalDeployment(req.Context(), *cell)
 	if err != nil {
 		h.HandleError(w, err)
 		return
@@ -118,7 +118,7 @@ func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	profile, err := h.dataspaceDeployer.CreateProfile(req.Context(), newProfile.Artifacts, newProfile.Properties)
+	profile, err := h.dataspaceService.CreateProfile(req.Context(), newProfile.Artifacts, newProfile.Properties)
 	if err != nil {
 		h.HandleError(w, err)
 		return
@@ -138,7 +138,7 @@ func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	err := h.dataspaceDeployer.DeployProfile(req.Context(), newDeployment.ProfileID, newDeployment.CellID)
+	err := h.dataspaceService.DeployProfile(req.Context(), newDeployment.ProfileID, newDeployment.CellID)
 	if err != nil {
 		h.HandleError(w, err)
 		return

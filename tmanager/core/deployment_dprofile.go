@@ -21,17 +21,17 @@ import (
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
-type dataspaceProfileDeployer struct {
+type dataspaceProfileService struct {
 	trxContext   store.TransactionContext
 	profileStore api.EntityStore[api.DataspaceProfile]
 	cellStore    api.EntityStore[api.Cell]
 }
 
-func (d dataspaceProfileDeployer) GetProfile(ctx context.Context, profileID string) (*api.DataspaceProfile, error) {
+func (d dataspaceProfileService) GetProfile(ctx context.Context, profileID string) (*api.DataspaceProfile, error) {
 	return d.profileStore.FindById(ctx, profileID)
 }
 
-func (d dataspaceProfileDeployer) CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*api.DataspaceProfile, error) {
+func (d dataspaceProfileService) CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*api.DataspaceProfile, error) {
 	return store.Trx[api.DataspaceProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.DataspaceProfile, error) {
 		profile := api.DataspaceProfile{
 			Entity: api.Entity{
@@ -46,7 +46,7 @@ func (d dataspaceProfileDeployer) CreateProfile(ctx context.Context, artifacts [
 	})
 }
 
-func (d dataspaceProfileDeployer) DeployProfile(ctx context.Context, profileID string, cellID string) error {
+func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID string, cellID string) error {
 	return d.trxContext.Execute(ctx, func(_ context.Context) error {
 		profile, err := d.profileStore.FindById(ctx, profileID)
 		if err != nil {
