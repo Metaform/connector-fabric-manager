@@ -26,7 +26,7 @@ import (
 
 type participantService struct {
 	participantGenerator participantGenerator
-	deploymentClient     api.DeploymentClient
+	provisionClient      api.ProvisionClient
 	trxContext           store.TransactionContext
 	participantStore     api.EntityStore[api.ParticipantProfile]
 	cellStore            api.EntityStore[api.Cell]
@@ -67,14 +67,14 @@ func (d participantService) DeployProfile(
 			return nil, err
 		}
 
-		dManifest := model.DeploymentManifest{
-			ID:             uuid.New().String(),
-			CorrelationID:  participantProfile.ID,
-			DeploymentType: model.VPADeploymentType,
-			Payload:        make(map[string]any),
+		oManifest := model.OrchestrationManifest{
+			ID:                uuid.New().String(),
+			CorrelationID:     participantProfile.ID,
+			OrchestrationType: model.VPAOrchestrationType,
+			Payload:           make(map[string]any),
 		}
 
-		dManifest.Payload[model.ParticipantIdentifier] = participantProfile.Identifier
+		oManifest.Payload[model.ParticipantIdentifier] = participantProfile.Identifier
 
 		vpaManifests := make([]model.VPAManifest, 0, len(participantProfile.VPAs))
 		for _, vpa := range participantProfile.VPAs {
@@ -87,15 +87,15 @@ func (d participantService) DeployProfile(
 			vpaManifests = append(vpaManifests, vpaManifest)
 		}
 
-		dManifest.Payload[model.VPAPayloadType] = vpaManifests
+		oManifest.Payload[model.VPAPayloadType] = vpaManifests
 		result, err := d.participantStore.Create(ctx, participantProfile)
 		if err != nil {
 			return nil, fmt.Errorf("error creating participant %s: %w", identifier, err)
 		}
 
-		// Only send the deployment message if the storage operation succeeded. If the deployment fails, the transaction
+		// Only send the orchestration message if the storage operation succeeded. If the send fails, the transaction
 		// will be rolled back.
-		err = d.deploymentClient.Send(ctx, dManifest)
+		err = d.provisionClient.Send(ctx, oManifest)
 		if err != nil {
 			return nil, fmt.Errorf("error deploying participant %s: %w", identifier, err)
 		}
@@ -109,13 +109,13 @@ func (d participantService) DisposeProfile(ctx context.Context, identifier strin
 	panic("implement me")
 }
 
-type vpaDeploymentCallbackHandler struct {
+type vpaOrchestrationCallbackHandler struct {
 	participantStore api.EntityStore[api.ParticipantProfile]
 	trxContext       store.TransactionContext
 	monitor          system.LogMonitor
 }
 
-func (h vpaDeploymentCallbackHandler) handle(ctx context.Context, response model.DeploymentResponse) error {
+func (h vpaOrchestrationCallbackHandler) handle(ctx context.Context, response model.OrchestrationResponse) error {
 	return h.trxContext.Execute(ctx, func(c context.Context) error {
 		// Note de-duplication does not need to be performed as this operation is idempotent
 		profile, err := h.participantStore.FindById(c, response.CorrelationID)

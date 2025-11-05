@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsdeployment
+package natsprovision
 
 import (
 	"context"
@@ -26,20 +26,20 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-type natsDeploymentHandler struct {
-	natsclient.RetriableMessageProcessor[model.DeploymentManifest]
+type natsProvisionHandler struct {
+	natsclient.RetriableMessageProcessor[model.OrchestrationManifest]
 }
 
-func newNatsDeploymentHandler(
+func newNatsProvisionHandler(
 	client natsclient.MsgClient,
 	provisionManager api.ProvisionManager,
-	monitor system.LogMonitor) *natsDeploymentHandler {
-	return &natsDeploymentHandler{
-		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[model.DeploymentManifest]{
+	monitor system.LogMonitor) *natsProvisionHandler {
+	return &natsProvisionHandler{
+		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[model.OrchestrationManifest]{
 			Client:     client,
 			Monitor:    monitor,
 			Processing: atomic.Bool{},
-			Dispatcher: func(ctx context.Context, manifest model.DeploymentManifest) error {
+			Dispatcher: func(ctx context.Context, manifest model.OrchestrationManifest) error {
 				_, err := provisionManager.Start(ctx, &manifest)
 				if err != nil {
 					switch {
@@ -49,20 +49,20 @@ func newNatsDeploymentHandler(
 					default:
 
 						// return error response
-						m := &model.DeploymentResponse{
-							ID:             uuid.New().String(),
-							Success:        false,
-							CorrelationID:  manifest.CorrelationID,
-							ErrorDetail:    err.Error(),
-							ManifestID:     manifest.ID,
-							DeploymentType: manifest.DeploymentType,
-							Properties:     make(map[string]any),
+						response := &model.OrchestrationResponse{
+							ID:                uuid.New().String(),
+							Success:           false,
+							CorrelationID:     manifest.CorrelationID,
+							ErrorDetail:       err.Error(),
+							ManifestID:        manifest.ID,
+							OrchestrationType: manifest.OrchestrationType,
+							Properties:        make(map[string]any),
 						}
-						ser, err := json.Marshal(m)
+						ser, err := json.Marshal(response)
 						if err != nil {
 							return types.NewRecoverableError("failed to marshal response: %s", err.Error())
 						}
-						_, err = client.Publish(ctx, natsclient.CFMDeploymentResponseSubject, ser)
+						_, err = client.Publish(ctx, natsclient.CFMOrchestrationResponseSubject, ser)
 						if err != nil {
 							return types.NewRecoverableError("failed to publish response: %s", err.Error())
 						}
@@ -76,7 +76,7 @@ func newNatsDeploymentHandler(
 	}
 }
 
-func (n *natsDeploymentHandler) Init(ctx context.Context, consumer jetstream.Consumer) error {
+func (n *natsProvisionHandler) Init(ctx context.Context, consumer jetstream.Consumer) error {
 	go func() {
 		err := n.ProcessLoop(ctx, consumer)
 		if err != nil {

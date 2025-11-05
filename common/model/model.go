@@ -12,27 +12,26 @@
 
 package model
 
-// DeploymentManifest represents the configuration details for a system deployment. An Orchestration is instantiated
-// from the manifest and executed.
+// OrchestrationManifest represents the configuration details for the execution of an orchestration.
 //
-// The manifest includes a unique identifier, the type of deployment specified by a DeploymentDefinition, and a payload
-// of deployment-specific data, which will be passed as input to the Orchestration.
-type DeploymentManifest struct {
-	ID             string         `json:"id" validate:"required"`
-	CorrelationID  string         `json:"correlationId" validate:"required"`
-	DeploymentType DeploymentType `json:"deploymentType" validate:"required"`
-	Payload        map[string]any `json:"payload omitempty"`
+// The manifest includes a unique identifier, the orchestration type, and a payload of orchestration-specific data, which
+// will be passed as input to the Orchestration.
+type OrchestrationManifest struct {
+	ID                string            `json:"id" validate:"required"`
+	CorrelationID     string            `json:"correlationId" validate:"required"`
+	OrchestrationType OrchestrationType `json:"orchestrationType" validate:"required"`
+	Payload           map[string]any    `json:"payload omitempty"`
 }
 
-// DeploymentResponse returned when a system deployment completes.
-type DeploymentResponse struct {
-	ID             string         `json:"id" validate:"required"`
-	ManifestID     string         `json:"manifestId" validate:"required"`
-	CorrelationID  string         `json:"correlationId" validate:"required"`
-	DeploymentType DeploymentType `json:"deploymentType" validate:"required"`
-	Success        bool           `json:"success"`
-	ErrorDetail    string         `json:"errorDetail,omitempty"`
-	Properties     map[string]any `json:"properties omitempty"`
+// OrchestrationResponse returned when a system deployment completes.
+type OrchestrationResponse struct {
+	ID                string            `json:"id" validate:"required"`
+	ManifestID        string            `json:"manifestId" validate:"required"`
+	CorrelationID     string            `json:"correlationId" validate:"required"`
+	OrchestrationType OrchestrationType `json:"orchestrationType" validate:"required"`
+	Success           bool              `json:"success"`
+	ErrorDetail       string            `json:"errorDetail,omitempty"`
+	Properties        map[string]any    `json:"properties omitempty"`
 }
 
 // VPAManifest represents the configuration details for a VPA deployment.
@@ -43,9 +42,9 @@ type VPAManifest struct {
 	Properties map[string]any `json:"properties omitempty"`
 }
 
-type DeploymentType string
+type OrchestrationType string
 
-func (dt DeploymentType) String() string {
+func (dt OrchestrationType) String() string {
 	return string(dt)
 }
 
@@ -56,13 +55,13 @@ func (dt VPAType) String() string {
 }
 
 const (
-	VPADeploymentType     DeploymentType = "cfm.vpa"
-	ConnectorType         VPAType        = "cfm.connector"
-	CredentialServiceType VPAType        = "cfm.credentialservice"
-	DataPlaneType         VPAType        = "cfm.dataplane"
-	ParticipantIdentifier                = "cfm.participant.id"
-	VPAPayloadType                       = "cfm.vpas"
-	VPAStateData                         = "cfm.vpa.state"
-	ConnectorId                          = "cfm.connector.id"
-	CredentialService                    = "cfm.credentialservice.id"
+	VPAOrchestrationType  OrchestrationType = "cfm.vpa"
+	ConnectorType         VPAType           = "cfm.connector"
+	CredentialServiceType VPAType           = "cfm.credentialservice"
+	DataPlaneType         VPAType           = "cfm.dataplane"
+	ParticipantIdentifier                   = "cfm.participant.id"
+	VPAPayloadType                          = "cfm.vpas"
+	VPAStateData                            = "cfm.vpa.state"
+	ConnectorId                             = "cfm.connector.id"
+	CredentialService                       = "cfm.credentialservice.id"
 )

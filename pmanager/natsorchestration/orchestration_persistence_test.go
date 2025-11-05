@@ -34,7 +34,7 @@ const (
 	streamName         = "cfm-activity"
 )
 
-func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
+func TestNatsOrchestrator_GetOrchestration_Success(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
@@ -46,7 +46,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
 	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
 
 	adapter := natsclient.NewMsgClient(nt.Client)
-	orchestrator := &NatsDeploymentOrchestrator{
+	orchestrator := &NatsOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}
@@ -66,7 +66,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
 		},
 	}
 
-	err = orchestrator.ExecuteOrchestration(ctx, orchestration)
+	err = orchestrator.Execute(ctx, orchestration)
 	require.NoError(t, err)
 
 	// Test GetOrchestration
@@ -77,7 +77,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_Success(t *testing.T) {
 	assert.Equal(t, orchestration.ID, result.ID)
 }
 
-func TestNatsDeploymentOrchestrator_GetOrchestration_NotFound(t *testing.T) {
+func TestNatsOrchestrator_GetOrchestration_NotFound(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
@@ -86,7 +86,7 @@ func TestNatsDeploymentOrchestrator_GetOrchestration_NotFound(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	adapter := natsclient.NewMsgClient(nt.Client)
-	orchestrator := &NatsDeploymentOrchestrator{
+	orchestrator := &NatsOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}
@@ -178,12 +178,12 @@ func Test_ValuePersistence(t *testing.T) {
 			orchestration := createTestOrchestration(fmt.Sprintf("test-%s-persistence", tc.name), tc.activityType)
 			adapter := natsclient.NewMsgClient(nt.Client)
 
-			orchestrator := &NatsDeploymentOrchestrator{
+			orchestrator := &NatsOrchestrator{
 				Client:  adapter,
 				Monitor: system.NoopMonitor{},
 			}
 
-			err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
+			err = orchestrator.Execute(ctx, &orchestration)
 			require.NoError(t, err)
 
 			executor := &NatsActivityExecutor{
@@ -305,12 +305,12 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 			orchestration := createTestOrchestration(fmt.Sprintf("test-%s-retry-persistence", tc.name), tc.activityType)
 			adapter := natsclient.NewMsgClient(nt.Client)
 
-			orchestrator := &NatsDeploymentOrchestrator{
+			orchestrator := &NatsOrchestrator{
 				Client:  adapter,
 				Monitor: system.NoopMonitor{},
 			}
 
-			err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
+			err = orchestrator.Execute(ctx, &orchestration)
 			require.NoError(t, err)
 
 			executor := &NatsActivityExecutor{
@@ -437,12 +437,12 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 
 			adapter := natsclient.NewMsgClient(nt.Client)
 
-			orchestrator := &NatsDeploymentOrchestrator{
+			orchestrator := &NatsOrchestrator{
 				Client:  adapter,
 				Monitor: system.NoopMonitor{},
 			}
 
-			err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
+			err = orchestrator.Execute(ctx, &orchestration)
 			require.NoError(t, err)
 
 			// Create multiple executors
@@ -547,12 +547,12 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 			orchestration := createTestOrchestration(fmt.Sprintf("test-%s-wait-persistence", tc.name), tc.activityType)
 			adapter := natsclient.NewMsgClient(nt.Client)
 
-			orchestrator := &NatsDeploymentOrchestrator{
+			orchestrator := &NatsOrchestrator{
 				Client:  adapter,
 				Monitor: system.NoopMonitor{},
 			}
 
-			err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
+			err = orchestrator.Execute(ctx, &orchestration)
 			require.NoError(t, err)
 
 			executor := &NatsActivityExecutor{

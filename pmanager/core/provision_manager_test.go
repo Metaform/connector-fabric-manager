@@ -33,21 +33,21 @@ import (
 func TestProvisionManager_Start(t *testing.T) {
 	tests := []struct {
 		name           string
-		manifest       *model.DeploymentManifest
+		manifest       *model.OrchestrationManifest
 		setupStore     func(store api.DefinitionStore)
-		setupOrch      func(orch *mocks.MockDeploymentOrchestrator)
+		setupOrch      func(orch *mocks.MockOrchestrator)
 		expectedError  string
 		expectedResult *api.Orchestration
 	}{
 		{
 			name: "successful deployment with new orchestration",
-			manifest: &model.DeploymentManifest{
-				ID:             "test-deployment-1",
-				DeploymentType: "test-type",
-				Payload:        map[string]interface{}{"key": "value"},
+			manifest: &model.OrchestrationManifest{
+				ID:                "test-orchestration-1",
+				OrchestrationType: "test-type",
+				Payload:           map[string]interface{}{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
-				definition := &api.DeploymentDefinition{
+				definition := &api.OrchestrationDefinition{
 					Type: "test-type",
 					Activities: []api.Activity{
 						{
@@ -56,25 +56,25 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition(definition)
+				store.StoreOrchestrationDefinition(definition)
 			},
-			setupOrch: func(orch *mocks.MockDeploymentOrchestrator) {
-				orch.EXPECT().GetOrchestration(mock.Anything, "test-deployment-1").Return(nil, nil)
-				orch.EXPECT().ExecuteOrchestration(mock.Anything, mock.AnythingOfType("*api.Orchestration")).Return(nil)
+			setupOrch: func(orch *mocks.MockOrchestrator) {
+				orch.EXPECT().GetOrchestration(mock.Anything, "test-orchestration-1").Return(nil, nil)
+				orch.EXPECT().Execute(mock.Anything, mock.AnythingOfType("*api.Orchestration")).Return(nil)
 			},
 			expectedResult: &api.Orchestration{
-				ID: "test-deployment-1",
+				ID: "test-orchestration-1",
 			},
 		},
 		{
 			name: "deduplication - successful deployment with existing orchestration",
-			manifest: &model.DeploymentManifest{
-				ID:             "test-deployment-2",
-				DeploymentType: "test-type",
-				Payload:        map[string]interface{}{"key": "value"},
+			manifest: &model.OrchestrationManifest{
+				ID:                "test-orchestration-2",
+				OrchestrationType: "test-type",
+				Payload:           map[string]interface{}{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
-				definition := &api.DeploymentDefinition{
+				definition := &api.OrchestrationDefinition{
 					Type: "test-type",
 					Activities: []api.Activity{
 						{
@@ -83,42 +83,42 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition(definition)
+				store.StoreOrchestrationDefinition(definition)
 			},
-			setupOrch: func(orch *mocks.MockDeploymentOrchestrator) {
+			setupOrch: func(orch *mocks.MockOrchestrator) {
 				existingOrch := &api.Orchestration{
-					ID: "test-deployment-2",
+					ID: "test-orchestration-2",
 				}
-				orch.EXPECT().GetOrchestration(mock.Anything, "test-deployment-2").Return(existingOrch, nil)
+				orch.EXPECT().GetOrchestration(mock.Anything, "test-orchestration-2").Return(existingOrch, nil)
 			},
 			expectedResult: &api.Orchestration{
-				ID: "test-deployment-2",
+				ID: "test-orchestration-2",
 			},
 		},
 		{
-			name: "deployment definition not found",
-			manifest: &model.DeploymentManifest{
-				ID:             "test-deployment-3",
-				DeploymentType: "non-existent-type",
-				Payload:        map[string]interface{}{"key": "value"},
+			name: "orchestration definition not found",
+			manifest: &model.OrchestrationManifest{
+				ID:                "test-orchestration-3",
+				OrchestrationType: "non-existent-type",
+				Payload:           map[string]interface{}{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
 				// Don't store any definitions
 			},
-			setupOrch: func(orch *mocks.MockDeploymentOrchestrator) {
+			setupOrch: func(orch *mocks.MockOrchestrator) {
 				// No orchestrator calls expected
 			},
-			expectedError: "deployment type 'non-existent-type' not found",
+			expectedError: "orchestration type 'non-existent-type' not found",
 		},
 		{
 			name: "orchestrator get orchestration error",
-			manifest: &model.DeploymentManifest{
-				ID:             "test-deployment-5",
-				DeploymentType: "test-type",
-				Payload:        map[string]interface{}{"key": "value"},
+			manifest: &model.OrchestrationManifest{
+				ID:                "test-orchestration-5",
+				OrchestrationType: "test-type",
+				Payload:           map[string]interface{}{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
-				definition := &api.DeploymentDefinition{
+				definition := &api.OrchestrationDefinition{
 					Type: "test-type",
 					Activities: []api.Activity{
 						{
@@ -127,22 +127,22 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition(definition)
+				store.StoreOrchestrationDefinition(definition)
 			},
-			setupOrch: func(orch *mocks.MockDeploymentOrchestrator) {
-				orch.EXPECT().GetOrchestration(mock.Anything, "test-deployment-5").Return(nil, errors.New("orchestrator error"))
+			setupOrch: func(orch *mocks.MockOrchestrator) {
+				orch.EXPECT().GetOrchestration(mock.Anything, "test-orchestration-5").Return(nil, errors.New("orchestrator error"))
 			},
-			expectedError: "error checking for orchestration test-deployment-5: orchestrator error",
+			expectedError: "error checking for orchestration test-orchestration-5: orchestrator error",
 		},
 		{
 			name: "orchestrator execute orchestration error",
-			manifest: &model.DeploymentManifest{
-				ID:             "test-deployment-6",
-				DeploymentType: "test-type",
-				Payload:        map[string]interface{}{"key": "value"},
+			manifest: &model.OrchestrationManifest{
+				ID:                "test-orchestration-6",
+				OrchestrationType: "test-type",
+				Payload:           map[string]interface{}{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
-				definition := &api.DeploymentDefinition{
+				definition := &api.OrchestrationDefinition{
 					Type: "test-type",
 					Activities: []api.Activity{
 						{
@@ -151,11 +151,11 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreDeploymentDefinition(definition)
+				store.StoreOrchestrationDefinition(definition)
 			},
-			setupOrch: func(orch *mocks.MockDeploymentOrchestrator) {
-				orch.EXPECT().GetOrchestration(mock.Anything, "test-deployment-6").Return(nil, nil)
-				orch.EXPECT().ExecuteOrchestration(mock.Anything, mock.AnythingOfType("*api.Orchestration")).Return(errors.New("execution error"))
+			setupOrch: func(orch *mocks.MockOrchestrator) {
+				orch.EXPECT().GetOrchestration(mock.Anything, "test-orchestration-6").Return(nil, nil)
+				orch.EXPECT().Execute(mock.Anything, mock.AnythingOfType("*api.Orchestration")).Return(errors.New("execution error"))
 			},
 			expectedError: "error executing orchestration",
 		},
@@ -168,7 +168,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			tt.setupStore(store)
 
 			// Setup mock orchestrator
-			mockOrch := mocks.NewMockDeploymentOrchestrator(t)
+			mockOrch := mocks.NewMockOrchestrator(t)
 			tt.setupOrch(mockOrch)
 
 			// Create provision manager
@@ -199,10 +199,10 @@ func TestProvisionManager_Start(t *testing.T) {
 	}
 }
 
-// Helper function to create a test deployment definition
-func createTestDeploymentDefinition(deploymentType string, active bool) *api.DeploymentDefinition {
-	return &api.DeploymentDefinition{
-		Type: model.DeploymentType(deploymentType),
+// Helper function to create a test orchestration definition
+func createTestOrchestrationDefinition(orchestrationType string, active bool) *api.OrchestrationDefinition {
+	return &api.OrchestrationDefinition{
+		Type: model.OrchestrationType(orchestrationType),
 		Activities: []api.Activity{
 			{
 				ID:   "activity1",
@@ -216,13 +216,13 @@ func createTestDeploymentDefinition(deploymentType string, active bool) *api.Dep
 func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	// Setup memory store with test definition
 	store := memorystore.NewDefinitionStore()
-	definition := createTestDeploymentDefinition("test-type", true)
-	store.StoreDeploymentDefinition(definition)
+	definition := createTestOrchestrationDefinition("test-type", true)
+	store.StoreOrchestrationDefinition(definition)
 
 	// Setup mock orchestrator
-	mockOrch := mocks.NewMockDeploymentOrchestrator(t)
+	mockOrch := mocks.NewMockOrchestrator(t)
 	mockOrch.EXPECT().GetOrchestration(mock.Anything, "test-deployment").Return(nil, nil)
-	mockOrch.EXPECT().ExecuteOrchestration(mock.Anything, mock.MatchedBy(func(orch *api.Orchestration) bool {
+	mockOrch.EXPECT().Execute(mock.Anything, mock.MatchedBy(func(orch *api.Orchestration) bool {
 		// Verify orchestration properties
 		return orch.ID == "test-deployment"
 	})).Return(nil)
@@ -235,10 +235,10 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	}
 
 	// Create test manifest
-	manifest := &model.DeploymentManifest{
-		ID:             "test-deployment",
-		DeploymentType: "test-type",
-		Payload:        map[string]interface{}{"key": "value"},
+	manifest := &model.OrchestrationManifest{
+		ID:                "test-deployment",
+		OrchestrationType: "test-type",
+		Payload:           map[string]interface{}{"key": "value"},
 	}
 
 	// Execute test

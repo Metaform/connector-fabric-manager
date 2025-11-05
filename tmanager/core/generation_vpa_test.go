@@ -27,7 +27,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 	now := time.Now().UTC()
 
 	t.Run("successful generation", func(t *testing.T) {
-		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		mockCellSelector := func(deploymentType model.OrchestrationType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			return &api.Cell{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -123,7 +123,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 	})
 
 	t.Run("error when cell selector fails", func(t *testing.T) {
-		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		mockCellSelector := func(deploymentType model.OrchestrationType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			return nil, assert.AnError
 		}
 
@@ -144,8 +144,8 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 	})
 
 	t.Run("cell selector receives correct deployment type", func(t *testing.T) {
-		var receivedDeploymentType model.DeploymentType
-		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		var receivedDeploymentType model.OrchestrationType
+		mockCellSelector := func(deploymentType model.OrchestrationType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			receivedDeploymentType = deploymentType
 			return &api.Cell{
 				DeployableEntity: api.DeployableEntity{
@@ -172,14 +172,14 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			[]api.DataspaceProfile{})
 
 		require.NoError(t, err)
-		assert.Equal(t, model.VPADeploymentType, receivedDeploymentType)
+		assert.Equal(t, model.VPAOrchestrationType, receivedDeploymentType)
 	})
 
 	t.Run("cell selector receives correct parameters", func(t *testing.T) {
 		var receivedCells []api.Cell
 		var receivedProfiles []api.DataspaceProfile
 
-		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		mockCellSelector := func(deploymentType model.OrchestrationType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			receivedCells = cells
 			receivedProfiles = dProfiles
 			return &api.Cell{
@@ -225,7 +225,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 	})
 
 	t.Run("multiple dataspace profiles are correctly assigned", func(t *testing.T) {
-		mockCellSelector := func(deploymentType model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+		mockCellSelector := func(deploymentType model.OrchestrationType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 			return &api.Cell{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{

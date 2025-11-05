@@ -31,9 +31,9 @@ func CreateTestActivityDefinition(apiClient *ApiClient) error {
 	return apiClient.PostToPManager("activity-definition", requestBody)
 }
 
-func CreateTestDeploymentDefinition(apiClient *ApiClient) error {
-	requestBody := pv1alpha1.DeploymentDefinition{
-		Type: model.VPADeploymentType.String(),
+func CreateTestOrchestrationDefinition(apiClient *ApiClient) error {
+	requestBody := pv1alpha1.OrchestrationDefinition{
+		Type: model.VPAOrchestrationType.String(),
 		Activities: []pv1alpha1.Activity{
 			{
 				ID:   "activity1",
@@ -42,7 +42,7 @@ func CreateTestDeploymentDefinition(apiClient *ApiClient) error {
 		},
 	}
 
-	return apiClient.PostToPManager("deployment-definition", requestBody)
+	return apiClient.PostToPManager("orchestration-definition", requestBody)
 }
 
 func CreateCell(apiClient *ApiClient) (*tv1alpha1.Cell, error) {

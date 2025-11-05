@@ -241,19 +241,19 @@ func (e *NatsActivityExecutor) handleOrchestrationCompletion(
 }
 
 func (e *NatsActivityExecutor) publishResponse(activityContext api.ActivityContext, orchestration api.Orchestration) error {
-	dr := &model.DeploymentResponse{
-		ID:             uuid.New().String(),
-		ManifestID:     orchestration.ID,
-		CorrelationID:  orchestration.CorrelationID,
-		Success:        true,
-		DeploymentType: orchestration.DeploymentType,
-		Properties:     orchestration.OutputData,
+	response := &model.OrchestrationResponse{
+		ID:                uuid.New().String(),
+		ManifestID:        orchestration.ID,
+		CorrelationID:     orchestration.CorrelationID,
+		Success:           true,
+		OrchestrationType: orchestration.OrchestrationType,
+		Properties:        orchestration.OutputData,
 	}
-	ser, err := json.Marshal(dr)
+	ser, err := json.Marshal(response)
 	if err != nil {
-		return fmt.Errorf("failed to marshal deployment response: %w", err)
+		return fmt.Errorf("failed to marshal orchestration response: %w", err)
 	}
-	_, err = e.Client.Publish(activityContext.Context(), natsclient.CFMDeploymentResponseSubject, ser)
+	_, err = e.Client.Publish(activityContext.Context(), natsclient.CFMOrchestrationResponseSubject, ser)
 	return err
 }
 

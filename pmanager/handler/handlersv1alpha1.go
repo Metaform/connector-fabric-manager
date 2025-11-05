@@ -57,17 +57,17 @@ func (h *PMHandler) activityDefinition(w http.ResponseWriter, req *http.Request)
 	h.Created(w)
 }
 
-func (h *PMHandler) deploymentDefinition(w http.ResponseWriter, req *http.Request) {
+func (h *PMHandler) orchestrationDefinition(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
 
-	var definition v1alpha1.DeploymentDefinition
+	var definition v1alpha1.OrchestrationDefinition
 	if !h.ReadPayload(w, req, &definition) {
 		return
 	}
 
-	_, err := h.definitionManager.CreateDeploymentDefinition(req.Context(), v1alpha1.ToAPIDeploymentDefinition(&definition))
+	_, err := h.definitionManager.CreateOrchestrationDefinition(req.Context(), v1alpha1.ToAPIOrchestrationDefinition(&definition))
 	if err != nil {
 		h.HandleError(w, err)
 		return
@@ -76,12 +76,12 @@ func (h *PMHandler) deploymentDefinition(w http.ResponseWriter, req *http.Reques
 	h.Created(w)
 }
 
-func (h *PMHandler) deployment(w http.ResponseWriter, req *http.Request) {
+func (h *PMHandler) orchestration(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
 
-	var manifest model.DeploymentManifest
+	var manifest model.OrchestrationManifest
 	if !h.ReadPayload(w, req, &manifest) {
 		return
 	}

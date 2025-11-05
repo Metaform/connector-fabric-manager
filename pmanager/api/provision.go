@@ -24,33 +24,33 @@ import (
 )
 
 const (
-	ProvisionManagerKey       system.ServiceType = "pmapi:ProvisionManager"
-	DefinitionStoreKey        system.ServiceType = "pmapi:DefinitionStore"
-	DeploymentOrchestratorKey system.ServiceType = "pmapi:DeploymentOrchestrator"
-	DefinitionManagerKey      system.ServiceType = "pmapi:DefinitionManager"
+	ProvisionManagerKey  system.ServiceType = "pmapi:ProvisionManager"
+	DefinitionStoreKey   system.ServiceType = "pmapi:DefinitionStore"
+	OrchestratorKey      system.ServiceType = "pmapi:Orchestrator"
+	DefinitionManagerKey system.ServiceType = "pmapi:DefinitionManager"
 )
 
-// ProvisionManager handles deployments to the system.
+// ProvisionManager handles orchestration execution and resource management.
 type ProvisionManager interface {
 
 	// Start initializes a new orchestration and starts its execution.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Start(ctx context.Context, manifest *model.DeploymentManifest) (*Orchestration, error)
+	Start(ctx context.Context, manifest *model.OrchestrationManifest) (*Orchestration, error)
 
 	// Cancel terminates an orchestration execution.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Cancel(ctx context.Context, deploymentID string) error
+	Cancel(ctx context.Context, orchestrationID string) error
 
 	// GetOrchestration returns an orchestration by its ID or nil if not found.
-	GetOrchestration(ctx context.Context, deploymentID string) (*Orchestration, error)
+	GetOrchestration(ctx context.Context, orchestrationID string) (*Orchestration, error)
 }
 
-// DeploymentOrchestrator orchestrates deployments.
+// Orchestrator manages asynchronous execution of orchestrations.
 // Implementations must support idempotent behavior.
-type DeploymentOrchestrator interface {
+type Orchestrator interface {
 
-	// ExecuteOrchestration starts the execution of the specified orchestration, processing its steps and activities.
-	ExecuteOrchestration(ctx context.Context, orchestration *Orchestration) error
+	// Execute starts the execution of the specified orchestration, processing its steps and activities.
+	Execute(ctx context.Context, orchestration *Orchestration) error
 
 	// GetOrchestration retrieves an Orchestration by its ID or nil if not found.
 	GetOrchestration(ctx context.Context, id string) (*Orchestration, error)
@@ -106,6 +106,6 @@ type ImmutableMap interface {
 }
 
 type DefinitionManager interface {
-	CreateDeploymentDefinition(ctx context.Context, definition *DeploymentDefinition) (*DeploymentDefinition, error)
+	CreateOrchestrationDefinition(ctx context.Context, definition *OrchestrationDefinition) (*OrchestrationDefinition, error)
 	CreateActivityDefinition(ctx context.Context, definition *ActivityDefinition) (*ActivityDefinition, error)
 }

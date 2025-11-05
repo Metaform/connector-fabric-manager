@@ -29,9 +29,9 @@ func ToAPIActivityDefinition(definition *ActivityDefinition) *api.ActivityDefini
 	}
 }
 
-func ToAPIDeploymentDefinition(definition *DeploymentDefinition) *api.DeploymentDefinition {
+func ToAPIOrchestrationDefinition(definition *OrchestrationDefinition) *api.OrchestrationDefinition {
 	if definition == nil {
-		return &api.DeploymentDefinition{}
+		return &api.OrchestrationDefinition{}
 	}
 	apiActivities := make([]api.Activity, len(definition.Activities))
 	for i, activity := range definition.Activities {
@@ -43,8 +43,8 @@ func ToAPIDeploymentDefinition(definition *DeploymentDefinition) *api.Deployment
 		}
 	}
 
-	return &api.DeploymentDefinition{
-		Type:       model.DeploymentType(definition.Type),
+	return &api.OrchestrationDefinition{
+		Type:       model.OrchestrationType(definition.Type),
 		Active:     true, // Default to active as the model doesn't have this field
 		Schema:     definition.Schema,
 		Activities: apiActivities,

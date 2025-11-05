@@ -31,7 +31,7 @@ type MappingEntry struct {
 	Target string `json:"target" validate:"required"`
 }
 
-type DeploymentDefinition struct {
+type OrchestrationDefinition struct {
 	Type       string         `json:"type" validate:"required"`
 	Schema     map[string]any `json:"schema omitempty"`
 	Activities []Activity     `json:"activities" validate:"required,min=1"`

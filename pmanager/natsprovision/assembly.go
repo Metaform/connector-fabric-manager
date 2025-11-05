@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsdeployment
+package natsprovision
 
 import (
 	"context"
@@ -25,29 +25,29 @@ const (
 	setupStreamKey = "setupStream"
 )
 
-type natsDeploymentServiceAssembly struct {
-	streamName        string
-	natsClient        *natsclient.NatsClient
-	deploymentHandler *natsDeploymentHandler
+type natsProvisionServiceAssembly struct {
+	streamName       string
+	natsClient       *natsclient.NatsClient
+	provisionHandler *natsProvisionHandler
 	system.DefaultServiceAssembly
 	processCancel context.CancelFunc
 }
 
-func NewDeploymentServiceAssembly(streamName string) system.ServiceAssembly {
-	return &natsDeploymentServiceAssembly{
+func NewProvisionServiceAssembly(streamName string) system.ServiceAssembly {
+	return &natsProvisionServiceAssembly{
 		streamName: streamName,
 	}
 }
 
-func (a *natsDeploymentServiceAssembly) Name() string {
-	return "NATs Deployment"
+func (a *natsProvisionServiceAssembly) Name() string {
+	return "NATs Provision"
 }
 
-func (a *natsDeploymentServiceAssembly) Requires() []system.ServiceType {
+func (a *natsProvisionServiceAssembly) Requires() []system.ServiceType {
 	return []system.ServiceType{api.ProvisionManagerKey, natsclient.NatsClientKey}
 }
 
-func (a *natsDeploymentServiceAssembly) Init(ctx *system.InitContext) error {
+func (a *natsProvisionServiceAssembly) Init(ctx *system.InitContext) error {
 
 	a.natsClient = ctx.Registry.Resolve(natsclient.NatsClientKey).(*natsclient.NatsClient)
 
@@ -56,12 +56,12 @@ func (a *natsDeploymentServiceAssembly) Init(ctx *system.InitContext) error {
 
 	provisionManager := ctx.Registry.Resolve(api.ProvisionManagerKey).(api.ProvisionManager)
 	client := natsclient.NewMsgClient(a.natsClient)
-	a.deploymentHandler = newNatsDeploymentHandler(client, provisionManager, ctx.LogMonitor)
+	a.provisionHandler = newNatsProvisionHandler(client, provisionManager, ctx.LogMonitor)
 
 	return nil
 }
 
-func (a *natsDeploymentServiceAssembly) Start(_ *system.StartContext) error {
+func (a *natsProvisionServiceAssembly) Start(_ *system.StartContext) error {
 	var ctx context.Context
 	natsContext := context.Background()
 	defer natsContext.Done()
@@ -71,16 +71,16 @@ func (a *natsDeploymentServiceAssembly) Start(_ *system.StartContext) error {
 		return fmt.Errorf("error initializing NATS stream: %w", err)
 	}
 
-	consumer, err := natsclient.SetupConsumer(natsContext, stream, natsclient.CFMDeployment)
+	consumer, err := natsclient.SetupConsumer(natsContext, stream, natsclient.CFMOrchestration)
 	if err != nil {
-		return fmt.Errorf("error initializing NATS deployment manifest consumer: %w", err)
+		return fmt.Errorf("error initializing NATS orchestration manifest consumer: %w", err)
 	}
 
 	ctx, a.processCancel = context.WithCancel(context.Background())
-	return a.deploymentHandler.Init(ctx, consumer)
+	return a.provisionHandler.Init(ctx, consumer)
 }
 
-func (a *natsDeploymentServiceAssembly) Shutdown() error {
+func (a *natsProvisionServiceAssembly) Shutdown() error {
 	if a.processCancel != nil {
 		a.processCancel()
 	}

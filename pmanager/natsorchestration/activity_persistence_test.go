@@ -47,13 +47,13 @@ func TestNatsActivityExecutor_ProcessingDataPersistedAcrossReschedules(t *testin
 
 	// Create orchestration with single activity that will reschedule multiple times
 	orchestration := api.Orchestration{
-		ID:             "test-persist-data",
-		CorrelationID:  "correlation-persist-test",
-		State:          api.OrchestrationStateRunning,
-		DeploymentType: model.VPADeploymentType,
-		ProcessingData: make(map[string]any),
-		OutputData:     make(map[string]any),
-		Completed:      make(map[string]struct{}),
+		ID:                "test-persist-data",
+		CorrelationID:     "correlation-persist-test",
+		State:             api.OrchestrationStateRunning,
+		OrchestrationType: model.VPAOrchestrationType,
+		ProcessingData:    make(map[string]any),
+		OutputData:        make(map[string]any),
+		Completed:         make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{
 			{
 				Activities: []api.Activity{
@@ -69,17 +69,17 @@ func TestNatsActivityExecutor_ProcessingDataPersistedAcrossReschedules(t *testin
 	_, err = msgClient.Update(ctx, orchestration.ID, serializedOrchestration, 0)
 	require.NoError(t, err)
 
-	// Setup message capture for deployment response
-	var capturedResponse *model.DeploymentResponse
+	// Setup message capture for orchestration response
+	var capturedResponse *model.OrchestrationResponse
 	var responseMutex sync.Mutex
 	responseCaptured := make(chan struct{})
 
-	// Subscribe to deployment response subject to capture the published message
-	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMDeploymentResponseSubject, func(msg *nats.Msg) {
-		var dr model.DeploymentResponse
-		if err := json.Unmarshal(msg.Data, &dr); err == nil {
+	// Subscribe to orchestration response subject to capture the published message
+	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMOrchestrationResponseSubject, func(msg *nats.Msg) {
+		var response model.OrchestrationResponse
+		if err := json.Unmarshal(msg.Data, &response); err == nil {
 			responseMutex.Lock()
-			capturedResponse = &dr
+			capturedResponse = &response
 			responseMutex.Unlock()
 			close(responseCaptured)
 		}
@@ -117,17 +117,17 @@ func TestNatsActivityExecutor_ProcessingDataPersistedAcrossReschedules(t *testin
 	_, err = msgClient.Publish(ctx, subject, msgData)
 	require.NoError(t, err)
 
-	// Wait for deployment response to be published
+	// Wait for orchestration response to be published
 	select {
 	case <-responseCaptured:
 		// Response was captured successfully
 	case <-time.After(10 * time.Second):
-		t.Fatal("Timeout waiting for deployment response after multiple reschedules")
+		t.Fatal("Timeout waiting for orchestration response after multiple reschedules")
 	}
 
-	// Verify the deployment response
+	// Verify the orchestration response
 	responseMutex.Lock()
-	require.NotNil(t, capturedResponse, "Deployment response should have been captured after multiple reschedules")
+	require.NotNil(t, capturedResponse, "Orchestration response should have been captured after multiple reschedules")
 	assert.Equal(t, orchestration.ID, capturedResponse.ManifestID, "ManifestID should match orchestration ID")
 	assert.True(t, capturedResponse.Success, "Response should indicate success")
 	responseMutex.Unlock()

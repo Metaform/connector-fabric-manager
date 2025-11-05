@@ -26,23 +26,23 @@ func TestNewDefinitionStore(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
 	assert.NotNil(t, definitionStore)
-	assert.NotNil(t, definitionStore.deploymentDefinitions)
+	assert.NotNil(t, definitionStore.orchestrationDefinitions)
 	assert.NotNil(t, definitionStore.activityDefinitions)
-	assert.Equal(t, 0, len(definitionStore.deploymentDefinitions))
+	assert.Equal(t, 0, len(definitionStore.orchestrationDefinitions))
 	assert.Equal(t, 0, len(definitionStore.activityDefinitions))
 }
 
-func TestDefinitionStore_DeploymentDefinition_StoreAndFind(t *testing.T) {
+func TestDefinitionStore_OrchestrationDefinition_StoreAndFind(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	var dType model.DeploymentType = "test-deployment-1"
-	definition := &api.DeploymentDefinition{
-		Type: dType,
+	var oType model.OrchestrationType = "test-orchestration-1"
+	definition := &api.OrchestrationDefinition{
+		Type: oType,
 	}
 
-	definitionStore.StoreDeploymentDefinition(definition)
+	definitionStore.StoreOrchestrationDefinition(definition)
 
-	result, err := definitionStore.FindDeploymentDefinition(dType)
+	result, err := definitionStore.FindOrchestrationDefinition(oType)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -52,10 +52,10 @@ func TestDefinitionStore_DeploymentDefinition_StoreAndFind(t *testing.T) {
 	assert.NotSame(t, definition, result)
 }
 
-func TestDefinitionStore_DeploymentDefinition_FindNotFound(t *testing.T) {
+func TestDefinitionStore_OrchestrationDefinition_FindNotFound(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	result, err := definitionStore.FindDeploymentDefinition("non-existent")
+	result, err := definitionStore.FindOrchestrationDefinition("non-existent")
 
 	assert.Error(t, err)
 	assert.Equal(t, store.ErrNotFound, err)
@@ -94,24 +94,24 @@ func TestDefinitionStore_ActivityDefinition_FindNotFound(t *testing.T) {
 	assert.Nil(t, result)
 }
 
-func TestDefinitionStore_DeploymentDefinition_Delete(t *testing.T) {
+func TestDefinitionStore_OrchestrationDefinition_Delete(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	var dType model.DeploymentType = "test-deployment-1"
-	definition := &api.DeploymentDefinition{Type: dType}
-	definitionStore.StoreDeploymentDefinition(definition)
+	var oType model.OrchestrationType = "test-orchestration-1"
+	definition := &api.OrchestrationDefinition{Type: oType}
+	definitionStore.StoreOrchestrationDefinition(definition)
 
-	_, err := definitionStore.FindDeploymentDefinition(dType)
+	_, err := definitionStore.FindOrchestrationDefinition(oType)
 	assert.NoError(t, err)
 
-	deleted, err := definitionStore.DeleteDeploymentDefinition(dType)
+	deleted, err := definitionStore.DeleteOrchestrationDefinition(oType)
 	assert.Nil(t, err)
 	assert.True(t, deleted)
 
-	_, err = definitionStore.FindDeploymentDefinition(dType)
+	_, err = definitionStore.FindOrchestrationDefinition(oType)
 	assert.Equal(t, store.ErrNotFound, err)
 
-	deleted, err = definitionStore.DeleteDeploymentDefinition(dType)
+	deleted, err = definitionStore.DeleteOrchestrationDefinition(oType)
 	assert.Nil(t, err)
 	assert.False(t, deleted)
 }
@@ -141,15 +141,15 @@ func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
 func TestDefinitionStore_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	var originalType model.DeploymentType = "original-type"
-	originalDef := &api.DeploymentDefinition{
+	var originalType model.OrchestrationType = "original-type"
+	originalDef := &api.OrchestrationDefinition{
 		Type: originalType,
 	}
-	definitionStore.StoreDeploymentDefinition(originalDef)
+	definitionStore.StoreOrchestrationDefinition(originalDef)
 
 	originalDef.Type = "modified-type"
 
-	retrievedDef, err := definitionStore.FindDeploymentDefinition(originalType)
+	retrievedDef, err := definitionStore.FindOrchestrationDefinition(originalType)
 	require.NoError(t, err)
 
 	assert.Equal(t, originalType, retrievedDef.Type)
@@ -157,7 +157,7 @@ func TestDefinitionStore_DataIsolation(t *testing.T) {
 
 	retrievedDef.Type = "retrieved-modified"
 
-	retrievedDef2, err := definitionStore.FindDeploymentDefinition(originalType)
+	retrievedDef2, err := definitionStore.FindOrchestrationDefinition(originalType)
 	require.NoError(t, err)
 	assert.Equal(t, originalType, retrievedDef2.Type)
 }
@@ -165,116 +165,116 @@ func TestDefinitionStore_DataIsolation(t *testing.T) {
 func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	var dType model.DeploymentType = "test-deployment"
+	var dType model.OrchestrationType = "test-orchestration"
 
 	// Store first definition
-	definition1 := &api.DeploymentDefinition{
+	definition1 := &api.OrchestrationDefinition{
 		Type: dType,
 	}
-	definitionStore.StoreDeploymentDefinition(definition1)
+	definitionStore.StoreOrchestrationDefinition(definition1)
 
 	// Store second definition with same ID (overwrite)
-	definition2 := &api.DeploymentDefinition{
+	definition2 := &api.OrchestrationDefinition{
 		Type: dType,
 	}
-	definitionStore.StoreDeploymentDefinition(definition2)
+	definitionStore.StoreOrchestrationDefinition(definition2)
 
 	// Verify the second definition is stored
-	result, err := definitionStore.FindDeploymentDefinition(dType)
+	result, err := definitionStore.FindOrchestrationDefinition(dType)
 	require.NoError(t, err)
 	assert.Equal(t, dType, result.Type)
 
 	// Verify only one definition exists
-	defintions, _, err := definitionStore.ListDeploymentDefinitions(0, 1000)
+	defintions, _, err := definitionStore.ListOrchestrationDefinitions(0, 1000)
 	assert.Equal(t, 1, len(defintions))
 }
 
-func TestDefinitionStore_ListDeploymentDefinitions_WithPagination(t *testing.T) {
+func TestDefinitionStore_ListOrchestrationDefinitions_WithPagination(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
 	// Test empty store
-	definitions, hasMore, err := definitionStore.ListDeploymentDefinitions(0, 10)
+	definitions, hasMore, err := definitionStore.ListOrchestrationDefinitions(0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(definitions))
 	assert.False(t, hasMore)
 
 	// Add test data
-	def1 := &api.DeploymentDefinition{Type: "type1"}
-	def2 := &api.DeploymentDefinition{Type: "type2"}
-	def3 := &api.DeploymentDefinition{Type: "type3"}
-	def4 := &api.DeploymentDefinition{Type: "type4"}
-	def5 := &api.DeploymentDefinition{Type: "type5"}
+	def1 := &api.OrchestrationDefinition{Type: "type1"}
+	def2 := &api.OrchestrationDefinition{Type: "type2"}
+	def3 := &api.OrchestrationDefinition{Type: "type3"}
+	def4 := &api.OrchestrationDefinition{Type: "type4"}
+	def5 := &api.OrchestrationDefinition{Type: "type5"}
 
-	definitionStore.StoreDeploymentDefinition(def1)
-	definitionStore.StoreDeploymentDefinition(def2)
-	definitionStore.StoreDeploymentDefinition(def3)
-	definitionStore.StoreDeploymentDefinition(def4)
-	definitionStore.StoreDeploymentDefinition(def5)
+	definitionStore.StoreOrchestrationDefinition(def1)
+	definitionStore.StoreOrchestrationDefinition(def2)
+	definitionStore.StoreOrchestrationDefinition(def3)
+	definitionStore.StoreOrchestrationDefinition(def4)
+	definitionStore.StoreOrchestrationDefinition(def5)
 
 	// Test first page
-	definitions, hasMore, err = definitionStore.ListDeploymentDefinitions(0, 2)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(0, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.True(t, hasMore)
 
 	// Test second page
-	definitions, hasMore, err = definitionStore.ListDeploymentDefinitions(2, 2)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(2, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.True(t, hasMore)
 
 	// Test last page
-	definitions, hasMore, err = definitionStore.ListDeploymentDefinitions(4, 2)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(4, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test get all
-	definitions, hasMore, err = definitionStore.ListDeploymentDefinitions(0, 10)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 5, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test offset beyond total
-	definitions, hasMore, err = definitionStore.ListDeploymentDefinitions(10, 2)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(10, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test partial last page
-	definitions, hasMore, err = definitionStore.ListDeploymentDefinitions(3, 5)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(3, 5)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.False(t, hasMore)
 }
 
-func TestDefinitionStore_ListDeploymentDefinitions_ValidationErrors(t *testing.T) {
+func TestDefinitionStore_ListOrchestrationDefinitions_ValidationErrors(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
 	// Test negative offset
-	_, _, err := definitionStore.ListDeploymentDefinitions(-1, 10)
+	_, _, err := definitionStore.ListOrchestrationDefinitions(-1, 10)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "offset cannot be negative")
 
 	// Test zero limit
-	_, _, err = definitionStore.ListDeploymentDefinitions(0, 0)
+	_, _, err = definitionStore.ListOrchestrationDefinitions(0, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "limit must be positive")
 
 	// Test negative limit
-	_, _, err = definitionStore.ListDeploymentDefinitions(0, -1)
+	_, _, err = definitionStore.ListOrchestrationDefinitions(0, -1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "limit must be positive")
 }
 
-func TestDefinitionStore_ListDeploymentDefinitions_DataIsolation(t *testing.T) {
+func TestDefinitionStore_ListOrchestrationDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 
-	var originalType model.DeploymentType = "original"
-	originalDef := &api.DeploymentDefinition{Type: originalType}
-	definitionStore.StoreDeploymentDefinition(originalDef)
+	var originalType model.OrchestrationType = "original"
+	originalDef := &api.OrchestrationDefinition{Type: originalType}
+	definitionStore.StoreOrchestrationDefinition(originalDef)
 
-	definitions, hasMore, err := definitionStore.ListDeploymentDefinitions(0, 10)
+	definitions, hasMore, err := definitionStore.ListOrchestrationDefinitions(0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
 	assert.False(t, hasMore)
@@ -289,7 +289,7 @@ func TestDefinitionStore_ListDeploymentDefinitions_DataIsolation(t *testing.T) {
 	definitions[0].Type = "returned-modified"
 
 	// Verify stored definition is not affected
-	storedDef, err := definitionStore.FindDeploymentDefinition(originalType)
+	storedDef, err := definitionStore.FindOrchestrationDefinition(originalType)
 	assert.NoError(t, err)
 	assert.Equal(t, originalType, storedDef.Type)
 }

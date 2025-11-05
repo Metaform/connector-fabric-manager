@@ -575,7 +575,7 @@ func TestToDataspaceProfile(t *testing.T) {
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
-						ID:      "deployment-1",
+						ID:      "orchestration-1",
 						Version: 2,
 					},
 					State:          api.DeploymentStateActive,
@@ -593,14 +593,14 @@ func TestToDataspaceProfile(t *testing.T) {
 					Properties: api.Properties{"cell-type": "kubernetes"},
 				},
 				Properties: api.Properties{
-					"deployment-env": "production",
-					"replicas":       3,
+					"orchestration-env": "production",
+					"replicas":          3,
 				},
 			},
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
-						ID:      "deployment-2",
+						ID:      "orchestration-2",
 						Version: 1,
 					},
 					State:          api.DeploymentStatePending,
@@ -618,8 +618,8 @@ func TestToDataspaceProfile(t *testing.T) {
 					Properties: api.Properties{"cell-type": "docker"},
 				},
 				Properties: api.Properties{
-					"deployment-env": "staging",
-					"replicas":       1,
+					"orchestration-env": "staging",
+					"replicas":          1,
 				},
 			},
 		},
@@ -657,28 +657,28 @@ func TestToDataspaceProfile(t *testing.T) {
 
 	// First deployment
 	deployment1 := result.Deployments[0]
-	assert.Equal(t, "deployment-1", deployment1.ID)
+	assert.Equal(t, "orchestration-1", deployment1.ID)
 	assert.Equal(t, int64(2), deployment1.Version)
 	assert.Equal(t, "active", deployment1.State)
 	assert.Equal(t, testTime.UTC(), deployment1.StateTimestamp)
 	assert.Equal(t, time.UTC, deployment1.StateTimestamp.Location())
 	assert.Equal(t, "cell-1", deployment1.CellID)
 	assert.Equal(t, map[string]any{
-		"deployment-env": "production",
-		"replicas":       3,
+		"orchestration-env": "production",
+		"replicas":          3,
 	}, deployment1.Properties)
 
 	// Second deployment
 	deployment2 := result.Deployments[1]
-	assert.Equal(t, "deployment-2", deployment2.ID)
+	assert.Equal(t, "orchestration-2", deployment2.ID)
 	assert.Equal(t, int64(1), deployment2.Version)
 	assert.Equal(t, "pending", deployment2.State)
 	assert.Equal(t, testTime.UTC(), deployment2.StateTimestamp)
 	assert.Equal(t, time.UTC, deployment2.StateTimestamp.Location())
 	assert.Equal(t, "cell-2", deployment2.CellID)
 	assert.Equal(t, map[string]any{
-		"deployment-env": "staging",
-		"replicas":       1,
+		"orchestration-env": "staging",
+		"replicas":          1,
 	}, deployment2.Properties)
 }
 
@@ -740,7 +740,7 @@ func TestToDataspaceProfile_EmptyProperties(t *testing.T) {
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
-						ID:      "deployment-empty-props",
+						ID:      "orchestration-empty-props",
 						Version: 1,
 					},
 					State:          api.DeploymentStateInitial,
@@ -769,7 +769,7 @@ func TestToDataspaceProfile_EmptyProperties(t *testing.T) {
 	assert.Equal(t, "dataspace-empty-props", result.ID)
 	assert.Equal(t, int64(2), result.Version)
 	assert.Len(t, result.Deployments, 1)
-	assert.Equal(t, "deployment-empty-props", result.Deployments[0].ID)
+	assert.Equal(t, "orchestration-empty-props", result.Deployments[0].ID)
 	assert.Equal(t, "cell-empty-props", result.Deployments[0].CellID)
 	assert.Equal(t, testTime.UTC(), result.Deployments[0].StateTimestamp)
 	assert.Equal(t, time.UTC, result.Deployments[0].StateTimestamp.Location())
@@ -840,7 +840,7 @@ func TestToDataspaceProfile_AllDeploymentStates(t *testing.T) {
 		deployments[i] = api.DataspaceDeployment{
 			DeployableEntity: api.DeployableEntity{
 				Entity: api.Entity{
-					ID:      fmt.Sprintf("deployment-%d", i),
+					ID:      fmt.Sprintf("orchestration-%d", i),
 					Version: int64(i + 1),
 				},
 				State:          state,
@@ -880,7 +880,7 @@ func TestToDataspaceProfile_AllDeploymentStates(t *testing.T) {
 
 	for i, expectedState := range expectedStateStrings {
 		deployment := result.Deployments[i]
-		assert.Equal(t, fmt.Sprintf("deployment-%d", i), deployment.ID)
+		assert.Equal(t, fmt.Sprintf("orchestration-%d", i), deployment.ID)
 		assert.Equal(t, int64(i+1), deployment.Version)
 		assert.Equal(t, expectedState, deployment.State)
 		assert.Equal(t, testTime.UTC(), deployment.StateTimestamp)
@@ -1017,7 +1017,7 @@ func TestToDataspaceProfile_TimestampUTCConversion(t *testing.T) {
 					{
 						DeployableEntity: api.DeployableEntity{
 							Entity: api.Entity{
-								ID:      "deployment-" + tz.name,
+								ID:      "orchestration-" + tz.name,
 								Version: 1,
 							},
 							State:          api.DeploymentStateActive,

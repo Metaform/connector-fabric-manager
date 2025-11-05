@@ -5,8 +5,8 @@ with-expecter: true
 packages:
   github.com/metaform/connector-fabric-manager/pmanager/api:
     interfaces:
-      DeploymentOrchestrator:
+      Orchestrator:
         config:
-          filename: deployment_orchestrator_mock.go
+          filename: orchestrator_mock.go
           outpkg: mocks
           dir: ./api/mocks

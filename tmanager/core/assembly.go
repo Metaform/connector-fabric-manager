@@ -30,7 +30,7 @@ func (a *TMCoreServiceAssembly) Name() string {
 
 func (a *TMCoreServiceAssembly) Requires() []system.ServiceType {
 	return []system.ServiceType{
-		api.DeploymentClientKey,
+		api.ProvisionClientKey,
 		store.TransactionContextKey,
 		api.ParticipantProfileStoreKey,
 		api.DataspaceProfileStoreKey,
@@ -47,14 +47,14 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	}
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
-	deploymentClient := context.Registry.Resolve(api.DeploymentClientKey).(api.DeploymentClient)
+	provisionClient := context.Registry.Resolve(api.ProvisionClientKey).(api.ProvisionClient)
 	participantStore := context.Registry.Resolve(api.ParticipantProfileStoreKey).(api.EntityStore[api.ParticipantProfile])
 	cellStore := context.Registry.Resolve(api.CellStoreKey).(api.EntityStore[api.Cell])
 	dataspaceStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(api.EntityStore[api.DataspaceProfile])
 
 	participantService := participantService{
 		participantGenerator: a.vpaGenerator,
-		deploymentClient:     deploymentClient,
+		provisionClient:      provisionClient,
 		trxContext:           trxContext,
 		participantStore:     participantStore,
 		dataspaceStore:       dataspaceStore,
@@ -73,13 +73,13 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 		cellStore:    cellStore,
 	})
 
-	registry := context.Registry.Resolve(api.DeploymentHandlerRegistryKey).(api.DeploymentHandlerRegistry)
-	handler := vpaDeploymentCallbackHandler{
+	registry := context.Registry.Resolve(api.ProvisionHandlerRegistryKey).(api.ProvisionHandlerRegistry)
+	handler := vpaOrchestrationCallbackHandler{
 		trxContext:       trxContext,
 		participantStore: participantStore,
 		monitor:          context.LogMonitor,
 	}
-	registry.RegisterDeploymentHandler(model.VPADeploymentType, handler.handle)
+	registry.Register(model.VPAOrchestrationType, handler.handle)
 
 	return nil
 }

@@ -78,15 +78,15 @@ func TestToAPIActivityDefinition_NilInput(t *testing.T) {
 	})
 }
 
-func TestToAPIDeploymentDefinition(t *testing.T) {
+func TestToAPIOrchestrationDefinition(t *testing.T) {
 	tests := []struct {
-		name                 string
-		deploymentDefinition *DeploymentDefinition
-		expected             *api.DeploymentDefinition
+		name                    string
+		orchestrationDefinition *OrchestrationDefinition
+		expected                *api.OrchestrationDefinition
 	}{
 		{
-			name: "complete deployment definition",
-			deploymentDefinition: &DeploymentDefinition{
+			name: "complete orchestration definition",
+			orchestrationDefinition: &OrchestrationDefinition{
 				Type:   "kubernetes",
 				Schema: map[string]interface{}{"version": "v1"},
 				Activities: []Activity{
@@ -107,8 +107,8 @@ func TestToAPIDeploymentDefinition(t *testing.T) {
 					},
 				},
 			},
-			expected: &api.DeploymentDefinition{
-				Type:   model.DeploymentType("kubernetes"),
+			expected: &api.OrchestrationDefinition{
+				Type:   model.OrchestrationType("kubernetes"),
 				Active: true,
 				Schema: map[string]interface{}{"version": "v1"},
 				Activities: []api.Activity{
@@ -131,29 +131,29 @@ func TestToAPIDeploymentDefinition(t *testing.T) {
 			},
 		},
 		{
-			name: "minimal deployment definition",
-			deploymentDefinition: &DeploymentDefinition{
+			name: "minimal orchestration definition",
+			orchestrationDefinition: &OrchestrationDefinition{
 				Type:       "docker",
 				Activities: []Activity{},
 			},
-			expected: &api.DeploymentDefinition{
-				Type:       model.DeploymentType("docker"),
+			expected: &api.OrchestrationDefinition{
+				Type:       model.OrchestrationType("docker"),
 				Active:     true,
 				Activities: []api.Activity{},
 			},
 		},
 		{
-			name:                 "empty deployment definition",
-			deploymentDefinition: &DeploymentDefinition{},
-			expected: &api.DeploymentDefinition{
-				Type:       model.DeploymentType(""),
+			name:                    "empty orchestration definition",
+			orchestrationDefinition: &OrchestrationDefinition{},
+			expected: &api.OrchestrationDefinition{
+				Type:       model.OrchestrationType(""),
 				Active:     true,
 				Activities: []api.Activity{},
 			},
 		},
 		{
 			name: "single activity without dependencies",
-			deploymentDefinition: &DeploymentDefinition{
+			orchestrationDefinition: &OrchestrationDefinition{
 				Type: "local",
 				Activities: []Activity{
 					{
@@ -165,8 +165,8 @@ func TestToAPIDeploymentDefinition(t *testing.T) {
 					},
 				},
 			},
-			expected: &api.DeploymentDefinition{
-				Type:   model.DeploymentType("local"),
+			expected: &api.OrchestrationDefinition{
+				Type:   model.OrchestrationType("local"),
 				Active: true,
 				Activities: []api.Activity{
 					{
@@ -183,16 +183,16 @@ func TestToAPIDeploymentDefinition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ToAPIDeploymentDefinition(tt.deploymentDefinition)
+			result := ToAPIOrchestrationDefinition(tt.orchestrationDefinition)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestToAPIDeploymentDefinition_NilInput(t *testing.T) {
+func TestToAPIOrchestrationDefinition_NilInput(t *testing.T) {
 	// Test that the function handles nil input gracefully
 	assert.NotPanics(t, func() {
-		result := ToAPIDeploymentDefinition(nil)
+		result := ToAPIOrchestrationDefinition(nil)
 		assert.Empty(t, result.Type)
 		assert.Nil(t, result.Schema)
 		assert.Len(t, result.Activities, 0)
@@ -276,8 +276,8 @@ func BenchmarkToAPIActivityDefinition(b *testing.B) {
 	}
 }
 
-func BenchmarkToAPIDeploymentDefinition(b *testing.B) {
-	deploymentDefinition := &DeploymentDefinition{
+func BenchmarkToAPIOrchestrationDefinition(b *testing.B) {
+	definition := &OrchestrationDefinition{
 		Type:   "kubernetes",
 		Schema: map[string]interface{}{"version": "v1"},
 		Activities: []Activity{
@@ -295,7 +295,7 @@ func BenchmarkToAPIDeploymentDefinition(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ToAPIDeploymentDefinition(deploymentDefinition)
+		ToAPIOrchestrationDefinition(definition)
 	}
 }
 

@@ -22,4 +22,4 @@ const (
 )
 
 // CellSelector selects a cell for resource deployment.
-type CellSelector func(model.DeploymentType, []Cell, []DataspaceProfile) (*Cell, error)
+type CellSelector func(model.OrchestrationType, []Cell, []DataspaceProfile) (*Cell, error)

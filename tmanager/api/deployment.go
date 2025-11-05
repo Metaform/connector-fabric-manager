@@ -20,26 +20,27 @@ import (
 )
 
 const (
-	DeploymentHandlerRegistryKey system.ServiceType = "tmapi:DeploymentHandlerRegistry"
-	DeploymentClientKey          system.ServiceType = "tmapi:DeploymentClient"
+	ProvisionHandlerRegistryKey system.ServiceType = "tmapi:ProvisionHandlerRegistry"
+	ProvisionClientKey          system.ServiceType = "tmapi:ProvisionClient"
 )
 
 type VPAPropMap = map[model.VPAType]map[string]any
 
-// DeploymentClient asynchronously deploys a manifest to the provision manager. Implementations may use different wire protocols.
-type DeploymentClient interface {
-	// Send deploys the specified manifest.
+// ProvisionClient sends a manifest to the provision manager for asynchronous execution. Implementations may use
+// different wire protocols.
+type ProvisionClient interface {
+	// Send delivers the specified manifest.
 	// If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-	Send(ctx context.Context, manifest model.DeploymentManifest) error
+	Send(ctx context.Context, manifest model.OrchestrationManifest) error
 }
 
-// DeploymentCallbackHandler is called when a deployment is complete.
+// ProvisionCallbackHandler is called when an orchestration is complete.
 // If a recoverable error is encountered one of model.RecoverableError, model.ClientError, or model.FatalError will be returned.
-type DeploymentCallbackHandler func(context.Context, model.DeploymentResponse) error
+type ProvisionCallbackHandler func(context.Context, model.OrchestrationResponse) error
 
-// DeploymentHandlerRegistry registers deployment handlers by deployment type.
-type DeploymentHandlerRegistry interface {
-	RegisterDeploymentHandler(deploymentType model.DeploymentType, handler DeploymentCallbackHandler)
+// ProvisionHandlerRegistry registers orchestration handlers by type.
+type ProvisionHandlerRegistry interface {
+	Register(orchestrationType model.OrchestrationType, handler ProvisionCallbackHandler)
 }
 
 func ToVPAMap(vpaProperties map[string]map[string]any) *VPAPropMap {

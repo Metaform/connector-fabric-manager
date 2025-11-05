@@ -22,26 +22,26 @@ import (
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
-// MemoryDefinitionStore is a thread-safe in-memory store for deployment and activity definitions.
+// MemoryDefinitionStore is a thread-safe in-memory store for orchestration and activity definitions.
 type MemoryDefinitionStore struct {
-	mutex                 sync.RWMutex
-	deploymentDefinitions map[string]*api.DeploymentDefinition
-	activityDefinitions   map[string]*api.ActivityDefinition
+	mutex                    sync.RWMutex
+	orchestrationDefinitions map[string]*api.OrchestrationDefinition
+	activityDefinitions      map[string]*api.ActivityDefinition
 }
 
 // NewDefinitionStore creates a new thread-safe in-memory definition store
 func NewDefinitionStore() *MemoryDefinitionStore {
 	return &MemoryDefinitionStore{
-		deploymentDefinitions: make(map[string]*api.DeploymentDefinition),
-		activityDefinitions:   make(map[string]*api.ActivityDefinition),
+		orchestrationDefinitions: make(map[string]*api.OrchestrationDefinition),
+		activityDefinitions:      make(map[string]*api.ActivityDefinition),
 	}
 }
 
-func (d *MemoryDefinitionStore) FindDeploymentDefinition(deploymentType model.DeploymentType) (*api.DeploymentDefinition, error) {
+func (d *MemoryDefinitionStore) FindOrchestrationDefinition(orchestrationType model.OrchestrationType) (*api.OrchestrationDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	definition, exists := d.deploymentDefinitions[deploymentType.String()]
+	definition, exists := d.orchestrationDefinitions[orchestrationType.String()]
 	if !exists {
 		return nil, store.ErrNotFound
 	}
@@ -51,10 +51,10 @@ func (d *MemoryDefinitionStore) FindDeploymentDefinition(deploymentType model.De
 	return &definitionCopy, nil
 }
 
-func (d *MemoryDefinitionStore) ExistsDeploymentDefinition(deploymentType model.DeploymentType) (bool, error) {
+func (d *MemoryDefinitionStore) ExistsOrchestrationDefinition(orchestrationType model.OrchestrationType) (bool, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
-	_, exists := d.deploymentDefinitions[deploymentType.String()]
+	_, exists := d.orchestrationDefinitions[orchestrationType.String()]
 	return exists, nil
 }
 
@@ -79,17 +79,17 @@ func (d *MemoryDefinitionStore) ExistsActivityDefinition(activityType api.Activi
 	return exists, nil
 }
 
-func (d *MemoryDefinitionStore) StoreDeploymentDefinition(definition *api.DeploymentDefinition) (*api.DeploymentDefinition, error) {
+func (d *MemoryDefinitionStore) StoreOrchestrationDefinition(definition *api.OrchestrationDefinition) (*api.OrchestrationDefinition, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	if d.deploymentDefinitions[definition.Type.String()] != nil {
+	if d.orchestrationDefinitions[definition.Type.String()] != nil {
 		return nil, types.ErrConflict
 	}
 
 	// Store a copy to prevent external modifications
 	definitionCopy := *definition
-	d.deploymentDefinitions[definitionCopy.Type.String()] = &definitionCopy
+	d.orchestrationDefinitions[definitionCopy.Type.String()] = &definitionCopy
 	return definition, nil
 }
 
@@ -106,13 +106,13 @@ func (d *MemoryDefinitionStore) StoreActivityDefinition(definition *api.Activity
 	return definition, nil
 }
 
-func (d *MemoryDefinitionStore) DeleteDeploymentDefinition(deploymentType model.DeploymentType) (bool, error) {
+func (d *MemoryDefinitionStore) DeleteOrchestrationDefinition(orchestrationType model.OrchestrationType) (bool, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	_, exists := d.deploymentDefinitions[deploymentType.String()]
+	_, exists := d.orchestrationDefinitions[orchestrationType.String()]
 	if exists {
-		delete(d.deploymentDefinitions, deploymentType.String())
+		delete(d.orchestrationDefinitions, orchestrationType.String())
 	}
 	return exists, nil
 }
@@ -128,11 +128,11 @@ func (d *MemoryDefinitionStore) DeleteActivityDefinition(activityType api.Activi
 	return exists, nil
 }
 
-func (d *MemoryDefinitionStore) ListDeploymentDefinitions(offset, limit int) ([]*api.DeploymentDefinition, bool, error) {
+func (d *MemoryDefinitionStore) ListOrchestrationDefinitions(offset, limit int) ([]*api.OrchestrationDefinition, bool, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	return listDefinitions[api.DeploymentDefinition](d.deploymentDefinitions, offset, limit)
+	return listDefinitions[api.OrchestrationDefinition](d.orchestrationDefinitions, offset, limit)
 }
 
 func (d *MemoryDefinitionStore) ListActivityDefinitions(offset, limit int) ([]*api.ActivityDefinition, bool, error) {
@@ -147,7 +147,7 @@ func (d *MemoryDefinitionStore) Clear() {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	d.deploymentDefinitions = make(map[string]*api.DeploymentDefinition)
+	d.orchestrationDefinitions = make(map[string]*api.OrchestrationDefinition)
 	d.activityDefinitions = make(map[string]*api.ActivityDefinition)
 }
 

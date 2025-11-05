@@ -48,8 +48,8 @@ func TestExecuteOrchestration_NoSteps(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	adapter := natsclient.NewMsgClient(nt.Client)
-	orchestrator := NatsDeploymentOrchestrator{Client: adapter}
-	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
+	orchestrator := NatsOrchestrator{Client: adapter}
+	err = orchestrator.Execute(ctx, &orchestration)
 	require.Error(t, err)
 
 }
@@ -250,8 +250,8 @@ func TestExecuteOrchestration(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			orchestrator := NatsDeploymentOrchestrator{Client: adapter}
-			err = orchestrator.ExecuteOrchestration(ctx, &tt.orchestration)
+			orchestrator := NatsOrchestrator{Client: adapter}
+			err = orchestrator.Execute(ctx, &tt.orchestration)
 			require.NoError(t, err)
 
 			// Wait for completion or timeout
@@ -307,12 +307,12 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 	adapter := natsclient.NewMsgClient(nt.Client)
 
 	// Create and start the orchestrator
-	orchestrator := &NatsDeploymentOrchestrator{
+	orchestrator := &NatsOrchestrator{
 		Client:  adapter,
 		Monitor: system.NoopMonitor{},
 	}
 
-	err = orchestrator.ExecuteOrchestration(context.Background(), &orchestration)
+	err = orchestrator.Execute(context.Background(), &orchestration)
 	require.NoError(t, err)
 
 	// Create an activity executor with our test processor

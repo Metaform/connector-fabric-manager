@@ -272,17 +272,17 @@ func ToProperties(props map[string]any) Properties {
 }
 
 type DeploymentRecord struct {
-	ID                 string               `json:"id"`
-	CorrelationID      string               `json:"correlationId"`
-	DeploymentType     model.DeploymentType `json:"deploymentType"`
-	State              ProcessingState      `json:"state"`
-	Timestamp          time.Time            `json:"timestamp"`
-	TenantID           string               `json:"tenantId"`
-	ManifestID         string               `json:"manifestId"`
-	ResponseID         string               `json:"responseId"`
-	Success            bool                 `json:"success"`
-	ErrorDetail        string               `json:"errorDetail,omitempty"`
-	ResponseProperties map[string]any       `json:"reponseProperties,omitempty"`
+	ID                 string                  `json:"id"`
+	CorrelationID      string                  `json:"correlationId"`
+	DeploymentType     model.OrchestrationType `json:"deploymentType"`
+	State              ProcessingState         `json:"state"`
+	Timestamp          time.Time               `json:"timestamp"`
+	TenantID           string                  `json:"tenantId"`
+	ManifestID         string                  `json:"manifestId"`
+	ResponseID         string                  `json:"responseId"`
+	Success            bool                    `json:"success"`
+	ErrorDetail        string                  `json:"errorDetail,omitempty"`
+	ResponseProperties map[string]any          `json:"reponseProperties,omitempty"`
 }
 
 type ProcessingState string

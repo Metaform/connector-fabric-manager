@@ -47,7 +47,7 @@ func (a *natsOrchestratorServiceAssembly) Name() string {
 }
 
 func (a *natsOrchestratorServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{api.DeploymentOrchestratorKey, natsclient.NatsClientKey}
+	return []system.ServiceType{api.OrchestratorKey, natsclient.NatsClientKey}
 }
 
 func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
@@ -74,7 +74,7 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 		}
 	}
 
-	ctx.Registry.Register(api.DeploymentOrchestratorKey, NewNatsDeploymentOrchestrator(natsclient.NewMsgClient(natsClient), ctx.LogMonitor))
+	ctx.Registry.Register(api.OrchestratorKey, NewNatsOrchestrator(natsclient.NewMsgClient(natsClient), ctx.LogMonitor))
 
 	return nil
 }

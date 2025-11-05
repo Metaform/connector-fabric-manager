@@ -31,13 +31,13 @@ func (m PMCoreServiceAssembly) Provides() []system.ServiceType {
 }
 
 func (m PMCoreServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{api.DefinitionStoreKey, api.DeploymentOrchestratorKey, cstore.TransactionContextKey}
+	return []system.ServiceType{api.DefinitionStoreKey, api.OrchestratorKey, cstore.TransactionContextKey}
 }
 
 func (m PMCoreServiceAssembly) Init(context *system.InitContext) error {
 	store := context.Registry.Resolve(api.DefinitionStoreKey).(api.DefinitionStore)
 	context.Registry.Register(api.ProvisionManagerKey, provisionManager{
-		orchestrator: context.Registry.Resolve(api.DeploymentOrchestratorKey).(api.DeploymentOrchestrator),
+		orchestrator: context.Registry.Resolve(api.OrchestratorKey).(api.Orchestrator),
 		store:        store,
 		monitor:      context.LogMonitor,
 	})

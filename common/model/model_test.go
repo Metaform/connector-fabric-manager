@@ -21,9 +21,9 @@ import (
 )
 
 func TestDeploymentManifest_JSONRoundTrip(t *testing.T) {
-	originalManifest := DeploymentManifest{
-		ID:             "manifest-1",
-		DeploymentType: VPADeploymentType,
+	originalManifest := OrchestrationManifest{
+		ID:                "manifest-1",
+		OrchestrationType: VPAOrchestrationType,
 		Payload: map[string]any{
 			"environment": "production",
 			"capacity":    100,
@@ -34,24 +34,24 @@ func TestDeploymentManifest_JSONRoundTrip(t *testing.T) {
 	jsonData, err := json.Marshal(originalManifest)
 	require.NoError(t, err)
 
-	var unmarshaledManifest DeploymentManifest
+	var unmarshaledManifest OrchestrationManifest
 	err = json.Unmarshal(jsonData, &unmarshaledManifest)
 	require.NoError(t, err)
 
 	assert.Equal(t, originalManifest.ID, unmarshaledManifest.ID)
-	assert.Equal(t, originalManifest.DeploymentType, unmarshaledManifest.DeploymentType)
+	assert.Equal(t, originalManifest.OrchestrationType, unmarshaledManifest.OrchestrationType)
 
 	require.NotNil(t, unmarshaledManifest.Payload)
 	comparePayload(t, originalManifest.Payload, unmarshaledManifest.Payload)
 }
 
 func TestDeploymentResponse_JSONRoundTrip(t *testing.T) {
-	originalResponse := DeploymentResponse{
-		ID:             "response-1",
-		Success:        true,
-		ErrorDetail:    "",
-		ManifestID:     "manifest-1",
-		DeploymentType: VPADeploymentType,
+	originalResponse := OrchestrationResponse{
+		ID:                "response-1",
+		Success:           true,
+		ErrorDetail:       "",
+		ManifestID:        "manifest-1",
+		OrchestrationType: VPAOrchestrationType,
 		Properties: map[string]any{
 			"endpoint": "https://example.com",
 			"status":   "running",
@@ -62,7 +62,7 @@ func TestDeploymentResponse_JSONRoundTrip(t *testing.T) {
 	jsonData, err := json.Marshal(originalResponse)
 	require.NoError(t, err)
 
-	var unmarshaledResponse DeploymentResponse
+	var unmarshaledResponse OrchestrationResponse
 	err = json.Unmarshal(jsonData, &unmarshaledResponse)
 	require.NoError(t, err)
 
@@ -70,7 +70,7 @@ func TestDeploymentResponse_JSONRoundTrip(t *testing.T) {
 	assert.Equal(t, originalResponse.Success, unmarshaledResponse.Success)
 	assert.Equal(t, originalResponse.ErrorDetail, unmarshaledResponse.ErrorDetail)
 	assert.Equal(t, originalResponse.ManifestID, unmarshaledResponse.ManifestID)
-	assert.Equal(t, originalResponse.DeploymentType, unmarshaledResponse.DeploymentType)
+	assert.Equal(t, originalResponse.OrchestrationType, unmarshaledResponse.OrchestrationType)
 
 	require.NotNil(t, unmarshaledResponse.Properties)
 	comparePayload(t, originalResponse.Properties, unmarshaledResponse.Properties)

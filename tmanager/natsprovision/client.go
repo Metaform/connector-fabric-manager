@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsdeployment
+package natsprovision
 
 import (
 	"context"
@@ -25,20 +25,20 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-type natsDeploymentClient struct {
-	natsclient.RetriableMessageProcessor[model.DeploymentResponse]
+type natsOrchestrationClient struct {
+	natsclient.RetriableMessageProcessor[model.OrchestrationResponse]
 }
 
-func newNatsDeploymentClient(
+func newNatsOrchestrationClient(
 	client natsclient.MsgClient,
-	dispatcher deploymentCallbackDispatcher,
-	monitor system.LogMonitor) *natsDeploymentClient {
-	return &natsDeploymentClient{
-		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[model.DeploymentResponse]{
+	dispatcher provisionCallbackDispatcher,
+	monitor system.LogMonitor) *natsOrchestrationClient {
+	return &natsOrchestrationClient{
+		RetriableMessageProcessor: natsclient.RetriableMessageProcessor[model.OrchestrationResponse]{
 			Client:     client,
 			Monitor:    monitor,
 			Processing: atomic.Bool{},
-			Dispatcher: func(ctx context.Context, payload model.DeploymentResponse) error {
+			Dispatcher: func(ctx context.Context, payload model.OrchestrationResponse) error {
 				err := api.Validator.Struct(payload)
 				if err != nil {
 					return types.NewClientError("invalid response: %s", err.Error())
@@ -49,7 +49,7 @@ func newNatsDeploymentClient(
 	}
 }
 
-func (n *natsDeploymentClient) Init(ctx context.Context, consumer jetstream.Consumer) error {
+func (n *natsOrchestrationClient) Init(ctx context.Context, consumer jetstream.Consumer) error {
 	go func() {
 		err := n.ProcessLoop(ctx, consumer)
 		if err != nil {
@@ -59,12 +59,12 @@ func (n *natsDeploymentClient) Init(ctx context.Context, consumer jetstream.Cons
 	return nil
 }
 
-func (n *natsDeploymentClient) Send(ctx context.Context, manifest model.DeploymentManifest) error {
+func (n *natsOrchestrationClient) Send(ctx context.Context, manifest model.OrchestrationManifest) error {
 	serialized, err := json.Marshal(manifest)
 	if err != nil {
 		return err
 	}
-	_, err = n.Client.Publish(ctx, natsclient.CFMDeploymentSubject, serialized)
+	_, err = n.Client.Publish(ctx, natsclient.CFMOrchestrationSubject, serialized)
 	if err != nil {
 		return err
 	}

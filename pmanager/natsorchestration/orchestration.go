@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-// Package natsorchestration implements a NATS-based deployment orchestrator.
+// Package natsorchestration implements a NATS-based orchestrator.
 package natsorchestration
 
 import (
@@ -25,19 +25,19 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-// NatsDeploymentOrchestrator is responsible for executing an orchestration using NATS for reliable messaging. For each
+// NatsOrchestrator is responsible for executing an orchestration using NATS for reliable messaging. For each
 // activity, a message is published to a durable queue based on the activity type. Activity messages are then dequeued
 // and reliably processed by a NatsActivityExecutor that handles the activity type.
-type NatsDeploymentOrchestrator struct {
+type NatsOrchestrator struct {
 	Client  natsclient.MsgClient
 	Monitor system.LogMonitor
 }
 
-func NewNatsDeploymentOrchestrator(client natsclient.MsgClient, monitor system.LogMonitor) *NatsDeploymentOrchestrator {
-	return &NatsDeploymentOrchestrator{Client: client, Monitor: monitor}
+func NewNatsOrchestrator(client natsclient.MsgClient, monitor system.LogMonitor) *NatsOrchestrator {
+	return &NatsOrchestrator{Client: client, Monitor: monitor}
 }
 
-func (o *NatsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {
+func (o *NatsOrchestrator) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {
 	orchestration, _, err := ReadOrchestration(ctx, id, o.Client)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
@@ -50,13 +50,13 @@ func (o *NatsDeploymentOrchestrator) GetOrchestration(ctx context.Context, id st
 	return &orchestration, nil
 }
 
-// ExecuteOrchestration asynchronously executes the given orchestration by dispatching messages to durable activity
+// Execute asynchronously executes the given orchestration by dispatching messages to durable activity
 // queues, where they can be dequeued and reliably processed by NatsActivityExecutors.
 //
 // A Jetstream KV entry is used to maintain durable state and is updated as the orchestration progresses. This
 // state is passed to the executors, which access and update it.
 
-func (o *NatsDeploymentOrchestrator) ExecuteOrchestration(ctx context.Context, orchestration *api.Orchestration) error {
+func (o *NatsOrchestrator) Execute(ctx context.Context, orchestration *api.Orchestration) error {
 	// TODO validate orchestration - this should include a check to see if there are no steps or steps with no activities
 
 	serializedOrchestration, err := json.Marshal(orchestration)

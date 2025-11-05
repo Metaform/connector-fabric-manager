@@ -101,12 +101,12 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			tt.setupMock(mockClient)
 
-			orchestrator := &NatsDeploymentOrchestrator{
+			orchestrator := &NatsOrchestrator{
 				Client:  mockClient,
 				Monitor: system.NoopMonitor{},
 			}
 
-			err := orchestrator.ExecuteOrchestration(context.Background(), &tt.orchestration)
+			err := orchestrator.Execute(context.Background(), &tt.orchestration)
 
 			if tt.expectedError != "" {
 				require.Error(t, err)

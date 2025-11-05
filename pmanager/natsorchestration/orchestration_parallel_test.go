@@ -113,8 +113,8 @@ func TestExecuteOrchestration_ParallelActivitiesOneFailsFirst(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start orchestration
-	orchestrator := NatsDeploymentOrchestrator{Client: adapter}
-	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
+	orchestrator := NatsOrchestrator{Client: adapter}
+	err = orchestrator.Execute(ctx, &orchestration)
 	require.NoError(t, err)
 
 	// Wait for both activities to complete

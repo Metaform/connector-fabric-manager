@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsdeployment
+package natsprovision
 
 import (
 	"context"
@@ -30,17 +30,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNatsDeploymentHandler_Dispatcher_SuccessfulDispatch(t *testing.T) {
+func TestNatsProvisionHandler_Dispatcher_SuccessfulDispatch(t *testing.T) {
 	mockClient := mocks.NewMockMsgClient(t)
 	mockProvisionManager := &MockProvisionManager{}
 
-	handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
+	handler := newNatsProvisionHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 	ctx := context.Background()
-	manifest := model.DeploymentManifest{
-		ID:             "test-manifest-id",
-		DeploymentType: model.VPADeploymentType,
-		Payload:        map[string]any{"key": "value"},
+	manifest := model.OrchestrationManifest{
+		ID:                "test-manifest-id",
+		OrchestrationType: model.VPAOrchestrationType,
+		Payload:           map[string]any{"key": "value"},
 	}
 
 	orchestration := &api.Orchestration{
@@ -61,27 +61,27 @@ func TestNatsDeploymentHandler_Dispatcher_SuccessfulDispatch(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
-func TestNatsDeploymentHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
+func TestNatsProvisionHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 	mockClient := mocks.NewMockMsgClient(t)
 	mockProvisionManager := &MockProvisionManager{}
 
-	handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
+	handler := newNatsProvisionHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 	ctx := context.Background()
-	manifest := model.DeploymentManifest{
-		ID:             "test-manifest-id",
-		DeploymentType: model.VPADeploymentType,
-		Payload:        map[string]any{"key": "value"},
+	manifest := model.OrchestrationManifest{
+		ID:                "test-manifest-id",
+		OrchestrationType: model.VPAOrchestrationType,
+		Payload:           map[string]any{"key": "value"},
 	}
 
-	nonRecoverableErr := errors.New("deployment failed")
+	nonRecoverableErr := errors.New("provision failed")
 	pubAck := &jetstream.PubAck{}
 
 	// Mock expectations
 	mockProvisionManager.On("Start", ctx, &manifest).Return(nil, nonRecoverableErr)
 
 	var capturedPayload []byte
-	mockClient.EXPECT().Publish(ctx, natsclient.CFMDeploymentResponseSubject, mock.AnythingOfType("[]uint8")).
+	mockClient.EXPECT().Publish(ctx, natsclient.CFMOrchestrationResponseSubject, mock.AnythingOfType("[]uint8")).
 		Run(func(ctx context.Context, subject string, payload []byte, opts ...jetstream.PublishOpt) {
 			capturedPayload = payload
 		}).Return(pubAck, nil)
@@ -90,14 +90,14 @@ func TestNatsDeploymentHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 
 	require.NoError(t, err)
 
-	var response model.DeploymentResponse
+	var response model.OrchestrationResponse
 	err = json.Unmarshal(capturedPayload, &response)
 	require.NoError(t, err)
 
 	assert.False(t, response.Success)
-	assert.Equal(t, "deployment failed", response.ErrorDetail)
+	assert.Equal(t, "provision failed", response.ErrorDetail)
 	assert.Equal(t, "test-manifest-id", response.ManifestID)
-	assert.Equal(t, model.VPADeploymentType, response.DeploymentType)
+	assert.Equal(t, model.VPAOrchestrationType, response.OrchestrationType)
 	assert.NotEmpty(t, response.ID) // Should have a generated UUID
 	assert.NotNil(t, response.Properties)
 	assert.Equal(t, 0, len(response.Properties)) // Should be empty map
@@ -106,7 +106,7 @@ func TestNatsDeploymentHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
-func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
+func TestNatsProvisionHandler_Dispatcher_ErrorTypes(t *testing.T) {
 	testCases := []struct {
 		name          string
 		error         error
@@ -124,13 +124,13 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 			mockClient := mocks.NewMockMsgClient(t)
 			mockProvisionManager := &MockProvisionManager{}
 
-			handler := newNatsDeploymentHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
+			handler := newNatsProvisionHandler(mockClient, mockProvisionManager, system.NoopMonitor{})
 
 			ctx := context.Background()
-			manifest := model.DeploymentManifest{
-				ID:             "test-manifest-id",
-				DeploymentType: model.VPADeploymentType,
-				Payload:        map[string]any{"key": "value"},
+			manifest := model.OrchestrationManifest{
+				ID:                "test-manifest-id",
+				OrchestrationType: model.VPAOrchestrationType,
+				Payload:           map[string]any{"key": "value"},
 			}
 
 			// Mock expectations
@@ -138,7 +138,7 @@ func TestNatsDeploymentHandler_Dispatcher_ErrorTypes(t *testing.T) {
 
 			if tc.shouldPublish {
 				pubAck := &jetstream.PubAck{}
-				mockClient.EXPECT().Publish(ctx, natsclient.CFMDeploymentResponseSubject, mock.Anything).Return(pubAck, nil)
+				mockClient.EXPECT().Publish(ctx, natsclient.CFMOrchestrationResponseSubject, mock.Anything).Return(pubAck, nil)
 			}
 
 			err := handler.RetriableMessageProcessor.Dispatcher(ctx, manifest)
@@ -160,7 +160,7 @@ type MockProvisionManager struct {
 	mock.Mock
 }
 
-func (m *MockProvisionManager) Start(ctx context.Context, manifest *model.DeploymentManifest) (*api.Orchestration, error) {
+func (m *MockProvisionManager) Start(ctx context.Context, manifest *model.OrchestrationManifest) (*api.Orchestration, error) {
 	args := m.Called(ctx, manifest)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -168,13 +168,13 @@ func (m *MockProvisionManager) Start(ctx context.Context, manifest *model.Deploy
 	return args.Get(0).(*api.Orchestration), args.Error(1)
 }
 
-func (m *MockProvisionManager) Cancel(ctx context.Context, deploymentID string) error {
-	args := m.Called(ctx, deploymentID)
+func (m *MockProvisionManager) Cancel(ctx context.Context, id string) error {
+	args := m.Called(ctx, id)
 	return args.Error(0)
 }
 
-func (m *MockProvisionManager) GetOrchestration(ctx context.Context, deploymentID string) (*api.Orchestration, error) {
-	args := m.Called(ctx, deploymentID)
+func (m *MockProvisionManager) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {
+	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

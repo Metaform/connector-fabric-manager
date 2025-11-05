@@ -21,7 +21,7 @@ import (
 
 // defaultCellSelector iterates through cells and dataspace profiles to find and return the first active cell; returns an
 // error if none are found.
-func defaultCellSelector(_ model.DeploymentType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
+func defaultCellSelector(_ model.OrchestrationType, cells []api.Cell, dProfiles []api.DataspaceProfile) (*api.Cell, error) {
 	for _, cell := range cells {
 		if cell.State == api.DeploymentStateActive {
 			for _, dProfile := range dProfiles {

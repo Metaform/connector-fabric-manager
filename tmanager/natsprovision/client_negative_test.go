@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsdeployment
+package natsprovision
 
 import (
 	"context"
@@ -28,18 +28,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
+func TestNatsOrchestrationClient_ProcessMessage_Errors(t *testing.T) {
 	tests := []struct {
 		name            string
 		messageData     []byte
-		setupDispatcher func(*mockDeploymentDispatcher)
+		setupDispatcher func(*mockOrchestrationDispatcher)
 		setupMessage    func(*mockJetStreamMsg)
 		expectedError   string
 	}{
 		{
 			name:        "unmarshal error - invalid JSON",
 			messageData: []byte(`invalid json`),
-			setupDispatcher: func(d *mockDeploymentDispatcher) {
+			setupDispatcher: func(d *mockOrchestrationDispatcher) {
 				// Dispatcher should not be called for invalid JSON
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
@@ -50,28 +50,28 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 		},
 		{
 			name:        "dispatcher returns recoverable error",
-			messageData: []byte(`{"id":"test-id","success":true,"manifestId":"manifest-1","correlationId":"123","deploymentType":"cfm.vpa"}`),
-			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
+			messageData: []byte(`{"id":"test-id","success":true,"manifestId":"manifest-1","correlationId":"123","orchestrationType":"cfm.vpa"}`),
+			setupDispatcher: func(d *mockOrchestrationDispatcher) {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.OrchestrationResponse) bool {
 					return r.ID == "test-id"
 				})).Return(types.NewRecoverableError("temporary failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id","success":true,"manifestId":"manifest-1","correlationId":"123","deploymentType":"cfm.vpa"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id","success":true,"manifestId":"manifest-1","correlationId":"123","orchestrationType":"cfm.vpa"}`))
 				m.On("Nak").Return(nil)
 			},
 			expectedError: "retriable failure when dispatching ",
 		},
 		{
 			name:        "dispatcher returns recoverable error and NAK fails",
-			messageData: []byte(`{"id":"test-id-2","success":true,"manifestId":"manifest-2","correlationId":"corr-2","deploymentType":"cfm.vpa"}`),
-			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
+			messageData: []byte(`{"id":"test-id-2","success":true,"manifestId":"manifest-2","correlationId":"corr-2","orchestrationType":"cfm.vpa"}`),
+			setupDispatcher: func(d *mockOrchestrationDispatcher) {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.OrchestrationResponse) bool {
 					return r.ID == "test-id-2"
 				})).Return(types.NewRecoverableError("temporary failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id-2","success":true,"manifestId":"manifest-2","correlationId":"corr-2","deploymentType":"cfm.vpa"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id-2","success":true,"manifestId":"manifest-2","correlationId":"corr-2","orchestrationType":"cfm.vpa"}`))
 				m.On("Nak").Return(errors.New("NAK failed"))
 			},
 			expectedError: "retriable failure when dispatching ",
@@ -79,42 +79,42 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 
 		{
 			name:        "dispatcher returns fatal error",
-			messageData: []byte(`{"id":"test-id-3","success":false,"manifestId":"manifest-3","correlationId":"corr-3","deploymentType":"cfm.vpa"}`),
-			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
+			messageData: []byte(`{"id":"test-id-3","success":false,"manifestId":"manifest-3","correlationId":"corr-3","orchestrationType":"cfm.vpa"}`),
+			setupDispatcher: func(d *mockOrchestrationDispatcher) {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.OrchestrationResponse) bool {
 					return r.ID == "test-id-3"
 				})).Return(types.NewFatalError("permanent failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id-3","success":false,"manifestId":"manifest-3","correlationId":"corr-3","deploymentType":"cfm.vpa"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id-3","success":false,"manifestId":"manifest-3","correlationId":"corr-3","orchestrationType":"cfm.vpa"}`))
 				m.On("Ack").Return(nil)
 			},
 			expectedError: "fatal failure when dispatching ",
 		},
 		{
 			name:        "dispatcher returns fatal error and ACK fails",
-			messageData: []byte(`{"id":"test-id-4","success":false,"manifestId":"manifest-4","correlationId":"corr-4","deploymentType":"cfm.vpa"}`),
-			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
+			messageData: []byte(`{"id":"test-id-4","success":false,"manifestId":"manifest-4","correlationId":"corr-4","orchestrationType":"cfm.vpa"}`),
+			setupDispatcher: func(d *mockOrchestrationDispatcher) {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.OrchestrationResponse) bool {
 					return r.ID == "test-id-4"
 				})).Return(types.NewFatalError("permanent failure"))
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id-4","success":false,"manifestId":"manifest-4","correlationId":"corr-4","deploymentType":"cfm.vpa"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id-4","success":false,"manifestId":"manifest-4","correlationId":"corr-4","orchestrationType":"cfm.vpa"}`))
 				m.On("Ack").Return(errors.New("ACK failed"))
 			},
 			expectedError: "fatal failure when dispatching ",
 		},
 		{
 			name:        "ACK message error after successful dispatch",
-			messageData: []byte(`{"id":"test-id-5","success":true,"manifestId":"manifest-5","correlationId":"corr-5","deploymentType":"cfm.vpa"}`),
-			setupDispatcher: func(d *mockDeploymentDispatcher) {
-				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.DeploymentResponse) bool {
+			messageData: []byte(`{"id":"test-id-5","success":true,"manifestId":"manifest-5","correlationId":"corr-5","orchestrationType":"cfm.vpa"}`),
+			setupDispatcher: func(d *mockOrchestrationDispatcher) {
+				d.On("Dispatch", mock.Anything, mock.MatchedBy(func(r model.OrchestrationResponse) bool {
 					return r.ID == "test-id-5"
 				})).Return(nil)
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id-5","success":true,"manifestId":"manifest-5","correlationId":"corr-5","deploymentType":"cfm.vpa"}`))
+				m.On("Data").Return([]byte(`{"id":"test-id-5","success":true,"manifestId":"manifest-5","correlationId":"corr-5","orchestrationType":"cfm.vpa"}`))
 				m.On("Ack").Return(errors.New("ACK failed"))
 			},
 			expectedError: "failed to ACK ",
@@ -122,7 +122,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 		{
 			name:        "ACK message error for invalid JSON",
 			messageData: []byte(`invalid json`),
-			setupDispatcher: func(d *mockDeploymentDispatcher) {
+			setupDispatcher: func(d *mockOrchestrationDispatcher) {
 				// Dispatcher should not be called for invalid JSON
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
@@ -133,12 +133,12 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 		},
 		{
 			name:        "validation error - missing CorrelationID",
-			messageData: []byte(`{"id":"test-id","manifestId":"manifest-1","deploymentType":"cfm.vpa","success":true}`),
-			setupDispatcher: func(d *mockDeploymentDispatcher) {
+			messageData: []byte(`{"id":"test-id","manifestId":"manifest-1","orchestrationType":"cfm.vpa","success":true}`),
+			setupDispatcher: func(d *mockOrchestrationDispatcher) {
 				// Dispatcher should not be called for validation failure
 			},
 			setupMessage: func(m *mockJetStreamMsg) {
-				m.On("Data").Return([]byte(`{"id":"test-id","manifestId":"manifest-1","deploymentType":"cfm.vpa","success":true}`))
+				m.On("Data").Return([]byte(`{"id":"test-id","manifestId":"manifest-1","orchestrationType":"cfm.vpa","success":true}`))
 				m.On("Ack").Return(nil)
 			},
 			expectedError: "invalid response: ",
@@ -147,13 +147,13 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockDispatcher := &mockDeploymentDispatcher{}
+			mockDispatcher := &mockOrchestrationDispatcher{}
 			tt.setupDispatcher(mockDispatcher)
 
 			mockMessage := &mockJetStreamMsg{}
 			tt.setupMessage(mockMessage)
 
-			client := newNatsDeploymentClient(nil, mockDispatcher, system.NoopMonitor{})
+			client := newNatsOrchestrationClient(nil, mockDispatcher, system.NoopMonitor{})
 
 			err := client.ProcessMessage(context.Background(), mockMessage)
 
@@ -166,7 +166,7 @@ func TestNatsDeploymentClient_ProcessMessage_Errors(t *testing.T) {
 	}
 }
 
-func TestNatsDeploymentClient_ProcessLoop_Errors(t *testing.T) {
+func TestNatsOrchestrationClient_ProcessLoop_Errors(t *testing.T) {
 	tests := []struct {
 		name          string
 		setupConsumer func(*mockConsumer)
@@ -194,8 +194,8 @@ func TestNatsDeploymentClient_ProcessLoop_Errors(t *testing.T) {
 			mockConsumer := &mockConsumer{}
 			tt.setupConsumer(mockConsumer)
 
-			mockDispatcher := &mockDeploymentDispatcher{}
-			client := newNatsDeploymentClient(nil, mockDispatcher, system.NoopMonitor{})
+			mockDispatcher := &mockOrchestrationDispatcher{}
+			client := newNatsOrchestrationClient(nil, mockDispatcher, system.NoopMonitor{})
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -212,11 +212,11 @@ func TestNatsDeploymentClient_ProcessLoop_Errors(t *testing.T) {
 
 // Mock implementations
 
-type mockDeploymentDispatcher struct {
+type mockOrchestrationDispatcher struct {
 	mock.Mock
 }
 
-func (m *mockDeploymentDispatcher) Dispatch(ctx context.Context, response model.DeploymentResponse) error {
+func (m *mockOrchestrationDispatcher) Dispatch(ctx context.Context, response model.OrchestrationResponse) error {
 	args := m.Called(ctx, response)
 	return args.Error(0)
 }

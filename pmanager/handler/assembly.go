@@ -45,9 +45,9 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	handler := NewHandler(provisionManager, definitionManager, context.LogMonitor)
 
 	router.Get("/health", handler.health)
-	router.Post("/deployment", handler.deployment)
+	router.Post("/orchestration", handler.orchestration)
 	router.Post("/activity-definition", handler.activityDefinition)
-	router.Post("/deployment-definition", handler.deploymentDefinition)
+	router.Post("/orchestration-definition", handler.orchestrationDefinition)
 
 	return nil
 }

@@ -79,9 +79,9 @@ func TestTestAgent_Integration(t *testing.T) {
 	// Submit orchestration
 	adapter := natsclient.NewMsgClient(nt.Client)
 	logMonitor := runtime.LoadLogMonitor("test-agent", system.DevelopmentMode)
-	orchestrator := natsorchestration.NewNatsDeploymentOrchestrator(adapter, logMonitor)
+	orchestrator := natsorchestration.NewNatsOrchestrator(adapter, logMonitor)
 
-	err = orchestrator.ExecuteOrchestration(ctx, &orchestration)
+	err = orchestrator.Execute(ctx, &orchestration)
 	require.NoError(t, err)
 
 	// Wait for the activity to be processed

@@ -24,22 +24,22 @@ import (
 )
 
 type provisionManager struct {
-	orchestrator api.DeploymentOrchestrator
+	orchestrator api.Orchestrator
 	store        api.DefinitionStore
 	monitor      system.LogMonitor
 }
 
-func (p provisionManager) Start(ctx context.Context, manifest *model.DeploymentManifest) (*api.Orchestration, error) {
+func (p provisionManager) Start(ctx context.Context, manifest *model.OrchestrationManifest) (*api.Orchestration, error) {
 
-	deploymentID := manifest.ID
+	manifestID := manifest.ID
 
-	definition, err := p.store.FindDeploymentDefinition(manifest.DeploymentType)
+	definition, err := p.store.FindOrchestrationDefinition(manifest.OrchestrationType)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			// Not found is a client error
-			return nil, types.NewClientError("deployment type '%s' not found", manifest.DeploymentType)
+			return nil, types.NewClientError("orchestration type '%s' not found", manifest.OrchestrationType)
 		}
-		return nil, types.NewFatalWrappedError(err, "unable to find deployment definition for deployment %s", deploymentID)
+		return nil, types.NewFatalWrappedError(err, "unable to find orchestration definition for manifest %s", manifestID)
 	}
 
 	// Validate required fields
@@ -47,14 +47,14 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.DeploymentM
 		return nil, types.NewClientError("Missing required field: id")
 	}
 
-	if manifest.DeploymentType == "" {
-		return nil, types.NewClientError("Missing required field: deploymentType")
+	if manifest.OrchestrationType == "" {
+		return nil, types.NewClientError("Missing required field: orchestrationType")
 	}
 
 	// perform de-duplication
-	orchestration, err := p.orchestrator.GetOrchestration(ctx, deploymentID)
+	orchestration, err := p.orchestrator.GetOrchestration(ctx, manifestID)
 	if err != nil {
-		return nil, types.NewFatalWrappedError(err, "error checking for orchestration %s", deploymentID)
+		return nil, types.NewFatalWrappedError(err, "error performing de-duplication for %s", manifestID)
 	}
 
 	if orchestration != nil {
@@ -63,24 +63,24 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.DeploymentM
 	}
 
 	// Does not exist, create the orchestration
-	orchestration, err = api.InstantiateOrchestration(manifest.ID, manifest.CorrelationID, manifest.DeploymentType, definition.Activities, manifest.Payload)
+	orchestration, err = api.InstantiateOrchestration(manifest.ID, manifest.CorrelationID, manifest.OrchestrationType, definition.Activities, manifest.Payload)
 	if err != nil {
-		return nil, types.NewFatalWrappedError(err, "error instantiating orchestration for deployment %s", deploymentID)
+		return nil, types.NewFatalWrappedError(err, "error instantiating orchestration for %s", manifestID)
 	}
-	err = p.orchestrator.ExecuteOrchestration(ctx, orchestration)
+	err = p.orchestrator.Execute(ctx, orchestration)
 	if err != nil {
-		return nil, types.NewFatalWrappedError(err, "error executing orchestration %s for deployment %s", orchestration.ID, deploymentID)
+		return nil, types.NewFatalWrappedError(err, "error executing orchestration %s for %s", orchestration.ID, manifestID)
 	}
 	return orchestration, nil
 }
 
-func (p provisionManager) Cancel(ctx context.Context, deploymentID string) error {
+func (p provisionManager) Cancel(ctx context.Context, orchestrationID string) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p provisionManager) GetOrchestration(ctx context.Context, deploymentID string) (*api.Orchestration, error) {
-	return p.orchestrator.GetOrchestration(ctx, deploymentID)
+func (p provisionManager) GetOrchestration(ctx context.Context, orchestrationID string) (*api.Orchestration, error) {
+	return p.orchestrator.GetOrchestration(ctx, orchestrationID)
 }
 
 type definitionManager struct {
@@ -88,8 +88,8 @@ type definitionManager struct {
 	store      api.DefinitionStore
 }
 
-func (d definitionManager) CreateDeploymentDefinition(ctx context.Context, definition *api.DeploymentDefinition) (*api.DeploymentDefinition, error) {
-	return store.Trx[api.DeploymentDefinition](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.DeploymentDefinition, error) {
+func (d definitionManager) CreateOrchestrationDefinition(ctx context.Context, definition *api.OrchestrationDefinition) (*api.OrchestrationDefinition, error) {
+	return store.Trx[api.OrchestrationDefinition](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.OrchestrationDefinition, error) {
 		var missingErrors []error
 
 		// Verify that all referenced activities exist
@@ -107,11 +107,11 @@ func (d definitionManager) CreateDeploymentDefinition(ctx context.Context, defin
 			return nil, errors.Join(missingErrors...)
 		}
 
-		definition, err := d.store.StoreDeploymentDefinition(definition)
+		persisted, err := d.store.StoreOrchestrationDefinition(definition)
 		if err != nil {
 			return nil, err
 		}
-		return definition, nil
+		return persisted, nil
 	})
 }
 

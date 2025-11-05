@@ -1,16 +1,16 @@
 {
-  "$id": "https://https://github.com/Metaform/connector-fabric-manager/deployment.definition.schema.json",
+  "$id": "https://https://github.com/Metaform/connector-fabric-manager/orchestration.definition.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "DeploymentDefinitionSchema",
-  "description": "Defines a Deployment Definition",
+  "title": "OrchestrationDefinitionSchema",
+  "description": "Defines an Orchestration Definition",
   "type": "object",
   "allOf": [
     {
-      "$ref": "#/definitions/DeploymentDefinitionType"
+      "$ref": "#/definitions/OrchestrationDefinitionType"
     }
   ],
   "definitions": {
-    "DeploymentDefinitionType": {
+    "OrchestrationDefinitionType": {
       "type": "object",
       "properties": {
         "type": {

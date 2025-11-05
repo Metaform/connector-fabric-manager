@@ -1,4 +1,4 @@
-# The Deployment Orchestrator
+# The Orchestrator
 
 |                |                                             |
 |----------------|---------------------------------------------|
@@ -8,10 +8,10 @@
 
 ## Overview
 
-The `DeploymentOrchestrator` is responsible for executing and managing the deployment of resources to a target. A
-_**resource**_ can be anything from a compute cluster to tenant configuration at the application layer. Since resources
-often depend on one another, a _**deployment**_ is defined as a collection of activities termed an _**orchestration**_.
-Each activity collection is executed as a sequence or in parallel.
+The `Orchestrator` is responsible for executing and managing resource allocations. A _**resource**_ can be anything from
+a compute cluster to tenant configuration at the application layer. An _**orchestration**_ is composed of
+_**activities**_ that execute a unit of work. Since resources often depend on other resources, activities can be
+ordered. Otherwise, if a set of activities are not dependent on each other, they will be executed in parallel.
 
 Consider a tenant deployment that involves the creation of a Web DID using a domain supplied by the tenant owner. The
 deployment involves the following activities:
@@ -32,7 +32,7 @@ with the same result if executed multiple times without side effects. For exampl
 to a failure, it must ensure duplicate resources are not created and the same shared stated is applied to the context.
 
 Activities may be implemented using a variety of programming languages and technologies, for example, a custom Go
-service or Terraform script. The `DeploymentOrchestrator` delegates to a _**provider**_ for an activity type that is an
+service or Terraform script. The `Orchestrator` delegates to a _**provider**_ for an activity type that is an
 extensibility point for the system.
 
 ### Messaging Implementation
@@ -43,57 +43,39 @@ technologies such as [Temporal](https://github.com/temporalio).
 
 ### Kubernetes Integration
 
-The Deployment Orchestrator will be deployable as a standalone application or to a Kubernetes cluster. While it is
+The Orchestrator will be deployable as a standalone application or to a Kubernetes cluster. While it is
 possible to implement the Orchestration Resource Model described above
 as [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/),
 doing so will add additional complexity (the need to implement Kubernetes operators) and tie the solution to Kubernetes.
 
-## Resource Model: Deployments, Activities, and Definitions
+## Resource Model: Orchestrations and Activities
 
-The `DeploymentOrchestrator` is built on a resource model consisting of two types: a `DeploymentDefinition` and an
-`ActivityDefinition`. A `DeploymentDefinition` contains a collection of `ActivityDefinitions` that define the
-orchestration for a deployment. The following is an example of a `DeploymentDefinition`:
+The `Orchestrator` is built on a resource model consisting of two types: an `OrchestrationDefinition` and an
+`ActivityDefinition`. An `OrchestrationDefinition` contains a collection of `Activities` that define the orchestration
+for a deployment. The following is an example of an `OrchestrationDefinition`:
 
 ```json
 {
   "type": "tenant.example.com",
-  "apiVersion": "1.0",
-  "resource": {
-    "group": "example.com",
-    "singular": "tenant",
-    "plural": "tenants",
-    "description": "Deploys infrastructure and configuration required to support a tenant"
-  },
-  "versions": [
+  "active": true,
+  "schema": {},
+  "activities": [
     {
-      "version": "1.0.0",
-      "active": true,
-      "schema": {
-        "openAPIV3Schema": {}
-      },
-      "orchestration": [
+      "id": "activity1",
+      "type": "activity1.example.com",
+      "inputs": [
+        "cell",
+        "baseUrl"
+      ]
+    },
+    {
+      "id": "activity2",
+      "type": "activity2.example.com",
+      "dependsOn": "activity1",
+      "inputs": [
         {
-          "activities": [
-            {
-              "id": "activity1",
-              "type": "activity1.example.com",
-              "inputs": [
-                "cell",
-                "baseUrl"
-              ]
-            },
-            {
-              "id": "activity2",
-              "type": "activity2.example.com",
-              "dependsOn": "activity1",
-              "inputs": [
-                {
-                  "source": "activity1.resource",
-                  "target": "resourceId"
-                }
-              ]
-            }
-          ]
+          "source": "activity1.resource",
+          "target": "resourceId"
         }
       ]
     }
@@ -101,25 +83,18 @@ orchestration for a deployment. The following is an example of a `DeploymentDefi
 }
 ```
 
-The `DeploymentDefinition` [JSON Schema](./deployment.definition.schema.json) defines the following properties and
+The `OrchestrationDefinition` [JSON Schema](./orchestration.definition.schema.json) defines the following properties and
 types:
 
 - `type`: The definition type used when creating a corresponding resource.
-- `apiVersion`: The API version the definition applies to.
-- `resource`: The resource metadata, which is used to create API endpoints for deployment resources of the definition
-  type.
-- `versions`: Contains one or more versions of the deployment definition.
-
-Each version defines the following properties:
-
-- `version`: The version of the deployment definition.
-- `active`: Indicates whether the version is active, i.e., deployments at that version level can be created and run.
-- `schema`: The schema for input properties when creating a deployment resource of the definition type. Currently,
-  `openAPIV3Schema` is the only supported schema type. Activities may reference input properties.
-- `orchestration`: Defines the sequence of activities that are executed to deploy the resource.
+- `active`: If the definition is active.
+- `activities`: Defines the sequence of activities that are executed as part of the orchestration.
+- `input`: The input data for the orchestration.
+- `output`: The output data from the orchestration.
+- `schema`: The schema for input data.
 
 The orchestration is a collection of activities. Activities form a Directed Acyclic Graph (DAG) by declaring
-dependencies using the `dependsOn` property. At deployment time, the activities will be ordered using a topological sort
+dependencies using the `dependsOn` property. At execution time, the activities will be ordered using a topological sort
 and grouping activities into tiers of parallel execution steps based on their dependencies.
 
 An activity has the following properties:
@@ -128,7 +103,7 @@ An activity has the following properties:
 - `type`: The activity type.
 - `dependsOn`: An array of activity ids the activity depends on.
 - `inputs`: An array of input properties. The input properties may include references to properties contained in the
-  deployment input data or references to output data properties from a previous activity. References to activity output
+  input data or references to output data properties from a previous activity. References to activity output
   data are prefixed with the activity identifier followed by a '.'. Activity output data is defined in the activity
   definition described below. An input property may be specified using a string or an object containing `source` and
   `target` properties if a mapping is required.
@@ -155,20 +130,20 @@ The `ActivityDefinition` [JSON Schema](./activity-definition.schema.json) specif
 - `provider`: The provisioner that executes the activity. A provisioner could be a service, Terraform script, or
   other technology.
 - `description`: A description of the activity.
-- `inputSchema`: The schema for input properties when creating a deployment resource of the definition type. Currently,
+- `inputSchema`: The schema for input properties when creating a resource of the definition type. Currently,
   `openAPIV3Schema` is the only supported schema type.
-- `outputSchema`: The schema for output properties when creating a deployment resource of the definition type.
+- `outputSchema`: The schema for output properties when creating a resource of the definition type.
   Currently, `openAPIV3Schema` is the only supported schema type.
 
 ## Activity Executors
 
-When an orchestration is executed, the Deployment Orchestrator reliably enqueues activity messages which will be
+When an orchestration is executed, the Orchestrator reliably enqueues activity messages which will be
 dequeued and processed by an associated activity executor. The executor delegates to an `ActivityProcessor` to process
-the message. The Deployment Orchestrator is responsible for handling system reliability, context persistence, recovery,
+the message. The Orchestrator is responsible for handling system reliability, context persistence, recovery,
 and activity coordination.
 
 An `ActivityProcessor` is an extensibility point for integrating technologies such as Terraform or custom operations
-code into the deployment process. For example, a Terraform processor would gather input data associated with the
+code into the orchestration process. For example, a Terraform processor would gather input data associated with the
 orchestration and pass it to a Terraform script for execution. The `ActivityProcess` interface is defined as follows:
 
 ```go
@@ -220,13 +195,13 @@ The following providers will be created:
 
 ### Infrastructure as Code (IaC) Automation
 
-The Deployment Orchestrator is designed to work with IaC Automation and GitOps systems such
+The Orchestrator is designed to work with IaC Automation and GitOps systems such
 as [Argo](https://argoproj.github.io/), [Atlantis](https://www.runatlantis.io/), [env0](https://www.env0.com/), [Scalr](https://scalr.com/),
-and [Spacelift](https://spacelift.io/). These systems can be used to drive deployments using the Deployment Orchestrator
-API. To facilitate integration, Terraform providers will be developed for common deployment definitions.
+and [Spacelift](https://spacelift.io/). These systems can be used to drive deployments using the Orchestrator
+API. To facilitate integration, Terraform providers will be developed for common orchestration definitions.
 
 ### Infrastructure Provisioners
 
-The Deployment Orchestrator can integrate with infrastructure provisioning technologies such
+The Orchestrator can integrate with infrastructure provisioning technologies such
 as [Eclipse Symphony](https://github.com/eclipse-symphony/symphony), [Fulcrum](https://github.com/fulcrumproject),
 and [Liqo](https://liqo.io/) via `ActivityProcessor` implementations. 

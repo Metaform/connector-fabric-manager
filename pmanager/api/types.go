@@ -34,20 +34,20 @@ const (
 	OrchestrationStateErrored     OrchestrationState = 3
 )
 
-// Orchestration is a collection of activities that are executed to effect a deployment. Activities are organized into
-// parallel execution steps based on dependencies.
+// Orchestration is a collection of activities that are executed to allocate resources in the system. Activities are
+// organized into parallel execution steps based on dependencies.
 //
 // As actions are completed, the orchestration system will update the Completed map.
 type Orchestration struct {
-	ID             string               `json:"id"`
-	CorrelationID  string               `json:"correlationId"`
-	State          OrchestrationState   `json:"state"`
-	DeploymentType model.DeploymentType `json:"deploymentType"`
-	Steps          []OrchestrationStep
-	InputData      map[string]any
-	ProcessingData map[string]any
-	OutputData     map[string]any
-	Completed      map[string]struct{}
+	ID                string                  `json:"id"`
+	CorrelationID     string                  `json:"correlationId"`
+	State             OrchestrationState      `json:"state"`
+	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
+	Steps             []OrchestrationStep
+	InputData         map[string]any
+	ProcessingData    map[string]any
+	OutputData        map[string]any
+	Completed         map[string]struct{}
 }
 
 // CanProceedToNextStep returns if the orchestration is able to proceed to the next step or must wait.
@@ -153,11 +153,11 @@ func (m *MappingEntry) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type DeploymentDefinition struct {
-	Type       model.DeploymentType `json:"type"`
-	Active     bool                 `json:"active"`
-	Schema     map[string]any       `json:"schema"`
-	Activities []Activity           `json:"activities"`
+type OrchestrationDefinition struct {
+	Type       model.OrchestrationType `json:"type"`
+	Active     bool                    `json:"active"`
+	Schema     map[string]any          `json:"schema"`
+	Activities []Activity              `json:"activities"`
 }
 
 // ActivityDefinition represents a single activity in the orchestration
@@ -171,21 +171,21 @@ type ActivityDefinition struct {
 // InstantiateOrchestration creates and returns an initialized Orchestration based on the provided definition and inputs.
 // It validates activity dependencies and organizes activities into parallel execution steps based on those dependencies.
 func InstantiateOrchestration(
-	deploymentID string,
+	id string,
 	correlationID string,
-	deploymentType model.DeploymentType,
+	orchestrationType model.OrchestrationType,
 	activities []Activity,
 	data map[string]any) (*Orchestration, error) {
 	orchestration := &Orchestration{
-		ID:             deploymentID,
-		CorrelationID:  correlationID,
-		DeploymentType: deploymentType,
-		State:          OrchestrationStateInitialized,
-		Steps:          make([]OrchestrationStep, 0, len(activities)),
-		InputData:      data,
-		ProcessingData: make(map[string]any),
-		OutputData:     make(map[string]any),
-		Completed:      make(map[string]struct{}),
+		ID:                id,
+		CorrelationID:     correlationID,
+		OrchestrationType: orchestrationType,
+		State:             OrchestrationStateInitialized,
+		Steps:             make([]OrchestrationStep, 0, len(activities)),
+		InputData:         data,
+		ProcessingData:    make(map[string]any),
+		OutputData:        make(map[string]any),
+		Completed:         make(map[string]struct{}),
 	}
 
 	graph := dag.NewGraph[Activity]()

@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
+func TestNatsActivityExecutor_OrchestrationResponsePublished(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
@@ -45,12 +45,12 @@ func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
 
 	// Create orchestration with single activity that will complete the orchestration
 	orchestration := api.Orchestration{
-		ID:             "test-deployment-response",
-		State:          api.OrchestrationStateRunning,
-		DeploymentType: model.VPADeploymentType,
-		ProcessingData: make(map[string]any),
-		OutputData:     make(map[string]any),
-		Completed:      make(map[string]struct{}),
+		ID:                "test-orchestration-response",
+		State:             api.OrchestrationStateRunning,
+		OrchestrationType: model.VPAOrchestrationType,
+		ProcessingData:    make(map[string]any),
+		OutputData:        make(map[string]any),
+		Completed:         make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{
 			{
 				Activities: []api.Activity{
@@ -66,17 +66,17 @@ func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
 	_, err = msgClient.Update(ctx, orchestration.ID, serializedOrchestration, 0)
 	require.NoError(t, err)
 
-	// Setup message capture for deployment response
-	var capturedResponse *model.DeploymentResponse
+	// Setup message capture for orchestration response
+	var capturedResponse *model.OrchestrationResponse
 	var responseMutex sync.Mutex
 	responseCaptured := make(chan struct{})
 
-	// Subscribe to deployment response subject to capture the published message
-	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMDeploymentResponseSubject, func(msg *nats.Msg) {
-		var dr model.DeploymentResponse
-		if err := json.Unmarshal(msg.Data, &dr); err == nil {
+	// Subscribe to orchestration response subject to capture the published message
+	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMOrchestrationResponseSubject, func(msg *nats.Msg) {
+		var response model.OrchestrationResponse
+		if err := json.Unmarshal(msg.Data, &response); err == nil {
 			responseMutex.Lock()
-			capturedResponse = &dr
+			capturedResponse = &response
 			responseMutex.Unlock()
 			close(responseCaptured)
 		}
@@ -113,26 +113,26 @@ func TestNatsActivityExecutor_DeploymentResponsePublished(t *testing.T) {
 	_, err = msgClient.Publish(ctx, subject, msgData)
 	require.NoError(t, err)
 
-	// Wait for deployment response to be published
+	// Wait for orchestration response to be published
 	select {
 	case <-responseCaptured:
 		// Response was captured successfully
 	case <-time.After(5 * time.Second):
-		t.Fatal("Timeout waiting for deployment response to be published")
+		t.Fatal("Timeout waiting for orchestration response to be published")
 	}
 
 	// Verify the deployment response
 	responseMutex.Lock()
-	require.NotNil(t, capturedResponse, "Deployment response should have been captured")
+	require.NotNil(t, capturedResponse, "Orchestration response should have been captured")
 	assert.NotEmpty(t, capturedResponse.ID, "Response should have an ID")
 	assert.Equal(t, orchestration.ID, capturedResponse.ManifestID, "ManifestID should match orchestration ID")
 	assert.True(t, capturedResponse.Success, "Response should indicate success")
-	assert.Equal(t, orchestration.DeploymentType, capturedResponse.DeploymentType, "DeploymentType should match")
+	assert.Equal(t, orchestration.OrchestrationType, capturedResponse.OrchestrationType, "OrchestrationType should match")
 	assert.NotNil(t, capturedResponse.Properties, "Properties should be initialized")
 	responseMutex.Unlock()
 }
 
-func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T) {
+func TestNatsActivityExecutor_OrchestrationResponseNotPublishedOnError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
@@ -148,11 +148,11 @@ func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T
 
 	// Create orchestration with single activity
 	orchestration := api.Orchestration{
-		ID:             "test-deployment-error",
-		State:          api.OrchestrationStateRunning,
-		DeploymentType: model.VPADeploymentType,
-		ProcessingData: make(map[string]any),
-		Completed:      make(map[string]struct{}),
+		ID:                "test-orchestration-error",
+		State:             api.OrchestrationStateRunning,
+		OrchestrationType: model.VPAOrchestrationType,
+		ProcessingData:    make(map[string]any),
+		Completed:         make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{
 			{
 				Activities: []api.Activity{
@@ -169,9 +169,9 @@ func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T
 	_, err = adapter.Update(ctx, orchestration.ID, serializedOrchestration, 0)
 	require.NoError(t, err)
 
-	// Setup message capture for deployment response
+	// Setup message capture for orchestration response
 	responseReceived := make(chan struct{})
-	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMDeploymentResponseSubject, func(msg *nats.Msg) {
+	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMOrchestrationResponseSubject, func(msg *nats.Msg) {
 		close(responseReceived)
 	})
 	require.NoError(t, err)
@@ -206,10 +206,10 @@ func TestNatsActivityExecutor_DeploymentResponseNotPublishedOnError(t *testing.T
 	_, err = adapter.Publish(ctx, subject, msgData)
 	require.NoError(t, err)
 
-	// Wait and ensure no deployment response is published
+	// Wait and ensure no orchestration response is published
 	select {
 	case <-responseReceived:
-		t.Fatal("Deployment response should not be published on fatal error")
+		t.Fatal("Orchestration response should not be published on fatal error")
 	case <-time.After(2 * time.Second):
 		// Expected - no response should be published on error
 	}
@@ -236,13 +236,13 @@ func TestNatsActivityExecutor_RescheduleWithCounter(t *testing.T) {
 
 	// Create orchestration with single activity that will reschedule once then complete
 	orchestration := api.Orchestration{
-		ID:             "test-reschedule-counter",
-		CorrelationID:  "correlation-123",
-		State:          api.OrchestrationStateRunning,
-		DeploymentType: model.VPADeploymentType,
-		ProcessingData: make(map[string]any),
-		OutputData:     make(map[string]any),
-		Completed:      make(map[string]struct{}),
+		ID:                "test-reschedule-counter",
+		CorrelationID:     "correlation-123",
+		State:             api.OrchestrationStateRunning,
+		OrchestrationType: model.VPAOrchestrationType,
+		ProcessingData:    make(map[string]any),
+		OutputData:        make(map[string]any),
+		Completed:         make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{
 			{
 				Activities: []api.Activity{
@@ -258,14 +258,14 @@ func TestNatsActivityExecutor_RescheduleWithCounter(t *testing.T) {
 	_, err = msgClient.Update(ctx, orchestration.ID, serializedOrchestration, 0)
 	require.NoError(t, err)
 
-	// Setup message capture for deployment response
-	var capturedResponse *model.DeploymentResponse
+	// Setup message capture for orchestration response
+	var capturedResponse *model.OrchestrationResponse
 	var responseMutex sync.Mutex
 	responseCaptured := make(chan struct{})
 
-	// Subscribe to deployment response subject to capture the published message
-	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMDeploymentResponseSubject, func(msg *nats.Msg) {
-		var dr model.DeploymentResponse
+	// Subscribe to orchestration response subject to capture the published message
+	subscription, err := nt.Client.Connection.Subscribe(natsclient.CFMOrchestrationResponseSubject, func(msg *nats.Msg) {
+		var dr model.OrchestrationResponse
 		if err := json.Unmarshal(msg.Data, &dr); err == nil {
 			responseMutex.Lock()
 			capturedResponse = &dr
@@ -305,22 +305,22 @@ func TestNatsActivityExecutor_RescheduleWithCounter(t *testing.T) {
 	_, err = msgClient.Publish(ctx, subject, msgData)
 	require.NoError(t, err)
 
-	// Wait for deployment response to be published (should happen after reschedule and completion)
+	// Wait for orchestration response to be published (should happen after reschedule and completion)
 	select {
 	case <-responseCaptured:
 		// Response was captured successfully
 	case <-time.After(10 * time.Second):
-		t.Fatal("Timeout waiting for deployment response after reschedule")
+		t.Fatal("Timeout waiting for orchestration response after reschedule")
 	}
 
-	// Verify the deployment response
+	// Verify the orchestration response
 	responseMutex.Lock()
-	require.NotNil(t, capturedResponse, "Deployment response should have been captured after reschedule")
+	require.NotNil(t, capturedResponse, "Orchestration response should have been captured after reschedule")
 	assert.NotEmpty(t, capturedResponse.ID, "Response should have an ID")
 	assert.Equal(t, orchestration.ID, capturedResponse.ManifestID, "ManifestID should match orchestration ID")
 	assert.Equal(t, orchestration.CorrelationID, capturedResponse.CorrelationID, "CorrelationID should match")
 	assert.True(t, capturedResponse.Success, "Response should indicate success")
-	assert.Equal(t, orchestration.DeploymentType, capturedResponse.DeploymentType, "DeploymentType should match")
+	assert.Equal(t, orchestration.OrchestrationType, capturedResponse.OrchestrationType, "OrchestrationType should match")
 	responseMutex.Unlock()
 
 	// Verify the orchestration completed successfully

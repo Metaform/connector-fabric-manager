@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDefinitionManager_CreateDeploymentDefinition_Success(t *testing.T) {
+func TestDefinitionManager_CreateOrchestrationDefinition_Success(t *testing.T) {
 	// Given
 	store := memorystore.NewDefinitionStore()
 	manager := definitionManager{
@@ -45,9 +45,9 @@ func TestDefinitionManager_CreateDeploymentDefinition_Success(t *testing.T) {
 	_, err := store.StoreActivityDefinition(activityDef)
 	require.NoError(t, err, "Failed to store activity definition")
 
-	// Create deployment definition that references the activity
-	deploymentDef := &api.DeploymentDefinition{
-		Type:   model.DeploymentType("test-deployment"),
+	// Create an orchestration definition that references the activity
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("test-orchestration"),
 		Active: true,
 		Schema: map[string]any{"type": "object"},
 		Activities: []api.Activity{
@@ -60,16 +60,16 @@ func TestDefinitionManager_CreateDeploymentDefinition_Success(t *testing.T) {
 		},
 	}
 
-	result, err := manager.CreateDeploymentDefinition(ctx, deploymentDef)
+	result, err := manager.CreateOrchestrationDefinition(ctx, orchestrationDef)
 
-	require.NoError(t, err, "CreateDeploymentDefinition should succeed")
+	require.NoError(t, err, "CreateOrchestrationDefinition should succeed")
 	assert.NotNil(t, result, "Result should not be nil")
-	assert.Equal(t, deploymentDef.Type, result.Type, "Deployment type should match")
-	assert.Equal(t, deploymentDef.Active, result.Active, "Active flag should match")
-	assert.Equal(t, len(deploymentDef.Activities), len(result.Activities), "Activities count should match")
+	assert.Equal(t, orchestrationDef.Type, result.Type, "Orchestration type should match")
+	assert.Equal(t, orchestrationDef.Active, result.Active, "Active flag should match")
+	assert.Equal(t, len(orchestrationDef.Activities), len(result.Activities), "Activities count should match")
 }
 
-func TestDefinitionManager_CreateDeploymentDefinition_MissingActivityDefinition(t *testing.T) {
+func TestDefinitionManager_CreateOrchestrationDefinition_MissingActivityDefinition(t *testing.T) {
 	// Given
 	store := memorystore.NewDefinitionStore()
 	manager := definitionManager{
@@ -78,9 +78,9 @@ func TestDefinitionManager_CreateDeploymentDefinition_MissingActivityDefinition(
 	}
 	ctx := context.Background()
 
-	// Create deployment definition that references a non-existent activity
-	deploymentDef := &api.DeploymentDefinition{
-		Type:   model.DeploymentType("test-deployment"),
+	// Create an orchestration definition that references a non-existent activity
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("test-orchestration"),
 		Active: true,
 		Schema: map[string]any{"type": "object"},
 		Activities: []api.Activity{
@@ -93,9 +93,9 @@ func TestDefinitionManager_CreateDeploymentDefinition_MissingActivityDefinition(
 		},
 	}
 
-	result, err := manager.CreateDeploymentDefinition(ctx, deploymentDef)
+	result, err := manager.CreateOrchestrationDefinition(ctx, orchestrationDef)
 
-	require.Error(t, err, "CreateDeploymentDefinition should fail when activity definition is missing")
+	require.Error(t, err, "CreateOrchestrationDefinition should fail when activity definition is missing")
 	assert.Nil(t, result, "Result should be nil on error")
 
 	// Verify the error is a client error about the missing activity
@@ -105,7 +105,7 @@ func TestDefinitionManager_CreateDeploymentDefinition_MissingActivityDefinition(
 		"Error message should mention the missing activity type")
 }
 
-func TestDefinitionManager_CreateDeploymentDefinition_MultipleMissingActivityDefinitions(t *testing.T) {
+func TestDefinitionManager_CreateOrchestrationDefinition_MultipleMissingActivityDefinitions(t *testing.T) {
 	store := memorystore.NewDefinitionStore()
 	manager := definitionManager{
 		trxContext: cstore.NoOpTransactionContext{},
@@ -123,9 +123,9 @@ func TestDefinitionManager_CreateDeploymentDefinition_MultipleMissingActivityDef
 	_, err := store.StoreActivityDefinition(activityDef)
 	require.NoError(t, err, "Failed to store valid activity definition")
 
-	// Create deployment definition with mix of valid and invalid activity references
-	deploymentDef := &api.DeploymentDefinition{
-		Type:   model.DeploymentType("mixed-deployment"),
+	// Create orchestration definition with mix of valid and invalid activity references
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("mixed-orchestration"),
 		Active: true,
 		Schema: map[string]any{"type": "object"},
 		Activities: []api.Activity{
@@ -150,9 +150,9 @@ func TestDefinitionManager_CreateDeploymentDefinition_MultipleMissingActivityDef
 		},
 	}
 
-	result, err := manager.CreateDeploymentDefinition(ctx, deploymentDef)
+	result, err := manager.CreateOrchestrationDefinition(ctx, orchestrationDef)
 
-	require.Error(t, err, "CreateDeploymentDefinition should fail when multiple activity definitions are missing")
+	require.Error(t, err, "CreateOrchestrationDefinition should fail when multiple activity definitions are missing")
 	assert.Nil(t, result, "Result should be nil on error")
 
 	// Verify the error mentions both missing activities
@@ -160,8 +160,7 @@ func TestDefinitionManager_CreateDeploymentDefinition_MultipleMissingActivityDef
 	assert.Contains(t, err.Error(), "missing-activity-2", "Error should mention second missing activity")
 }
 
-func TestDefinitionManager_CreateDeploymentDefinition_EmptyActivities(t *testing.T) {
-	// Given
+func TestDefinitionManager_CreateOrchestrationDefinition_EmptyActivities(t *testing.T) {
 	store := memorystore.NewDefinitionStore()
 	manager := definitionManager{
 		trxContext: cstore.NoOpTransactionContext{},
@@ -169,22 +168,22 @@ func TestDefinitionManager_CreateDeploymentDefinition_EmptyActivities(t *testing
 	}
 	ctx := context.Background()
 
-	// Create deployment definition with no activities
-	deploymentDef := &api.DeploymentDefinition{
-		Type:       model.DeploymentType("empty-deployment"),
+	// Create an orchestration definition with no activities
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:       model.OrchestrationType("empty-orchestration"),
 		Active:     true,
 		Schema:     map[string]any{"type": "object"},
 		Activities: []api.Activity{}, // Empty activities slice
 	}
 
-	result, err := manager.CreateDeploymentDefinition(ctx, deploymentDef)
+	result, err := manager.CreateOrchestrationDefinition(ctx, orchestrationDef)
 
-	require.NoError(t, err, "CreateDeploymentDefinition should succeed with empty activities")
+	require.NoError(t, err, "CreateOrchestrationDefinition should succeed with empty activities")
 	assert.NotNil(t, result, "Result should not be nil")
 	assert.Equal(t, 0, len(result.Activities), "Should have 0 activities")
 }
 
-func TestDefinitionManager_CreateDeploymentDefinition_StoreError(t *testing.T) {
+func TestDefinitionManager_CreateOrchestrationDefinition_StoreError(t *testing.T) {
 	store := memorystore.NewDefinitionStore()
 	manager := definitionManager{
 		trxContext: cstore.NoOpTransactionContext{},
@@ -192,21 +191,21 @@ func TestDefinitionManager_CreateDeploymentDefinition_StoreError(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	// Create and store deployment definition first
-	deploymentDef := &api.DeploymentDefinition{
-		Type:       model.DeploymentType("duplicate-deployment"),
+	// Create and store the orchestration definition first
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:       model.OrchestrationType("duplicate-orchestration"),
 		Active:     true,
 		Schema:     map[string]any{"type": "object"},
 		Activities: []api.Activity{},
 	}
 
-	_, err := store.StoreDeploymentDefinition(deploymentDef)
+	_, err := store.StoreOrchestrationDefinition(orchestrationDef)
 	require.NoError(t, err, "First store should succeed")
 
-	// Attempt to store the same deployment definition again
-	result, err := manager.CreateDeploymentDefinition(ctx, deploymentDef)
+	// Attempt to store the same orchestration definition again
+	result, err := manager.CreateOrchestrationDefinition(ctx, orchestrationDef)
 
-	require.Error(t, err, "CreateDeploymentDefinition should fail on duplicate")
+	require.Error(t, err, "CreateOrchestrationDefinition should fail on duplicate")
 	assert.Nil(t, result, "Result should be nil on error")
 
 	// Verify the error is a conflict error
@@ -296,9 +295,9 @@ func TestDefinitionManager_Integration_CompleteWorkflow(t *testing.T) {
 	require.NoError(t, err, "Should create second activity definition")
 	assert.Equal(t, activityDef2.Type, result2.Type, "Second activity type should match")
 
-	// Create deployment definition that uses both activities
-	deploymentDef := &api.DeploymentDefinition{
-		Type:   model.DeploymentType("full-deployment"),
+	// Create an orchestration definition that uses both activities
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("full-orchestration"),
 		Active: true,
 		Schema: map[string]any{"type": "object"},
 		Activities: []api.Activity{
@@ -309,7 +308,7 @@ func TestDefinitionManager_Integration_CompleteWorkflow(t *testing.T) {
 				DependsOn: []string{},
 			},
 			{
-				ID:        "deploy-step",
+				ID:        "orchestration-step",
 				Type:      "deploy",
 				Inputs:    []api.MappingEntry{{Source: "artifact", Target: "deployment_artifact"}},
 				DependsOn: []string{"prepare-step"},
@@ -317,11 +316,11 @@ func TestDefinitionManager_Integration_CompleteWorkflow(t *testing.T) {
 		},
 	}
 
-	result3, err := manager.CreateDeploymentDefinition(ctx, deploymentDef)
+	result3, err := manager.CreateOrchestrationDefinition(ctx, orchestrationDef)
 
-	require.NoError(t, err, "Should create deployment definition")
+	require.NoError(t, err, "Should create orchestration definition")
 	assert.NotNil(t, result3, "Result should not be nil")
-	assert.Equal(t, deploymentDef.Type, result3.Type, "Deployment type should match")
+	assert.Equal(t, orchestrationDef.Type, result3.Type, "Orchestration type should match")
 	assert.Equal(t, 2, len(result3.Activities), "Should have 2 activities")
 
 	// Verify the activities are correctly referenced
@@ -333,9 +332,9 @@ func TestDefinitionManager_Integration_CompleteWorkflow(t *testing.T) {
 	assert.True(t, activityTypes["deploy"], "Should contain deploy activity")
 
 	// Verify stored definitions can be retrieved
-	retrievedDeployment, err := store.FindDeploymentDefinition(deploymentDef.Type)
-	require.NoError(t, err, "Should retrieve deployment definition")
-	assert.Equal(t, deploymentDef.Type, retrievedDeployment.Type, "Retrieved deployment type should match")
+	retrievedOrchestration, err := store.FindOrchestrationDefinition(orchestrationDef.Type)
+	require.NoError(t, err, "Should retrieve orchestration definition")
+	assert.Equal(t, orchestrationDef.Type, retrievedOrchestration.Type, "Retrieved deployment type should match")
 
 	retrievedActivity1, err := store.FindActivityDefinition("prepare")
 	require.NoError(t, err, "Should retrieve first activity definition")

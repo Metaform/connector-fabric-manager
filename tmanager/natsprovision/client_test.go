@@ -10,7 +10,7 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsdeployment
+package natsprovision
 
 import (
 	"context"
@@ -32,13 +32,13 @@ import (
 
 const (
 	testTimeout  = 30 * time.Second
-	streamName   = "cfm-deployment"
+	streamName   = "cfm-orchestration"
 	cfmBucker    = "cfm-bucket"
 	waitDuration = 300 * time.Millisecond
 	tickDuration = 5 * time.Millisecond
 )
 
-func TestNatsDeploymentClient_Deploy(t *testing.T) {
+func TestNatsOrchestrationClient_Deploy(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -48,17 +48,17 @@ func TestNatsDeploymentClient_Deploy(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
+	natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	dispatcher := &testDeploymentDispatcher{}
+	dispatcher := &testOrchestrationDispatcher{}
 
-	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
+	client := newNatsOrchestrationClient(msgClient, dispatcher, system.NoopMonitor{})
 
-	manifest := model.DeploymentManifest{
-		ID:             "test-deployment-123",
-		DeploymentType: model.VPADeploymentType,
-		Payload:        make(map[string]any),
+	manifest := model.OrchestrationManifest{
+		ID:                "test-orchestration-123",
+		OrchestrationType: model.VPAOrchestrationType,
+		Payload:           make(map[string]any),
 	}
 
 	// Send the manifest
@@ -66,7 +66,7 @@ func TestNatsDeploymentClient_Deploy(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the message was published by consuming it
-	consumer, err := stream.Consumer(ctx, natsclient.CFMDeployment)
+	consumer, err := stream.Consumer(ctx, natsclient.CFMOrchestration)
 	require.NoError(t, err)
 
 	messageBatch, err := consumer.Fetch(1, jetstream.FetchMaxWait(time.Second))
@@ -76,18 +76,18 @@ func TestNatsDeploymentClient_Deploy(t *testing.T) {
 	for message := range messageBatch.Messages() {
 		messageFound = true
 
-		// Verify the message contains the deployment manifest
-		var receivedManifest model.DeploymentManifest
+		// Verify the message contains the orchestration manifest
+		var receivedManifest model.OrchestrationManifest
 		err = json.Unmarshal(message.Data(), &receivedManifest)
 		require.NoError(t, err)
 
 		assert.Equal(t, manifest.ID, receivedManifest.ID)
 		break
 	}
-	assert.True(t, messageFound, "Should have received a deployment message")
+	assert.True(t, messageFound, "Should have received an orchestration message")
 }
 
-func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
+func TestNatsOrchestrationClient_ProcessMessage_Success(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -97,33 +97,33 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
+	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Setup dispatcher with expectations
-	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan model.DeploymentResponse, 1),
+	dispatcher := &testOrchestrationDispatcher{
+		responses: make(chan model.OrchestrationResponse, 1),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
+	client := newNatsOrchestrationClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
-	// Create and publish the deployment response
-	response := model.DeploymentResponse{
-		ID:             "test-deployment-response-123",
-		Success:        true,
-		ManifestID:     "manifest-456",
-		CorrelationID:  "test-correlation-id",
-		DeploymentType: model.VPADeploymentType,
-		Properties:     map[string]any{"test": "value"},
+	// Create and publish the orchestration response
+	response := model.OrchestrationResponse{
+		ID:                "test-orchestration-response-123",
+		Success:           true,
+		ManifestID:        "manifest-456",
+		CorrelationID:     "test-correlation-id",
+		OrchestrationType: model.VPAOrchestrationType,
+		Properties:        map[string]any{"test": "value"},
 	}
 
 	payload, err := json.Marshal(response)
 	require.NoError(t, err)
 
-	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMDeploymentSubject, payload)
+	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMOrchestrationSubject, payload)
 	require.NoError(t, err)
 
 	// Verify the message was processed
@@ -132,14 +132,14 @@ func TestNatsDeploymentClient_ProcessMessage_Success(t *testing.T) {
 		assert.Equal(t, response.ID, receivedResponse.ID)
 		assert.Equal(t, response.Success, receivedResponse.Success)
 		assert.Equal(t, response.ManifestID, receivedResponse.ManifestID)
-		assert.Equal(t, response.DeploymentType, receivedResponse.DeploymentType)
+		assert.Equal(t, response.OrchestrationType, receivedResponse.OrchestrationType)
 		assert.Equal(t, response.Properties, receivedResponse.Properties)
 	case <-time.After(5 * time.Second):
-		t.Fatal("Timeout waiting for deployment response")
+		t.Fatal("Timeout waiting for orchestration response")
 	}
 }
 
-func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
+func TestNatsOrchestrationClient_ProcessMessage_RecoverableError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -149,35 +149,35 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
+	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Setup dispatcher that returns recoverable error
-	dispatcher := &testDeploymentDispatcher{
-		responses:     make(chan model.DeploymentResponse, 1),
+	dispatcher := &testOrchestrationDispatcher{
+		responses:     make(chan model.OrchestrationResponse, 1),
 		shouldError:   true,
 		errorToReturn: types.NewRecoverableError("test recoverable error"),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
+	client := newNatsOrchestrationClient(msgClient, dispatcher, system.NoopMonitor{})
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
-	// Create and publish the deployment response
-	response := model.DeploymentResponse{
-		ID:             "test-deployment-response-456",
-		Success:        false,
-		ErrorDetail:    "deployment failed",
-		ManifestID:     "manifest-789",
-		CorrelationID:  "test-correlation-id",
-		DeploymentType: model.VPADeploymentType,
-		Properties:     map[string]any{},
+	// Create and publish the orchestration response
+	response := model.OrchestrationResponse{
+		ID:                "test-orchestration-response-456",
+		Success:           false,
+		ErrorDetail:       "orchestration failed",
+		ManifestID:        "manifest-789",
+		CorrelationID:     "test-correlation-id",
+		OrchestrationType: model.VPAOrchestrationType,
+		Properties:        map[string]any{},
 	}
 
 	payload, err := json.Marshal(response)
 	require.NoError(t, err)
 
-	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMDeploymentSubject, payload)
+	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMOrchestrationSubject, payload)
 	require.NoError(t, err)
 
 	// Verify the message was processed (should be NAKed due to recoverable error)
@@ -186,11 +186,11 @@ func TestNatsDeploymentClient_ProcessMessage_RecoverableError(t *testing.T) {
 		assert.Equal(t, response.ID, receivedResponse.ID)
 		assert.Equal(t, response.Success, receivedResponse.Success)
 	case <-time.After(5 * time.Second):
-		t.Fatal("Timeout waiting for deployment response")
+		t.Fatal("Timeout waiting for orchestration response")
 	}
 }
 
-func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
+func TestNatsOrchestrationClient_ProcessMessage_FatalError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -200,34 +200,34 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
+	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Setup dispatcher that returns fatal error
-	dispatcher := &testDeploymentDispatcher{
-		responses:     make(chan model.DeploymentResponse, 1),
+	dispatcher := &testOrchestrationDispatcher{
+		responses:     make(chan model.OrchestrationResponse, 1),
 		shouldError:   true,
 		errorToReturn: types.NewFatalError("test fatal error"),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
+	client := newNatsOrchestrationClient(msgClient, dispatcher, system.NoopMonitor{})
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
-	response := model.DeploymentResponse{
-		ID:             "test-deployment-response-789",
-		Success:        false,
-		ErrorDetail:    "fatal deployment error",
-		ManifestID:     "manifest-999",
-		CorrelationID:  "test-correlation-id",
-		DeploymentType: model.VPADeploymentType,
-		Properties:     map[string]any{},
+	response := model.OrchestrationResponse{
+		ID:                "test-orchestration-response-789",
+		Success:           false,
+		ErrorDetail:       "fatal orchestration error",
+		ManifestID:        "manifest-999",
+		CorrelationID:     "test-correlation-id",
+		OrchestrationType: model.VPAOrchestrationType,
+		Properties:        map[string]any{},
 	}
 
 	payload, err := json.Marshal(response)
 	require.NoError(t, err)
 
-	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMDeploymentSubject, payload)
+	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMOrchestrationSubject, payload)
 	require.NoError(t, err)
 
 	// Verify the message was processed (should be ACKed despite fatal error)
@@ -236,11 +236,11 @@ func TestNatsDeploymentClient_ProcessMessage_FatalError(t *testing.T) {
 		assert.Equal(t, response.ID, receivedResponse.ID)
 		assert.Equal(t, response.Success, receivedResponse.Success)
 	case <-time.After(5 * time.Second):
-		t.Fatal("Timeout waiting for deployment response")
+		t.Fatal("Timeout waiting for orchestration response")
 	}
 }
 
-func TestNatsDeploymentClient_ProcessLoop_ContextCancellation(t *testing.T) {
+func TestNatsOrchestrationClient_ProcessLoop_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -250,14 +250,14 @@ func TestNatsDeploymentClient_ProcessLoop_ContextCancellation(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
+	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
-	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan model.DeploymentResponse, 1),
+	dispatcher := &testOrchestrationDispatcher{
+		responses: make(chan model.OrchestrationResponse, 1),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
+	client := newNatsOrchestrationClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	// Create a context that can be cancelled
 	shortCtx, shortCancel := context.WithCancel(context.Background())
@@ -274,7 +274,7 @@ func TestNatsDeploymentClient_ProcessLoop_ContextCancellation(t *testing.T) {
 	}, waitDuration, tickDuration, "Processing should have stopped after context cancellation")
 }
 
-func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
+func TestNatsOrchestrationClient_MultipleMessages(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -284,42 +284,42 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
+	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	const messageCount = 5
-	dispatcher := &testDeploymentDispatcher{
-		responses: make(chan model.DeploymentResponse, messageCount),
+	dispatcher := &testOrchestrationDispatcher{
+		responses: make(chan model.OrchestrationResponse, messageCount),
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
+	client := newNatsOrchestrationClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
 	// Publish multiple messages
-	var expectedResponses []model.DeploymentResponse
+	var expectedResponses []model.OrchestrationResponse
 	for i := 0; i < messageCount; i++ {
-		response := model.DeploymentResponse{
-			ID:             fmt.Sprintf("test-deployment-response-%d", i),
-			Success:        true,
-			ErrorDetail:    "",
-			ManifestID:     fmt.Sprintf("manifest-%d", i),
-			CorrelationID:  "test-correlation-id",
-			DeploymentType: model.VPADeploymentType,
-			Properties:     map[string]any{"index": float64(i)},
+		response := model.OrchestrationResponse{
+			ID:                fmt.Sprintf("test-orchestration-response-%d", i),
+			Success:           true,
+			ErrorDetail:       "",
+			ManifestID:        fmt.Sprintf("manifest-%d", i),
+			CorrelationID:     "test-correlation-id",
+			OrchestrationType: model.VPAOrchestrationType,
+			Properties:        map[string]any{"index": float64(i)},
 		}
 		expectedResponses = append(expectedResponses, response)
 
 		payload, err := json.Marshal(response)
 		require.NoError(t, err)
 
-		_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMDeploymentSubject, payload)
+		_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMOrchestrationSubject, payload)
 		require.NoError(t, err)
 	}
 
 	// Collect all received responses
-	var receivedResponses []model.DeploymentResponse
+	var receivedResponses []model.OrchestrationResponse
 	for i := 0; i < messageCount; i++ {
 		select {
 		case response := <-dispatcher.responses:
@@ -348,7 +348,7 @@ func TestNatsDeploymentClient_MultipleMessages(t *testing.T) {
 	}
 }
 
-func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
+func TestNatsOrchestrationClient_ProcessMessage_InvalidJSON(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -358,18 +358,18 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
+	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Setup dispatcher that should NOT be called as the test sends invalid JSON
-	dispatcher := &testDeploymentDispatcher{
-		onDispatch: func(ctx context.Context, response model.DeploymentResponse) error {
+	dispatcher := &testOrchestrationDispatcher{
+		onDispatch: func(ctx context.Context, response model.OrchestrationResponse) error {
 			t.Error("Dispatcher should not be called for invalid JSON")
 			return nil
 		},
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
+	client := newNatsOrchestrationClient(msgClient, dispatcher, system.NoopMonitor{})
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
@@ -380,7 +380,7 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 
 	// Publish the invalid message
 	invalidJSON := []byte(`{"invalid": json}`)
-	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMDeploymentSubject, invalidJSON)
+	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMOrchestrationSubject, invalidJSON)
 	require.NoError(t, err)
 
 	// Wait for message Processing and verify it was ACKed
@@ -399,7 +399,7 @@ func TestNatsDeploymentClient_ProcessMessage_InvalidJSON(t *testing.T) {
 	assert.Equal(t, finalInfo.NumPending, uint64(0), "No messages should be pending after Processing invalid message")
 }
 
-func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
+func TestNatsOrchestrationClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -410,14 +410,14 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
 
 	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMDeployment)
+	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Track successful Processing
 	var processedCount int
 	var mu sync.Mutex
 
-	dispatcher := &testDeploymentDispatcher{
-		onDispatch: func(ctx context.Context, response model.DeploymentResponse) error {
+	dispatcher := &testOrchestrationDispatcher{
+		onDispatch: func(ctx context.Context, response model.OrchestrationResponse) error {
 			mu.Lock()
 			processedCount++
 			mu.Unlock()
@@ -426,27 +426,27 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	}
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
-	client := newNatsDeploymentClient(msgClient, dispatcher, system.NoopMonitor{})
+	client := newNatsOrchestrationClient(msgClient, dispatcher, system.NoopMonitor{})
 
 	// Initialize client with consumer
 	err = client.Init(ctx, consumer)
 	require.NoError(t, err)
 
-	// Create and publish deployment response message
-	response := model.DeploymentResponse{
-		ID:             "test-success-response",
-		Success:        true,
-		ErrorDetail:    "",
-		ManifestID:     "success-manifest",
-		CorrelationID:  "test-correlation-id",
-		DeploymentType: model.VPADeploymentType,
-		Properties:     map[string]any{"status": "success"},
+	// Create and publish orchestration response message
+	response := model.OrchestrationResponse{
+		ID:                "test-success-response",
+		Success:           true,
+		ErrorDetail:       "",
+		ManifestID:        "success-manifest",
+		CorrelationID:     "test-correlation-id",
+		OrchestrationType: model.VPAOrchestrationType,
+		Properties:        map[string]any{"status": "success"},
 	}
 
 	payload, err := json.Marshal(response)
 	require.NoError(t, err)
 
-	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMDeploymentSubject, payload)
+	_, err = nt.Client.JetStream.Publish(ctx, natsclient.CFMOrchestrationSubject, payload)
 	require.NoError(t, err)
 
 	// Wait for Processing
@@ -458,16 +458,16 @@ func TestNatsDeploymentClient_ProcessMessage_DispatcherSuccess(t *testing.T) {
 	}, waitDuration, tickDuration, "Message should be processed successfully")
 }
 
-// testDeploymentDispatcher implements api.deploymentCallbackDispatcher for testing
-type testDeploymentDispatcher struct {
-	responses     chan model.DeploymentResponse
+// testOrchestrationDispatcher implements api.provisionCallbackDispatcher for testing
+type testOrchestrationDispatcher struct {
+	responses     chan model.OrchestrationResponse
 	shouldError   bool
 	errorToReturn error
-	onDispatch    func(ctx context.Context, response model.DeploymentResponse) error
+	onDispatch    func(ctx context.Context, response model.OrchestrationResponse) error
 	mu            sync.Mutex
 }
 
-func (t *testDeploymentDispatcher) Dispatch(ctx context.Context, response model.DeploymentResponse) error {
+func (t *testOrchestrationDispatcher) Dispatch(ctx context.Context, response model.OrchestrationResponse) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
