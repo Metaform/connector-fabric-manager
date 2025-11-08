@@ -47,7 +47,12 @@ func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.Activit
 	if !found {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
 	}
-
+	_, found = ctx.InputData().Get(model.VPADispose)
+	if found {
+		// disposal request
+		ctx.SetOutputValue(model.VPADispose, true)
+		return api.ActivityResult{Result: api.ActivityResultComplete}
+	}
 	// Return state data
 	ctx.SetOutputValue(model.ConnectorId, uuid.New().String())
 

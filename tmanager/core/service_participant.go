@@ -15,6 +15,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/collection"
@@ -31,6 +32,7 @@ type participantService struct {
 	participantStore     api.EntityStore[api.ParticipantProfile]
 	cellStore            api.EntityStore[api.Cell]
 	dataspaceStore       api.EntityStore[api.DataspaceProfile]
+	monitor              system.LogMonitor
 }
 
 func (d participantService) GetProfile(ctx context.Context, profileID string) (*api.ParticipantProfile, error) {
@@ -87,7 +89,7 @@ func (d participantService) DeployProfile(
 			vpaManifests = append(vpaManifests, vpaManifest)
 		}
 
-		oManifest.Payload[model.VPAPayloadType] = vpaManifests
+		oManifest.Payload[model.VPAData] = vpaManifests
 		result, err := d.participantStore.Create(ctx, participantProfile)
 		if err != nil {
 			return nil, fmt.Errorf("error creating participant %s: %w", identifier, err)
@@ -105,17 +107,76 @@ func (d participantService) DeployProfile(
 }
 
 func (d participantService) DisposeProfile(ctx context.Context, identifier string) error {
-	//TODO implement me
-	panic("implement me")
+	return d.trxContext.Execute(ctx, func(c context.Context) error {
+		profile, err := d.participantStore.FindById(c, identifier)
+		if err != nil {
+			return err
+		}
+		states := make([]string, 0, len(profile.VPAs))
+		for _, vpa := range profile.VPAs {
+			if vpa.State != api.DeploymentStateActive {
+				states = append(states, vpa.ID+":"+vpa.State.String())
+			}
+		}
+		if len(states) > 0 {
+			return fmt.Errorf("cannot dispose VPAs %s in states: %s", identifier, strings.Join(states, ","))
+		}
+		stateData, found := profile.Properties[model.VPAStateData]
+		if !found {
+			return fmt.Errorf("profile is not deployed or is missing state data: %s", identifier)
+		}
+
+		oManifest := model.OrchestrationManifest{
+			ID:                uuid.New().String(),
+			CorrelationID:     identifier,
+			OrchestrationType: model.VPAOrchestrationType,
+			Payload:           make(map[string]any),
+		}
+
+		oManifest.Payload[model.ParticipantIdentifier] = identifier
+		oManifest.Payload[model.VPADispose] = true
+		oManifest.Payload[model.VPAStateData] = stateData
+
+		vpaManifests := make([]model.VPAManifest, 0, len(profile.VPAs))
+		for _, vpa := range profile.VPAs {
+			vpaManifest := model.VPAManifest{
+				ID:         vpa.ID,
+				VPAType:    vpa.Type,
+				Cell:       vpa.Cell.ID,
+				Properties: vpa.Properties,
+			}
+			vpaManifests = append(vpaManifests, vpaManifest)
+
+			// Set to disposing
+			vpa.State = api.DeploymentStateDisposing
+		}
+
+		oManifest.Payload[model.VPAData] = vpaManifests
+
+		err = d.participantStore.Update(c, profile)
+		if err != nil {
+			return fmt.Errorf("error disposing participant %s: %w", identifier, err)
+		}
+
+		// Only send the orchestration message if the storage operation succeeded. If the send fails, the transaction
+		// will be rolled back.
+		err = d.provisionClient.Send(ctx, oManifest)
+		if err != nil {
+			return fmt.Errorf("error disposing participant %s: %w", identifier, err)
+		}
+
+		return nil
+	})
 }
 
-type vpaOrchestrationCallbackHandler struct {
+type vpaCallbackHandler struct {
 	participantStore api.EntityStore[api.ParticipantProfile]
 	trxContext       store.TransactionContext
 	monitor          system.LogMonitor
 }
 
-func (h vpaOrchestrationCallbackHandler) handle(ctx context.Context, response model.OrchestrationResponse) error {
+// handle processes the asynchronous response to participant VPA deployment request.
+func (h vpaCallbackHandler) handle(ctx context.Context, response model.OrchestrationResponse) error {
 	return h.trxContext.Execute(ctx, func(c context.Context) error {
 		// Note de-duplication does not need to be performed as this operation is idempotent
 		profile, err := h.participantStore.FindById(c, response.CorrelationID)
@@ -126,18 +187,28 @@ func (h vpaOrchestrationCallbackHandler) handle(ctx context.Context, response mo
 		}
 		switch {
 		case response.Success:
-			// Place all output values under VPStateData key
-			vpaProps := make(map[string]any)
-			for key, value := range response.Properties {
-				vpaProps[key] = value
-			}
-			profile.Properties[model.VPAStateData] = vpaProps
+			if response.Properties[model.VPADispose] == true {
+				for i, vpa := range profile.VPAs {
+					// Update state
+					vpa.State = api.DeploymentStateDisposed
+					// TODO update timestamp based on returned data
+					profile.VPAs[i] = vpa // Use range index because vpa is a copy
+				}
+			} else {
+				// Place all output values under VPStateData key
+				vpaProps := make(map[string]any)
+				for key, value := range response.Properties {
+					vpaProps[key] = value
+				}
+				profile.Properties[model.VPAStateData] = vpaProps
 
-			for i, vpa := range profile.VPAs {
-				vpa.State = api.DeploymentStateActive
-				// TODO update timestamp based on returned data
-				profile.VPAs[i] = vpa // Use range index because vpa is a copy
+				for i, vpa := range profile.VPAs {
+					vpa.State = api.DeploymentStateActive
+					// TODO update timestamp based on returned data
+					profile.VPAs[i] = vpa // Use range index because vpa is a copy
+				}
 			}
+
 		default:
 			// TODO update VPA status
 			profile.Error = true
@@ -145,7 +216,7 @@ func (h vpaOrchestrationCallbackHandler) handle(ctx context.Context, response mo
 		}
 		err = h.participantStore.Update(c, profile)
 		if err != nil {
-			return fmt.Errorf("error updating participant profile %s processing response for manifest %s: %w", response.CorrelationID, response.ManifestID, err)
+			return fmt.Errorf("error updating participant profile %s processing VPA response for manifest %s: %w", response.CorrelationID, response.ManifestID, err)
 		}
 		return nil
 	})

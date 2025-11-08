@@ -55,13 +55,16 @@ func (dt VPAType) String() string {
 }
 
 const (
-	VPAOrchestrationType  OrchestrationType = "cfm.vpa"
-	ConnectorType         VPAType           = "cfm.connector"
-	CredentialServiceType VPAType           = "cfm.credentialservice"
-	DataPlaneType         VPAType           = "cfm.dataplane"
-	ParticipantIdentifier                   = "cfm.participant.id"
-	VPAPayloadType                          = "cfm.vpas"
-	VPAStateData                            = "cfm.vpa.state"
-	ConnectorId                             = "cfm.connector.id"
-	CredentialService                       = "cfm.credentialservice.id"
+	ConnectorType         VPAType = "cfm.connector"
+	CredentialServiceType VPAType = "cfm.credentialservice"
+	DataPlaneType         VPAType = "cfm.dataplane"
+	ParticipantIdentifier         = "cfm.participant.id"
+
+	VPAOrchestrationType OrchestrationType = "cfm.vpa"
+	VPADispose                             = "cfm.vpa.dispose"
+	VPAData                                = "cfm.vpa.data"
+	VPAStateData                           = "cfm.vpa.state"
+
+	ConnectorId       = "cfm.connector.id"
+	CredentialService = "cfm.credentialservice.id"
 )

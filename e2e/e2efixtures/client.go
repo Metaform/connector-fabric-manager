@@ -35,11 +35,17 @@ func NewApiClient(tmanagerBaseUrl string, pmanagerBaseUrl string) *ApiClient {
 	}
 }
 
-// PostToPManager makes a POST request to Process Manager API
+// PostToPManager makes a POST request to Provision Manager API
 func (c *ApiClient) PostToPManager(endpoint string, payload any) error {
 	url := fmt.Sprintf("%s/%s", c.pmanagerBaseUrl, endpoint)
 	_, err := c.postRequest(url, payload, nil)
 	return err
+}
+
+// DeleteToPManager makes a DELETE request to Provision Manager API
+func (c *ApiClient) DeleteToPManager(endpoint string) error {
+	url := fmt.Sprintf("%s/%s", c.pmanagerBaseUrl, endpoint)
+	return c.deleteRequest(url)
 }
 
 func (c *ApiClient) PostToTManager(endpoint string, payload any) error {
@@ -76,6 +82,12 @@ func (c *ApiClient) GetTManager(endpoint string, result any) error {
 	}
 
 	return json.Unmarshal(body, result)
+}
+
+// DeleteToTManager makes a DELETE request to Tenant Manager API
+func (c *ApiClient) DeleteToTManager(endpoint string) error {
+	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
+	return c.deleteRequest(url)
 }
 
 func (c *ApiClient) postWithResponse(url string, payload any, result any) error {
@@ -122,4 +134,33 @@ func (c *ApiClient) postRequest(url string, payload any, headers map[string]stri
 	}
 
 	return body, nil
+}
+
+// deleteRequest handles DELETE requests
+func (c *ApiClient) deleteRequest(url string) error {
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK &&
+		resp.StatusCode != http.StatusCreated &&
+		resp.StatusCode != http.StatusNoContent &&
+		resp.StatusCode != http.StatusAccepted {
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }

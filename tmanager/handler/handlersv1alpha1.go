@@ -43,7 +43,7 @@ func NewHandler(
 	}
 }
 
-func (h *TMHandler) createDeployParticipant(w http.ResponseWriter, req *http.Request) {
+func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
@@ -69,6 +69,19 @@ func (h *TMHandler) createDeployParticipant(w http.ResponseWriter, req *http.Req
 
 	response := v1alpha1.ToParticipantProfile(profile)
 	h.ResponseAccepted(w, response)
+}
+
+func (h *TMHandler) disposeParticipant(w http.ResponseWriter, req *http.Request, id string) {
+	if h.InvalidMethod(w, req, http.MethodDelete) {
+		return
+	}
+
+	err := h.participantService.DisposeProfile(req.Context(), id)
+	if err != nil {
+		h.HandleError(w, err)
+	}
+
+	h.Accepted(w)
 }
 
 func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request, id string) {

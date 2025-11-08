@@ -144,7 +144,25 @@ func Test_VerifyE2E(t *testing.T) {
 	require.NotNil(t, connectorVPA, "Expected to find a VPA with cfm.connector type")
 	require.NotNil(t, connectorVPA.Properties, "Connector VPA properties should not be nil")
 	require.Contains(t, connectorVPA.Properties, "connectorkey", "Connector VPA should contain 'connectorkey' property")
-	//time.Sleep(10 * time.Second)
+
+	// Dispose VPAs
+	err = client.DeleteToTManager(fmt.Sprintf("participants/%s", participantProfile.ID))
+	require.NoError(t, err)
+
+	disposeCount := 0
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		err = client.GetTManager(fmt.Sprintf("participants/%s", participantProfile.ID), &statusProfile)
+		require.NoError(t, err)
+		for _, vpa := range statusProfile.VPAs {
+			if vpa.State == api.DeploymentStateDisposed.String() {
+				disposeCount++
+			}
+		}
+		if disposeCount == 3 {
+			break
+		}
+	}
+	require.Equal(t, 3, disposeCount, "Expected 3 deployments to be disposed")
 }
 
 func cleanup() {

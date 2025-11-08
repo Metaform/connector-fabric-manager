@@ -64,7 +64,15 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 		handler.getParticipantProfile(w, req, id)
 	})
 
-	router.Post("/participants", handler.createDeployParticipant)
+	router.Post("/participants", handler.deployParticipant)
+	router.Delete("/participants/{id}", func(w http.ResponseWriter, req *http.Request) {
+		id, found := handler.ExtractPathVariable(w, req, "id")
+		if !found {
+			return
+		}
+		handler.disposeParticipant(w, req, id)
+	})
+	
 	router.Post("/cells", handler.createCell)
 	router.Post("/dataspace-profiles", handler.createDataspaceProfile)
 	router.Post("/dataspace-profiles/{id}/deployments", handler.deployDataspaceProfile)

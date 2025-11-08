@@ -59,6 +59,7 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 		participantStore:     participantStore,
 		dataspaceStore:       dataspaceStore,
 		cellStore:            cellStore,
+		monitor:              context.LogMonitor,
 	}
 	context.Registry.Register(api.ParticipantProfileServiceKey, participantService)
 
@@ -74,12 +75,12 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	})
 
 	registry := context.Registry.Resolve(api.ProvisionHandlerRegistryKey).(api.ProvisionHandlerRegistry)
-	handler := vpaOrchestrationCallbackHandler{
+	deploymentHandler := vpaCallbackHandler{
 		trxContext:       trxContext,
 		participantStore: participantStore,
 		monitor:          context.LogMonitor,
 	}
-	registry.Register(model.VPAOrchestrationType, handler.handle)
+	registry.Register(model.VPAOrchestrationType, deploymentHandler.handle)
 
 	return nil
 }

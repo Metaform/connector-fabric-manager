@@ -8,9 +8,9 @@
 
 ## Overview
 
-The `Orchestrator` is responsible for executing and managing resource allocations. A _**resource**_ can be anything from
-a compute cluster to tenant configuration at the application layer. An _**orchestration**_ is composed of
-_**activities**_ that execute a unit of work. Since resources often depend on other resources, activities can be
+The `Orchestrator` is responsible for executing operations and managing resource allocations. A _**resource**_ can be
+anything from a compute cluster to tenant configuration at the application layer. An _**orchestration**_ is composed of
+_**activities**_ that perform a unit of work. Since resources often depend on other resources, activities can be
 ordered. Otherwise, if a set of activities are not dependent on each other, they will be executed in parallel.
 
 Consider a tenant deployment that involves the creation of a Web DID using a domain supplied by the tenant owner. The
@@ -51,8 +51,8 @@ doing so will add additional complexity (the need to implement Kubernetes operat
 ## Resource Model: Orchestrations and Activities
 
 The `Orchestrator` is built on a resource model consisting of two types: an `OrchestrationDefinition` and an
-`ActivityDefinition`. An `OrchestrationDefinition` contains a collection of `Activities` that define the orchestration
-for a deployment. The following is an example of an `OrchestrationDefinition`:
+`ActivityDefinition`. An `OrchestrationDefinition` contains a collection of `Activities` that define the workflow
+for an operation. The following is an example of an `OrchestrationDefinition`:
 
 ```json
 {
@@ -93,9 +93,9 @@ types:
 - `output`: The output data from the orchestration.
 - `schema`: The schema for input data.
 
-The orchestration is a collection of activities. Activities form a Directed Acyclic Graph (DAG) by declaring
-dependencies using the `dependsOn` property. At execution time, the activities will be ordered using a topological sort
-and grouping activities into tiers of parallel execution steps based on their dependencies.
+Activities form a Directed Acyclic Graph (DAG) by declaring dependencies using the `dependsOn` property. At execution
+time, the activities will be ordered using a topological sort and grouping activities into tiers of parallel execution
+steps based on their dependencies.
 
 An activity has the following properties:
 

@@ -91,12 +91,14 @@ type Cell struct {
 type DeploymentState string
 
 const (
-	DeploymentStateInitial DeploymentState = "initial"
-	DeploymentStatePending DeploymentState = "pending"
-	DeploymentStateActive  DeploymentState = "active"
-	DeploymentStateLocked  DeploymentState = "locked"
-	DeploymentStateOffline DeploymentState = "offline"
-	DeploymentStateError   DeploymentState = "error"
+	DeploymentStateInitial   DeploymentState = "initial"
+	DeploymentStatePending   DeploymentState = "pending"
+	DeploymentStateActive    DeploymentState = "active"
+	DeploymentStateDisposing DeploymentState = "disposing"
+	DeploymentStateDisposed  DeploymentState = "disposed"
+	DeploymentStateLocked    DeploymentState = "locked"
+	DeploymentStateOffline   DeploymentState = "offline"
+	DeploymentStateError     DeploymentState = "error"
 )
 
 // String implements the Stringer interface
