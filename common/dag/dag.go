@@ -343,7 +343,7 @@ func (g *Graph[T]) detectCycle(vertexID string, visitState map[string]int, paren
 		neighborID := neighbor.ID
 
 		if visitState[neighborID] == visiting {
-			// Back edge found - cycle detected
+			// Back-edge found - cycle detected
 			// Reconstruct the cycle path
 			cycle := []string{neighborID}
 			current := vertexID
