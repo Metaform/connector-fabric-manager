@@ -23,7 +23,7 @@ import (
 func TestDeploymentManifest_JSONRoundTrip(t *testing.T) {
 	originalManifest := OrchestrationManifest{
 		ID:                "manifest-1",
-		OrchestrationType: VPAOrchestrationType,
+		OrchestrationType: VPADeployType,
 		Payload: map[string]any{
 			"environment": "production",
 			"capacity":    100,
@@ -51,7 +51,7 @@ func TestDeploymentResponse_JSONRoundTrip(t *testing.T) {
 		Success:           true,
 		ErrorDetail:       "",
 		ManifestID:        "manifest-1",
-		OrchestrationType: VPAOrchestrationType,
+		OrchestrationType: VPADeployType,
 		Properties: map[string]any{
 			"endpoint": "https://example.com",
 			"status":   "running",

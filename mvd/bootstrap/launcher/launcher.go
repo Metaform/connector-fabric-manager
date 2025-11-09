@@ -102,7 +102,12 @@ func LaunchMVD() {
 		}
 	}
 
-	err = CreateOrchestrationDefinition(client)
+	err = CreateDeployDefinition(client)
+	if err != nil {
+		panic(err)
+	}
+
+	err = CreateDisposeDefinition(client)
 	if err != nil {
 		panic(err)
 	}
@@ -200,26 +205,52 @@ func CreateActivityDefinition(apiClient *e2efixtures.ApiClient, activityType str
 	return apiClient.PostToPManager("activity-definition", requestBody)
 }
 
-func CreateOrchestrationDefinition(apiClient *e2efixtures.ApiClient) error {
+func CreateDeployDefinition(apiClient *e2efixtures.ApiClient) error {
 	requestBody := pv1alpha1.OrchestrationDefinition{
-		Type: model.VPAOrchestrationType.String(),
+		Type:        model.VPADeployType.String(),
+		Description: "Deploys VPAs",
 		Activities: []pv1alpha1.Activity{
 			{
-				ID:   "dns-provisioner",
-				Type: dnslauncher.ActivityType,
+				ID:            "dns-provisioner",
+				Type:          dnslauncher.ActivityType,
+				Discriminator: "deploy",
 			},
 			{
-				ID:   "connector-provisioner",
-				Type: clauncher.ActivityType,
+				ID:            "connector-provisioner",
+				Type:          clauncher.ActivityType,
+				Discriminator: "deploy",
 				DependsOn: []string{
 					"dns-provisioner",
 				},
 			},
 			{
-				ID:   "onboarder",
-				Type: oblauncher.ActivityType,
+				ID:            "onboarder",
+				Type:          oblauncher.ActivityType,
+				Discriminator: "deploy",
 				DependsOn: []string{
 					"connector-provisioner",
+				},
+			},
+		},
+	}
+	return apiClient.PostToPManager("orchestration-definition", requestBody)
+}
+func CreateDisposeDefinition(apiClient *e2efixtures.ApiClient) error {
+	requestBody := pv1alpha1.OrchestrationDefinition{
+		Type:        model.VPADisposeType.String(),
+		Description: "Disposes deployed VPAs",
+		Activities: []pv1alpha1.Activity{
+			{
+				ID:            "dns-provisioner",
+				Type:          dnslauncher.ActivityType,
+				Discriminator: "dispose",
+			},
+			{
+				ID:            "connector-provisioner",
+				Type:          clauncher.ActivityType,
+				Discriminator: "dispose",
+				DependsOn: []string{
+					"dns-provisioner",
 				},
 			},
 		},

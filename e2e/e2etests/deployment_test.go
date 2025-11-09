@@ -88,7 +88,7 @@ func Test_VerifyE2E(t *testing.T) {
 	}
 	require.NoError(t, err)
 
-	err = e2efixtures.CreateTestOrchestrationDefinition(client)
+	err = e2efixtures.CreateTestOrchestrationDefinitions(client)
 	require.NoError(t, err)
 
 	cell, err := e2efixtures.CreateCell(client)

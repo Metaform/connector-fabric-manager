@@ -60,10 +60,11 @@ const (
 	DataPlaneType         VPAType = "cfm.dataplane"
 	ParticipantIdentifier         = "cfm.participant.id"
 
-	VPAOrchestrationType OrchestrationType = "cfm.vpa"
-	VPADispose                             = "cfm.vpa.dispose"
-	VPAData                                = "cfm.vpa.data"
-	VPAStateData                           = "cfm.vpa.state"
+	VPADeployType  OrchestrationType = "cfm.orchestration.vpa.deploy"
+	VPADisposeType OrchestrationType = "cfm.orchestration.vpa.dispose"
+
+	VPAData      = "cfm.vpa.data"
+	VPAStateData = "cfm.vpa.state"
 
 	ConnectorId       = "cfm.connector.id"
 	CredentialService = "cfm.credentialservice.id"

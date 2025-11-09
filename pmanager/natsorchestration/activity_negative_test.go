@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/common/natsclient/mocks"
+	"github.com/metaform/connector-fabric-manager/common/mocks"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"

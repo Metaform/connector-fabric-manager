@@ -111,10 +111,11 @@ func (at ActivityType) String() string {
 }
 
 type Activity struct {
-	ID        string         `json:"id"`
-	Type      ActivityType   `json:"type"`
-	Inputs    []MappingEntry `json:"inputs"`
-	DependsOn []string       `json:"dependsOn"`
+	ID            string         `json:"id"`
+	Type          ActivityType   `json:"type"`
+	Discriminator string         `json:"discriminator"`
+	Inputs        []MappingEntry `json:"inputs"`
+	DependsOn     []string       `json:"dependsOn"`
 }
 
 // ActivityMessage used to enqueue an activity for processing.
@@ -154,10 +155,11 @@ func (m *MappingEntry) UnmarshalJSON(data []byte) error {
 }
 
 type OrchestrationDefinition struct {
-	Type       model.OrchestrationType `json:"type"`
-	Active     bool                    `json:"active"`
-	Schema     map[string]any          `json:"schema"`
-	Activities []Activity              `json:"activities"`
+	Type        model.OrchestrationType `json:"type"`
+	Description string                  `json:"description"`
+	Active      bool                    `json:"active"`
+	Schema      map[string]any          `json:"schema"`
+	Activities  []Activity              `json:"activities"`
 }
 
 // ActivityDefinition represents a single activity in the orchestration

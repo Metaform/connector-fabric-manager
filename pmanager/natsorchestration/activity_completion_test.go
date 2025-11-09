@@ -47,7 +47,7 @@ func TestNatsActivityExecutor_OrchestrationResponsePublished(t *testing.T) {
 	orchestration := api.Orchestration{
 		ID:                "test-orchestration-response",
 		State:             api.OrchestrationStateRunning,
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		ProcessingData:    make(map[string]any),
 		OutputData:        make(map[string]any),
 		Completed:         make(map[string]struct{}),
@@ -150,7 +150,7 @@ func TestNatsActivityExecutor_OrchestrationResponseNotPublishedOnError(t *testin
 	orchestration := api.Orchestration{
 		ID:                "test-orchestration-error",
 		State:             api.OrchestrationStateRunning,
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		ProcessingData:    make(map[string]any),
 		Completed:         make(map[string]struct{}),
 		Steps: []api.OrchestrationStep{
@@ -239,7 +239,7 @@ func TestNatsActivityExecutor_RescheduleWithCounter(t *testing.T) {
 		ID:                "test-reschedule-counter",
 		CorrelationID:     "correlation-123",
 		State:             api.OrchestrationStateRunning,
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		ProcessingData:    make(map[string]any),
 		OutputData:        make(map[string]any),
 		Completed:         make(map[string]struct{}),

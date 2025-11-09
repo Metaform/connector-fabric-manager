@@ -32,7 +32,7 @@ func (g participantGenerator) Generate(
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
 
-	cell, err := g.CellSelector(model.VPAOrchestrationType, cells, dProfiles)
+	cell, err := g.CellSelector(model.VPADeployType, cells, dProfiles)
 	if err != nil {
 		return nil, err
 	}

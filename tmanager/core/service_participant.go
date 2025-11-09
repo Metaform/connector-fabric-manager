@@ -72,7 +72,7 @@ func (d participantService) DeployProfile(
 		oManifest := model.OrchestrationManifest{
 			ID:                uuid.New().String(),
 			CorrelationID:     participantProfile.ID,
-			OrchestrationType: model.VPAOrchestrationType,
+			OrchestrationType: model.VPADeployType,
 			Payload:           make(map[string]any),
 		}
 
@@ -129,12 +129,11 @@ func (d participantService) DisposeProfile(ctx context.Context, identifier strin
 		oManifest := model.OrchestrationManifest{
 			ID:                uuid.New().String(),
 			CorrelationID:     identifier,
-			OrchestrationType: model.VPAOrchestrationType,
+			OrchestrationType: model.VPADisposeType,
 			Payload:           make(map[string]any),
 		}
 
 		oManifest.Payload[model.ParticipantIdentifier] = identifier
-		oManifest.Payload[model.VPADispose] = true
 		oManifest.Payload[model.VPAStateData] = stateData
 
 		vpaManifests := make([]model.VPAManifest, 0, len(profile.VPAs))
@@ -175,8 +174,40 @@ type vpaCallbackHandler struct {
 	monitor          system.LogMonitor
 }
 
+func (h vpaCallbackHandler) handleDeploy(ctx context.Context, response model.OrchestrationResponse) error {
+	return h.handle(ctx, response, func(profile *api.ParticipantProfile, resp model.OrchestrationResponse) {
+		// Place all output values under VPStateData key
+		vpaProps := make(map[string]any)
+		for key, value := range resp.Properties {
+			vpaProps[key] = value
+		}
+		profile.Properties[model.VPAStateData] = vpaProps
+
+		for i, vpa := range profile.VPAs {
+			vpa.State = api.DeploymentStateActive
+			// TODO update timestamp based on returned data
+			profile.VPAs[i] = vpa // Use range index because vpa is a copy
+		}
+	})
+}
+
+func (h vpaCallbackHandler) handleDispose(ctx context.Context, response model.OrchestrationResponse) error {
+	return h.handle(ctx, response, func(profile *api.ParticipantProfile, resp model.OrchestrationResponse) {
+		for i, vpa := range profile.VPAs {
+			// Update state
+			vpa.State = api.DeploymentStateDisposed
+			// TODO update timestamp based on returned data
+			profile.VPAs[i] = vpa // Use range index because vpa is a copy
+		}
+	})
+}
+
 // handle processes the asynchronous response to participant VPA deployment request.
-func (h vpaCallbackHandler) handle(ctx context.Context, response model.OrchestrationResponse) error {
+func (h vpaCallbackHandler) handle(
+	ctx context.Context,
+	response model.OrchestrationResponse,
+	handler func(profile *api.ParticipantProfile, resp model.OrchestrationResponse)) error {
+
 	return h.trxContext.Execute(ctx, func(c context.Context) error {
 		// Note de-duplication does not need to be performed as this operation is idempotent
 		profile, err := h.participantStore.FindById(c, response.CorrelationID)
@@ -187,28 +218,7 @@ func (h vpaCallbackHandler) handle(ctx context.Context, response model.Orchestra
 		}
 		switch {
 		case response.Success:
-			if response.Properties[model.VPADispose] == true {
-				for i, vpa := range profile.VPAs {
-					// Update state
-					vpa.State = api.DeploymentStateDisposed
-					// TODO update timestamp based on returned data
-					profile.VPAs[i] = vpa // Use range index because vpa is a copy
-				}
-			} else {
-				// Place all output values under VPStateData key
-				vpaProps := make(map[string]any)
-				for key, value := range response.Properties {
-					vpaProps[key] = value
-				}
-				profile.Properties[model.VPAStateData] = vpaProps
-
-				for i, vpa := range profile.VPAs {
-					vpa.State = api.DeploymentStateActive
-					// TODO update timestamp based on returned data
-					profile.VPAs[i] = vpa // Use range index because vpa is a copy
-				}
-			}
-
+			handler(profile, response)
 		default:
 			// TODO update VPA status
 			profile.Error = true

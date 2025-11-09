@@ -172,7 +172,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			[]api.DataspaceProfile{})
 
 		require.NoError(t, err)
-		assert.Equal(t, model.VPAOrchestrationType, receivedDeploymentType)
+		assert.Equal(t, model.VPADeployType, receivedDeploymentType)
 	})
 
 	t.Run("cell selector receives correct parameters", func(t *testing.T) {

@@ -80,7 +80,8 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 		participantStore: participantStore,
 		monitor:          context.LogMonitor,
 	}
-	registry.Register(model.VPAOrchestrationType, deploymentHandler.handle)
+	registry.Register(model.VPADeployType, deploymentHandler.handleDeploy)
+	registry.Register(model.VPADisposeType, deploymentHandler.handleDispose)
 
 	return nil
 }

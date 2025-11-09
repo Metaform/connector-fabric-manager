@@ -31,13 +31,30 @@ func CreateTestActivityDefinition(apiClient *ApiClient) error {
 	return apiClient.PostToPManager("activity-definition", requestBody)
 }
 
-func CreateTestOrchestrationDefinition(apiClient *ApiClient) error {
+func CreateTestOrchestrationDefinitions(apiClient *ApiClient) error {
 	requestBody := pv1alpha1.OrchestrationDefinition{
-		Type: model.VPAOrchestrationType.String(),
+		Type: model.VPADeployType.String(),
 		Activities: []pv1alpha1.Activity{
 			{
-				ID:   "activity1",
-				Type: "test-activity",
+				ID:            "activity1",
+				Type:          "test-activity",
+				Discriminator: "deploy",
+			},
+		},
+	}
+
+	err := apiClient.PostToPManager("orchestration-definition", requestBody)
+	if err != nil {
+		return err
+	}
+
+	requestBody = pv1alpha1.OrchestrationDefinition{
+		Type: model.VPADisposeType.String(),
+		Activities: []pv1alpha1.Activity{
+			{
+				ID:            "activity1",
+				Type:          "test-activity",
+				Discriminator: "dispose",
 			},
 		},
 	}

@@ -101,6 +101,8 @@ An activity has the following properties:
 
 - `id`: The activity identifier.
 - `type`: The activity type.
+- `discriminator`: An optional string used by activity implementation to distinguish activity subtypes. For example, an
+  activity type may support `deploy` and `dispose` operations that may be defined for different orchestrations.
 - `dependsOn`: An array of activity ids the activity depends on.
 - `inputs`: An array of input properties. The input properties may include references to properties contained in the
   input data or references to output data properties from a previous activity. References to activity output

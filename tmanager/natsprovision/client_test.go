@@ -57,7 +57,7 @@ func TestNatsOrchestrationClient_Deploy(t *testing.T) {
 
 	manifest := model.OrchestrationManifest{
 		ID:                "test-orchestration-123",
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		Payload:           make(map[string]any),
 	}
 
@@ -116,7 +116,7 @@ func TestNatsOrchestrationClient_ProcessMessage_Success(t *testing.T) {
 		Success:           true,
 		ManifestID:        "manifest-456",
 		CorrelationID:     "test-correlation-id",
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		Properties:        map[string]any{"test": "value"},
 	}
 
@@ -170,7 +170,7 @@ func TestNatsOrchestrationClient_ProcessMessage_RecoverableError(t *testing.T) {
 		ErrorDetail:       "orchestration failed",
 		ManifestID:        "manifest-789",
 		CorrelationID:     "test-correlation-id",
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		Properties:        map[string]any{},
 	}
 
@@ -220,7 +220,7 @@ func TestNatsOrchestrationClient_ProcessMessage_FatalError(t *testing.T) {
 		ErrorDetail:       "fatal orchestration error",
 		ManifestID:        "manifest-999",
 		CorrelationID:     "test-correlation-id",
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		Properties:        map[string]any{},
 	}
 
@@ -306,7 +306,7 @@ func TestNatsOrchestrationClient_MultipleMessages(t *testing.T) {
 			ErrorDetail:       "",
 			ManifestID:        fmt.Sprintf("manifest-%d", i),
 			CorrelationID:     "test-correlation-id",
-			OrchestrationType: model.VPAOrchestrationType,
+			OrchestrationType: model.VPADeployType,
 			Properties:        map[string]any{"index": float64(i)},
 		}
 		expectedResponses = append(expectedResponses, response)
@@ -439,7 +439,7 @@ func TestNatsOrchestrationClient_ProcessMessage_DispatcherSuccess(t *testing.T) 
 		ErrorDetail:       "",
 		ManifestID:        "success-manifest",
 		CorrelationID:     "test-correlation-id",
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		Properties:        map[string]any{"status": "success"},
 	}
 

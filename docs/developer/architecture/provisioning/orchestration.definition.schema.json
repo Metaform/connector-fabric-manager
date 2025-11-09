@@ -113,6 +113,9 @@
         "type": {
           "type": "string"
         },
+        "discriminator": {
+          "type": "string"
+        },
         "dependsOn": {
           "type": "array",
           "items": {

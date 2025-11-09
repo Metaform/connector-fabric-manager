@@ -36,18 +36,20 @@ func ToAPIOrchestrationDefinition(definition *OrchestrationDefinition) *api.Orch
 	apiActivities := make([]api.Activity, len(definition.Activities))
 	for i, activity := range definition.Activities {
 		apiActivities[i] = api.Activity{
-			ID:        activity.ID,
-			Type:      api.ActivityType(activity.Type),
-			Inputs:    ToAPIMappingEntries(activity.Inputs),
-			DependsOn: activity.DependsOn,
+			ID:            activity.ID,
+			Type:          api.ActivityType(activity.Type),
+			Discriminator: activity.Discriminator,
+			Inputs:        ToAPIMappingEntries(activity.Inputs),
+			DependsOn:     activity.DependsOn,
 		}
 	}
 
 	return &api.OrchestrationDefinition{
-		Type:       model.OrchestrationType(definition.Type),
-		Active:     true, // Default to active as the model doesn't have this field
-		Schema:     definition.Schema,
-		Activities: apiActivities,
+		Type:        model.OrchestrationType(definition.Type),
+		Description: definition.Description,
+		Active:      true, // Default to active as the model doesn't have this field
+		Schema:      definition.Schema,
+		Activities:  apiActivities,
 	}
 }
 

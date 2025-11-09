@@ -18,9 +18,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/metaform/connector-fabric-manager/common/mocks"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
-	"github.com/metaform/connector-fabric-manager/common/natsclient/mocks"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -39,7 +39,7 @@ func TestNatsProvisionHandler_Dispatcher_SuccessfulDispatch(t *testing.T) {
 	ctx := context.Background()
 	manifest := model.OrchestrationManifest{
 		ID:                "test-manifest-id",
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		Payload:           map[string]any{"key": "value"},
 	}
 
@@ -70,7 +70,7 @@ func TestNatsProvisionHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 	ctx := context.Background()
 	manifest := model.OrchestrationManifest{
 		ID:                "test-manifest-id",
-		OrchestrationType: model.VPAOrchestrationType,
+		OrchestrationType: model.VPADeployType,
 		Payload:           map[string]any{"key": "value"},
 	}
 
@@ -97,7 +97,7 @@ func TestNatsProvisionHandler_Dispatcher_ValidResponseStructure(t *testing.T) {
 	assert.False(t, response.Success)
 	assert.Equal(t, "provision failed", response.ErrorDetail)
 	assert.Equal(t, "test-manifest-id", response.ManifestID)
-	assert.Equal(t, model.VPAOrchestrationType, response.OrchestrationType)
+	assert.Equal(t, model.VPADeployType, response.OrchestrationType)
 	assert.NotEmpty(t, response.ID) // Should have a generated UUID
 	assert.NotNil(t, response.Properties)
 	assert.Equal(t, 0, len(response.Properties)) // Should be empty map
@@ -129,7 +129,7 @@ func TestNatsProvisionHandler_Dispatcher_ErrorTypes(t *testing.T) {
 			ctx := context.Background()
 			manifest := model.OrchestrationManifest{
 				ID:                "test-manifest-id",
-				OrchestrationType: model.VPAOrchestrationType,
+				OrchestrationType: model.VPADeployType,
 				Payload:           map[string]any{"key": "value"},
 			}
 

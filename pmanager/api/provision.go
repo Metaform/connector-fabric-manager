@@ -89,6 +89,7 @@ type ActivityResult struct {
 type ActivityContext interface {
 	OID() string
 	ID() string
+	Discriminator() string
 	InputData() ImmutableMap
 	SetValue(key string, value any)
 	Value(key string) (any, bool)

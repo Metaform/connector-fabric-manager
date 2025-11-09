@@ -13,7 +13,6 @@
 package launcher
 
 import (
-	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -47,10 +46,8 @@ type TestActivityProcessor struct {
 }
 
 func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	_, found := ctx.InputData().Get(model.VPADispose)
-	if found {
+	if ctx.Discriminator() == "dispose" {
 		// a disposal request
-		ctx.SetOutputValue(model.VPADispose, true)
 		t.monitor.Infof("Processed dispose")
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}

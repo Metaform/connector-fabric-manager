@@ -20,6 +20,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/nats-io/nats.go"
 )
 
 // EnqueueActivityMessages enqueues the given activities for processing.
@@ -39,7 +40,11 @@ func EnqueueActivityMessages(ctx context.Context, orchestrationID string, activi
 
 		// Strip out periods since they denote a subject hierarchy for NATS
 		subject := natsclient.CFMSubjectPrefix + "." + strings.ReplaceAll(activity.Type.String(), ".", "-")
-		_, err = client.Publish(ctx, subject, payload)
+		msg := &nats.Msg{
+			Subject: subject,
+			Data:    payload,
+		}
+		_, err = client.PublishMsg(ctx, msg)
 		if err != nil {
 			return fmt.Errorf("error publishing to stream: %w", err)
 		}

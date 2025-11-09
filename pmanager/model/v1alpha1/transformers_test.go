@@ -87,12 +87,14 @@ func TestToAPIOrchestrationDefinition(t *testing.T) {
 		{
 			name: "complete orchestration definition",
 			orchestrationDefinition: &OrchestrationDefinition{
-				Type:   "kubernetes",
-				Schema: map[string]interface{}{"version": "v1"},
+				Type:        "kubernetes",
+				Description: "Test",
+				Schema:      map[string]interface{}{"version": "v1"},
 				Activities: []Activity{
 					{
-						ID:   "activity-1",
-						Type: "http-request",
+						ID:            "activity-1",
+						Type:          "http-request",
+						Discriminator: "test-discriminator",
 						Inputs: []MappingEntry{
 							{Source: "input.url", Target: "request.url"},
 							{Source: "input.method", Target: "request.method"},
@@ -108,13 +110,15 @@ func TestToAPIOrchestrationDefinition(t *testing.T) {
 				},
 			},
 			expected: &api.OrchestrationDefinition{
-				Type:   model.OrchestrationType("kubernetes"),
-				Active: true,
-				Schema: map[string]interface{}{"version": "v1"},
+				Type:        model.OrchestrationType("kubernetes"),
+				Description: "Test",
+				Active:      true,
+				Schema:      map[string]interface{}{"version": "v1"},
 				Activities: []api.Activity{
 					{
-						ID:   "activity-1",
-						Type: api.ActivityType("http-request"),
+						ID:            "activity-1",
+						Type:          api.ActivityType("http-request"),
+						Discriminator: "test-discriminator",
 						Inputs: []api.MappingEntry{
 							{Source: "input.url", Target: "request.url"},
 							{Source: "input.method", Target: "request.method"},

@@ -123,21 +123,8 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return natsclient.AckMessage(message)
 
 	case api.ActivityResultSchedule:
-		// IMPORTANT: Must persist state BEFORE scheduling the reschedule
+		// IMPORTANT: Must persist state BEFORE rescheduling
 		// This ensures processing data is saved for the next invocation
-		//_, _, err := UpdateOrchestration(ctx, orchestration, revision, e.Client, func(o *api.Orchestration) {
-		//	for key, value := range activityContext.Values() {
-		//		o.ProcessingData[key] = value
-		//	}
-		//	for key, value := range activityContext.OutputValues() {
-		//		o.OutputData[key] = value
-		//	}
-		//})
-		//if err != nil {
-		//	e.Monitor.Warnf("Failed to persist orchestration state before reschedule for %s: %v", orchestration.ID, err)
-		//	return fmt.Errorf("failed to persist state for reschedule: %w", err)
-		//}
-
 		e.persistState(activityContext, orchestration, revision)
 		if err := message.NakWithDelay(result.WaitOnReschedule); err != nil {
 			return fmt.Errorf("failed to reschedule schedule activity %s: %w", oMessage.OrchestrationID, err)
@@ -332,6 +319,10 @@ func newActivityContext(
 // Context returns the current request context
 func (d defaultActivityContext) Context() context.Context {
 	return d.context
+}
+
+func (d defaultActivityContext) Discriminator() string {
+	return d.activity.Discriminator
 }
 
 // ID returns the ID of the current active

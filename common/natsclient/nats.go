@@ -87,6 +87,7 @@ type MsgClient interface {
 	Stream(ctx context.Context, streamName string) (jetstream.Stream, error)
 	Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error)
 	Publish(ctx context.Context, subject string, payload []byte, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error)
+	PublishMsg(ctx context.Context, msg *nats.Msg, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error)
 }
 
 func NewMsgClient(nc *NatsClient) MsgClient {
@@ -112,4 +113,8 @@ func (a natsClientAdapter) Get(ctx context.Context, key string) (jetstream.KeyVa
 
 func (a natsClientAdapter) Publish(ctx context.Context, subject string, payload []byte, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
 	return a.Client.JetStream.Publish(ctx, subject, payload, opts...)
+}
+
+func (a natsClientAdapter) PublishMsg(ctx context.Context, msg *nats.Msg, opts ...jetstream.PublishOpt) (*jetstream.PubAck, error) {
+	return a.Client.JetStream.PublishMsg(ctx, msg, opts...)
 }

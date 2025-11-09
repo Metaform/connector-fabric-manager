@@ -20,10 +20,11 @@ type ActivityDefinition struct {
 }
 
 type Activity struct {
-	ID        string         `json:"id" validate:"required"`
-	Type      string         `json:"type" validate:"required"`
-	Inputs    []MappingEntry `json:"inputs omitempty"`
-	DependsOn []string       `json:"dependsOn omitempty"`
+	ID            string         `json:"id" validate:"required"`
+	Type          string         `json:"type" validate:"required"`
+	Discriminator string         `json:"discriminator" validate:"false"`
+	Inputs        []MappingEntry `json:"inputs omitempty"`
+	DependsOn     []string       `json:"dependsOn omitempty"`
 }
 
 type MappingEntry struct {
@@ -32,7 +33,8 @@ type MappingEntry struct {
 }
 
 type OrchestrationDefinition struct {
-	Type       string         `json:"type" validate:"required"`
-	Schema     map[string]any `json:"schema omitempty"`
-	Activities []Activity     `json:"activities" validate:"required,min=1"`
+	Type        string         `json:"type" validate:"required"`
+	Description string         `json:"description omitempty"`
+	Schema      map[string]any `json:"schema omitempty"`
+	Activities  []Activity     `json:"activities" validate:"required,min=1"`
 }
