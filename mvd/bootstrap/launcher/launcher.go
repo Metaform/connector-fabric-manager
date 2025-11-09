@@ -170,6 +170,27 @@ func LaunchMVD() {
 	if !found {
 		panic("Expected VPA state data to contain " + model.ConnectorId)
 	}
+
+	err = client.DeleteToTManager(fmt.Sprintf("participants/%s", participantProfile.ID))
+	if err != nil {
+		panic(err)
+	}
+
+	disposeCount := 0
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		err = client.GetTManager(fmt.Sprintf("participants/%s", participantProfile.ID), &statusProfile)
+		if err != nil {
+			panic(err)
+		}
+		for _, vpa := range statusProfile.VPAs {
+			if vpa.State == tapi.DeploymentStateDisposed.String() {
+				disposeCount++
+			}
+		}
+		if disposeCount == 3 {
+			break
+		}
+	}
 }
 
 func GetRandomPort() int {

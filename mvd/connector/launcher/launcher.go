@@ -49,6 +49,7 @@ func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.Activit
 	}
 	if ctx.Discriminator() == "dispose" {
 		// disposal request
+		t.monitor.Infof("Connector disposal complete: %s", identifier)
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}
 	// Return state data

@@ -26,8 +26,8 @@ const (
 
 // ParticipantProfileService performs participant profile operations, including deploying associated VPAs.
 type ParticipantProfileService interface {
-	DeployProfile(ctx context.Context, identifier string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
-	DisposeProfile(ctx context.Context, identifier string) error
+	DeployProfile(ctx context.Context, id string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
+	DisposeProfile(ctx context.Context, id string) error
 	GetProfile(ctx context.Context, id string) (*ParticipantProfile, error)
 }
 
