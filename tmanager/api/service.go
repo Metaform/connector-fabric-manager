@@ -19,26 +19,34 @@ import (
 )
 
 const (
+	TenantServiceKey             system.ServiceType = "tmapi:TenantService"
 	ParticipantProfileServiceKey system.ServiceType = "tmapi:ParticipantProfileService"
 	DataspaceProfileServiceKey   system.ServiceType = "tmapi:DataspaceProfileService"
 	CellServiceKey               system.ServiceType = "tmapi:CellService"
 )
 
+// TenantService performs tenant operations.
+type TenantService interface {
+	GetTenant(ctx context.Context, tenantID string) (*Tenant, error)
+	CreateTenant(ctx context.Context, tenant *Tenant) (*Tenant, error)
+	DeleteTenant(ctx context.Context, tenantID string) error
+}
+
 // ParticipantProfileService performs participant profile operations, including deploying associated VPAs.
 type ParticipantProfileService interface {
-	DeployProfile(ctx context.Context, id string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
-	DisposeProfile(ctx context.Context, id string) error
-	GetProfile(ctx context.Context, id string) (*ParticipantProfile, error)
+	GetProfile(ctx context.Context, participantID string) (*ParticipantProfile, error)
+	DeployProfile(ctx context.Context, identifier string, tenantID string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
+	DisposeProfile(ctx context.Context, participantID string) error
 }
 
 // DataspaceProfileService performs dataspace profile operations.
 type DataspaceProfileService interface {
+	GetProfile(ctx context.Context, profileID string) (*DataspaceProfile, error)
 	CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*DataspaceProfile, error)
 	DeployProfile(ctx context.Context, profileID string, cellID string) error
-	GetProfile(ctx context.Context, profileID string) (*DataspaceProfile, error)
 }
 
 // CellService performs cell operations.
 type CellService interface {
-	RecordExternalDeployment(ctx context.Context, cell Cell) (*Cell, error)
+	RecordExternalDeployment(ctx context.Context, cell *Cell) (*Cell, error)
 }

@@ -24,8 +24,8 @@ type cellService struct {
 	store      api.EntityStore[api.Cell]
 }
 
-func (d cellService) RecordExternalDeployment(ctx context.Context, cell api.Cell) (*api.Cell, error) {
+func (d cellService) RecordExternalDeployment(ctx context.Context, cell *api.Cell) (*api.Cell, error) {
 	return store.Trx[api.Cell](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.Cell, error) {
-		return d.store.Create(ctx, &cell)
+		return d.store.Create(ctx, cell)
 	})
 }

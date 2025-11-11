@@ -76,6 +76,16 @@ func CreateCell(apiClient *ApiClient) (*tv1alpha1.Cell, error) {
 	return &cell, nil
 }
 
+func CreateTenant(apiClient *ApiClient) (*tv1alpha1.Tenant, error) {
+	requestBody := tv1alpha1.NewTenant{}
+	var tenant tv1alpha1.Tenant
+	err := apiClient.PostToTManagerWithResponse("tenants", requestBody, &tenant)
+	if err != nil {
+		return nil, err
+	}
+	return &tenant, nil
+}
+
 func CreateDataspaceProfile(apiClient *ApiClient) (*tv1alpha1.DataspaceProfile, error) {
 	requestBody := tv1alpha1.NewDataspaceProfile{
 		Artifacts:  make([]string, 0),

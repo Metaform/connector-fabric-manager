@@ -51,6 +51,14 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	participantStore := context.Registry.Resolve(api.ParticipantProfileStoreKey).(api.EntityStore[api.ParticipantProfile])
 	cellStore := context.Registry.Resolve(api.CellStoreKey).(api.EntityStore[api.Cell])
 	dataspaceStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(api.EntityStore[api.DataspaceProfile])
+	tenantStore := context.Registry.Resolve(api.TenantStoreKey).(api.EntityStore[api.Tenant])
+
+	tenantService := tenantService{
+		trxContext:  trxContext,
+		tenantStore: tenantStore,
+		monitor:     context.LogMonitor,
+	}
+	context.Registry.Register(api.TenantServiceKey, tenantService)
 
 	participantService := participantService{
 		participantGenerator: a.vpaGenerator,

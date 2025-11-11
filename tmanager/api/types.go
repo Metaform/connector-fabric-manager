@@ -39,8 +39,7 @@ type DeployableEntity struct {
 // Tenant represents an organization. A tenant may have multiple organizational units (e.g., departments), or ParticipantProfiles.
 type Tenant struct {
 	Entity
-	ParticipantProfiles []ParticipantProfile
-	Properties          Properties
+	Properties Properties
 }
 
 // ParticipantProfile represents a participant in a dataspace. A participant can be an entire organization, in which case
@@ -49,6 +48,7 @@ type Tenant struct {
 type ParticipantProfile struct {
 	Entity
 	Identifier        string
+	TenantID          string
 	DataSpaceProfiles []DataspaceProfile
 	VPAs              []VirtualParticipantAgent
 	Properties        Properties

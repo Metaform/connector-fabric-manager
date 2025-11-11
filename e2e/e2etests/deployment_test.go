@@ -104,12 +104,15 @@ func Test_VerifyE2E(t *testing.T) {
 	err = e2efixtures.DeployDataspaceProfile(deployment, client)
 	require.NoError(t, err)
 
+	tenant, err := e2efixtures.CreateTenant(client)
+	require.NoError(t, err)
+
 	newProfile := v1alpha1.NewParticipantProfileDeployment{
 		Identifier:    "did:web:foo.com",
 		VPAProperties: map[string]map[string]any{string(model.ConnectorType): {"connectorkey": "connectorvalue"}},
 	}
 	var participantProfile v1alpha1.ParticipantProfile
-	err = client.PostToTManagerWithResponse("participants", newProfile, &participantProfile)
+	err = client.PostToTManagerWithResponse(fmt.Sprintf("tenants/%s/participants", tenant.ID), newProfile, &participantProfile)
 	require.NoError(t, err)
 
 	var statusProfile v1alpha1.ParticipantProfile
@@ -117,7 +120,7 @@ func Test_VerifyE2E(t *testing.T) {
 	// Verify all VPAs are active
 	deployCount := 0
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		err = client.GetTManager(fmt.Sprintf("participants/%s", participantProfile.ID), &statusProfile)
+		err = client.GetTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID), &statusProfile)
 		require.NoError(t, err)
 		for _, vpa := range statusProfile.VPAs {
 			if vpa.State == api.DeploymentStateActive.String() {
@@ -146,12 +149,12 @@ func Test_VerifyE2E(t *testing.T) {
 	require.Contains(t, connectorVPA.Properties, "connectorkey", "Connector VPA should contain 'connectorkey' property")
 
 	// Dispose VPAs
-	err = client.DeleteToTManager(fmt.Sprintf("participants/%s", participantProfile.ID))
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID))
 	require.NoError(t, err)
 
 	disposeCount := 0
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		err = client.GetTManager(fmt.Sprintf("participants/%s", participantProfile.ID), &statusProfile)
+		err = client.GetTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID), &statusProfile)
 		require.NoError(t, err)
 		for _, vpa := range statusProfile.VPAs {
 			if vpa.State == api.DeploymentStateDisposed.String() {

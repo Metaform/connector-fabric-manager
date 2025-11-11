@@ -27,6 +27,7 @@ type participantGenerator struct {
 
 func (g participantGenerator) Generate(
 	identifier string,
+	tenantID string,
 	vpaProperties api.VPAPropMap,
 	properties map[string]any,
 	cells []api.Cell,
@@ -48,6 +49,7 @@ func (g participantGenerator) Generate(
 			Version: 0,
 		},
 		Identifier:        identifier,
+		TenantID:          tenantID,
 		DataSpaceProfiles: dProfiles,
 		VPAs:              vpas,
 		Properties:        properties,

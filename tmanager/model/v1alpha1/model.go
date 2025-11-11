@@ -22,6 +22,16 @@ type Entity struct {
 	ID      string `json:"id" required:"true"`
 	Version int64  `json:"version" required:"true"`
 }
+
+type NewTenant struct {
+	Properties map[string]any `json:"properties,omitempty"`
+}
+
+type Tenant struct {
+	Entity
+	NewTenant
+}
+
 type NewCell struct {
 	State          string         `json:"state" required:"true"`
 	StateTimestamp time.Time      `json:"stateTimestamp" required:"true"`

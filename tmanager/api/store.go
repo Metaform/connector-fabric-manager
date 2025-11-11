@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	TenantStoreKey             system.ServiceType = "tmstore:TenantStore"
 	ParticipantProfileStoreKey system.ServiceType = "tmstore:ParticipantProfileStore"
 	CellStoreKey               system.ServiceType = "tmstore:CellStore"
 	DataspaceProfileStoreKey   system.ServiceType = "tmstore:DataspaceProfileStore"

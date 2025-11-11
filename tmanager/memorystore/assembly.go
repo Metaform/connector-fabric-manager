@@ -39,7 +39,11 @@ func (a *InMemoryServiceAssembly) Init(ictx *system.InitContext) error {
 	participantStore := NewInMemoryEntityStore[api.ParticipantProfile](func(p *api.ParticipantProfile) string {
 		return p.ID
 	})
+	tenantStore := NewInMemoryEntityStore[api.Tenant](func(t *api.Tenant) string {
+		return t.ID
+	})
 
+	ictx.Registry.Register(api.TenantStoreKey, tenantStore)
 	ictx.Registry.Register(api.ParticipantProfileStoreKey, participantStore)
 	ictx.Registry.Register(api.DataspaceProfileStoreKey, dataspaceStore)
 	ictx.Registry.Register(api.CellStoreKey, cellStore)

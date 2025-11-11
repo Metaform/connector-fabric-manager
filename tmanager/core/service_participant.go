@@ -35,15 +35,16 @@ type participantService struct {
 	monitor              system.LogMonitor
 }
 
-func (d participantService) GetProfile(ctx context.Context, profileID string) (*api.ParticipantProfile, error) {
+func (d participantService) GetProfile(ctx context.Context, participantID string) (*api.ParticipantProfile, error) {
 	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
-		return d.participantStore.FindById(ctx, profileID)
+		return d.participantStore.FindById(ctx, participantID)
 	})
 }
 
 func (d participantService) DeployProfile(
 	ctx context.Context,
-	id string,
+	identifier string,
+	tenantID string,
 	vpaProperties api.VPAPropMap,
 	properties map[string]any) (*api.ParticipantProfile, error) {
 
@@ -60,7 +61,8 @@ func (d participantService) DeployProfile(
 		}
 
 		participantProfile, err := d.participantGenerator.Generate(
-			id,
+			identifier,
+			tenantID,
 			vpaProperties,
 			properties,
 			cells,
@@ -92,23 +94,23 @@ func (d participantService) DeployProfile(
 		oManifest.Payload[model.VPAData] = vpaManifests
 		result, err := d.participantStore.Create(ctx, participantProfile)
 		if err != nil {
-			return nil, fmt.Errorf("error creating participant %s: %w", id, err)
+			return nil, fmt.Errorf("error creating participant %s: %w", identifier, err)
 		}
 
 		// Only send the orchestration message if the storage operation succeeded. If the send fails, the transaction
 		// will be rolled back.
 		err = d.provisionClient.Send(ctx, oManifest)
 		if err != nil {
-			return nil, fmt.Errorf("error deploying participant %s: %w", id, err)
+			return nil, fmt.Errorf("error deploying participant %s: %w", identifier, err)
 		}
 
 		return result, nil
 	})
 }
 
-func (d participantService) DisposeProfile(ctx context.Context, id string) error {
+func (d participantService) DisposeProfile(ctx context.Context, participantID string) error {
 	return d.trxContext.Execute(ctx, func(c context.Context) error {
-		profile, err := d.participantStore.FindById(c, id)
+		profile, err := d.participantStore.FindById(c, participantID)
 		if err != nil {
 			return err
 		}
@@ -119,16 +121,16 @@ func (d participantService) DisposeProfile(ctx context.Context, id string) error
 			}
 		}
 		if len(states) > 0 {
-			return fmt.Errorf("cannot dispose VPAs %s in states: %s", id, strings.Join(states, ","))
+			return fmt.Errorf("cannot dispose VPAs %s in states: %s", participantID, strings.Join(states, ","))
 		}
 		stateData, found := profile.Properties[model.VPAStateData]
 		if !found {
-			return fmt.Errorf("profile is not deployed or is missing state data: %s", id)
+			return fmt.Errorf("profile is not deployed or is missing state data: %s", participantID)
 		}
 
 		oManifest := model.OrchestrationManifest{
 			ID:                uuid.New().String(),
-			CorrelationID:     id,
+			CorrelationID:     participantID,
 			OrchestrationType: model.VPADisposeType,
 			Payload:           make(map[string]any),
 		}
@@ -154,14 +156,14 @@ func (d participantService) DisposeProfile(ctx context.Context, id string) error
 
 		err = d.participantStore.Update(c, profile)
 		if err != nil {
-			return fmt.Errorf("error disposing participant %s: %w", id, err)
+			return fmt.Errorf("error disposing participant %s: %w", participantID, err)
 		}
 
 		// Only send the orchestration message if the storage operation succeeded. If the send fails, the transaction
 		// will be rolled back.
 		err = d.provisionClient.Send(ctx, oManifest)
 		if err != nil {
-			return fmt.Errorf("error disposing participant %s: %w", id, err)
+			return fmt.Errorf("error disposing participant %s: %w", participantID, err)
 		}
 
 		return nil

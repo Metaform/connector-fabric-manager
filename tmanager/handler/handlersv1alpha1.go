@@ -23,12 +23,14 @@ import (
 
 type TMHandler struct {
 	handler.HttpHandler
+	tenantService      api.TenantService
 	participantService api.ParticipantProfileService
 	cellService        api.CellService
 	dataspaceService   api.DataspaceProfileService
 }
 
 func NewHandler(
+	tenantService api.TenantService,
 	participantService api.ParticipantProfileService,
 	cellService api.CellService,
 	dataspaceService api.DataspaceProfileService,
@@ -37,13 +39,14 @@ func NewHandler(
 		HttpHandler: handler.HttpHandler{
 			Monitor: monitor,
 		},
+		tenantService:      tenantService,
 		participantService: participantService,
 		cellService:        cellService,
 		dataspaceService:   dataspaceService,
 	}
 }
 
-func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request) {
+func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request, tenantID string) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
@@ -61,6 +64,7 @@ func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request) 
 	profile, err := h.participantService.DeployProfile(
 		req.Context(),
 		newDeployment.Identifier,
+		tenantID,
 		*api.ToVPAMap(newDeployment.VPAProperties),
 		properties)
 	if err != nil {
@@ -71,12 +75,12 @@ func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request) 
 	h.ResponseAccepted(w, response)
 }
 
-func (h *TMHandler) disposeParticipant(w http.ResponseWriter, req *http.Request, id string) {
+func (h *TMHandler) disposeParticipant(w http.ResponseWriter, req *http.Request, tenantID string, participantID string) {
 	if h.InvalidMethod(w, req, http.MethodDelete) {
 		return
 	}
 
-	err := h.participantService.DisposeProfile(req.Context(), id)
+	err := h.participantService.DisposeProfile(req.Context(), participantID)
 	if err != nil {
 		h.HandleError(w, err)
 	}
@@ -84,12 +88,32 @@ func (h *TMHandler) disposeParticipant(w http.ResponseWriter, req *http.Request,
 	h.Accepted(w)
 }
 
-func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request, id string) {
+func (h *TMHandler) createTenant(w http.ResponseWriter, req *http.Request) {
+	if h.InvalidMethod(w, req, http.MethodPost) {
+		return
+	}
+
+	var newTenant v1alpha1.NewTenant
+	if !h.ReadPayload(w, req, &newTenant) {
+		return
+	}
+
+	tenant, err := h.tenantService.CreateTenant(req.Context(), v1alpha1.NewAPITenant(&newTenant))
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	response := v1alpha1.ToTenant(tenant)
+	h.ResponseOK(w, response)
+}
+
+func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request, tenantID string, participantID string) {
 	if h.InvalidMethod(w, req, http.MethodGet) {
 		return
 	}
 
-	profile, err := h.participantService.GetProfile(req.Context(), id)
+	profile, err := h.participantService.GetProfile(req.Context(), participantID)
 	if err != nil {
 		h.HandleError(w, err)
 		return
@@ -111,7 +135,7 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 
 	cell := v1alpha1.NewAPICell(newCell)
 
-	recordedCell, err := h.cellService.RecordExternalDeployment(req.Context(), *cell)
+	recordedCell, err := h.cellService.RecordExternalDeployment(req.Context(), cell)
 	if err != nil {
 		h.HandleError(w, err)
 		return

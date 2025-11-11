@@ -117,6 +117,11 @@ func LaunchMVD() {
 		panic(err)
 	}
 
+	tenant, err := e2efixtures.CreateTenant(client)
+	if err != nil {
+		panic(err)
+	}
+
 	dProfile, err := e2efixtures.CreateDataspaceProfile(client)
 	if err != nil {
 		panic(err)
@@ -136,7 +141,7 @@ func LaunchMVD() {
 		VPAProperties: map[string]map[string]any{string(model.ConnectorType): {"connectorkey": "connectorvalue"}},
 	}
 	var participantProfile v1alpha1.ParticipantProfile
-	err = client.PostToTManagerWithResponse("participants", newProfile, &participantProfile)
+	err = client.PostToTManagerWithResponse(fmt.Sprintf("tenants/%s/participants", tenant.ID), newProfile, &participantProfile)
 	if err != nil {
 		panic(err)
 	}
@@ -146,7 +151,7 @@ func LaunchMVD() {
 	// Verify all VPAs are active
 	deployCount := 0
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		err = client.GetTManager(fmt.Sprintf("participants/%s", participantProfile.ID), &statusProfile)
+		err = client.GetTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID), &statusProfile)
 		for _, vpa := range statusProfile.VPAs {
 			if vpa.State == tapi.DeploymentStateActive.String() {
 				deployCount++
@@ -171,14 +176,14 @@ func LaunchMVD() {
 		panic("Expected VPA state data to contain " + model.ConnectorId)
 	}
 
-	err = client.DeleteToTManager(fmt.Sprintf("participants/%s", participantProfile.ID))
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID))
 	if err != nil {
 		panic(err)
 	}
 
 	disposeCount := 0
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		err = client.GetTManager(fmt.Sprintf("participants/%s", participantProfile.ID), &statusProfile)
+		err = client.GetTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID), &statusProfile)
 		if err != nil {
 			panic(err)
 		}

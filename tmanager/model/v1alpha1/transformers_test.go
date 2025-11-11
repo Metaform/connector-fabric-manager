@@ -1056,3 +1056,62 @@ func TestToDataspaceProfile_TimestampUTCConversion(t *testing.T) {
 		})
 	}
 }
+
+func TestToTenant(t *testing.T) {
+	input := &api.Tenant{
+		Entity: api.Entity{
+			ID:      "tenant-123",
+			Version: 2,
+		},
+		Properties: api.Properties{"tenant-key": "tenant-value"},
+	}
+
+	result := ToTenant(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "tenant-123", result.ID)
+	assert.Equal(t, int64(2), result.Version)
+	assert.Equal(t, map[string]any{"tenant-key": "tenant-value"}, result.Properties)
+}
+
+func TestToTenantNilProperties(t *testing.T) {
+	input := &api.Tenant{
+		Entity: api.Entity{
+			ID:      "tenant-456",
+			Version: 1,
+		},
+		Properties: nil,
+	}
+
+	result := ToTenant(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "tenant-456", result.ID)
+	assert.Nil(t, result.Properties)
+}
+
+func TestNewAPITenant(t *testing.T) {
+	input := &NewTenant{
+		Properties: map[string]any{"new-key": "new-value"},
+	}
+
+	result := NewAPITenant(input)
+
+	require.NotNil(t, result)
+	assert.NotEmpty(t, result.ID)
+	assert.Equal(t, int64(0), result.Version)
+	assert.Contains(t, result.Properties, "new-key")
+}
+
+func TestNewAPITenantNilProperties(t *testing.T) {
+	input := &NewTenant{
+		Properties: nil,
+	}
+
+	result := NewAPITenant(input)
+
+	require.NotNil(t, result)
+	assert.NotEmpty(t, result.ID)
+	assert.Equal(t, int64(0), result.Version)
+	assert.NotNil(t, result.Properties)
+}

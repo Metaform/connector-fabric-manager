@@ -17,6 +17,28 @@ import (
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
+func ToTenant(input *api.Tenant) *Tenant {
+	return &Tenant{
+		Entity: Entity{
+			ID:      input.ID,
+			Version: input.Version,
+		},
+		NewTenant: NewTenant{
+			Properties: input.Properties,
+		},
+	}
+}
+
+func NewAPITenant(input *NewTenant) *api.Tenant {
+	return &api.Tenant{
+		Entity: api.Entity{
+			ID:      uuid.New().String(),
+			Version: 0,
+		},
+		Properties: api.ToProperties(input.Properties),
+	}
+}
+
 func ToParticipantProfile(input *api.ParticipantProfile) *ParticipantProfile {
 	return &ParticipantProfile{
 		Entity: Entity{
