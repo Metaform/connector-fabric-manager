@@ -175,6 +175,61 @@ func (s *InMemoryEntityStore[T]) FindByPredicate(ctx context.Context, predicate 
 	}
 }
 
+// FindByPredicatePaginated returns entities matching the predicate with pagination applied
+func (s *InMemoryEntityStore[T]) FindByPredicatePaginated(
+	ctx context.Context,
+	predicate query.Predicate,
+	opts api.PaginationOptions) iter.Seq2[T, error] {
+
+	return func(yield func(T, error) bool) {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+
+		// Filter entities matching the predicate into a slice
+		var filtered []T
+		for _, entity := range s.cache {
+			if predicate.Matches(entity, s.matcher) {
+				filtered = append(filtered, entity)
+			}
+		}
+
+		// Apply offset
+		start := opts.Offset
+		if start < 0 {
+			start = 0
+		}
+		if start >= len(filtered) {
+			return // No items to return
+		}
+
+		// Apply limit
+		end := len(filtered)
+		if opts.Limit > 0 {
+			requestedEnd := start + opts.Limit
+			if requestedEnd < end {
+				end = requestedEnd
+			}
+		}
+
+		// Yield entities within the paginated range
+		for i := start; i < end; i++ {
+			// Check if context is canceled
+			select {
+			case <-ctx.Done():
+				var zero T
+				yield(zero, ctx.Err())
+				return
+			default:
+			}
+
+			// Yield the entity with nil error
+			if !yield(filtered[i], nil) {
+				return // Consumer stopped iteration
+			}
+		}
+	}
+}
+
 // FindFirstByPredicate returns the first entity matching the predicate or types.ErrNotFound if none found
 func (s *InMemoryEntityStore[T]) FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (*T, error) {
 	s.mu.RLock()

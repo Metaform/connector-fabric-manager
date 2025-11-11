@@ -55,5 +55,6 @@ type EntityStore[T any] interface {
 	GetAll(ctx context.Context) iter.Seq2[T, error]
 	GetAllPaginated(ctx context.Context, opts PaginationOptions) iter.Seq2[T, error]
 	FindByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[T, error]
+	FindByPredicatePaginated(ctx context.Context, predicate query.Predicate, opts PaginationOptions) iter.Seq2[T, error]
 	FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (*T, error)
 }
