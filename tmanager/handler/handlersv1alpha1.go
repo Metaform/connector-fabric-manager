@@ -119,6 +119,11 @@ func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
+	if tenantID != profile.TenantID {
+		http.NotFound(w, req)
+		return
+	}
+
 	response := v1alpha1.ToParticipantProfile(profile)
 	h.ResponseOK(w, response)
 }
