@@ -34,9 +34,9 @@ type TenantService interface {
 
 // ParticipantProfileService performs participant profile operations, including deploying associated VPAs.
 type ParticipantProfileService interface {
-	GetProfile(ctx context.Context, participantID string) (*ParticipantProfile, error)
-	DeployProfile(ctx context.Context, identifier string, tenantID string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
-	DisposeProfile(ctx context.Context, participantID string) error
+	GetProfile(ctx context.Context, tenantID string, participantID string) (*ParticipantProfile, error)
+	DeployProfile(ctx context.Context, tenantID string, identifier string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
+	DisposeProfile(ctx context.Context, tenantID string, participantID string) error
 }
 
 // DataspaceProfileService performs dataspace profile operations.

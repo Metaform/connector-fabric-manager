@@ -63,10 +63,11 @@ func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request, 
 	// TODO support specific cell selection
 	profile, err := h.participantService.DeployProfile(
 		req.Context(),
-		newDeployment.Identifier,
 		tenantID,
+		newDeployment.Identifier,
 		*api.ToVPAMap(newDeployment.VPAProperties),
 		properties)
+
 	if err != nil {
 		h.HandleError(w, err)
 	}
@@ -80,7 +81,7 @@ func (h *TMHandler) disposeParticipant(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	err := h.participantService.DisposeProfile(req.Context(), participantID)
+	err := h.participantService.DisposeProfile(req.Context(), tenantID, participantID)
 	if err != nil {
 		h.HandleError(w, err)
 	}
@@ -113,14 +114,9 @@ func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	profile, err := h.participantService.GetProfile(req.Context(), participantID)
+	profile, err := h.participantService.GetProfile(req.Context(), tenantID, participantID)
 	if err != nil {
 		h.HandleError(w, err)
-		return
-	}
-
-	if tenantID != profile.TenantID {
-		http.NotFound(w, req)
 		return
 	}
 

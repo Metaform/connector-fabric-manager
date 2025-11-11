@@ -22,6 +22,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -35,18 +36,20 @@ type participantService struct {
 	monitor              system.LogMonitor
 }
 
-func (d participantService) GetProfile(ctx context.Context, participantID string) (*api.ParticipantProfile, error) {
+func (d participantService) GetProfile(ctx context.Context, tenantID string, participantID string) (*api.ParticipantProfile, error) {
 	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
-		return d.participantStore.FindById(ctx, participantID)
+		profile, err := d.participantStore.FindById(ctx, participantID)
+		if err != nil {
+			return nil, err
+		}
+		if profile.TenantID != tenantID {
+			return nil, types.ErrNotFound
+		}
+		return profile, nil
 	})
 }
 
-func (d participantService) DeployProfile(
-	ctx context.Context,
-	identifier string,
-	tenantID string,
-	vpaProperties api.VPAPropMap,
-	properties map[string]any) (*api.ParticipantProfile, error) {
+func (d participantService) DeployProfile(ctx context.Context, tenantID string, identifier string, vpaProperties api.VPAPropMap, properties map[string]any) (*api.ParticipantProfile, error) {
 
 	// TODO perform property validation against a custom schema
 	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
@@ -108,11 +111,14 @@ func (d participantService) DeployProfile(
 	})
 }
 
-func (d participantService) DisposeProfile(ctx context.Context, participantID string) error {
+func (d participantService) DisposeProfile(ctx context.Context, tenantID string, participantID string) error {
 	return d.trxContext.Execute(ctx, func(c context.Context) error {
 		profile, err := d.participantStore.FindById(c, participantID)
 		if err != nil {
 			return err
+		}
+		if profile.TenantID != tenantID {
+			return types.ErrNotFound
 		}
 		states := make([]string, 0, len(profile.VPAs))
 		for _, vpa := range profile.VPAs {
