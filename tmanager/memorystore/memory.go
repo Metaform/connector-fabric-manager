@@ -17,22 +17,25 @@ import (
 	"iter"
 	"sync"
 
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
 func NewInMemoryEntityStore[T any](idFunc func(*T) string) *InMemoryEntityStore[T] {
 	store := &InMemoryEntityStore[T]{
-		cache:  make(map[string]T),
-		idFunc: idFunc,
+		cache:   make(map[string]T),
+		idFunc:  idFunc,
+		matcher: &query.DefaultFieldMatcher{},
 	}
 	return store
 }
 
 type InMemoryEntityStore[T any] struct {
-	cache  map[string]T
-	mu     sync.RWMutex
-	idFunc func(*T) string
+	cache   map[string]T
+	mu      sync.RWMutex
+	idFunc  func(*T) string
+	matcher query.FieldMatcher
 }
 
 func (s *InMemoryEntityStore[T]) FindById(_ context.Context, id string) (*T, error) {
@@ -155,4 +158,32 @@ func (s *InMemoryEntityStore[T]) GetAllPaginated(ctx context.Context, opts api.P
 			}
 		}
 	}
+}
+
+func (s *InMemoryEntityStore[T]) FindByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+
+		for _, entity := range s.cache {
+			if predicate.Matches(entity, s.matcher) {
+				if !yield(entity, nil) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// FindFirstByPredicate returns the first entity matching the predicate or types.ErrNotFound if none found
+func (s *InMemoryEntityStore[T]) FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (*T, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, entity := range s.cache {
+		if predicate.Matches(entity, s.matcher) {
+			return &entity, nil
+		}
+	}
+	return nil, types.ErrNotFound
 }

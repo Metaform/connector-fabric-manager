@@ -16,6 +16,7 @@ import (
 	"context"
 	"iter"
 
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
@@ -53,4 +54,6 @@ type EntityStore[T any] interface {
 	Update(ctx context.Context, entity *T) error
 	GetAll(ctx context.Context) iter.Seq2[T, error]
 	GetAllPaginated(ctx context.Context, opts PaginationOptions) iter.Seq2[T, error]
+	FindByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[T, error]
+	FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (*T, error)
 }
