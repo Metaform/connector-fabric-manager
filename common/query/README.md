@@ -5,4 +5,4 @@ Query.g4. The parser returns a tree representation of the predicate which is the
 The ANTLR grammar is generated using the antlr4-go tool. To regenerate the grammar, install Antlr and run
 the target `generate-query-grammar` in `common/Makefile`.
 
-NOTE If the grammar changes, the visitor logic in predicateBuilder.go will need to be updated.
+NOTE If the grammar changes, the visitor logic in `predicateBuilder.go` will need to be updated.
