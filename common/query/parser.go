@@ -200,7 +200,7 @@ func (pb *predicateBuilder) ExitCompoundPredicate(ctx *CompoundPredicateContext)
 	pb.Push(compoundPred)
 }
 
-// getFieldPath extracts field path from context
+// getFieldPath extracts the field path from context
 func (pb *predicateBuilder) getFieldPath(ctx IFieldPathContext) string {
 	if ctx == nil {
 		return ""
@@ -264,7 +264,7 @@ func (pb *predicateBuilder) parseBooleanValue(s string) bool {
 	return strings.ToUpper(s) == "TRUE"
 }
 
-// parseOperator converts operator string to Operator type
+// parseOperator converts operator string to the Operator type
 func (pb *predicateBuilder) parseOperator(opStr string) Operator {
 	opUpper := strings.ToUpper(opStr)
 	switch opUpper {
@@ -328,7 +328,7 @@ func NewQueryErrorListener() *QueryErrorListener {
 }
 
 // SyntaxError captures syntax errors
-func (el *QueryErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
+func (el *QueryErrorListener) SyntaxError(_ antlr.Recognizer, _ interface{}, line, column int, msg string, _ antlr.RecognitionException) {
 	errorMsg := fmt.Sprintf("line %d:%d %s", line, column, msg)
 	el.errors = append(el.errors, errorMsg)
 }
@@ -349,33 +349,4 @@ func (el *QueryErrorListener) GetError() string {
 // GetAllErrors returns all error messages
 func (el *QueryErrorListener) GetAllErrors() []string {
 	return el.errors
-}
-
-// ParsePredicateStrict provides strict parsing with all errors
-func ParsePredicateStrict(input string) (Predicate, []string, error) {
-	is := antlr.NewInputStream(input)
-	lexer := NewQueryLexer(is)
-	stream := antlr.NewCommonTokenStream(lexer, 0)
-	parser := NewQueryParser(stream)
-
-	parser.RemoveErrorListeners()
-	errorListener := NewQueryErrorListener()
-	parser.AddErrorListener(errorListener)
-
-	tree := parser.Predicate()
-
-	if errorListener.HasError() {
-		return nil, errorListener.GetAllErrors(), fmt.Errorf("parse failed with %d error(s)", len(errorListener.GetAllErrors()))
-	}
-
-	builder := newPredicateBuilder()
-	walker := antlr.NewParseTreeWalker()
-	walker.Walk(builder, tree)
-
-	pred, err := builder.GetPredicate()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return pred, nil, nil
 }
