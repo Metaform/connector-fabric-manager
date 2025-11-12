@@ -13,6 +13,7 @@
 package query
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -71,9 +72,27 @@ func (m *DefaultFieldMatcher) CompareValues(op Operator, fieldValue, compareValu
 
 // AtomicPredicate is a basic Field comparison predicate
 type AtomicPredicate struct {
-	Field    Field
-	Operator Operator
-	Value    any
+	Field    Field    `json:"field"`
+	Operator Operator `json:"operator"`
+	Value    any      `json:"value"`
+}
+
+// UnmarshalJSON deserializes an AtomicPredicate from JSON, normalizing the operator to uppercase
+func (p *AtomicPredicate) UnmarshalJSON(data []byte) error {
+	var m map[string]any
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+
+	if field, ok := m["field"].(string); ok {
+		p.Field = Field(field)
+	}
+	if op, ok := m["operator"].(string); ok {
+		p.Operator = Operator(strings.ToUpper(op))
+	}
+	p.Value = m["value"]
+
+	return nil
 }
 
 // Eq creates a predicate for equality (syntactic sugar)
@@ -243,8 +262,8 @@ func (p *AtomicPredicate) String() string {
 
 // CompoundPredicate combines multiple Predicates with AND/OR logic
 type CompoundPredicate struct {
-	Predicates []Predicate
-	Operator   string // "AND" or "OR"
+	Operator   string      `json:"operator"`
+	Predicates []Predicate `json:"predicates"`
 }
 
 // And creates an AND conjunction of Predicates
@@ -290,4 +309,72 @@ func (p *CompoundPredicate) String() string {
 		parts[i] = pred.String()
 	}
 	return fmt.Sprintf("(%s)", strings.Join(parts, fmt.Sprintf(" %s ", p.Operator)))
+}
+
+// UnmarshalJSON deserializes a CompoundPredicate from JSON
+func (p *CompoundPredicate) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Operator   string            `json:"operator"`
+		Predicates []json.RawMessage `json:"predicates"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	p.Operator = aux.Operator
+	p.Predicates = make([]Predicate, len(aux.Predicates))
+
+	for i, rawPred := range aux.Predicates {
+		pred, err := UnmarshalPredicate(rawPred)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal predicate at index %d: %w", i, err)
+		}
+		p.Predicates[i] = pred
+	}
+
+	return nil
+}
+
+// UnmarshalPredicate unmarshals a Predicate from JSON bytes into the Predicate interface
+func UnmarshalPredicate(data []byte) (Predicate, error) {
+	// Parse JSON into a generic object to peek at structure
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal predicate: %w", err)
+	}
+
+	// If predicates field exists, it's a compound predicate
+	if _, hasPredicates := obj["predicates"]; hasPredicates {
+		var compound CompoundPredicate
+		if err := json.Unmarshal(data, &compound); err != nil {
+			return nil, err
+		}
+		return &compound, nil
+	}
+
+	// Otherwise, it's an atomic predicate
+	var atomic AtomicPredicate
+	if err := json.Unmarshal(data, &atomic); err != nil {
+		return nil, err
+	}
+	return &atomic, nil
+}
+
+// UnmarshalPredicates unmarshals a slice of Predicates from JSON bytes
+func UnmarshalPredicates(data []byte) ([]Predicate, error) {
+	var rawPredicates []json.RawMessage
+	if err := json.Unmarshal(data, &rawPredicates); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal predicate array: %w", err)
+	}
+
+	predicates := make([]Predicate, len(rawPredicates))
+	for i, rawPred := range rawPredicates {
+		pred, err := UnmarshalPredicate(rawPred)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal predicate at index %d: %w", i, err)
+		}
+		predicates[i] = pred
+	}
+
+	return predicates, nil
 }
