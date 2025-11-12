@@ -20,6 +20,7 @@ import (
 
 // GetFieldValue extracts a Value from an object by Field name
 // Supports nested fields with dot notation (e.g., "Entity.ID")
+// Also supports map access where a field is a map[string]any (e.g., "Properties.Foo")
 func GetFieldValue(obj any, fieldPath string) (any, error) {
 	parts := strings.Split(fieldPath, ".")
 	val := reflect.ValueOf(obj)
@@ -31,6 +32,17 @@ func GetFieldValue(obj any, fieldPath string) (any, error) {
 		if !val.IsValid() {
 			return nil, fmt.Errorf("invalid Value at Field %s", part)
 		}
+
+		// Check if this is a map[string]any for map access
+		if val.Kind() == reflect.Map && val.Type().Key().Kind() == reflect.String {
+			mapVal := val.MapIndex(reflect.ValueOf(part))
+			if !mapVal.IsValid() {
+				return nil, fmt.Errorf("key %s not found in map", part)
+			}
+			val = mapVal
+			continue
+		}
+
 		if val.Kind() != reflect.Struct {
 			return nil, fmt.Errorf("cannot access Field %s on non-struct type %v", part, val.Type())
 		}

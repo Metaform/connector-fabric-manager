@@ -839,3 +839,170 @@ func TestAtomicPredicate_Matches_TypeConversion(t *testing.T) {
 		})
 	}
 }
+
+// TestAtomicPredicate_Matches_MapProperties tests predicates against map[string]any properties
+func TestAtomicPredicate_Matches_MapProperties(t *testing.T) {
+	type MapEntity struct {
+		ID         string
+		Properties map[string]any
+	}
+
+	entity := MapEntity{
+		ID: "entity-1",
+		Properties: map[string]any{
+			"Foo":      "bar",
+			"Status":   "active",
+			"Count":    42,
+			"Rating":   4.5,
+			"Verified": true,
+		},
+	}
+
+	tests := []struct {
+		name      string
+		predicate *AtomicPredicate
+		expected  bool
+	}{
+		{
+			name:      "map string equality match",
+			predicate: Eq("Properties.Foo", "bar"),
+			expected:  true,
+		},
+		{
+			name:      "map string equality no match",
+			predicate: Eq("Properties.Foo", "baz"),
+			expected:  false,
+		},
+		{
+			name:      "map int equality match",
+			predicate: Eq("Properties.Count", 42),
+			expected:  true,
+		},
+		{
+			name:      "map int greater than",
+			predicate: Gt("Properties.Count", 40),
+			expected:  true,
+		},
+		{
+			name:      "map int less than",
+			predicate: Lt("Properties.Count", 50),
+			expected:  true,
+		},
+		{
+			name:      "map float equality",
+			predicate: Eq("Properties.Rating", 4.5),
+			expected:  true,
+		},
+		{
+			name:      "map bool equality true",
+			predicate: Eq("Properties.Verified", true),
+			expected:  true,
+		},
+		{
+			name:      "map bool equality false",
+			predicate: Eq("Properties.Verified", false),
+			expected:  false,
+		},
+		{
+			name:      "map string contains",
+			predicate: Contains("Properties.Status", "ctiv"),
+			expected:  true,
+		},
+		{
+			name:      "map string IN operator",
+			predicate: In("Properties.Status", "active", "pending"),
+			expected:  true,
+		},
+		{
+			name:      "map nonexistent key",
+			predicate: Eq("Properties.Missing", "value"),
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.predicate.Matches(entity, nil)
+			if result != tt.expected {
+				t.Errorf("Matches() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestCompoundPredicate_Matches_MapPropertiesWithLogic tests compound predicates with map properties
+func TestCompoundPredicate_Matches_MapPropertiesWithLogic(t *testing.T) {
+	type Resource struct {
+		Name       string
+		Attributes map[string]any
+	}
+
+	resource := Resource{
+		Name: "TestResource",
+		Attributes: map[string]any{
+			"Type":     "compute",
+			"Replicas": 3,
+			"Region":   "us-east-1",
+			"Enabled":  true,
+		},
+	}
+
+	tests := []struct {
+		name      string
+		predicate *CompoundPredicate
+		expected  bool
+	}{
+		{
+			name: "AND with two map properties",
+			predicate: And(
+				Eq("Attributes.Type", "compute"),
+				Eq("Attributes.Enabled", true),
+			),
+			expected: true,
+		},
+		{
+			name: "AND with one false map property",
+			predicate: And(
+				Eq("Attributes.Type", "compute"),
+				Eq("Attributes.Enabled", false),
+			),
+			expected: false,
+		},
+		{
+			name: "OR with map properties",
+			predicate: Or(
+				Eq("Attributes.Region", "us-west-2"),
+				Eq("Attributes.Type", "compute"),
+			),
+			expected: true,
+		},
+		{
+			name: "AND with map comparison and regular field",
+			predicate: And(
+				Eq("Name", "TestResource"),
+				Gt("Attributes.Replicas", 2),
+			),
+			expected: true,
+		},
+		{
+			name: "nested AND/OR with map properties",
+			predicate: And(
+				Eq("Attributes.Enabled", true),
+				Or(
+					Eq("Attributes.Type", "storage"),
+					Eq("Attributes.Type", "compute"),
+				),
+			),
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.predicate.Matches(resource, nil)
+			if result != tt.expected {
+				t.Errorf("Matches() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}

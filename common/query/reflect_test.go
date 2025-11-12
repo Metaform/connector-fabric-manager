@@ -837,3 +837,151 @@ func TestCompareValues_NumericTypeConversions(t *testing.T) {
 		})
 	}
 }
+
+// TestGetFieldValue_MapAccess tests extraction of values from map[string]any fields
+func TestGetFieldValue_MapAccess(t *testing.T) {
+	type DataContainer struct {
+		ID    string
+		Props map[string]any
+	}
+
+	container := DataContainer{
+		ID: "123",
+		Props: map[string]any{
+			"Color":  "blue",
+			"Size":   42,
+			"Active": true,
+			"Score":  95.5,
+		},
+	}
+
+	tests := []struct {
+		name      string
+		obj       any
+		fieldPath string
+		expected  any
+		wantErr   bool
+	}{
+		{
+			name:      "map string value",
+			obj:       container,
+			fieldPath: "Props.Color",
+			expected:  "blue",
+			wantErr:   false,
+		},
+		{
+			name:      "map int value",
+			obj:       container,
+			fieldPath: "Props.Size",
+			expected:  42,
+			wantErr:   false,
+		},
+		{
+			name:      "map bool value",
+			obj:       container,
+			fieldPath: "Props.Active",
+			expected:  true,
+			wantErr:   false,
+		},
+		{
+			name:      "map float value",
+			obj:       container,
+			fieldPath: "Props.Score",
+			expected:  95.5,
+			wantErr:   false,
+		},
+		{
+			name:      "map key not found",
+			obj:       container,
+			fieldPath: "Props.NonExistent",
+			expected:  nil,
+			wantErr:   true,
+		},
+		{
+			name:      "regular field access before map",
+			obj:       container,
+			fieldPath: "ID",
+			expected:  "123",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetFieldValue(tt.obj, tt.fieldPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFieldValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && result != tt.expected {
+				t.Errorf("GetFieldValue() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestGetFieldValue_NestedMapAccess tests deeply nested map access with struct fields
+func TestGetFieldValue_NestedMapAccess(t *testing.T) {
+	type MetaInfo struct {
+		Metadata map[string]any
+	}
+
+	type Item struct {
+		Name string
+		Meta MetaInfo
+	}
+
+	item := Item{
+		Name: "Widget",
+		Meta: MetaInfo{
+			Metadata: map[string]any{
+				"Version": "1.0",
+				"Author":  "John",
+				"Status":  "active",
+			},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		obj       any
+		fieldPath string
+		expected  any
+		wantErr   bool
+	}{
+		{
+			name:      "struct to map access",
+			obj:       item,
+			fieldPath: "Meta.Metadata.Version",
+			expected:  "1.0",
+			wantErr:   false,
+		},
+		{
+			name:      "struct to map access string",
+			obj:       item,
+			fieldPath: "Meta.Metadata.Author",
+			expected:  "John",
+			wantErr:   false,
+		},
+		{
+			name:      "struct to map access another field",
+			obj:       item,
+			fieldPath: "Meta.Metadata.Status",
+			expected:  "active",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetFieldValue(tt.obj, tt.fieldPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFieldValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && result != tt.expected {
+				t.Errorf("GetFieldValue() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
