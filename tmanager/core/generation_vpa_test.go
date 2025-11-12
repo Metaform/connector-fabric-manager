@@ -79,7 +79,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			},
 		}
 
-		profile, err := generator.Generate(identifier, vpaProperties, properties, cells, dProfiles)
+		profile, err := generator.Generate(identifier, "123", vpaProperties, properties, cells, dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, profile)
@@ -133,6 +133,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		profile, err := generator.Generate(
 			"test-participant",
+			"123",
 			make(api.VPAPropMap),
 			make(map[string]any),
 			[]api.Cell{},
@@ -166,6 +167,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		_, err := generator.Generate(
 			"test",
+			"123",
 			make(api.VPAPropMap),
 			make(map[string]any),
 			[]api.Cell{},
@@ -214,6 +216,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		_, err := generator.Generate(
 			"test",
+			"123",
 			make(api.VPAPropMap),
 			make(map[string]any),
 			inputCells,
@@ -266,6 +269,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		profile, err := generator.Generate(
 			"multi-profile-test",
+			"123",
 			make(api.VPAPropMap),
 			make(map[string]any),
 			[]api.Cell{},
