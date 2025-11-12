@@ -8,6 +8,11 @@ install-mockery:
 generate-mocks: install-mockery
 	$(MOCKERY_CMD)
 
+# This target only needs to be run if the query/Query.g4 grammar changes.
+# Requires ANTLR (antlr.org) to be installed locally.
+generate-query-grammar:
+	cd query && antlr -Dlanguage=Go -package query -visitor -listener Query.g4
+
 # Build settings
 COVER_PROFILE=coverage.out
 
