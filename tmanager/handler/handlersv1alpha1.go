@@ -126,8 +126,11 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	h.OK(w)
-	w.Write([]byte("["))
-
+	_, err = w.Write([]byte("["))
+	if err != nil {
+		h.Monitor.Infow("Error writing response: %v", err)
+		return
+	}
 	first := true
 	for tenant, err := range h.tenantService.QueryTenants(req.Context(), predicate, api.PaginationOptions{
 		Offset: 0,
@@ -139,7 +142,11 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if !first {
-			w.Write([]byte(","))
+			_, err = w.Write([]byte(","))
+			if err != nil {
+				h.Monitor.Infow("Error writing response: %v", err)
+				return
+			}
 		}
 		first = false
 
@@ -154,7 +161,11 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	w.Write([]byte("]"))
+	_, err = w.Write([]byte("]"))
+	if err != nil {
+		h.Monitor.Infow("Error writing response: %v", err)
+		return
+	}
 
 }
 
