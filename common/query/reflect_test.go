@@ -137,6 +137,61 @@ func TestGetFieldValue_NestedFields(t *testing.T) {
 	}
 }
 
+// TestGetFieldValue_CaseInsensitivePropertyName tests case-insensitive field access
+func TestGetFieldValue_CaseInsensitivePropertyName(t *testing.T) {
+	person := Person{Name: "John", Age: 30}
+
+	tests := []struct {
+		name      string
+		obj       any
+		fieldPath string
+		expected  any
+		wantErr   bool
+	}{
+		{
+			name:      "lowercase field name",
+			obj:       person,
+			fieldPath: "name",
+			expected:  "John",
+			wantErr:   false,
+		},
+		{
+			name:      "uppercase field name",
+			obj:       person,
+			fieldPath: "NAME",
+			expected:  "John",
+			wantErr:   false,
+		},
+		{
+			name:      "mixed case field name",
+			obj:       person,
+			fieldPath: "NaMe",
+			expected:  "John",
+			wantErr:   false,
+		},
+		{
+			name:      "case-insensitive nested field",
+			obj:       Company{Name: "TechCorp", CEO: &Person{Name: "Alice", Age: 50}, Founded: 2010},
+			fieldPath: "ceo.name",
+			expected:  "Alice",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := GetFieldValue(tt.obj, tt.fieldPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFieldValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && result != tt.expected {
+				t.Errorf("GetFieldValue() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
 // TestGetFieldValue_DeepNesting tests deeply nested field access
 func TestGetFieldValue_DeepNesting(t *testing.T) {
 	emp1 := &Employee{Name: "Bob"}

@@ -46,12 +46,34 @@ func GetFieldValue(obj any, fieldPath string) (any, error) {
 		if val.Kind() != reflect.Struct {
 			return nil, fmt.Errorf("cannot access Field %s on non-struct type %v", part, val.Type())
 		}
-		val = val.FieldByName(part)
-		if !val.IsValid() {
-			return nil, fmt.Errorf("Field %s not found", part)
+		var err error
+		val, err = getFieldValueCaseInsensitive(val, part)
+		if err != nil {
+			return nil, fmt.Errorf("error getting Field %s not found %w", part, err)
 		}
 	}
 	return val.Interface(), nil
+}
+
+func getFieldValueCaseInsensitive(val reflect.Value, fieldName string) (reflect.Value, error) {
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return reflect.Value{}, fmt.Errorf("not a struct")
+	}
+
+	// Search case-insensitively
+	field, found := val.Type().FieldByNameFunc(func(s string) bool {
+		return strings.EqualFold(s, fieldName)
+	})
+
+	if !found {
+		return reflect.Value{}, fmt.Errorf("field %s not found", fieldName)
+	}
+
+	return val.FieldByIndex(field.Index), nil
 }
 
 // CompareValues compares two values based on an Operator

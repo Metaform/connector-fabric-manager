@@ -13,9 +13,12 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/metaform/connector-fabric-manager/common/handler"
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
@@ -107,6 +110,52 @@ func (h *TMHandler) createTenant(w http.ResponseWriter, req *http.Request) {
 
 	response := v1alpha1.ToTenant(tenant)
 	h.ResponseOK(w, response)
+}
+
+func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request) {
+	if h.InvalidMethod(w, req, http.MethodPost) {
+		return
+	}
+	var tenantQuery v1alpha1.Query
+	if !h.ReadPayload(w, req, &tenantQuery) {
+		return
+	}
+	predicate, err := query.ParsePredicate(tenantQuery.Predicate)
+	if err != nil {
+		h.WriteError(w, fmt.Sprintf("Client error: %v", err), http.StatusBadRequest)
+		return
+	}
+	h.OK(w)
+	w.Write([]byte("["))
+
+	first := true
+	for tenant, err := range h.tenantService.QueryTenants(req.Context(), predicate, api.PaginationOptions{
+		Offset: 0,
+		Limit:  10000,
+	}) {
+		if err != nil {
+			h.Monitor.Infow("Error streaming tenant: %v", err)
+			break
+		}
+
+		if !first {
+			w.Write([]byte(","))
+		}
+		first = false
+
+		response := v1alpha1.ToTenant(&tenant)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			h.Monitor.Infow("Error encoding tenant response: %v", err)
+			break
+		}
+
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+	}
+
+	w.Write([]byte("]"))
+
 }
 
 func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request, tenantID string, participantID string) {

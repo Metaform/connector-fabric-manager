@@ -14,7 +14,9 @@ package core
 
 import (
 	"context"
+	"iter"
 
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
@@ -41,4 +43,20 @@ func (t tenantService) CreateTenant(ctx context.Context, tenant *api.Tenant) (*a
 func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predicate, options api.PaginationOptions) iter.Seq2[api.Tenant, error] {
+	return func(yield func(api.Tenant, error) bool) {
+		err := t.trxContext.Execute(ctx, func(ctx context.Context) error {
+			for tenant, err := range t.tenantStore.FindByPredicatePaginated(ctx, predicate, options) {
+				if !yield(tenant, err) {
+					return context.Canceled
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			yield(api.Tenant{}, err)
+		}
+	}
 }

@@ -798,6 +798,51 @@ func TestCompoundPredicate_Matches_MixedOperators(t *testing.T) {
 	}
 }
 
+// TestAtomicPredicate_Matches_CaseInsensitiveFieldNames tests case-insensitive field access in predicates
+func Test_Matches_CaseInsensitiveFieldNames(t *testing.T) {
+	entity := TestEntity{
+		ID:       "123",
+		Name:     "Alice",
+		Age:      30,
+		Score:    95.5,
+		Active:   true,
+		Email:    "alice@example.com",
+		Category: "Premium",
+		Count:    5,
+	}
+
+	tests := []struct {
+		name      string
+		predicate *AtomicPredicate
+		expected  bool
+	}{
+		{
+			name:      "lowercase field name - string equality",
+			predicate: Eq("name", "Alice"),
+			expected:  true,
+		},
+		{
+			name:      "uppercase field name - string equality",
+			predicate: Eq("NAME", "Alice"),
+			expected:  true,
+		},
+		{
+			name:      "mixed case field name - string equality",
+			predicate: Eq("NaMe", "Alice"),
+			expected:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.predicate.Matches(entity, nil)
+			if result != tt.expected {
+				t.Errorf("Matches() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
 // TestAtomicPredicate_Matches_TypeConversion tests type conversion in matching
 func TestAtomicPredicate_Matches_TypeConversion(t *testing.T) {
 	// Using struct with pointer to test type handling
