@@ -1012,3 +1012,28 @@ func TestFindFirstByPredicate_NoResults(t *testing.T) {
 	require.ErrorAs(t, err, &types.ErrNotFound)
 	assert.Nil(t, result)
 }
+
+// TestCountByPredicate_SimplePredicate_Equal tests counting with equality predicate
+func TestCountByPredicate_SimplePredicate_Equal(t *testing.T) {
+	t.Run("count equal", func(t *testing.T) {
+		store := setupComplexEntityStore(t)
+		ctx := context.Background()
+
+		predicate := query.Eq("Name", "Alice")
+		count, err := store.CountByPredicate(ctx, predicate)
+
+		require.NoError(t, err)
+		assert.Equal(t, 1, count)
+	})
+
+	t.Run("count equal non-existing value", func(t *testing.T) {
+		store := setupComplexEntityStore(t)
+		ctx := context.Background()
+
+		predicate := query.Eq("Name", "NonExistent")
+		count, err := store.CountByPredicate(ctx, predicate)
+
+		require.NoError(t, err)
+		assert.Equal(t, 0, count)
+	})
+}

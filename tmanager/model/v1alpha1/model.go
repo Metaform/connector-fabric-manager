@@ -29,6 +29,8 @@ type NewTenant struct {
 
 type Query struct {
 	Predicate string `json:"predicate" required:"true"`
+	Offset    int    `json:"offset"`
+	Limit     int    `json:"limit"`
 }
 
 type Tenant struct {

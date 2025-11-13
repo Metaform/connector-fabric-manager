@@ -60,3 +60,13 @@ func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predica
 		}
 	}
 }
+
+func (t tenantService) CountTenants(ctx context.Context, predicate query.Predicate) (int, error) {
+	var count int
+	err := t.trxContext.Execute(ctx, func(ctx context.Context) error {
+		c, err := t.tenantStore.CountByPredicate(ctx, predicate)
+		count = c
+		return err
+	})
+	return count, err
+}

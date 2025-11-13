@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/metaform/connector-fabric-manager/common/handler"
 	"github.com/metaform/connector-fabric-manager/common/query"
@@ -112,7 +113,7 @@ func (h *TMHandler) createTenant(w http.ResponseWriter, req *http.Request) {
 	h.ResponseOK(w, response)
 }
 
-func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request) {
+func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request, path string) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
@@ -125,6 +126,51 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request) {
 		h.WriteError(w, fmt.Sprintf("Client error: %v", err), http.StatusBadRequest)
 		return
 	}
+
+	// Set count before response body
+	totalCount, err := h.tenantService.CountTenants(req.Context(), predicate)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	offset := tenantQuery.Offset
+	limit := tenantQuery.Limit
+	if limit == 0 || limit > 10000 { // TODO make configurable
+		limit = 10000
+	}
+
+	var links []string
+	selfLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"self\"", path, offset, limit)
+	links = append(links, selfLink)
+
+	if offset+limit < totalCount {
+		nextLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"next\"", path, offset+limit, limit)
+		links = append(links, nextLink)
+	}
+
+	if offset > 0 {
+		prevOffset := offset - limit
+		if prevOffset < 0 {
+			prevOffset = 0
+		}
+		prevLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"prev\"", path, prevOffset, limit)
+		links = append(links, prevLink)
+	}
+
+	firstLink := fmt.Sprintf("<%s?offset=0&limit=%d>; rel=\"first\"", path, limit)
+	links = append(links, firstLink)
+
+	lastOffset := ((totalCount - 1) / limit) * limit
+	if lastOffset < 0 {
+		lastOffset = 0
+	}
+	lastLink := fmt.Sprintf("<%s=%d&limit=%d>; rel=\"last\"", path, lastOffset, limit)
+	links = append(links, lastLink)
+
+	w.Header().Set("Link", strings.Join(links, ", "))
+	w.Header().Set("X-Total-Count", fmt.Sprintf("%d", totalCount))
+
 	h.OK(w)
 	_, err = w.Write([]byte("["))
 	if err != nil {
@@ -132,9 +178,10 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	first := true
+
 	for tenant, err := range h.tenantService.QueryTenants(req.Context(), predicate, api.PaginationOptions{
-		Offset: 0,
-		Limit:  10000,
+		Offset: tenantQuery.Offset,
+		Limit:  limit,
 	}) {
 		if err != nil {
 			h.Monitor.Infow("Error streaming tenant: %v", err)
@@ -166,7 +213,6 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request) {
 		h.Monitor.Infow("Error writing response: %v", err)
 		return
 	}
-
 }
 
 func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request, tenantID string, participantID string) {

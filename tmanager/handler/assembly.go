@@ -59,7 +59,9 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 
 	router.Post("/tenants", handler.createTenant)
 
-	router.Post("/tenants/query", handler.queryTenant)
+	router.Post("/tenants/query", func(writer http.ResponseWriter, request *http.Request) {
+		handler.queryTenant(writer, request, "/tenants/query")
+	})
 
 	router.Get("/tenants/{tenantID}/participants/{participantID}", func(w http.ResponseWriter, req *http.Request) {
 		tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")

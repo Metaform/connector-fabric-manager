@@ -242,3 +242,17 @@ func (s *InMemoryEntityStore[T]) FindFirstByPredicate(ctx context.Context, predi
 	}
 	return nil, types.ErrNotFound
 }
+
+func (s *InMemoryEntityStore[T]) CountByPredicate(ctx context.Context, predicate query.Predicate) (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	count := 0
+	for _, entity := range s.cache {
+		if predicate.Matches(entity, s.matcher) {
+			count++
+		}
+	}
+	return count, nil
+}
+
