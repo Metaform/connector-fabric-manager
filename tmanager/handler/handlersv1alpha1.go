@@ -121,6 +121,12 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request, path s
 	if !h.ReadPayload(w, req, &tenantQuery) {
 		return
 	}
+	offset := tenantQuery.Offset
+	limit := tenantQuery.Limit
+	if limit == 0 || limit > 10000 { // TODO make configurable
+		limit = 10000
+	}
+
 	predicate, err := query.ParsePredicate(tenantQuery.Predicate)
 	if err != nil {
 		h.WriteError(w, fmt.Sprintf("Client error: %v", err), http.StatusBadRequest)
@@ -134,42 +140,7 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request, path s
 		return
 	}
 
-	offset := tenantQuery.Offset
-	limit := tenantQuery.Limit
-	if limit == 0 || limit > 10000 { // TODO make configurable
-		limit = 10000
-	}
-
-	var links []string
-	selfLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"self\"", path, offset, limit)
-	links = append(links, selfLink)
-
-	if offset+limit < totalCount {
-		nextLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"next\"", path, offset+limit, limit)
-		links = append(links, nextLink)
-	}
-
-	if offset > 0 {
-		prevOffset := offset - limit
-		if prevOffset < 0 {
-			prevOffset = 0
-		}
-		prevLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"prev\"", path, prevOffset, limit)
-		links = append(links, prevLink)
-	}
-
-	firstLink := fmt.Sprintf("<%s?offset=0&limit=%d>; rel=\"first\"", path, limit)
-	links = append(links, firstLink)
-
-	lastOffset := ((totalCount - 1) / limit) * limit
-	if lastOffset < 0 {
-		lastOffset = 0
-	}
-	lastLink := fmt.Sprintf("<%s=%d&limit=%d>; rel=\"last\"", path, lastOffset, limit)
-	links = append(links, lastLink)
-
-	w.Header().Set("Link", strings.Join(links, ", "))
-	w.Header().Set("X-Total-Count", fmt.Sprintf("%d", totalCount))
+	h.writeLinkHeaders(w, path, offset, limit, totalCount)
 
 	h.OK(w)
 	_, err = w.Write([]byte("["))
@@ -294,4 +265,37 @@ func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Requ
 func (h *TMHandler) health(w http.ResponseWriter, _ *http.Request) {
 	response := response{Message: "OK"}
 	h.ResponseOK(w, response)
+}
+
+func (h *TMHandler) writeLinkHeaders(w http.ResponseWriter, path string, offset int, limit int, totalCount int) {
+	var links []string
+	selfLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"self\"", path, offset, limit)
+	links = append(links, selfLink)
+
+	if offset+limit < totalCount {
+		nextLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"next\"", path, offset+limit, limit)
+		links = append(links, nextLink)
+	}
+
+	if offset > 0 {
+		prevOffset := offset - limit
+		if prevOffset < 0 {
+			prevOffset = 0
+		}
+		prevLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"prev\"", path, prevOffset, limit)
+		links = append(links, prevLink)
+	}
+
+	firstLink := fmt.Sprintf("<%s?offset=0&limit=%d>; rel=\"first\"", path, limit)
+	links = append(links, firstLink)
+
+	lastOffset := ((totalCount - 1) / limit) * limit
+	if lastOffset < 0 {
+		lastOffset = 0
+	}
+	lastLink := fmt.Sprintf("<%s=%d&limit=%d>; rel=\"last\"", path, lastOffset, limit)
+	links = append(links, lastLink)
+
+	w.Header().Set("Link", strings.Join(links, ", "))
+	w.Header().Set("X-Total-Count", fmt.Sprintf("%d", totalCount))
 }
