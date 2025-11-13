@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	clauncher "github.com/metaform/connector-fabric-manager/mvd/connector/launcher"
 	dnslauncher "github.com/metaform/connector-fabric-manager/mvd/dns/launcher"
@@ -42,11 +42,11 @@ const (
 func LaunchMVD() {
 	ctx := context.Background()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, cfmBucket)
+	nt, err := natsfixtures.SetupNatsContainer(ctx, cfmBucket)
 	if err != nil {
 		panic(err)
 	}
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
 	_ = os.Setenv("DNSAGENT_URI", nt.Uri)
 	_ = os.Setenv("DNSAGENT_BUCKET", cfmBucket)
@@ -117,7 +117,7 @@ func LaunchMVD() {
 		panic(err)
 	}
 
-	tenant, err := e2efixtures.CreateTenant(client)
+	tenant, err := e2efixtures.CreateTenant(client, map[string]any{})
 	if err != nil {
 		panic(err)
 	}

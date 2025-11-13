@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
@@ -42,10 +42,10 @@ func TestExecuteOrchestration_NoSteps(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
 	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := NatsOrchestrator{Client: adapter}
@@ -188,13 +188,13 @@ func TestExecuteOrchestration(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 			defer cancel()
 
-			nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-activity-context-bucket")
+			nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-activity-context-bucket")
 			require.NoError(t, err)
 
-			defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+			defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-			stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
-			natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
+			stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+			natsfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
 
 			var executions []activityExecution
 			executionsMutex := &sync.Mutex{}
@@ -273,13 +273,13 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-durable-activity-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
-	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.schedule.continue")
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natsfixtures.SetupTestConsumer(t, ctx, stream, "test.schedule.continue")
 
 	//natstestutil.SetupStreamAndConsumer(t, ctx, nt)
 

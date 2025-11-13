@@ -22,7 +22,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/nats-io/nats.go/jetstream"
@@ -42,13 +42,13 @@ func TestNatsOrchestrationClient_Deploy(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, cfmBucker)
+	nt, err := natsfixtures.SetupNatsContainer(ctx, cfmBucker)
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	natsfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
 	dispatcher := &testOrchestrationDispatcher{}
@@ -91,13 +91,13 @@ func TestNatsOrchestrationClient_ProcessMessage_Success(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	consumer := natsfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Setup dispatcher with expectations
 	dispatcher := &testOrchestrationDispatcher{
@@ -143,13 +143,13 @@ func TestNatsOrchestrationClient_ProcessMessage_RecoverableError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	consumer := natsfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Setup dispatcher that returns recoverable error
 	dispatcher := &testOrchestrationDispatcher{
@@ -194,13 +194,13 @@ func TestNatsOrchestrationClient_ProcessMessage_FatalError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	consumer := natsfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Setup dispatcher that returns fatal error
 	dispatcher := &testOrchestrationDispatcher{
@@ -244,13 +244,13 @@ func TestNatsOrchestrationClient_ProcessLoop_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	consumer := natsfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	dispatcher := &testOrchestrationDispatcher{
 		responses: make(chan model.OrchestrationResponse, 1),
@@ -278,13 +278,13 @@ func TestNatsOrchestrationClient_MultipleMessages(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	consumer := natsfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	const messageCount = 5
 	dispatcher := &testOrchestrationDispatcher{
@@ -352,13 +352,13 @@ func TestNatsOrchestrationClient_ProcessMessage_InvalidJSON(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	consumer := natsfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Setup dispatcher that should NOT be called as the test sends invalid JSON
 	dispatcher := &testOrchestrationDispatcher{
@@ -404,13 +404,13 @@ func TestNatsOrchestrationClient_ProcessMessage_DispatcherSuccess(t *testing.T) 
 	defer cancel()
 
 	// Set up NATS container
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	consumer := natstestfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	consumer := natsfixtures.SetupTestConsumer(t, ctx, stream, natsclient.CFMOrchestration)
 
 	// Track successful Processing
 	var processedCount int

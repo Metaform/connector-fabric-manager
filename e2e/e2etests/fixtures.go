@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
-	"github.com/metaform/connector-fabric-manager/common/testfixtures"
+	"github.com/metaform/connector-fabric-manager/common/fixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	alauncher "github.com/metaform/connector-fabric-manager/e2e/testagent/launcher"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
@@ -33,7 +33,7 @@ const (
 	cfmBucket   = "cfm-bucket"
 )
 
-func launchPlatform(t *testing.T, nt *natstestfixtures.NatsTestContainer) *e2efixtures.ApiClient {
+func launchPlatform(t *testing.T, nt *natsfixtures.NatsTestContainer) *e2efixtures.ApiClient {
 	_ = os.Setenv("TM_URI", nt.Uri)
 	_ = os.Setenv("TM_BUCKET", cfmBucket)
 	_ = os.Setenv("TM_STREAM", streamName)
@@ -46,9 +46,9 @@ func launchPlatform(t *testing.T, nt *natstestfixtures.NatsTestContainer) *e2efi
 	_ = os.Setenv("TESTAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("TESTAGENT_STREAM", streamName)
 
-	tPort := testfixtures.GetRandomPort(t)
+	tPort := fixtures.GetRandomPort(t)
 	_ = os.Setenv("TM_HTTPPORT", strconv.Itoa(tPort))
-	pPort := testfixtures.GetRandomPort(t)
+	pPort := fixtures.GetRandomPort(t)
 	_ = os.Setenv("PM_HTTPPORT", strconv.Itoa(pPort))
 
 	shutdownChannel := make(chan struct{})

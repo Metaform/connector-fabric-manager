@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
@@ -30,11 +30,11 @@ func Test_VerifyE2E(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, cfmBucket)
+	nt, err := natsfixtures.SetupNatsContainer(ctx, cfmBucket)
 
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 	defer cleanup()
 
 	client := launchPlatform(t, nt)

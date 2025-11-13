@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
-	"github.com/metaform/connector-fabric-manager/common/testfixtures"
+	"github.com/metaform/connector-fabric-manager/common/fixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,19 +34,19 @@ func TestTestAgent_Integration(t *testing.T) {
 	defer cancel()
 
 	// Set up NATS container
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "test-orchestration-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "test-orchestration-bucket")
 
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
 
 	// Required agent config
 	_ = os.Setenv("PM_URI", nt.Uri)
 	_ = os.Setenv("PM_BUCKET", "cfm-bucket")
 	_ = os.Setenv("PM_STREAM", streamName)
-	_ = os.Setenv("PM_HTTPPORT", strconv.Itoa(testfixtures.GetRandomPort(t)))
+	_ = os.Setenv("PM_HTTPPORT", strconv.Itoa(fixtures.GetRandomPort(t)))
 
 	// Create and start the test agent
 	shutdownChannel := make(chan struct{})

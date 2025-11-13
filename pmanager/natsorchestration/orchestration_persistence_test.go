@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
@@ -38,12 +38,12 @@ func TestNatsOrchestrator_GetOrchestration_Success(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-get-orchestration-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-get-orchestration-bucket")
 	require.NoError(t, err)
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+	natsfixtures.SetupTestConsumer(t, ctx, stream, "test.activity")
 
 	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := &NatsOrchestrator{
@@ -81,9 +81,9 @@ func TestNatsOrchestrator_GetOrchestration_NotFound(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-get-orchestration-notfound-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-get-orchestration-notfound-bucket")
 	require.NoError(t, err)
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
 	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := &NatsOrchestrator{
@@ -152,12 +152,12 @@ func Test_ValuePersistence(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 			defer cancel()
 
-			nt, err := natstestfixtures.SetupNatsContainer(ctx, tc.bucketSuffix)
+			nt, err := natsfixtures.SetupNatsContainer(ctx, tc.bucketSuffix)
 			require.NoError(t, err)
-			defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+			defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-			stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-			natstestfixtures.SetupTestConsumer(t, ctx, stream, tc.activityType)
+			stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+			natsfixtures.SetupTestConsumer(t, ctx, stream, tc.activityType)
 
 			var wg sync.WaitGroup
 			wg.Add(1)
@@ -268,12 +268,12 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 			defer cancel()
 
-			nt, err := natstestfixtures.SetupNatsContainer(ctx, tc.bucketSuffix)
+			nt, err := natsfixtures.SetupNatsContainer(ctx, tc.bucketSuffix)
 			require.NoError(t, err)
-			defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+			defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-			stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-			natstestfixtures.SetupTestConsumer(t, ctx, stream, tc.activityType)
+			stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+			natsfixtures.SetupTestConsumer(t, ctx, stream, tc.activityType)
 
 			var wg sync.WaitGroup
 			var callCount int32
@@ -398,12 +398,12 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 			defer cancel()
 
-			nt, err := natstestfixtures.SetupNatsContainer(ctx, tc.bucketSuffix)
+			nt, err := natsfixtures.SetupNatsContainer(ctx, tc.bucketSuffix)
 			require.NoError(t, err)
-			defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+			defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-			stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-			natstestfixtures.SetupTestConsumer(t, ctx, stream, tc.activityType)
+			stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+			natsfixtures.SetupTestConsumer(t, ctx, stream, tc.activityType)
 
 			var wg sync.WaitGroup
 			wg.Add(2) // Two activities
@@ -526,12 +526,12 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), persistenceTimeout)
 			defer cancel()
 
-			nt, err := natstestfixtures.SetupNatsContainer(ctx, tc.bucketSuffix)
+			nt, err := natsfixtures.SetupNatsContainer(ctx, tc.bucketSuffix)
 			require.NoError(t, err)
-			defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+			defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-			stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
-			natstestfixtures.SetupTestConsumer(t, ctx, stream, tc.activityType)
+			stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
+			natsfixtures.SetupTestConsumer(t, ctx, stream, tc.activityType)
 
 			var wg sync.WaitGroup
 			wg.Add(1)

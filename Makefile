@@ -104,6 +104,7 @@ dev-tmanager:
 
 clean:
 	@echo "Cleaning all services..."
+	$(MAKE) -C $(COMMON_DIR) clean
 	$(MAKE) -C $(PMANAGER_DIR) clean
 	$(MAKE) -C $(TMANAGER_DIR) clean
 

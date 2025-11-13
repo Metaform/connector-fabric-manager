@@ -21,7 +21,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go"
@@ -35,13 +35,13 @@ func TestNatsActivityExecutor_ProcessingDataPersistedAcrossReschedules(t *testin
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
-	natstestfixtures.SetupTestConsumer(t, ctx, stream, testActivity)
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natsfixtures.SetupTestConsumer(t, ctx, stream, testActivity)
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
 

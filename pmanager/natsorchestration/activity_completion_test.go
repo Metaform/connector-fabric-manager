@@ -21,7 +21,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
-	"github.com/metaform/connector-fabric-manager/common/natstestfixtures"
+	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go"
@@ -33,13 +33,13 @@ func TestNatsActivityExecutor_OrchestrationResponsePublished(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
-	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.response.activity")
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natsfixtures.SetupTestConsumer(t, ctx, stream, "test.response.activity")
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
 
@@ -136,13 +136,13 @@ func TestNatsActivityExecutor_OrchestrationResponseNotPublishedOnError(t *testin
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-activity-error-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-activity-error-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
-	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.error.activity")
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natsfixtures.SetupTestConsumer(t, ctx, stream, "test.error.activity")
 
 	adapter := natsclient.NewMsgClient(nt.Client)
 
@@ -224,13 +224,13 @@ func TestNatsActivityExecutor_RescheduleWithCounter(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), processTimeout)
 	defer cancel()
 
-	nt, err := natstestfixtures.SetupNatsContainer(ctx, "cfm-reschedule-bucket")
+	nt, err := natsfixtures.SetupNatsContainer(ctx, "cfm-reschedule-bucket")
 	require.NoError(t, err)
 
-	defer natstestfixtures.TeardownNatsContainer(ctx, nt)
+	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	stream := natstestfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
-	natstestfixtures.SetupTestConsumer(t, ctx, stream, "test.reschedule.activity")
+	stream := natsfixtures.SetupTestStream(t, ctx, nt.Client, testStream)
+	natsfixtures.SetupTestConsumer(t, ctx, stream, "test.reschedule.activity")
 
 	msgClient := natsclient.NewMsgClient(nt.Client)
 
