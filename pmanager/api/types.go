@@ -113,7 +113,7 @@ func (at ActivityType) String() string {
 type Activity struct {
 	ID            string         `json:"id"`
 	Type          ActivityType   `json:"type"`
-	Discriminator string         `json:"discriminator"`
+	Discriminator Discriminator         `json:"discriminator"`
 	Inputs        []MappingEntry `json:"inputs"`
 	DependsOn     []string       `json:"dependsOn"`
 }

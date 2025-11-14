@@ -321,7 +321,7 @@ func (d defaultActivityContext) Context() context.Context {
 	return d.context
 }
 
-func (d defaultActivityContext) Discriminator() string {
+func (d defaultActivityContext) Discriminator() api.Discriminator {
 	return d.activity.Discriminator
 }
 

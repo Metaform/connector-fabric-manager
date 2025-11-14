@@ -78,6 +78,9 @@ const (
 	ActivityResultSchedule   = 2
 	ActivityResultRetryError = -1
 	ActivityResultFatalError = -2
+
+	DeployDiscriminator Discriminator = "deploy"
+	DisposeDiscriminator Discriminator = "dispose"
 )
 
 type ActivityResult struct {
@@ -86,10 +89,16 @@ type ActivityResult struct {
 	Error            error
 }
 
+type Discriminator  string
+
+func (ad Discriminator) String() string {
+	return string(ad)
+}
+
 type ActivityContext interface {
 	OID() string
 	ID() string
-	Discriminator() string
+	Discriminator() Discriminator
 	InputData() ImmutableMap
 	SetValue(key string, value any)
 	Value(key string) (any, bool)

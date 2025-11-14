@@ -46,7 +46,7 @@ type TestActivityProcessor struct {
 }
 
 func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	if ctx.Discriminator() == "dispose" {
+	if ctx.Discriminator() == api.DisposeDiscriminator {
 		// a disposal request
 		t.monitor.Infof("Processed dispose")
 		return api.ActivityResult{Result: api.ActivityResultComplete}

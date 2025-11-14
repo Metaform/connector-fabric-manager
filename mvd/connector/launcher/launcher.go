@@ -47,7 +47,7 @@ func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.Activit
 	if !found {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
 	}
-	if ctx.Discriminator() == "dispose" {
+	if ctx.Discriminator() == api.DisposeDiscriminator{
 		// disposal request
 		t.monitor.Infof("Connector disposal complete: %s", identifier)
 		return api.ActivityResult{Result: api.ActivityResultComplete}

@@ -38,7 +38,7 @@ func ToAPIOrchestrationDefinition(definition *OrchestrationDefinition) *api.Orch
 		apiActivities[i] = api.Activity{
 			ID:            activity.ID,
 			Type:          api.ActivityType(activity.Type),
-			Discriminator: activity.Discriminator,
+			Discriminator: api.Discriminator(activity.Discriminator),
 			Inputs:        ToAPIMappingEntries(activity.Inputs),
 			DependsOn:     activity.DependsOn,
 		}

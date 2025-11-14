@@ -48,7 +48,7 @@ func (t DNSActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResul
 	if !found {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
 	}
-	if ctx.Discriminator() == "dispose" {
+	if ctx.Discriminator() == api.DisposeDiscriminator {
 		t.monitor.Infof("DNS disposal complete: %s", identifier)
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}
