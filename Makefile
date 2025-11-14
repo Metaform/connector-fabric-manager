@@ -8,6 +8,8 @@
 COMMON_DIR=common
 PMANAGER_DIR=pmanager
 TMANAGER_DIR=tmanager
+EDCV_DIR=agent/edcv
+
 E2E_DIR=e2e
 
 # Docker settings
@@ -50,9 +52,10 @@ help:
 #==============================================================================
 
 build:
-	@echo "Building all services..."
+	@echo "Building all modules..."
 	$(MAKE) -C $(PMANAGER_DIR) build
 	$(MAKE) -C $(TMANAGER_DIR) build
+	$(MAKE) -C $(EDCV_DIR) build
 
 build-pmanager:
 	@echo "Building pmanager..."
@@ -62,10 +65,15 @@ build-tmanager:
 	@echo "Building tmanager..."
 	$(MAKE) -C $(TMANAGER_DIR) build
 
+build-edcv:
+	@echo "Building tmanager..."
+	$(MAKE) -C $(EDCV_DIR) build
+
 build-all:
-	@echo "Building all services for all platforms..."
+	@echo "Building all modules for all platforms..."
 	$(MAKE) -C $(PMANAGER_DIR) build-all
 	$(MAKE) -C $(TMANAGER_DIR) build-all
+	$(MAKE) -C $(EDCV_DIR) build-all
 
 #==============================================================================
 # Test Commands - Delegate to Service Makefiles
@@ -76,6 +84,7 @@ test:
 	$(MAKE) -C $(COMMON_DIR) test
 	$(MAKE) -C $(PMANAGER_DIR) test
 	$(MAKE) -C $(TMANAGER_DIR) test
+	$(MAKE) -C $(EDCV_DIR) test
 	$(MAKE) -C $(E2E_DIR) test
 
 test-common:
@@ -89,6 +98,10 @@ test-pmanager:
 test-tmanager:
 	@echo "Testing tmanager..."
 	$(MAKE) -C $(TMANAGER_DIR) test
+
+test-edcv:
+	@echo "Testing EDC-V agent..."
+	$(MAKE) -C $(EDCV_DIR) test
 
 #==============================================================================
 # Development Commands - Delegate to Service Makefiles
@@ -107,6 +120,7 @@ clean:
 	$(MAKE) -C $(COMMON_DIR) clean
 	$(MAKE) -C $(PMANAGER_DIR) clean
 	$(MAKE) -C $(TMANAGER_DIR) clean
+	$(MAKE) -C $(EDCV_DIR) clean
 
 #==============================================================================
 # Tool Commands - Delegate to Service Makefiles
