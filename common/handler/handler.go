@@ -138,6 +138,11 @@ func (h HttpHandler) ResponseOK(w http.ResponseWriter, response any) {
 	h.write(w, response)
 }
 
+func (h HttpHandler) ResponseCreated(w http.ResponseWriter, response any) {
+	h.Created(w)
+	h.write(w, response)
+}
+
 func (h HttpHandler) write(w http.ResponseWriter, response any) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		h.Monitor.Infow("Error encoding response: %v", err)

@@ -57,47 +57,74 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 
 	handler := NewHandler(tenantService, participantService, cellService, dataspaceService, context.LogMonitor)
 
-	router.Post("/tenants", handler.createTenant)
-
-	router.Post("/tenants/query", func(writer http.ResponseWriter, request *http.Request) {
-		handler.queryTenant(writer, request, "/tenants/query")
+	router.Route("/api/v1alpha1", func(r chi.Router) {
+		h.registerV1Alpha1(r, handler)
 	})
-
-	router.Get("/tenants/{tenantID}/participants/{participantID}", func(w http.ResponseWriter, req *http.Request) {
-		tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
-		if !found {
-			return
-		}
-		participantID, found := handler.ExtractPathVariable(w, req, "participantID")
-		if !found {
-			return
-		}
-		handler.getParticipantProfile(w, req, tenantID, participantID)
-	})
-
-	router.Post("/tenants/{tenantID}/participants", func(w http.ResponseWriter, req *http.Request) {
-		tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
-		if !found {
-			return
-		}
-		handler.deployParticipant(w, req, tenantID)
-
-	})
-	router.Delete("/tenants/{tenantID}/participants/{participantID}", func(w http.ResponseWriter, req *http.Request) {
-		tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
-		if !found {
-			return
-		}
-		participantID, found := handler.ExtractPathVariable(w, req, "participantID")
-		if !found {
-			return
-		}
-		handler.disposeParticipant(w, req, tenantID, participantID)
-	})
-
-	router.Post("/cells", handler.createCell)
-	router.Post("/dataspace-profiles", handler.createDataspaceProfile)
-	router.Post("/dataspace-profiles/{id}/deployments", handler.deployDataspaceProfile)
 
 	return nil
+}
+
+func (h *HandlerServiceAssembly) registerV1Alpha1(router chi.Router, handler *TMHandler) {
+	h.registerTenantRoutes(router, handler)
+
+	// Cell routes
+	router.Post("/cells", handler.createCell)
+
+	// Dataspace profile routes
+	router.Route("/dataspace-profiles", func(r chi.Router) {
+		r.Post("/", handler.createDataspaceProfile)
+		r.Route("/{id}/deployments", func(r chi.Router) {
+			r.Post("/", handler.deployDataspaceProfile)
+		})
+	})
+}
+
+func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler *TMHandler) {
+	router.Route("/tenants", func(r chi.Router) {
+		r.Post("/", handler.createTenant)
+		r.Post("/query", func(w http.ResponseWriter, req *http.Request) {
+			handler.queryTenant(w, req, "/tenants/query")
+		})
+
+		r.Route("/{tenantID}", func(r chi.Router) {
+			h.reigsterParticipantRoutes(r, handler)
+		})
+	})
+}
+
+func (h *HandlerServiceAssembly) reigsterParticipantRoutes(r chi.Router, handler *TMHandler) chi.Router {
+	return r.Route("/participants", func(r chi.Router) {
+		r.Post("/", func(w http.ResponseWriter, req *http.Request) {
+			tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
+			if !found {
+				return
+			}
+			handler.deployParticipant(w, req, tenantID)
+		})
+
+		r.Route("/{participantID}", func(r chi.Router) {
+			r.Get("/", func(w http.ResponseWriter, req *http.Request) {
+				tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
+				if !found {
+					return
+				}
+				participantID, found := handler.ExtractPathVariable(w, req, "participantID")
+				if !found {
+					return
+				}
+				handler.getParticipantProfile(w, req, tenantID, participantID)
+			})
+			r.Delete("/", func(w http.ResponseWriter, req *http.Request) {
+				tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
+				if !found {
+					return
+				}
+				participantID, found := handler.ExtractPathVariable(w, req, "participantID")
+				if !found {
+					return
+				}
+				handler.disposeParticipant(w, req, tenantID, participantID)
+			})
+		})
+	})
 }

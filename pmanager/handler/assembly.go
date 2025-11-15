@@ -44,10 +44,12 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	definitionManager := context.Registry.Resolve(api.DefinitionManagerKey).(api.DefinitionManager)
 	handler := NewHandler(provisionManager, definitionManager, context.LogMonitor)
 
-	router.Get("/health", handler.health)
-	router.Post("/orchestration", handler.orchestration)
-	router.Post("/activity-definition", handler.activityDefinition)
-	router.Post("/orchestration-definition", handler.orchestrationDefinition)
+	router.Route("/api/v1alpha1", func(r chi.Router) {
+		r.Post("/orchestration", handler.orchestration)
+		r.Post("/activity-definition", handler.activityDefinition)
+		r.Post("/orchestration-definition", handler.orchestrationDefinition)
+		r.Get("/health", handler.health)
+	})
 
 	return nil
 }

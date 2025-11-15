@@ -1,0 +1,182 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Provision Manager API",
+    "description": "API for managing Orchestrations, Orchestration Definitions, and Activity Definitions",
+    "version": "0.0.1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/api/v1alpha1/activity-definition": {
+      "post": {
+        "summary": "Create an Activity Definition",
+        "description": "Create a new Activity Definition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/V1Alpha1ActivityDefinition"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/v1alpha1/orchestration": {
+      "post": {
+        "summary": "Execute an Orchestration",
+        "description": "Execute an Orchestration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelOrchestrationManifest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/api/v1alpha1/orchestration-definition": {
+      "post": {
+        "summary": "Create an Orchestration Definition",
+        "description": "Create a new Orchestration Definition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/V1Alpha1OrchestrationDefinition"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ModelOrchestrationManifest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "orchestrationType": {
+            "type": "string"
+          },
+          "payload omitempty": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          }
+        }
+      },
+      "V1Alpha1Activity": {
+        "type": "object",
+        "properties": {
+          "dependsOn omitempty": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "discriminator": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputs omitempty": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V1Alpha1MappingEntry"
+            },
+            "nullable": true
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "V1Alpha1ActivityDefinition": {
+        "type": "object",
+        "properties": {
+          "description omitempty": {
+            "type": "string"
+          },
+          "inputSchema omitempty": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "outputSchema omitempty": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "V1Alpha1MappingEntry": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "V1Alpha1OrchestrationDefinition": {
+        "type": "object",
+        "properties": {
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V1Alpha1Activity"
+            },
+            "nullable": true
+          },
+          "description omitempty": {
+            "type": "string"
+          },
+          "schema omitempty": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

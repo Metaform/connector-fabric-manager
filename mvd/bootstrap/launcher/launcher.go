@@ -94,7 +94,7 @@ func LaunchMVD() {
 		oblauncher.LaunchAndWaitSignal(shutdownChannel)
 	}()
 
-	client := e2efixtures.NewApiClient(fmt.Sprintf("http://localhost:%d", tPort), fmt.Sprintf("http://localhost:%d", pPort))
+	client := e2efixtures.NewApiClient(fmt.Sprintf("http://localhost:%d/api/v1alpha1", tPort), fmt.Sprintf("http://localhost:%d/api/v1alpha1", pPort))
 	// Wait for the pmanager to be ready
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
 		if err = CreateActivityDefinitions(client); err == nil {

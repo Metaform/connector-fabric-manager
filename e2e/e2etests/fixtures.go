@@ -63,7 +63,7 @@ func launchPlatform(t *testing.T, nt *natsfixtures.NatsTestContainer) *e2efixtur
 	go func() {
 		alauncher.Launch(shutdownChannel)
 	}()
-	return e2efixtures.NewApiClient(fmt.Sprintf("http://localhost:%d", tPort), fmt.Sprintf("http://localhost:%d", pPort))
+	return e2efixtures.NewApiClient(fmt.Sprintf("http://localhost:%d/api/v1alpha1", tPort), fmt.Sprintf("http://localhost:%d/api/v1alpha1", pPort))
 }
 
 func cleanup() {

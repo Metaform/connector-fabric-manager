@@ -110,7 +110,7 @@ func (h *TMHandler) createTenant(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response := v1alpha1.ToTenant(tenant)
-	h.ResponseOK(w, response)
+	h.ResponseCreated(w, response)
 }
 
 func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request, path string) {
@@ -220,7 +220,7 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response := v1alpha1.ToCell(*recordedCell)
-	h.ResponseOK(w, response)
+	h.ResponseCreated(w, response)
 }
 
 func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Request) {
@@ -240,7 +240,7 @@ func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Requ
 	}
 
 	response := v1alpha1.ToDataspaceProfile(profile)
-	h.ResponseOK(w, response)
+	h.ResponseCreated(w, response)
 }
 
 func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Request) {

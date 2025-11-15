@@ -9,6 +9,8 @@ BUILD_DIR=bin
 MAIN_PATH=./cmd/main.go
 SERVER_PATH=./cmd/server/main.go
 
+OPENAPI_PATH=./cmd/openapi/main.go
+
 # Environment variables
 export CGO_ENABLED=0
 
@@ -18,6 +20,9 @@ build: build-server
 # Build the server
 build-server:
 	go build -o $(BUILD_DIR)/$(SERVER_BINARY) $(SERVER_PATH)
+
+generate-docs:
+	go run $(OPENAPI_PATH)
 
 # Run tests
 test:
