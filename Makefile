@@ -21,7 +21,7 @@ DOCKER_TAG=latest
 #==============================================================================
 
 help:
-	@echo "Multi-Service Orchestration Commands (delegates to individual Makefiles):"
+	@echo "CFM Make Commands:"
 	@echo ""
 	@echo "Build Commands:"
 	@echo "  build          - Build all services"
