@@ -13,21 +13,14 @@
 package activity
 
 import (
-	"fmt"
-
-	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
-type EDCVActivityProcessor struct {
+type KeyCloakActivityProcessor struct {
 	Monitor system.LogMonitor
 }
 
-func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	_, found := ctx.InputData().Get(model.ParticipantIdentifier)
-	if !found {
-		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
-	}
+func (p KeyCloakActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }

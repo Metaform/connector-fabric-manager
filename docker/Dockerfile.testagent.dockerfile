@@ -13,15 +13,14 @@
 FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
-COPY . .
+COPY .. .
 
 # Build the server binary
-RUN CGO_ENABLED=0 go build -o bin/pmanager ./pmanager/cmd/server/main.go
+RUN CGO_ENABLED=0 go build -o bin/testagent ./e2e/testagent/main.go
 
 # Production stage
 FROM gcr.io/distroless/static-debian12:nonroot
 
-COPY --from=builder /app/bin/pmanager /pmanager
+COPY --from=builder /app/bin/testagent /testagent
 
-EXPOSE 8181
-ENTRYPOINT ["/pmanager"]
+ENTRYPOINT ["/testagent"]

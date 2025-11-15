@@ -13,7 +13,7 @@
 FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
-COPY . .
+COPY .. .
 
 # Build the server binary
 RUN CGO_ENABLED=0 go build -o bin/tmanager ./tmanager/cmd/server/main.go

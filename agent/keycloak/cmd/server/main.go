@@ -13,11 +13,11 @@
 package main
 
 import (
-	"github.com/metaform/connector-fabric-manager/agent/edcv/launcher"
+	"github.com/metaform/connector-fabric-manager/agent/keycloak/launcher"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 )
 
-// The entry point for the EDC-V agent runtime.
+// The entry point for the KeyCloak agent runtime.
 func main() {
 	launcher.LaunchAndWaitSignal(runtime.CreateSignalShutdownChan())
 }

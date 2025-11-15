@@ -9,6 +9,7 @@ COMMON_DIR=common
 PMANAGER_DIR=pmanager
 TMANAGER_DIR=tmanager
 EDCV_DIR=agent/edcv
+KEYCLOAK_DIR=agent/keycloak
 
 E2E_DIR=e2e
 
@@ -56,6 +57,7 @@ build:
 	$(MAKE) -C $(PMANAGER_DIR) build
 	$(MAKE) -C $(TMANAGER_DIR) build
 	$(MAKE) -C $(EDCV_DIR) build
+	$(MAKE) -C $(KEYCLOAK_DIR) build
 
 build-pmanager:
 	@echo "Building pmanager..."
@@ -65,15 +67,12 @@ build-tmanager:
 	@echo "Building tmanager..."
 	$(MAKE) -C $(TMANAGER_DIR) build
 
-build-edcv:
-	@echo "Building tmanager..."
-	$(MAKE) -C $(EDCV_DIR) build
-
 build-all:
 	@echo "Building all modules for all platforms..."
 	$(MAKE) -C $(PMANAGER_DIR) build-all
 	$(MAKE) -C $(TMANAGER_DIR) build-all
 	$(MAKE) -C $(EDCV_DIR) build-all
+	$(MAKE) -C $(KEYCLOAK_DIR) build-all
 
 #==============================================================================
 # Test Commands - Delegate to Service Makefiles
@@ -148,15 +147,23 @@ docker-build: docker-build-pmanager docker-build-tmanager docker-build-testagent
 
 docker-build-pmanager:
 	@echo "Building pmanager Docker image..."
-	docker build -f Dockerfile.pmanager.dockerfile -t $(DOCKER_REGISTRY)pmanager:$(DOCKER_TAG) .
+	docker build -f docker/Dockerfile.pmanager.dockerfile -t $(DOCKER_REGISTRY)pmanager:$(DOCKER_TAG) .
 
 docker-build-tmanager:
 	@echo "Building tmanager Docker image..."
-	docker build -f Dockerfile.tmanager.dockerfile -t $(DOCKER_REGISTRY)tmanager:$(DOCKER_TAG) .
+	docker build -f docker/Dockerfile.tmanager.dockerfile -t $(DOCKER_REGISTRY)tmanager:$(DOCKER_TAG) .
 
 docker-build-testagent:
 	@echo "Building test agent Docker image..."
-	docker build -f Dockerfile.testagent.dockerfile -t $(DOCKER_REGISTRY)testagent:$(DOCKER_TAG) .
+	docker build -f docker/Dockerfile.testagent.dockerfile -t $(DOCKER_REGISTRY)testagent:$(DOCKER_TAG) .
+
+docker-build-edcvagent:
+	@echo "Building EDC-V agent Docker image..."
+	docker build -f docker/Dockerfile.edcvagent.dockerfile -t $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) .
+
+docker-build-keycloakagent:
+	@echo "Building Keycloak agent Docker image..."
+	docker build -f docker/Dockerfile.keycloakagent.dockerfile -t $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) .
 
 docker-clean: docker-clean-pmanager docker-clean-tmanager docker-clean-testagent
 
@@ -168,6 +175,9 @@ docker-clean-tmanager:
 
 docker-clean-testagent:
 	docker rmi $(DOCKER_REGISTRY)testagent:$(DOCKER_TAG) || true
+
+docker-clean-edcvagent:
+	docker rmi $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) || true
 
 #==============================================================================
 # Combined Commands
