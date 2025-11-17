@@ -29,13 +29,14 @@ const (
 
 // AgentServiceAssembly provides common functionality for NATS-based agents
 type AgentServiceAssembly struct {
-	agentName    string
-	activityType string
-	uri          string
-	bucket       string
-	streamName   string
-	newProcessor func(monitor system.LogMonitor) api.ActivityProcessor
-
+	agentName        string
+	activityType     string
+	uri              string
+	bucket           string
+	streamName       string
+	assemblyProvider func() []system.ServiceAssembly
+	newProcessor     func(ctx *AgentContext) api.ActivityProcessor
+	requires         []system.ServiceType
 	system.DefaultServiceAssembly
 
 	natsClient *natsclient.NatsClient
@@ -44,6 +45,10 @@ type AgentServiceAssembly struct {
 
 func (a *AgentServiceAssembly) Name() string {
 	return a.agentName
+}
+
+func (h *AgentServiceAssembly) Requires() []system.ServiceType {
+	return h.requires
 }
 
 func (a *AgentServiceAssembly) Start(startCtx *system.StartContext) error {
@@ -57,11 +62,17 @@ func (a *AgentServiceAssembly) Start(startCtx *system.StartContext) error {
 		return fmt.Errorf("failed to create setup agent consumer: %w", err)
 	}
 
+	actx := &AgentContext{
+		Monitor:  startCtx.LogMonitor,
+		Registry: startCtx.Registry,
+		Config:   startCtx.Config,
+	}
+
 	executor := &natsorchestration.NatsActivityExecutor{
 		Client:            natsclient.NewMsgClient(a.natsClient),
 		StreamName:        a.streamName,
 		ActivityType:      a.activityType,
-		ActivityProcessor: a.newProcessor(startCtx.LogMonitor),
+		ActivityProcessor: a.newProcessor(actx),
 		Monitor:           startCtx.LogMonitor,
 	}
 

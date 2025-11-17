@@ -32,8 +32,8 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 		AgentName:    "DNS Agent",
 		ConfigPrefix: "dnsagent",
 		ActivityType: ActivityType,
-		NewProcessor: func(monitor system.LogMonitor) api.ActivityProcessor {
-			return &DNSActivityProcessor{monitor}
+		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
+			return &DNSActivityProcessor{ctx.Monitor}
 		},
 	}
 	natsagent.LaunchAgent(shutdown, config)

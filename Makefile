@@ -161,9 +161,9 @@ docker-build-edcvagent:
 	@echo "Building EDC-V agent Docker image..."
 	docker build -f docker/Dockerfile.edcvagent.dockerfile -t $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) .
 
-docker-build-keycloakagent:
+docker-build-kcagent:
 	@echo "Building Keycloak agent Docker image..."
-	docker build -f docker/Dockerfile.keycloakagent.dockerfile -t $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) .
+	docker build -f docker/Dockerfile.kcagent.dockerfile -t $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) .
 
 docker-clean: docker-clean-pmanager docker-clean-tmanager docker-clean-testagent
 

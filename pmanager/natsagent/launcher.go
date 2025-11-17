@@ -28,10 +28,22 @@ const (
 )
 
 type LauncherConfig struct {
-	AgentName    string
-	ConfigPrefix string
-	ActivityType string
-	NewProcessor func(monitor system.LogMonitor) api.ActivityProcessor
+	AgentName        string
+	ConfigPrefix     string
+	ActivityType     string
+	AssemblyProvider func() []system.ServiceAssembly
+	NewProcessor     func(ctx *AgentContext) api.ActivityProcessor
+}
+
+type AgentContext struct {
+	Monitor system.LogMonitor
+	Registry AgentRegistry
+	Config   *viper.Viper
+}
+
+type AgentRegistry interface {
+	Resolve(serviceType system.ServiceType) any
+	ResolveOptional(serviceType system.ServiceType) (any, bool)
 }
 
 type agentConfig struct {
@@ -45,23 +57,37 @@ type agentConfig struct {
 func LaunchAgent(shutdown <-chan struct{}, config LauncherConfig) {
 	cfg := loadAgentConfig(config.AgentName, config.ConfigPrefix)
 
-	assembly := &AgentServiceAssembly{
-		agentName:    config.AgentName,
-		activityType: config.ActivityType,
-		uri:          cfg.URI,
-		bucket:       cfg.Bucket,
-		streamName:   cfg.StreamName,
-		newProcessor: config.NewProcessor,
-	}
-
 	mode := runtime.LoadMode()
 
 	monitor := runtime.LoadLogMonitor(config.ConfigPrefix, mode)
 	//goland:noinspection GoUnhandledErrorResult
 	defer monitor.Sync()
 
+	requires := make([]system.ServiceType, 0)
 	assembler := system.NewServiceAssembler(monitor, cfg.VConfig, mode)
-	assembler.Register(assembly)
+	if config.AssemblyProvider != nil {
+		assemblies := config.AssemblyProvider()
+		for _, assembly := range assemblies {
+			for _, name := range assembly.Provides() {
+				requires = append(requires, name)
+			}
+			assembler.Register(assembly)
+		}
+	}
+
+	agentAssembly := &AgentServiceAssembly{
+		agentName:        config.AgentName,
+		activityType:     config.ActivityType,
+		uri:              cfg.URI,
+		bucket:           cfg.Bucket,
+		streamName:       cfg.StreamName,
+		newProcessor:     config.NewProcessor,
+		requires:         requires,
+		assemblyProvider: config.AssemblyProvider,
+	}
+
+	assembler.Register(agentAssembly)
+
 	runtime.AssembleAndLaunch(assembler, cfg.Name, monitor, shutdown)
 }
 

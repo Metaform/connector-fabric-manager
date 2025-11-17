@@ -1,7 +1,7 @@
 cd.PHONY: build test clean run server
 
 # Binary name
-SERVER_BINARY=keycloakagent
+SERVER_BINARY=kcagent
 
 # Build settings
 BUILD_DIR=bin

@@ -28,8 +28,8 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 		AgentName:    "EDC-V Agent",
 		ConfigPrefix: "edcvagent",
 		ActivityType: ActivityType,
-		NewProcessor: func(monitor system.LogMonitor) api.ActivityProcessor {
-			return &activity.EDCVActivityProcessor{Monitor: monitor}
+		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
+			return &activity.EDCVActivityProcessor{Monitor: ctx.Monitor}
 		},
 	}
 	natsagent.LaunchAgent(shutdown, config)

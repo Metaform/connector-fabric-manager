@@ -31,8 +31,8 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 		AgentName:    "Connector Agent",
 		ConfigPrefix: "cagent",
 		ActivityType: ActivityType,
-		NewProcessor: func(monitor system.LogMonitor) api.ActivityProcessor {
-			return &ConnectorActivityProcessor{monitor}
+		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
+			return &ConnectorActivityProcessor{ctx.Monitor}
 		},
 	}
 	natsagent.LaunchAgent(shutdown, config)
@@ -47,7 +47,7 @@ func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.Activit
 	if !found {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
 	}
-	if ctx.Discriminator() == api.DisposeDiscriminator{
+	if ctx.Discriminator() == api.DisposeDiscriminator {
 		// disposal request
 		t.monitor.Infof("Connector disposal complete: %s", identifier)
 		return api.ActivityResult{Result: api.ActivityResultComplete}

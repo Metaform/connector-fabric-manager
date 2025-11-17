@@ -16,13 +16,13 @@ WORKDIR /app
 COPY .. .
 
 # Build the agent binary
-RUN CGO_ENABLED=0 go build -o bin/keycloakagent ./agent/keycloak/cmd/server/main.go
+RUN CGO_ENABLED=0 go build -o bin/kcagent ./agent/keycloak/cmd/server/main.go
 
 # Production stage
 FROM gcr.io/distroless/static-debian12:nonroot
 
-COPY --from=builder /app/bin/keycloakagent /keycloakagent
+COPY --from=builder /app/bin/kcagent /kcagent
 
-ENTRYPOINT ["/keycloakagent"]
+ENTRYPOINT ["/kcagent"]
 
 

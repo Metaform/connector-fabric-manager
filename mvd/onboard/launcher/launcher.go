@@ -30,8 +30,8 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 		AgentName:    "Onboarding Agent",
 		ConfigPrefix: "obagent",
 		ActivityType: ActivityType,
-		NewProcessor: func(monitor system.LogMonitor) api.ActivityProcessor {
-			return &ConnectorActivityProcessor{monitor}
+		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
+			return &ConnectorActivityProcessor{ctx.Monitor}
 		},
 	}
 	natsagent.LaunchAgent(shutdown, config)

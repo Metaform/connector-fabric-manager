@@ -34,8 +34,8 @@ func Launch(shutdown <-chan struct{}) {
 		AgentName:    agentName,
 		ConfigPrefix: configPrefix,
 		ActivityType: activityType,
-		NewProcessor: func(monitor system.LogMonitor) api.ActivityProcessor {
-			return &TestActivityProcessor{monitor}
+		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
+			return &TestActivityProcessor{ctx.Monitor}
 		},
 	}
 	natsagent.LaunchAgent(shutdown, config)

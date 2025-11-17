@@ -98,11 +98,11 @@ type ServiceAssembly interface {
 }
 
 type InitContext struct {
-	Registry *ServiceRegistry
 	StartContext
 }
 
 type StartContext struct {
+	Registry   *ServiceRegistry
 	LogMonitor LogMonitor
 	Config     *viper.Viper
 	Mode       RuntimeMode
@@ -116,7 +116,7 @@ func (c InitContext) GetConfigIntOrDefault(key string, defaultValue int) int {
 	return c.Config.GetInt(key)
 }
 
-// GetConfigIntOrDefault retrieves a string config value by key or returns the provided defaultValue if the key is not set.
+// GetConfigStrOrDefault retrieves a string config value by key or returns the provided defaultValue if the key is not set.
 func (c InitContext) GetConfigStrOrDefault(key string, defaultValue string) string {
 	if !c.Config.IsSet(key) {
 		return defaultValue
@@ -185,12 +185,12 @@ func (a *ServiceAssembler) Assemble() error {
 	reverse(reverseOrder)
 
 	startCtx := &StartContext{
+		Registry:   a.registry,
 		LogMonitor: a.monitor,
 		Config:     a.vConfig,
 		Mode:       a.mode,
 	}
 	initCtx := &InitContext{
-		Registry:     a.registry,
 		StartContext: *startCtx,
 	}
 
