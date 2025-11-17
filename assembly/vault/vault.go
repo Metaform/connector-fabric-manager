@@ -48,7 +48,7 @@ type vaultClient struct {
 	monitor   system.LogMonitor
 	client    *hvault.Client
 	stopCh    chan struct{}
-	lastRenew time.Time  // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
+	lastRenew time.Time // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
 }
 
 func newVaultClient(vaultURL string, roleID string, secretID string, monitor system.LogMonitor, opts ...VaultOptions) (*vaultClient, error) {
@@ -163,7 +163,6 @@ func (v *vaultClient) renewTokenPeriodically(leaseDuration time.Duration) {
 			}
 			v.lastRenew = time.Now()
 		case <-v.stopCh:
-			v.monitor.Debugf("Token renewal stopped")
 			return
 		}
 	}
