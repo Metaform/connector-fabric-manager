@@ -14,14 +14,15 @@ package httpclient
 
 import (
 	"context"
-	"github.com/hashicorp/go-retryablehttp"
-	"github.com/metaform/connector-fabric-manager/common/system"
 	"net/http"
 	"time"
+
+	"github.com/hashicorp/go-retryablehttp"
+	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
+	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
 const (
-	HttpClientKey         system.ServiceType = "httpclient:HttpClient"
 	ConfigKeyRetryMax     string             = "httpclient.retrymax"
 	DefaultRetryMax       int                = 5
 	ConfigKeyRetryWaitMin string             = "httpclient.retrywaitmin"
@@ -39,7 +40,7 @@ func (h HttpClientServiceAssembly) Name() string {
 }
 
 func (h HttpClientServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{HttpClientKey}
+	return []system.ServiceType{serviceapi.HttpClientKey}
 }
 
 func (h HttpClientServiceAssembly) Requires() []system.ServiceType {
@@ -55,7 +56,7 @@ func (h HttpClientServiceAssembly) Init(context *system.InitContext) error {
 	retryClient.CheckRetry = customCheckRetry
 
 	standardClient := retryClient.StandardClient()
-	context.Registry.Register(HttpClientKey, *standardClient)
+	context.Registry.Register(serviceapi.HttpClientKey, *standardClient)
 
 	return nil
 }

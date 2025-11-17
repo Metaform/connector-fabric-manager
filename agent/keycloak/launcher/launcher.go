@@ -17,6 +17,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/agent/keycloak/activity"
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
+	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -40,7 +41,7 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 			return []system.ServiceAssembly{&httpclient.HttpClientServiceAssembly{}}
 		},
 		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
-			client := ctx.Registry.Resolve(httpclient.HttpClientKey).(http.Client)
+			client := ctx.Registry.Resolve(serviceapi.HttpClientKey).(http.Client)
 			url := ctx.Config.GetString(urlKey)
 			token := ctx.Config.GetString(tokenKey)
 			realm := ctx.Config.GetString(realmKey)
