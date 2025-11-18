@@ -37,6 +37,13 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	if !found {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
 	}
-	ctx.Values()
+	clientID, found := ctx.Value(clientIDKey)
+	if !found {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing clientID")}
+	}
+	_, err := p.VaultClient.ResolveSecret(ctx.Context(), clientID.(string))
+	if err != nil {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("failed to resolve secret for client ID %s: %w", clientID, err)}
+	}
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
