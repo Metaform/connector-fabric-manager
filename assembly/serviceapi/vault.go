@@ -22,7 +22,7 @@ const (
 	VaultKey system.ServiceType = "vault:VaultClient"
 )
 
-// VaultClient defines an interface for interacting with Hashicorp Vault.
+// VaultClient defines an interface for interacting with a secure secrets vault.
 type VaultClient interface {
 	ResolveSecret(ctx context.Context, path string) (string, error)
 	StoreSecret(ctx context.Context, path string, value string) error
