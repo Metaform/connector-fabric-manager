@@ -43,10 +43,10 @@ type Orchestration struct {
 	CorrelationID     string                  `json:"correlationId"`
 	State             OrchestrationState      `json:"state"`
 	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
-	Steps             []OrchestrationStep
-	ProcessingData    map[string]any
-	OutputData        map[string]any
-	Completed         map[string]struct{}
+	Steps             []OrchestrationStep     `json:"steps"`
+	ProcessingData    map[string]any          `json:"processingData"`
+	OutputData        map[string]any          `json:"outputData"`
+	Completed         map[string]struct{}     `json:"completed"`
 }
 
 // CanProceedToNextStep returns if the orchestration is able to proceed to the next step or must wait.
