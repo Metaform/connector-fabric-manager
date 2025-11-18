@@ -593,8 +593,6 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 	}
 }
 
-// ... existing code ...
-
 // Generic test processors
 
 type GenericValueProcessor struct {
