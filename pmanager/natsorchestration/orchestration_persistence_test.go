@@ -168,7 +168,7 @@ func Test_ValuePersistence(t *testing.T) {
 					tc.setterFunc(activityCtx, "string_key", "test_value")
 					tc.setterFunc(activityCtx, "int_key", 42)
 					tc.setterFunc(activityCtx, "bool_key", true)
-					tc.setterFunc(activityCtx, "map_key", map[string]interface{}{
+					tc.setterFunc(activityCtx, "map_key", map[string]any{
 						"nested": "value",
 						"count":  123,
 					})
@@ -220,8 +220,8 @@ func Test_ValuePersistence(t *testing.T) {
 				tc.validatorFunc(t, &updatedOrchestration, "int_key", float64(42)) // JSON unmarshalling converts numbers to float64
 				tc.validatorFunc(t, &updatedOrchestration, "bool_key", true)
 
-				mapValue, ok := dataMap["map_key"].(map[string]interface{})
-				require.True(t, ok, "map_key should be a map[string]interface{}")
+				mapValue, ok := dataMap["map_key"].(map[string]any)
+				require.True(t, ok, "map_key should be a map[string]any")
 				assert.Equal(t, "value", mapValue["nested"])
 				assert.Equal(t, float64(123), mapValue["count"])
 

@@ -155,7 +155,7 @@ func (c DeploymentState) Value() (driver.Value, error) {
 }
 
 // Scan implements the sql.Scanner interface for database deserialization
-func (c *DeploymentState) Scan(value interface{}) error {
+func (c *DeploymentState) Scan(value any) error {
 	if value == nil {
 		*c = ""
 		return nil

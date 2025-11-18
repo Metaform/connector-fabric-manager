@@ -83,18 +83,18 @@ type routingLogger struct {
 	monitor system.LogMonitor
 }
 
-func (r routingLogger) Error(msg string, keysAndValues ...interface{}) {
+func (r routingLogger) Error(msg string, keysAndValues ...any) {
 	r.monitor.Severef(msg, keysAndValues...)
 }
 
-func (r routingLogger) Info(msg string, keysAndValues ...interface{}) {
+func (r routingLogger) Info(msg string, keysAndValues ...any) {
 	r.monitor.Infof(msg, keysAndValues...)
 }
 
-func (r routingLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (r routingLogger) Debug(msg string, keysAndValues ...any) {
 	r.monitor.Debugf(msg, keysAndValues...)
 }
 
-func (r routingLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (r routingLogger) Warn(msg string, keysAndValues ...any) {
 	r.monitor.Infof(msg, keysAndValues...)
 }

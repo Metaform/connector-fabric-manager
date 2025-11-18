@@ -328,7 +328,7 @@ func NewQueryErrorListener() *QueryErrorListener {
 }
 
 // SyntaxError captures syntax errors
-func (el *QueryErrorListener) SyntaxError(_ antlr.Recognizer, _ interface{}, line, column int, msg string, _ antlr.RecognitionException) {
+func (el *QueryErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
 	errorMsg := fmt.Sprintf("line %d:%d %s", line, column, msg)
 	el.errors = append(el.errors, errorMsg)
 }

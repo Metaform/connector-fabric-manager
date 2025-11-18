@@ -37,8 +37,8 @@ func TestToAPIActivityDefinition(t *testing.T) {
 			expected: &api.ActivityDefinition{
 				Type:         api.ActivityType("http-request"),
 				Description:  "Makes HTTP requests",
-				InputSchema:  map[string]interface{}{"url": "string"},
-				OutputSchema: map[string]interface{}{"response": "object"},
+				InputSchema:  map[string]any{"url": "string"},
+				OutputSchema: map[string]any{"response": "object"},
 			},
 		},
 		{
@@ -89,7 +89,7 @@ func TestToAPIOrchestrationDefinition(t *testing.T) {
 			orchestrationDefinition: &OrchestrationDefinition{
 				Type:        "kubernetes",
 				Description: "Test",
-				Schema:      map[string]interface{}{"version": "v1"},
+				Schema:      map[string]any{"version": "v1"},
 				Activities: []Activity{
 					{
 						ID:            "activity-1",
@@ -113,7 +113,7 @@ func TestToAPIOrchestrationDefinition(t *testing.T) {
 				Type:        model.OrchestrationType("kubernetes"),
 				Description: "Test",
 				Active:      true,
-				Schema:      map[string]interface{}{"version": "v1"},
+				Schema:      map[string]any{"version": "v1"},
 				Activities: []api.Activity{
 					{
 						ID:            "activity-1",
@@ -270,8 +270,8 @@ func BenchmarkToAPIActivityDefinition(b *testing.B) {
 	definition := &ActivityDefinition{
 		Type:         "http-request",
 		Description:  "Makes HTTP requests",
-		InputSchema:  map[string]interface{}{"url": "string"},
-		OutputSchema: map[string]interface{}{"response": "object"},
+		InputSchema:  map[string]any{"url": "string"},
+		OutputSchema: map[string]any{"response": "object"},
 	}
 
 	b.ResetTimer()
@@ -283,7 +283,7 @@ func BenchmarkToAPIActivityDefinition(b *testing.B) {
 func BenchmarkToAPIOrchestrationDefinition(b *testing.B) {
 	definition := &OrchestrationDefinition{
 		Type:   "kubernetes",
-		Schema: map[string]interface{}{"version": "v1"},
+		Schema: map[string]any{"version": "v1"},
 		Activities: []Activity{
 			{
 				ID:   "activity-1",

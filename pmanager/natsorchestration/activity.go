@@ -365,18 +365,18 @@ func (d defaultActivityContext) OutputValues() map[string]any {
 }
 
 type immutableMap struct {
-	data map[string]interface{}
+	data map[string]any
 }
 
-func NewImmutableMap(initial map[string]interface{}) api.ImmutableMap {
-	data := make(map[string]interface{})
+func NewImmutableMap(initial map[string]any) api.ImmutableMap {
+	data := make(map[string]any)
 	for k, v := range initial {
 		data[k] = v
 	}
 	return &immutableMap{data: data}
 }
 
-func (im *immutableMap) Get(key string) (interface{}, bool) {
+func (im *immutableMap) Get(key string) (any, bool) {
 	val, ok := im.data[key]
 	return val, ok
 }

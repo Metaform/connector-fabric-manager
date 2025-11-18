@@ -127,7 +127,7 @@ func getAdminToken(keycloakURL, username, password string) (string, error) {
 		return "", fmt.Errorf("failed to get admin token: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return "", err
 	}
@@ -145,7 +145,7 @@ func getAdminToken(keycloakURL, username, password string) (string, error) {
 func createRealm(keycloakURL, token, realmName string) error {
 	realmURL := fmt.Sprintf("%s/admin/realms", keycloakURL)
 
-	realmData := map[string]interface{}{
+	realmData := map[string]any{
 		"realm":   realmName,
 		"enabled": true,
 	}
@@ -157,11 +157,11 @@ func createRealm(keycloakURL, token, realmName string) error {
 func createUser(keycloakURL, token, realmName, username, password, email string) error {
 	userURL := fmt.Sprintf("%s/admin/realms/%s/users", keycloakURL, realmName)
 
-	userData := map[string]interface{}{
+	userData := map[string]any{
 		"username": username,
 		"enabled":  true,
 		"email":    email,
-		"credentials": []map[string]interface{}{
+		"credentials": []map[string]any{
 			{
 				"type":      "password",
 				"value":     password,
@@ -174,7 +174,7 @@ func createUser(keycloakURL, token, realmName, username, password, email string)
 }
 
 // AdminRequest makes an authenticated request to the Keycloak admin API
-func AdminRequest(url, token, method string, data interface{}) error {
+func AdminRequest(url, token, method string, data any) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -207,13 +207,12 @@ func AdminRequest(url, token, method string, data interface{}) error {
 func createClientScope(keycloakURL, token, scopeName, description string) error {
 	scopeURL := fmt.Sprintf("%s/admin/realms/master/client-scopes", keycloakURL)
 
-	scopeData := map[string]interface{}{
+	scopeData := map[string]any{
 		"name":        scopeName,
 		"description": description,
 		"protocol":    "openid-connect",
-		"attributes": map[string]interface{}{
-			"include.in.token.scope":    "true",
-			"display.on.consent.screen": "true",
+		"attributes": map[string]any{
+			"include.in.token.scope": "true",
 		},
 	}
 
@@ -224,12 +223,11 @@ func createClientScope(keycloakURL, token, scopeName, description string) error 
 func createProvisionerClient(keycloakURL, token, realmName string) error {
 	clientURL := fmt.Sprintf("%s/admin/realms/%s/clients", keycloakURL, realmName)
 
-	protocolMapper := map[string]interface{}{
-		"name":            "role",
-		"protocol":        "openid-connect",
-		"protocolMapper":  "oidc-hardcoded-claim-mapper",
-		"consentRequired": false,
-		"config": map[string]interface{}{
+	protocolMapper := map[string]any{
+		"name":           "role",
+		"protocol":       "openid-connect",
+		"protocolMapper": "oidc-hardcoded-claim-mapper",
+		"config": map[string]any{
 			"claim.name":           "role",
 			"claim.value":          "provisioner",
 			"jsonType.label":       "String",
@@ -239,7 +237,7 @@ func createProvisionerClient(keycloakURL, token, realmName string) error {
 		},
 	}
 
-	clientData := map[string]interface{}{
+	clientData := map[string]any{
 		"clientId":                  "edcv-provisioner",
 		"name":                      "Provisioner User",
 		"description":               "Can create and delete tenants",
@@ -251,7 +249,7 @@ func createProvisionerClient(keycloakURL, token, realmName string) error {
 		"standardFlowEnabled":       false,
 		"directAccessGrantsEnabled": false,
 		"fullScopeAllowed":          true,
-		"protocolMappers":           []map[string]interface{}{protocolMapper},
+		"protocolMappers":           []map[string]any{protocolMapper},
 		"defaultClientScopes":       []string{"issuer-admin-api"},
 	}
 

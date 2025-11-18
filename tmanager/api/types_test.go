@@ -179,7 +179,7 @@ func TestDeploymentState_Value(t *testing.T) {
 func TestDeploymentState_Scan(t *testing.T) {
 	tests := []struct {
 		name    string
-		value   interface{}
+		value   any
 		want    DeploymentState
 		wantErr bool
 	}{

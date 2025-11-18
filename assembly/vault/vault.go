@@ -132,7 +132,7 @@ func (v *vaultClient) init(ctx context.Context) error {
 	return nil
 }
 
-func (v *vaultClient) createToken(ctx context.Context) (*hvault.Response[map[string]interface{}], error) {
+func (v *vaultClient) createToken(ctx context.Context) (*hvault.Response[map[string]any], error) {
 	appRoleResp, err := v.client.Auth.AppRoleLogin(
 		ctx,
 		schema.AppRoleLoginRequest{

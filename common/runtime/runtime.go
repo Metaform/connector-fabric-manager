@@ -176,7 +176,7 @@ func CreateSignalShutdownChan() <-chan struct{} {
 
 // CheckRequiredParams validates that all keys have corresponding non-nil, non-empty values in the provided parameters.
 // Returns an error if an odd number of parameters is given or if any key-value pairs have invalid values.
-func CheckRequiredParams(params ...interface{}) error {
+func CheckRequiredParams(params ...any) error {
 	var errors []string
 
 	if len(params)%2 != 0 {

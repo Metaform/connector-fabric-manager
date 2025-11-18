@@ -349,7 +349,7 @@ func TestAtomicPredicate_JSON_Structure(t *testing.T) {
 		t.Fatalf("Marshal() error = %v", err)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.Unmarshal(jsonData, &result)
 	if err != nil {
 		t.Fatalf("Unmarshal to map failed: %v", err)
@@ -375,7 +375,7 @@ func TestCompoundPredicate_JSON_Structure(t *testing.T) {
 		t.Fatalf("Marshal() error = %v", err)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	err = json.Unmarshal(jsonData, &result)
 	if err != nil {
 		t.Fatalf("Unmarshal to map failed: %v", err)

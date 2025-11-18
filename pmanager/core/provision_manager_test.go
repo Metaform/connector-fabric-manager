@@ -44,7 +44,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			manifest: &model.OrchestrationManifest{
 				ID:                "test-orchestration-1",
 				OrchestrationType: "test-type",
-				Payload:           map[string]interface{}{"key": "value"},
+				Payload:           map[string]any{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
 				definition := &api.OrchestrationDefinition{
@@ -71,7 +71,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			manifest: &model.OrchestrationManifest{
 				ID:                "test-orchestration-2",
 				OrchestrationType: "test-type",
-				Payload:           map[string]interface{}{"key": "value"},
+				Payload:           map[string]any{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
 				definition := &api.OrchestrationDefinition{
@@ -100,7 +100,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			manifest: &model.OrchestrationManifest{
 				ID:                "test-orchestration-3",
 				OrchestrationType: "non-existent-type",
-				Payload:           map[string]interface{}{"key": "value"},
+				Payload:           map[string]any{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
 				// Don't store any definitions
@@ -115,7 +115,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			manifest: &model.OrchestrationManifest{
 				ID:                "test-orchestration-5",
 				OrchestrationType: "test-type",
-				Payload:           map[string]interface{}{"key": "value"},
+				Payload:           map[string]any{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
 				definition := &api.OrchestrationDefinition{
@@ -139,7 +139,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			manifest: &model.OrchestrationManifest{
 				ID:                "test-orchestration-6",
 				OrchestrationType: "test-type",
-				Payload:           map[string]interface{}{"key": "value"},
+				Payload:           map[string]any{"key": "value"},
 			},
 			setupStore: func(store api.DefinitionStore) {
 				definition := &api.OrchestrationDefinition{
@@ -238,7 +238,7 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	manifest := &model.OrchestrationManifest{
 		ID:                "test-deployment",
 		OrchestrationType: "test-type",
-		Payload:           map[string]interface{}{"key": "value"},
+		Payload:           map[string]any{"key": "value"},
 	}
 
 	// Execute test
