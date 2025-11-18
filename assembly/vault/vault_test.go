@@ -23,7 +23,7 @@ import (
 
 func TestStoreAndResolveSecret(t *testing.T) {
 	ctx := context.Background()
-	client, cleanup := setupTestFixtures(ctx, t)
+	client, cleanup := setupTestFixtures(ctx, t, "1h")
 	defer cleanup()
 
 	newSecretPath := "new-test-secret"
@@ -40,7 +40,7 @@ func TestStoreAndResolveSecret(t *testing.T) {
 func TestDeleteSecret(t *testing.T) {
 	ctx := context.Background()
 
-	client, cleanup := setupTestFixtures(ctx, t)
+	client, cleanup := setupTestFixtures(ctx, t, "1h")
 	defer cleanup()
 
 	secretToDelete := "secret-to-delete"
@@ -56,7 +56,7 @@ func TestDeleteSecret(t *testing.T) {
 }
 
 func Test_TokenRenewal(t *testing.T) {
-	client, cleanup := setupTestFixtures(context.Background(), t)
+	client, cleanup := setupTestFixtures(context.Background(), t, "1h")
 	defer cleanup()
 	defer client.Close()
 
@@ -65,4 +65,18 @@ func Test_TokenRenewal(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return !client.lastRenew.IsZero()
 	}, 5*time.Second, 10*time.Millisecond, "Token renewal did not occur within timeout")
+}
+
+func Test_TokenExpiredRenewal(t *testing.T) {
+	client, cleanup := setupTestFixtures(context.Background(), t, "1s")
+	defer cleanup()
+	defer client.Close()
+
+	created := client.lastCreated
+
+	go client.renewTokenPeriodically(10 * time.Millisecond)
+
+	require.Eventually(t, func() bool {
+		return client.lastCreated.After(created)
+	}, 50*time.Second, 10*time.Millisecond, "Token renewal did not occur within timeout")
 }

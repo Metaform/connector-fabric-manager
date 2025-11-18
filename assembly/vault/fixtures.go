@@ -98,7 +98,11 @@ type VaultSetupResult struct {
 	SecretID string
 }
 
-func SetupVault(vaultURL, rootToken string) (*VaultSetupResult, error) {
+func SetupVault(vaultURL string, rootToken string) (*VaultSetupResult, error) {
+	return SetupVaultTTL(vaultURL, rootToken, "1h")
+}
+
+func SetupVaultTTL(vaultURL string, rootToken string, ttl string) (*VaultSetupResult, error) {
 	client := &http.Client{Timeout: vaultRequestTimeout}
 
 	// Enable KV v2 secrets engine
@@ -111,7 +115,7 @@ func SetupVault(vaultURL, rootToken string) (*VaultSetupResult, error) {
 		return nil, fmt.Errorf("failed to enable AppRole auth: %w", err)
 	}
 
-	roleResult, err := createAppRole(client, vaultURL, rootToken)
+	roleResult, err := createAppRole(client, vaultURL, rootToken, ttl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AppRole: %w", err)
 	}
@@ -119,11 +123,11 @@ func SetupVault(vaultURL, rootToken string) (*VaultSetupResult, error) {
 	return roleResult, nil
 }
 
-func setupTestFixtures(ctx context.Context, t *testing.T) (*vaultClient, func()) {
+func setupTestFixtures(ctx context.Context, t *testing.T, ttl string) (*vaultClient, func()) {
 	containerResult, err := StartVaultContainer(ctx)
 	require.NoError(t, err, "Failed to start Vault container")
 
-	setupResult, err := SetupVault(containerResult.URL, containerResult.Token)
+	setupResult, err := SetupVaultTTL(containerResult.URL, containerResult.Token, ttl)
 	if err != nil {
 		containerResult.Cleanup()
 		t.Fatalf("Failed to setup Vault: %v", err)
@@ -165,7 +169,7 @@ func enableAuthMethod(client *http.Client, vaultURL, token, path, methodType, de
 }
 
 // createAppRole creates an AppRole with a role ID and secret ID and returns a VaultSetupResult
-func createAppRole(client *http.Client, vaultURL, token string) (*VaultSetupResult, error) {
+func createAppRole(client *http.Client, vaultURL, token string, ttl string) (*VaultSetupResult, error) {
 	// Create a policy that allows reading from kv-v2
 	policyURL := fmt.Sprintf("%s/v1/sys/policies/acl/test-policy", vaultURL)
 	policyData := map[string]any{
@@ -179,8 +183,8 @@ func createAppRole(client *http.Client, vaultURL, token string) (*VaultSetupResu
 	// Create the AppRole role with the policy
 	roleURL := fmt.Sprintf("%s/v1/auth/approle/role/test-role", vaultURL)
 	roleData := map[string]any{
-		"token_ttl":     "1h",
-		"token_max_ttl": "4h",
+		"token_ttl":     ttl,
+		"token_max_ttl": ttl,
 		"policies":      []string{"test-policy"},
 	}
 

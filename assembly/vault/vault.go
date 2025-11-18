@@ -15,6 +15,7 @@ package vault
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	hvault "github.com/hashicorp/vault-client-go"
@@ -41,14 +42,15 @@ func WithMountPath(path string) VaultOptions {
 
 // vaultClient implements a client to Hashicorp Vault supporting token renewal.
 type vaultClient struct {
-	vaultURL  string
-	roleID    string
-	secretID  string
-	mountPath string
-	monitor   system.LogMonitor
-	client    *hvault.Client
-	stopCh    chan struct{}
-	lastRenew time.Time // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
+	vaultURL    string
+	roleID      string
+	secretID    string
+	mountPath   string
+	monitor     system.LogMonitor
+	client      *hvault.Client
+	stopCh      chan struct{}
+	lastCreated time.Time // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
+	lastRenew   time.Time // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
 }
 
 func newVaultClient(vaultURL string, roleID string, secretID string, monitor system.LogMonitor, opts ...VaultOptions) (*vaultClient, error) {
@@ -122,6 +124,15 @@ func (v *vaultClient) init(ctx context.Context) error {
 	}
 
 	// Authenticate using AppRole
+	resp, err := v.createToken(ctx)
+	if err != nil {
+		return fmt.Errorf("unable to initialize Vault client: %w", err)
+	}
+	go v.renewTokenPeriodically(time.Duration(resp.Auth.LeaseDuration) * time.Second)
+	return nil
+}
+
+func (v *vaultClient) createToken(ctx context.Context) (*hvault.Response[map[string]interface{}], error) {
 	appRoleResp, err := v.client.Auth.AppRoleLogin(
 		ctx,
 		schema.AppRoleLoginRequest{
@@ -130,16 +141,13 @@ func (v *vaultClient) init(ctx context.Context) error {
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("unable to authenticate with AppRole: %w", err)
+		return nil, fmt.Errorf("unable to authenticate with AppRole: %w", err)
 	}
 
 	// Set the token obtained from AppRole login
 	err = v.client.SetToken(appRoleResp.Auth.ClientToken)
-	if err != nil {
-		return fmt.Errorf("unable to initialize Vault client: %w", err)
-	}
-	go v.renewTokenPeriodically(time.Duration(appRoleResp.Auth.LeaseDuration) * time.Second)
-	return nil
+	v.lastCreated = time.Now()
+	return appRoleResp, err
 }
 
 // leaseDuration specifies the token lease duration and supports any time.Duration unit (milliseconds, seconds, minutes, etc.)
@@ -157,6 +165,14 @@ func (v *vaultClient) renewTokenPeriodically(leaseDuration time.Duration) {
 				Increment: fmt.Sprintf("%ds", int(leaseDuration.Seconds())),
 			})
 			if err != nil {
+				if strings.Contains(err.Error(), "invalid token") {
+					// Token cannot be renewed further because it has expired so create a new one
+					_, err2 := v.createToken(context.Background())
+					if err2 != nil {
+						v.monitor.Severef("Error creating token after expiration: %v. Will attempt renewal at next interval", err2)
+						continue
+					}
+				}
 				v.lastRenew = time.Time{}
 				v.monitor.Severef("Error renewing token: %v. Will attempt renewal at next interval", err)
 				continue
