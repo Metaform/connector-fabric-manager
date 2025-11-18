@@ -119,7 +119,6 @@ func createOrchestration(ctx context.Context, id string, client *natsclient.Nats
 				},
 			},
 		},
-		InputData:      make(map[string]any),
 		ProcessingData: make(map[string]any),
 		OutputData:     make(map[string]any),
 		Completed:      make(map[string]struct{}),
