@@ -18,6 +18,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/agent/keycloak/activity"
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
+	"github.com/metaform/connector-fabric-manager/assembly/vault"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -27,9 +28,9 @@ import (
 const (
 	ActivityType = "keycloak-activity"
 	AgentPrefix  = "kcagent"
-	urlKey       = "url"
-	tokenKey     = "token"
-	realmKey     = "realm"
+	urlKey       = "keycloak.url"
+	tokenKey     = "keycloak.token"
+	realmKey     = "keycloak.realm"
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
@@ -38,10 +39,15 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 		ConfigPrefix: AgentPrefix,
 		ActivityType: ActivityType,
 		AssemblyProvider: func() []system.ServiceAssembly {
-			return []system.ServiceAssembly{&httpclient.HttpClientServiceAssembly{}}
+			return []system.ServiceAssembly{
+				&httpclient.HttpClientServiceAssembly{},
+				&vault.VaultServiceAssembly{},
+			}
 		},
 		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
-			client := ctx.Registry.Resolve(serviceapi.HttpClientKey).(http.Client)
+			httpClient := ctx.Registry.Resolve(serviceapi.HttpClientKey).(http.Client)
+			vaultClient := ctx.Registry.Resolve(serviceapi.VaultKey).(serviceapi.VaultClient)
+
 			url := ctx.Config.GetString(urlKey)
 			token := ctx.Config.GetString(tokenKey)
 			realm := ctx.Config.GetString(realmKey)
@@ -52,7 +58,8 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 				KeycloakURL: url,
 				Token:       token,
 				Realm:       realm,
-				HTTPClient:  &client,
+				VaultClient: vaultClient,
+				HTTPClient:  &httpClient,
 				Monitor:     ctx.Monitor,
 			})
 		},

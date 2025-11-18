@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	urlKey      = "vaultUrl"
-	roleIDKey   = "vaultRoleId"
-	secretIDKey = "vaultSecretId"
+	urlKey      = "vault.url"
+	roleIDKey   = "vault.roleId"
+	secretIDKey = "vault.SecretId"
 )
 
 // VaultServiceAssembly defines an assembly that provides a client to Hashicorp Vault.

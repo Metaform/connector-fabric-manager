@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -36,23 +37,8 @@ const (
 	containerStartupTime = 15 * time.Second
 )
 
-func setupTestFixtures(ctx context.Context, t *testing.T) (*vaultClient, func()) {
-	containerResult, err := startVaultContainer(ctx)
-	require.NoError(t, err, "Failed to start Vault container")
-
-	setupResult, err := setupVault(containerResult.URL, containerResult.Token)
-	if err != nil {
-		containerResult.Cleanup()
-		t.Fatalf("Failed to setup Vault: %v", err)
-	}
-
-	client, err := createClient(containerResult.URL, setupResult.RoleID, setupResult.SecretID)
-	if err != nil {
-		containerResult.Cleanup()
-		t.Fatalf("Failed to create Vault client: %v", err)
-	}
-
-	return client, containerResult.Cleanup
+func NewVaultClient(vaultURL, roleID, secretID string) (serviceapi.VaultClient, error) {
+	return createClient(vaultURL, roleID, secretID)
 }
 
 type ContainerResult struct {
@@ -61,8 +47,8 @@ type ContainerResult struct {
 	Cleanup func()
 }
 
-// startVaultContainer starts a Vault container and returns a ContainerResult containing the URL, root token, and cleanup function
-func startVaultContainer(ctx context.Context) (*ContainerResult, error) {
+// StartVaultContainer starts a Vault container and returns a ContainerResult containing the URL, root token, and cleanup function
+func StartVaultContainer(ctx context.Context) (*ContainerResult, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        vaultImage,
 		ExposedPorts: []string{vaultPort},
@@ -107,12 +93,12 @@ func startVaultContainer(ctx context.Context) (*ContainerResult, error) {
 	}, nil
 }
 
-type vaultSetupResult struct {
+type VaultSetupResult struct {
 	RoleID   string
 	SecretID string
 }
 
-func setupVault(vaultURL, rootToken string) (*vaultSetupResult, error) {
+func SetupVault(vaultURL, rootToken string) (*VaultSetupResult, error) {
 	client := &http.Client{Timeout: vaultRequestTimeout}
 
 	// Enable KV v2 secrets engine
@@ -131,6 +117,25 @@ func setupVault(vaultURL, rootToken string) (*vaultSetupResult, error) {
 	}
 
 	return roleResult, nil
+}
+
+func setupTestFixtures(ctx context.Context, t *testing.T) (*vaultClient, func()) {
+	containerResult, err := StartVaultContainer(ctx)
+	require.NoError(t, err, "Failed to start Vault container")
+
+	setupResult, err := SetupVault(containerResult.URL, containerResult.Token)
+	if err != nil {
+		containerResult.Cleanup()
+		t.Fatalf("Failed to setup Vault: %v", err)
+	}
+
+	client, err := createClient(containerResult.URL, setupResult.RoleID, setupResult.SecretID)
+	if err != nil {
+		containerResult.Cleanup()
+		t.Fatalf("Failed to create Vault client: %v", err)
+	}
+
+	return client, containerResult.Cleanup
 }
 
 // enableSecretsEngine enables a secrets engine at a given path
@@ -159,8 +164,8 @@ func enableAuthMethod(client *http.Client, vaultURL, token, path, methodType, de
 	return err
 }
 
-// createAppRole creates an AppRole with a role ID and secret ID and returns a vaultSetupResult
-func createAppRole(client *http.Client, vaultURL, token string) (*vaultSetupResult, error) {
+// createAppRole creates an AppRole with a role ID and secret ID and returns a VaultSetupResult
+func createAppRole(client *http.Client, vaultURL, token string) (*VaultSetupResult, error) {
 	// Create a policy that allows reading from kv-v2
 	policyURL := fmt.Sprintf("%s/v1/sys/policies/acl/test-policy", vaultURL)
 	policyData := map[string]any{
@@ -213,7 +218,7 @@ func createAppRole(client *http.Client, vaultURL, token string) (*vaultSetupResu
 
 	secretID := secretIDData["data"].(map[string]any)["secret_id"].(string)
 
-	return &vaultSetupResult{
+	return &VaultSetupResult{
 		RoleID:   roleID,
 		SecretID: secretID,
 	}, nil

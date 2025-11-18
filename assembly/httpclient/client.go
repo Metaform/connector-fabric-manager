@@ -23,12 +23,12 @@ import (
 )
 
 const (
-	ConfigKeyRetryMax     string             = "httpclient.retrymax"
-	DefaultRetryMax       int                = 5
-	ConfigKeyRetryWaitMin string             = "httpclient.retrywaitmin"
-	DefaultRetryWaitMin   int                = 1
-	ConfigKeyRetryWaitMax string             = "httpclient.retrywaitmax"
-	DefaultRetryWaitMax   int                = 5
+	ConfigKeyRetryMax     string = "httpclient.retrymax"
+	DefaultRetryMax       int    = 5
+	ConfigKeyRetryWaitMin string = "httpclient.retrywaitmin"
+	DefaultRetryWaitMin   int    = 1
+	ConfigKeyRetryWaitMax string = "httpclient.retrywaitmax"
+	DefaultRetryWaitMax   int    = 5
 )
 
 type HttpClientServiceAssembly struct {
@@ -54,7 +54,7 @@ func (h HttpClientServiceAssembly) Init(context *system.InitContext) error {
 	retryClient.RetryWaitMin = time.Duration(context.GetConfigIntOrDefault(ConfigKeyRetryWaitMin, DefaultRetryWaitMin)) * time.Second
 	retryClient.RetryWaitMax = time.Duration(context.GetConfigIntOrDefault(ConfigKeyRetryWaitMax, DefaultRetryWaitMax)) * time.Second
 	retryClient.CheckRetry = customCheckRetry
-
+	retryClient.Logger = &routingLogger{monitor: context.LogMonitor}
 	standardClient := retryClient.StandardClient()
 	context.Registry.Register(serviceapi.HttpClientKey, *standardClient)
 
@@ -76,4 +76,25 @@ func customCheckRetry(ctx context.Context, resp *http.Response, err error) (bool
 
 	// Use the default retry logic for other cases
 	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+}
+
+// routingLogger routes HTTP client log messages to the system.LogMonitor instance.
+type routingLogger struct {
+	monitor system.LogMonitor
+}
+
+func (r routingLogger) Error(msg string, keysAndValues ...interface{}) {
+	r.monitor.Severef(msg, keysAndValues...)
+}
+
+func (r routingLogger) Info(msg string, keysAndValues ...interface{}) {
+	r.monitor.Infof(msg, keysAndValues...)
+}
+
+func (r routingLogger) Debug(msg string, keysAndValues ...interface{}) {
+	r.monitor.Debugf(msg, keysAndValues...)
+}
+
+func (r routingLogger) Warn(msg string, keysAndValues ...interface{}) {
+	r.monitor.Infof(msg, keysAndValues...)
 }

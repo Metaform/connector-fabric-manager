@@ -88,9 +88,9 @@ func (e *NatsActivityExecutor) processLoop(ctx context.Context, consumer jetstre
 func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetstream.Msg) error {
 	var oMessage api.ActivityMessage
 	if err := json.Unmarshal(message.Data(), &oMessage); err != nil {
-		err := natsclient.AckMessage(message)
-		if err != nil {
-			e.Monitor.Warnf("Failed to ACK message: %v", err)
+		ackErr := natsclient.AckMessage(message)
+		if ackErr != nil {
+			e.Monitor.Warnf("Failed to ACK message: %v", ackErr)
 		}
 		return fmt.Errorf("failed to unmarshal orchestration message: %w", err)
 	}

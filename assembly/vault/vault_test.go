@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const timeout = 5 * time.Second
-
 func TestStoreAndResolveSecret(t *testing.T) {
 	ctx := context.Background()
 	client, cleanup := setupTestFixtures(ctx, t)
@@ -58,21 +56,13 @@ func TestDeleteSecret(t *testing.T) {
 }
 
 func Test_TokenRenewal(t *testing.T) {
-	ctx := context.Background()
-	client, cleanup := setupTestFixtures(ctx, t)
+	client, cleanup := setupTestFixtures(context.Background(), t)
 	defer cleanup()
 	defer client.Close()
 
-	go client.renewTokenPeriodically(10)
+	go client.renewTokenPeriodically(10 * time.Millisecond)
 
-	start := time.Now()
-	for {
-		if !client.lastRenew.IsZero() {
-			break
-		}
-		if time.Since(start) > timeout {
-			require.Fail(t, "Timed out waiting for token renewal")
-		}
-	}
-
+	require.Eventually(t, func() bool {
+		return !client.lastRenew.IsZero()
+	}, 5*time.Second, 10*time.Millisecond, "Token renewal did not occur within timeout")
 }

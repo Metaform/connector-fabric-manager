@@ -52,10 +52,10 @@ type TestSetupResult struct {
 }
 
 func setupTest(ctx context.Context, t *testing.T) TestSetupResult {
-	containerResult, err := startVaultContainer(ctx)
+	containerResult, err := StartVaultContainer(ctx)
 	require.NoError(t, err, "Failed to start Vault container")
 
-	setupResult, err := setupVault(containerResult.URL, containerResult.Token)
+	setupResult, err := SetupVault(containerResult.URL, containerResult.Token)
 	if err != nil {
 		containerResult.Cleanup()
 		t.Fatalf("Failed to setup Vault: %v", err)
