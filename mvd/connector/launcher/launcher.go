@@ -43,7 +43,7 @@ type ConnectorActivityProcessor struct {
 }
 
 func (t ConnectorActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	identifier, found := ctx.InputData().Get(model.ParticipantIdentifier)
+	identifier, found := ctx.Value(model.ParticipantIdentifier)
 	if !found {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
 	}

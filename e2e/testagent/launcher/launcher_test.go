@@ -53,7 +53,6 @@ func TestTestAgent_Integration(t *testing.T) {
 		ID:             "test-agent-orchestration",
 		State:          api.OrchestrationStateRunning,
 		Completed:      make(map[string]struct{}),
-		InputData:      make(map[string]any),
 		ProcessingData: make(map[string]any),
 		OutputData:     make(map[string]any),
 		Steps: []api.OrchestrationStep{

@@ -44,7 +44,6 @@ type Orchestration struct {
 	State             OrchestrationState      `json:"state"`
 	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
 	Steps             []OrchestrationStep
-	InputData         map[string]any
 	ProcessingData    map[string]any
 	OutputData        map[string]any
 	Completed         map[string]struct{}
@@ -178,14 +177,19 @@ func InstantiateOrchestration(
 	orchestrationType model.OrchestrationType,
 	activities []Activity,
 	data map[string]any) (*Orchestration, error) {
+
+	processingData := make(map[string]any)
+	for k, v := range data {
+		processingData[k] = v
+	}
+
 	orchestration := &Orchestration{
 		ID:                id,
 		CorrelationID:     correlationID,
 		OrchestrationType: orchestrationType,
 		State:             OrchestrationStateInitialized,
 		Steps:             make([]OrchestrationStep, 0, len(activities)),
-		InputData:         data,
-		ProcessingData:    make(map[string]any),
+		ProcessingData:    processingData,
 		OutputData:        make(map[string]any),
 		Completed:         make(map[string]struct{}),
 	}

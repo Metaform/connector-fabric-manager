@@ -13,7 +13,12 @@
 package launcher
 
 import (
+	"net/http"
+
 	"github.com/metaform/connector-fabric-manager/agent/edcv/activity"
+	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
+	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
+	"github.com/metaform/connector-fabric-manager/assembly/vault"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsagent"
@@ -28,8 +33,21 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 		AgentName:    "EDC-V Agent",
 		ConfigPrefix: "edcvagent",
 		ActivityType: ActivityType,
+		AssemblyProvider: func() []system.ServiceAssembly {
+			return []system.ServiceAssembly{
+				&httpclient.HttpClientServiceAssembly{},
+				&vault.VaultServiceAssembly{},
+			}
+		},
 		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
-			return &activity.EDCVActivityProcessor{Monitor: ctx.Monitor}
+			httpClient := ctx.Registry.Resolve(serviceapi.HttpClientKey).(http.Client)
+			vaultClient := ctx.Registry.Resolve(serviceapi.VaultKey).(serviceapi.VaultClient)
+
+			return &activity.EDCVActivityProcessor{
+				HTTPClient:  &httpClient,
+				VaultClient: vaultClient,
+				Monitor:     ctx.Monitor,
+			}
 		},
 	}
 	natsagent.LaunchAgent(shutdown, config)

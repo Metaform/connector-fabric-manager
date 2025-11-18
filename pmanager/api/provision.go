@@ -99,7 +99,6 @@ type ActivityContext interface {
 	OID() string
 	ID() string
 	Discriminator() Discriminator
-	InputData() ImmutableMap
 	SetValue(key string, value any)
 	Value(key string) (any, bool)
 	Values() map[string]any

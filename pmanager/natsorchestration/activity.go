@@ -104,7 +104,6 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		ctx,
 		orchestration.ID,
 		oMessage.Activity,
-		orchestration.InputData,
 		orchestration.ProcessingData,
 		orchestration.OutputData)
 
@@ -294,7 +293,6 @@ type defaultActivityContext struct {
 	activity       api.Activity
 	oID            string
 	context        context.Context
-	inputData      api.ImmutableMap
 	processingData map[string]any
 	outputData     map[string]any
 }
@@ -303,14 +301,12 @@ func newActivityContext(
 	ctx context.Context,
 	oID string,
 	activity api.Activity,
-	inputData map[string]any,
 	processingData map[string]any,
 	outputData map[string]any) api.ActivityContext {
 	return defaultActivityContext{
 		activity:       activity,
 		oID:            oID,
 		context:        ctx,
-		inputData:      NewImmutableMap(inputData),
 		processingData: processingData,
 		outputData:     outputData,
 	}
@@ -352,43 +348,10 @@ func (d defaultActivityContext) Delete(key string) {
 	delete(d.processingData, key)
 }
 
-func (d defaultActivityContext) InputData() api.ImmutableMap {
-	return d.inputData
-}
-
 func (d defaultActivityContext) SetOutputValue(key string, value any) {
 	d.outputData[key] = value
 }
 
 func (d defaultActivityContext) OutputValues() map[string]any {
 	return d.outputData
-}
-
-type immutableMap struct {
-	data map[string]any
-}
-
-func NewImmutableMap(initial map[string]any) api.ImmutableMap {
-	data := make(map[string]any)
-	for k, v := range initial {
-		data[k] = v
-	}
-	return &immutableMap{data: data}
-}
-
-func (im *immutableMap) Get(key string) (any, bool) {
-	val, ok := im.data[key]
-	return val, ok
-}
-
-func (im *immutableMap) Keys() []string {
-	keys := make([]string, 0, len(im.data))
-	for k := range im.data {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func (im *immutableMap) Size() int {
-	return len(im.data)
 }

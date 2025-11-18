@@ -33,6 +33,7 @@ const (
 	contentTypeHeader = "Content-Type"
 	authHeader        = "Authorization"
 	clientUrl         = "%s/admin/realms/%s/clients"
+	clientIDKey       = "clientID"
 )
 
 type Config struct {
@@ -92,7 +93,7 @@ func (p KeyCloakActivityProcessor) provisionConfidentialClient(ctx api.ActivityC
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: err}
 	}
-	ctx.SetValue("clientID", clientID)
+	ctx.SetValue(clientIDKey, clientID)
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 

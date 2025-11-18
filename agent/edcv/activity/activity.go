@@ -14,20 +14,29 @@ package activity
 
 import (
 	"fmt"
+	"net/http"
 
+	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
+const (
+	clientIDKey = "clientID"
+)
+
 type EDCVActivityProcessor struct {
-	Monitor system.LogMonitor
+	VaultClient serviceapi.VaultClient
+	HTTPClient  *http.Client
+	Monitor     system.LogMonitor
 }
 
 func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	_, found := ctx.InputData().Get(model.ParticipantIdentifier)
+	_, found := ctx.Value(model.ParticipantIdentifier)
 	if !found {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
 	}
+	ctx.Values()
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
