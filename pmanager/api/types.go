@@ -18,12 +18,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/metaform/connector-fabric-manager/common/dag"
 	"github.com/metaform/connector-fabric-manager/common/model"
 )
-
-var Validator = validator.New()
 
 type OrchestrationState uint
 

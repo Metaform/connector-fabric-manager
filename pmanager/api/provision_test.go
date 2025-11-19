@@ -10,13 +10,12 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-package natsorchestration
+package api
 
 import (
 	"context"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +44,7 @@ func TestReadValues_ReadToMap(t *testing.T) {
 		},
 	}
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
 
 	var result map[string]any
 	err := activityContext.ReadValues(&result)
@@ -70,7 +69,7 @@ func TestReadValues_ReadToComplexTypeWithRequiredFieldsSuccess(t *testing.T) {
 		},
 	}
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
 
 	var result RequiredFieldsType
 	err := activityContext.ReadValues(&result)
@@ -99,7 +98,7 @@ func TestReadValues_ReadToNestedComplexTypeSuccess(t *testing.T) {
 		},
 	}
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
 
 	var result NestedRequiredFieldsType
 	err := activityContext.ReadValues(&result)
@@ -122,7 +121,7 @@ func TestReadValues_ReadToComplexTypeWithMissingRequiredFieldError(t *testing.T)
 		"value": 100,
 	}
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), nameMissing, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), nameMissing, outputData)
 
 	var result RequiredFieldsType
 	err := activityContext.ReadValues(&result)
@@ -138,7 +137,7 @@ func TestReadValues_ReadToComplexTypeWithInvalidTypeError(t *testing.T) {
 		"value": "not-a-number", // This is a string but we expect int
 	}
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
 
 	var result RequiredFieldsType
 	err := activityContext.ReadValues(&result)
@@ -155,7 +154,7 @@ func TestReadValues_ReadToStringUnsuccessfully(t *testing.T) {
 		"key2": 42,
 	}
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
 
 	var result string
 	err := activityContext.ReadValues(&result)
@@ -172,7 +171,7 @@ func TestReadValues_ReadToStringSliceUnsuccessfully(t *testing.T) {
 		"key2": 42,
 	}
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
 
 	var result []string
 	err := activityContext.ReadValues(&result)
@@ -189,7 +188,7 @@ func TestReadValues_ReadToMapWithArrayData(t *testing.T) {
 		"count": 3,
 	}
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
 
 	var result map[string]any
 	err := activityContext.ReadValues(&result)
@@ -204,7 +203,7 @@ func TestReadValues_ReadToComplexTypeWithEmptyProcessingData(t *testing.T) {
 	ctx := context.Background()
 	processingData := make(map[string]any) // Empty map
 	outputData := make(map[string]any)
-	activityContext := newActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
+	activityContext := NewActivityContext(ctx, "orch-1", getTestActivity(), processingData, outputData)
 
 	var result RequiredFieldsType
 	err := activityContext.ReadValues(&result)
@@ -212,10 +211,29 @@ func TestReadValues_ReadToComplexTypeWithEmptyProcessingData(t *testing.T) {
 	require.Error(t, err)
 }
 
-func getTestActivity() api.Activity {
-	return api.Activity{
+func getTestActivity() Activity {
+	return Activity{
 		ID:            "test-activity",
 		Type:          "test",
-		Discriminator: api.DeployDiscriminator,
+		Discriminator: DeployDiscriminator,
 	}
+}
+
+func TestActivityContext_Delete(t *testing.T) {
+	activity := Activity{ID: "test-activity"}
+	activityContext := NewActivityContext(context.TODO(), "test-oid", activity, map[string]any{}, map[string]any{})
+
+	// Set a value
+	activityContext.SetValue("key", "value")
+
+	// Verify it exists
+	_, exists := activityContext.Value("key")
+	assert.True(t, exists)
+
+	// Delete the key
+	activityContext.Delete("key")
+
+	// Verify it's deleted
+	_, exists = activityContext.Value("key")
+	assert.False(t, exists)
 }

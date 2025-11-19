@@ -16,7 +16,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -101,7 +100,7 @@ func (e *NatsActivityExecutor) processMessage(ctx context.Context, message jetst
 		return fmt.Errorf("failed to read orchestration data: %w", err)
 	}
 
-	activityContext := newActivityContext(
+	activityContext := api.NewActivityContext(
 		ctx,
 		orchestration.ID,
 		oMessage.Activity,
@@ -288,93 +287,4 @@ func (e *NatsActivityExecutor) handleFatalError(
 			orchestration.ID, resultErr, err)
 	}
 	return fmt.Errorf("fatal failure while executing activity %s: %w", orchestration.ID, resultErr)
-}
-
-type defaultActivityContext struct {
-	activity       api.Activity
-	oID            string
-	context        context.Context
-	processingData map[string]any
-	outputData     map[string]any
-}
-
-func newActivityContext(
-	ctx context.Context,
-	oID string,
-	activity api.Activity,
-	processingData map[string]any,
-	outputData map[string]any) api.ActivityContext {
-	return defaultActivityContext{
-		activity:       activity,
-		oID:            oID,
-		context:        ctx,
-		processingData: processingData,
-		outputData:     outputData,
-	}
-}
-
-// Context returns the current request context
-func (d defaultActivityContext) Context() context.Context {
-	return d.context
-}
-
-func (d defaultActivityContext) Discriminator() api.Discriminator {
-	return d.activity.Discriminator
-}
-
-// ID returns the ID of the current active
-func (d defaultActivityContext) ID() string {
-	return d.activity.ID
-}
-
-// OID returns the ID of the current orchestration
-func (d defaultActivityContext) OID() string {
-	return d.oID
-}
-
-func (d defaultActivityContext) SetValue(key string, value any) {
-	d.processingData[key] = value
-}
-
-func (d defaultActivityContext) Value(key string) (any, bool) {
-	value, ok := d.processingData[key]
-	return value, ok
-}
-
-func (d defaultActivityContext) ReadValues(result any) error {
-	input, err := json.Marshal(d.processingData)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(input, result)
-	if err != nil {
-		return err
-	}
-
-	kind := reflect.TypeOf(result).Kind()
-	if kind == reflect.Ptr {
-		kind = reflect.TypeOf(result).Elem().Kind()
-	}
-	if kind == reflect.Struct || kind == reflect.Interface {
-		if err := api.Validator.Struct(result); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (d defaultActivityContext) Values() map[string]any {
-	return d.processingData
-}
-
-func (d defaultActivityContext) Delete(key string) {
-	delete(d.processingData, key)
-}
-
-func (d defaultActivityContext) SetOutputValue(key string, value any) {
-	d.outputData[key] = value
-}
-
-func (d defaultActivityContext) OutputValues() map[string]any {
-	return d.outputData
 }

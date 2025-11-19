@@ -16,9 +16,12 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"reflect"
 
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
@@ -29,6 +32,9 @@ const (
 	OrchestratorKey      system.ServiceType = "pmapi:Orchestrator"
 	DefinitionManagerKey system.ServiceType = "pmapi:DefinitionManager"
 )
+
+var vInstance = validator.New()
+
 
 // ProvisionManager handles orchestration execution and resource management.
 type ProvisionManager interface {
@@ -131,9 +137,96 @@ type ActivityContext interface {
 	Context() context.Context
 }
 
-
-
 type DefinitionManager interface {
 	CreateOrchestrationDefinition(ctx context.Context, definition *OrchestrationDefinition) (*OrchestrationDefinition, error)
 	CreateActivityDefinition(ctx context.Context, definition *ActivityDefinition) (*ActivityDefinition, error)
+}
+
+type defaultActivityContext struct {
+	activity       Activity
+	oID            string
+	context        context.Context
+	processingData map[string]any
+	outputData     map[string]any
+}
+
+func NewActivityContext(
+	ctx context.Context,
+	oID string,
+	activity Activity,
+	processingData map[string]any,
+	outputData map[string]any) ActivityContext {
+	return defaultActivityContext{
+		activity:       activity,
+		oID:            oID,
+		context:        ctx,
+		processingData: processingData,
+		outputData:     outputData,
+	}
+}
+
+// Context returns the current request context
+func (d defaultActivityContext) Context() context.Context {
+	return d.context
+}
+
+func (d defaultActivityContext) Discriminator() Discriminator {
+	return d.activity.Discriminator
+}
+
+// ID returns the ID of the current active
+func (d defaultActivityContext) ID() string {
+	return d.activity.ID
+}
+
+// OID returns the ID of the current orchestration
+func (d defaultActivityContext) OID() string {
+	return d.oID
+}
+
+func (d defaultActivityContext) SetValue(key string, value any) {
+	d.processingData[key] = value
+}
+
+func (d defaultActivityContext) Value(key string) (any, bool) {
+	value, ok := d.processingData[key]
+	return value, ok
+}
+
+func (d defaultActivityContext) ReadValues(result any) error {
+	input, err := json.Marshal(d.processingData)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(input, result)
+	if err != nil {
+		return err
+	}
+
+	kind := reflect.TypeOf(result).Kind()
+	if kind == reflect.Ptr {
+		kind = reflect.TypeOf(result).Elem().Kind()
+	}
+	if kind == reflect.Struct || kind == reflect.Interface {
+		if err := vInstance.Struct(result); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d defaultActivityContext) Values() map[string]any {
+	return d.processingData
+}
+
+func (d defaultActivityContext) Delete(key string) {
+	delete(d.processingData, key)
+}
+
+func (d defaultActivityContext) SetOutputValue(key string, value any) {
+	d.outputData[key] = value
+}
+
+func (d defaultActivityContext) OutputValues() map[string]any {
+	return d.outputData
 }
