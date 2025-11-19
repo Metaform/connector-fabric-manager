@@ -35,7 +35,7 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	var data EDCVData
 	err := ctx.ReadValues(&data)
 	if err != nil {
-		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error processing EDC-V activity for orechestration %s: %w", ctx.OID(), err)}
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error processing EDC-V activity for orchestration %s: %w", ctx.OID(), err)}
 	}
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
