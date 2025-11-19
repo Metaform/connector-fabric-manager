@@ -26,14 +26,14 @@ import (
 
 func TestEDCVActivityProcessor_Process_WithValidData(t *testing.T) {
 	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient(),
+		VaultClient: NewMockVaultClient("client-123", "123"),
 		HTTPClient:  &http.Client{},
 	}
 
 	ctx := context.Background()
 	processingData := map[string]any{
 		model.ParticipantIdentifier: "participant-abc",
-		"clientID":                  "client-xyz",
+		"clientID":                  "client-123",
 	}
 	outputData := make(map[string]any)
 
@@ -190,14 +190,14 @@ func TestEDCVActivityProcessor_Process_OrchestrationIDInError(t *testing.T) {
 
 func TestEDCVActivityProcessor_Process_MultipleUnknownFields(t *testing.T) {
 	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient(),
+		VaultClient: NewMockVaultClient("client-123", "123"),
 		HTTPClient:  &http.Client{},
 	}
 
 	ctx := context.Background()
 	processingData := map[string]any{
 		model.ParticipantIdentifier: "participant-multi",
-		"clientID":                  "client-multi",
+		"clientID":                  "client-123",
 		"field1":                    "value1",
 		"field2":                    "value2",
 		"field3":                    "value3",
@@ -218,13 +218,45 @@ func TestEDCVActivityProcessor_Process_MultipleUnknownFields(t *testing.T) {
 	assert.Nil(t, result.Error)
 }
 
+func TestEDCVActivityProcessor_Process_MissingVaultEntry(t *testing.T) {
+	processor := EDCVActivityProcessor{
+		VaultClient: NewMockVaultClient(), // Do not populate the vault
+		HTTPClient:  &http.Client{},
+	}
+
+	ctx := context.Background()
+	processingData := map[string]any{
+		model.ParticipantIdentifier: "participant-multi",
+		"clientID":                  "client-123",
+	}
+	outputData := make(map[string]any)
+
+	activity := api.Activity{
+		ID:   "activity-multi",
+		Type: "edcv",
+	}
+
+	activityContext := api.NewActivityContext(ctx, "orch-multi", activity, processingData, outputData)
+
+	result := processor.Process(activityContext)
+
+	assert.NotNil(t, result.Error)
+	assert.Equal(t, api.ActivityResultType(api.ActivityResultFatalError), result.Result)
+}
+
 type MockVaultClient struct {
 	cache map[string]string
 }
 
-func NewMockVaultClient() MockVaultClient {
+func NewMockVaultClient(secrets ...string) MockVaultClient {
+	cache := make(map[string]string)
+	for i := 0; i < len(secrets); i += 2 {
+		if i+1 < len(secrets) {
+			cache[secrets[i]] = secrets[i+1]
+		}
+	}
 	return MockVaultClient{
-		cache: make(map[string]string),
+		cache: cache,
 	}
 }
 
