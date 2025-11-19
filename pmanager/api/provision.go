@@ -120,7 +120,7 @@ type ActivityContext interface {
 	// Values returns the map of persistent context values
 	Values() map[string]any
 
-	// ReadValues deserializes the payload into the given result object; must be a pointer. Use Json tags to control field names and validation.
+	// ReadValues deserializes the payload into the given result object; must be a pointer. Use JSON tags to control field names and validation.
 	ReadValues(result any) error
 
 	// Delete removes a persistent value from the context
