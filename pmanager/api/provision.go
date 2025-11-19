@@ -79,7 +79,7 @@ const (
 	ActivityResultRetryError = -1
 	ActivityResultFatalError = -2
 
-	DeployDiscriminator Discriminator = "deploy"
+	DeployDiscriminator  Discriminator = "deploy"
 	DisposeDiscriminator Discriminator = "dispose"
 )
 
@@ -89,30 +89,49 @@ type ActivityResult struct {
 	Error            error
 }
 
-type Discriminator  string
+type Discriminator string
 
 func (ad Discriminator) String() string {
 	return string(ad)
 }
 
+// ActivityContext provides context to current activity, including access to persistent storage.
 type ActivityContext interface {
+	// OID returns the ID of the orchestration that owns the activity
 	OID() string
+
+	// ID returns the ID of the current activity
 	ID() string
+
+	// Discriminator returns the discriminator of the current activity; may be empty
 	Discriminator() Discriminator
+
+	// SetValue sets a value in the persistent context that can be accessed by other activities
 	SetValue(key string, value any)
+
+	// Value retrieves a value from the context
 	Value(key string) (any, bool)
+
+	// Values returns the map of persistent context values
 	Values() map[string]any
+
+	// ReadValues deserializes the payload into the given result object; must be a pointer. Use Json tags to control field names and validation.
+	ReadValues(result any) error
+
+	// Delete removes a persistent value from the context
 	Delete(key string)
+
+	// SetOutputValue sets a value to be returned by the orchestrator
 	SetOutputValue(key string, value any)
+
+	// OutputValues returns the map of output values to be returned by the orchestrator
 	OutputValues() map[string]any
+
+	// Context returns the underlying context
 	Context() context.Context
 }
 
-type ImmutableMap interface {
-	Get(key string) (any, bool)
-	Keys() []string
-	Size() int
-}
+
 
 type DefinitionManager interface {
 	CreateOrchestrationDefinition(ctx context.Context, definition *OrchestrationDefinition) (*OrchestrationDefinition, error)

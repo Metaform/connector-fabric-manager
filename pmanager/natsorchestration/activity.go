@@ -16,6 +16,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -338,6 +339,28 @@ func (d defaultActivityContext) SetValue(key string, value any) {
 func (d defaultActivityContext) Value(key string) (any, bool) {
 	value, ok := d.processingData[key]
 	return value, ok
+}
+
+func (d defaultActivityContext) ReadValues(result any) error {
+	input, err := json.Marshal(d.processingData)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(input, result)
+	if err != nil {
+		return err
+	}
+
+	kind := reflect.TypeOf(result).Kind()
+	if kind == reflect.Ptr {
+		kind = reflect.TypeOf(result).Elem().Kind()
+	}
+	if kind == reflect.Struct || kind == reflect.Interface {
+		if err := api.Validator.Struct(result); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (d defaultActivityContext) Values() map[string]any {

@@ -17,7 +17,6 @@ import (
 	"net/http"
 
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
-	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
@@ -33,17 +32,15 @@ type EDCVActivityProcessor struct {
 }
 
 func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	_, found := ctx.Value(model.ParticipantIdentifier)
-	if !found {
-		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing participant identifier")}
-	}
-	clientID, found := ctx.Value(clientIDKey)
-	if !found {
-		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("missing clientID")}
-	}
-	_, err := p.VaultClient.ResolveSecret(ctx.Context(), clientID.(string))
+	var data EDCVData
+	err := ctx.ReadValues(&data)
 	if err != nil {
-		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("failed to resolve secret for client ID %s: %w", clientID, err)}
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error processing EDC-V activity for orechestration %s: %w", ctx.OID(), err)}
 	}
 	return api.ActivityResult{Result: api.ActivityResultComplete}
+}
+
+type EDCVData struct {
+	ParticipantID string `json:"cfm.participant.id" validate:"required"`
+	ClientID      string `json:"clientID" validate:"required"`
 }
