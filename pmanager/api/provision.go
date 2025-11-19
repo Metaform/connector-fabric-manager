@@ -35,7 +35,6 @@ const (
 
 var vInstance = validator.New()
 
-
 // ProvisionManager handles orchestration execution and resource management.
 type ProvisionManager interface {
 
@@ -165,7 +164,6 @@ func NewActivityContext(
 	}
 }
 
-// Context returns the current request context
 func (d defaultActivityContext) Context() context.Context {
 	return d.context
 }
@@ -174,12 +172,10 @@ func (d defaultActivityContext) Discriminator() Discriminator {
 	return d.activity.Discriminator
 }
 
-// ID returns the ID of the current active
 func (d defaultActivityContext) ID() string {
 	return d.activity.ID
 }
 
-// OID returns the ID of the current orchestration
 func (d defaultActivityContext) OID() string {
 	return d.oID
 }
