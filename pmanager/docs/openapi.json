@@ -12,7 +12,7 @@
     }
   ],
   "paths": {
-    "/api/v1alpha1/activity-definition": {
+    "/api/v1alpha1/activity-definitions": {
       "post": {
         "summary": "Create an Activity Definition",
         "description": "Create a new Activity Definition",
@@ -52,7 +52,7 @@
         }
       }
     },
-    "/api/v1alpha1/orchestration-definition": {
+    "/api/v1alpha1/orchestration-definitions": {
       "post": {
         "summary": "Create an Orchestration Definition",
         "description": "Create a new Orchestration Definition",

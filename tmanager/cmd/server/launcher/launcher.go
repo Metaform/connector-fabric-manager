@@ -13,6 +13,8 @@
 package launcher
 
 import (
+	"fmt"
+
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/store"
@@ -51,6 +53,14 @@ func Launch(shutdown <-chan struct{}) {
 	uri := vConfig.GetString(uriKey)
 	bucketValue := vConfig.GetString(bucketKey)
 	streamValue := vConfig.GetString(streamKey)
+
+	err := runtime.CheckRequiredParams(
+		fmt.Sprintf("%s.%s", configPrefix, uriKey), uri,
+		fmt.Sprintf("%s.%s", configPrefix, bucketKey), bucketValue,
+		fmt.Sprintf("%s.%s", configPrefix, streamKey), streamValue)
+	if err != nil {
+		panic(fmt.Errorf("error launching Tenant Manager: %w", err))
+	}
 
 	assembler := system.NewServiceAssembler(logMonitor, vConfig, mode)
 	assembler.Register(&routing.RouterServiceAssembly{})

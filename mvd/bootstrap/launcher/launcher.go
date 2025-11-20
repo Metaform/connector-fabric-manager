@@ -228,7 +228,7 @@ func CreateActivityDefinition(apiClient *e2efixtures.ApiClient, activityType str
 		Type:        papi.ActivityType(activityType),
 		Description: description,
 	}
-	return apiClient.PostToPManager("activity-definition", requestBody)
+	return apiClient.PostToPManager("activity-definitions", requestBody)
 }
 
 func CreateDeployDefinition(apiClient *e2efixtures.ApiClient) error {
@@ -259,7 +259,7 @@ func CreateDeployDefinition(apiClient *e2efixtures.ApiClient) error {
 			},
 		},
 	}
-	return apiClient.PostToPManager("orchestration-definition", requestBody)
+	return apiClient.PostToPManager("orchestration-definitions", requestBody)
 }
 func CreateDisposeDefinition(apiClient *e2efixtures.ApiClient) error {
 	requestBody := pv1alpha1.OrchestrationDefinition{
@@ -281,5 +281,5 @@ func CreateDisposeDefinition(apiClient *e2efixtures.ApiClient) error {
 			},
 		},
 	}
-	return apiClient.PostToPManager("orchestration-definition", requestBody)
+	return apiClient.PostToPManager("orchestration-definitions", requestBody)
 }

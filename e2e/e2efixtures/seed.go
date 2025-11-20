@@ -28,7 +28,7 @@ func CreateTestActivityDefinition(apiClient *ApiClient) error {
 		Description: "Performs a test activity",
 	}
 
-	return apiClient.PostToPManager("activity-definition", requestBody)
+	return apiClient.PostToPManager("activity-definitions", requestBody)
 }
 
 func CreateTestOrchestrationDefinitions(apiClient *ApiClient) error {
@@ -43,7 +43,7 @@ func CreateTestOrchestrationDefinitions(apiClient *ApiClient) error {
 		},
 	}
 
-	err := apiClient.PostToPManager("orchestration-definition", requestBody)
+	err := apiClient.PostToPManager("orchestration-definitions", requestBody)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func CreateTestOrchestrationDefinitions(apiClient *ApiClient) error {
 		},
 	}
 
-	return apiClient.PostToPManager("orchestration-definition", requestBody)
+	return apiClient.PostToPManager("orchestration-definitions", requestBody)
 }
 
 func CreateCell(apiClient *ApiClient) (*tv1alpha1.Cell, error) {

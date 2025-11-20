@@ -63,7 +63,7 @@ func NewNatsClient(url string, bucket string, options ...nats.Option) (*NatsClie
 	kvManager, err := jetStream.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{Bucket: bucket})
 	if err != nil {
 		connection.Close()
-		return nil, fmt.Errorf("failed to create jetstream key value manager: %w", err)
+		return nil, fmt.Errorf("failed to create jetstream key value store with bucket %s: %w", bucket, err)
 	}
 
 	return &NatsClient{
