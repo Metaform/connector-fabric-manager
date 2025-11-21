@@ -27,7 +27,7 @@ func (m MemoryStoreServiceAssembly) Name() string {
 }
 
 func (m MemoryStoreServiceAssembly) Provides() []system.ServiceType {
-	return []system.ServiceType{api.DefinitionStoreKey}
+	return []system.ServiceType{api.DefinitionStoreKey, api.OrchestrationIndexKey}
 }
 
 func (m MemoryStoreServiceAssembly) Init(context *system.InitContext) error {
