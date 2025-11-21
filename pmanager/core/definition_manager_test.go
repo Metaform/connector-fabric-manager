@@ -890,7 +890,7 @@ func (m *mockDefinitionStore) StoreActivityDefinition(
 	return definition, nil
 }
 
-func (m *mockDefinitionStore) ActivityDefinitionReferenced(context.Context, api.ActivityType) (bool, error) {
+func (m *mockDefinitionStore) ActivityDefinitionReferences(context.Context, api.ActivityType) (bool, error) {
 	if err, exists := m.simulatedErrors["referenced"]; exists {
 		return false, err
 	}

@@ -158,17 +158,19 @@ func (d *MemoryDefinitionStore) DeleteOrchestrationDefinition(
 	return exists, nil
 }
 
-func (d *MemoryDefinitionStore) ActivityDefinitionReferenced(_ context.Context, activityType api.ActivityType) (bool, error) {
+func (d *MemoryDefinitionStore) ActivityDefinitionReferences(_ context.Context, activityType api.ActivityType) ([]string, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
+	results := make([]string, 0, len(d.orchestrationDefinitions))
 	for _, oDefinition := range d.orchestrationDefinitions {
 		for _, aDefinition := range oDefinition.Activities {
 			if aDefinition.Type == activityType {
-				return true, nil
+				results = append(results, oDefinition.Type.String())
+				break;
 			}
 		}
 	}
-	return false, nil
+	return results, nil
 }
 
 func (d *MemoryDefinitionStore) DeleteActivityDefinition(_ context.Context, activityType api.ActivityType) (bool, error) {

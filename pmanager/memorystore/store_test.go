@@ -532,14 +532,18 @@ func TestDefinitionStore_ActivityDefinitionReferenced_Found(t *testing.T) {
 				ID:   "activity-1",
 				Type: "deploy-activity",
 			},
+			{ // Include a second call to ensure the orchestration type is returned only once
+				ID:   "activity-1",
+				Type: "deploy-activity",
+			},
 		},
 	}
 	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, orchestrationDef)
 
-	referenced, err := definitionStore.ActivityDefinitionReferenced(ctx, "deploy-activity")
+	referenced, err := definitionStore.ActivityDefinitionReferences(ctx, "deploy-activity")
 
 	assert.NoError(t, err)
-	assert.True(t, referenced)
+	assert.ElementsMatch(t, referenced, []string{"deploy-orchestration"})
 }
 
 func TestDefinitionStore_ActivityDefinitionReferenced_NotFound(t *testing.T) {
@@ -554,8 +558,8 @@ func TestDefinitionStore_ActivityDefinitionReferenced_NotFound(t *testing.T) {
 	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, orchestrationDef)
 
 	// Verify activity is not referenced
-	referenced, err := definitionStore.ActivityDefinitionReferenced(ctx, "non-existent-activity")
+	referenced, err := definitionStore.ActivityDefinitionReferences(ctx, "non-existent-activity")
 
 	assert.NoError(t, err)
-	assert.False(t, referenced)
+	assert.Empty(t, referenced)
 }

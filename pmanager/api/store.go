@@ -58,7 +58,7 @@ type DefinitionStore interface {
 	// DeleteOrchestrationDefinition removes a OrchestrationDefinition for the given type, returning true if successful.
 	DeleteOrchestrationDefinition(ctx context.Context, orchestrationType model.OrchestrationType) (bool, error)
 
-	ActivityDefinitionReferenced(ctx context.Context, activityType ActivityType) (bool, error)
+	ActivityDefinitionReferences(ctx context.Context, activityType ActivityType) ([]string, error)
 
 	// DeleteActivityDefinition removes an ActivityDefinition for the given type, returning true if successful.
 	DeleteActivityDefinition(ctx context.Context, activityType ActivityType) (bool, error)

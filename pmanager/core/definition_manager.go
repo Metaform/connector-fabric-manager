@@ -15,6 +15,7 @@ package core
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/store"
@@ -55,7 +56,7 @@ func (d definitionManager) CreateOrchestrationDefinition(ctx context.Context, de
 }
 
 func (d definitionManager) DeleteOrchestrationDefinition(
-	// TODO this method should check outstanding orchestrations when the orchestration index is implemented
+// TODO this method should check outstanding orchestrations when the orchestration index is implemented
 	ctx context.Context,
 	orchestrationType model.OrchestrationType) error {
 
@@ -98,13 +99,13 @@ func (d definitionManager) DeleteActivityDefinition(ctx context.Context, atype a
 		if !exists {
 			return types.ErrNotFound
 		}
-		referenced, err := d.store.ActivityDefinitionReferenced(ctx, atype)
+		referenced, err := d.store.ActivityDefinitionReferences(ctx, atype)
 
 		if err != nil {
 			return types.NewRecoverableWrappedError(err, "failed to check activity definition references for type %s", atype)
 		}
-		if referenced {
-			return types.NewClientError("activity type '%s' is referenced by an orchestration definition", atype)
+		if len(referenced) > 0 {
+			return types.NewClientError("activity type '%s' is referenced by an orchestration definition: %s", atype, strings.Join(referenced, ", "))
 		}
 
 		deleted, err := d.store.DeleteActivityDefinition(ctx, atype)
