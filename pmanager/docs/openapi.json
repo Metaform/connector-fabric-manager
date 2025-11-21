@@ -32,6 +32,27 @@
         }
       }
     },
+    "/api/v1alpha1/activity-definitions/{type}": {
+      "delete": {
+        "summary": "Delete an Activity Definition",
+        "description": "Delete a new Activity Definition",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1alpha1/orchestration": {
       "post": {
         "summary": "Execute an Orchestration",
@@ -68,6 +89,27 @@
         "responses": {
           "201": {
             "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/v1alpha1/orchestration-definitions/{type}": {
+      "delete": {
+        "summary": "Delete an Orchestration Definition",
+        "description": "Delete a new Orchestration Definition",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }

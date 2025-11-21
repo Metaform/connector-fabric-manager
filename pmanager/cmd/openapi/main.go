@@ -68,6 +68,12 @@ func generateActivityDefinitionEndpoints(r spec.Generator) {
 		option.Request(v1alpha1.ActivityDefinition{}),
 		option.Response(http.StatusCreated, nil),
 	)
+
+	activity.Delete("/{type}",
+		option.Summary("Delete an Activity Definition"),
+		option.Description("Delete a new Activity Definition"),
+		option.Request(new(TypeParam)),
+		option.Response(http.StatusOK, nil))
 }
 
 func generateOrchestrationDefinitionEndpoints(r spec.Generator) {
@@ -79,4 +85,15 @@ func generateOrchestrationDefinitionEndpoints(r spec.Generator) {
 		option.Request(v1alpha1.OrchestrationDefinition{}),
 		option.Response(http.StatusCreated, nil),
 	)
+
+	orchestration.Delete("/{type}",
+		option.Summary("Delete an Orchestration Definition"),
+		option.Description("Delete a new Orchestration Definition"),
+		option.Request(new(TypeParam)),
+		option.Response(http.StatusOK, nil))
+
+}
+
+type TypeParam struct {
+	ID string `path:"type" required:"true"`
 }

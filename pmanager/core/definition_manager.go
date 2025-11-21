@@ -56,7 +56,7 @@ func (d definitionManager) CreateOrchestrationDefinition(ctx context.Context, de
 }
 
 func (d definitionManager) DeleteOrchestrationDefinition(
-// TODO this method should check outstanding orchestrations when the orchestration index is implemented
+	// TODO this method should check outstanding orchestrations when the orchestration index is implemented
 	ctx context.Context,
 	orchestrationType model.OrchestrationType) error {
 
