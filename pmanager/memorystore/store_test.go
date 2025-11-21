@@ -512,3 +512,50 @@ func TestDefinitionStore_GetActivityDefinitionCount_WithPredicate(t *testing.T) 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
+
+func TestDefinitionStore_ActivityDefinitionReferenced_Found(t *testing.T) {
+	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
+
+	// Store an activity definition
+	activityDef := &api.ActivityDefinition{
+		Type:        "deploy-activity",
+		Description: "Deploy resources",
+	}
+	_, _ = definitionStore.StoreActivityDefinition(ctx, activityDef)
+
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("deploy-orchestration"),
+		Active: true,
+		Activities: []api.Activity{
+			{
+				ID:   "activity-1",
+				Type: "deploy-activity",
+			},
+		},
+	}
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, orchestrationDef)
+
+	referenced, err := definitionStore.ActivityDefinitionReferenced(ctx, "deploy-activity")
+
+	assert.NoError(t, err)
+	assert.True(t, referenced)
+}
+
+func TestDefinitionStore_ActivityDefinitionReferenced_NotFound(t *testing.T) {
+	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
+
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:       model.OrchestrationType("empty-orchestration"),
+		Active:     true,
+		Activities: []api.Activity{},
+	}
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, orchestrationDef)
+
+	// Verify activity is not referenced
+	referenced, err := definitionStore.ActivityDefinitionReferenced(ctx, "non-existent-activity")
+
+	assert.NoError(t, err)
+	assert.False(t, referenced)
+}

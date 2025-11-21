@@ -42,7 +42,9 @@ func NewDefinitionStore() *MemoryDefinitionStore {
 	}
 }
 
-func (d *MemoryDefinitionStore) FindOrchestrationDefinition(_ context.Context, orchestrationType model.OrchestrationType) (*api.OrchestrationDefinition, error) {
+func (d *MemoryDefinitionStore) FindOrchestrationDefinition(
+	_ context.Context,
+	orchestrationType model.OrchestrationType) (*api.OrchestrationDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
@@ -56,11 +58,15 @@ func (d *MemoryDefinitionStore) FindOrchestrationDefinition(_ context.Context, o
 	return &definitionCopy, nil
 }
 
-func (d *MemoryDefinitionStore) FindOrchestrationDefinitionsByPredicate(_ context.Context, predicate query.Predicate) iter.Seq2[api.OrchestrationDefinition, error] {
+func (d *MemoryDefinitionStore) FindOrchestrationDefinitionsByPredicate(
+	_ context.Context,
+	predicate query.Predicate) iter.Seq2[api.OrchestrationDefinition, error] {
 	return findDefinitionsByPredicate(d, predicate, d.orchestrationDefinitions)
 }
 
-func (d *MemoryDefinitionStore) ExistsOrchestrationDefinition(_ context.Context, orchestrationType model.OrchestrationType) (bool, error) {
+func (d *MemoryDefinitionStore) ExistsOrchestrationDefinition(
+	_ context.Context,
+	orchestrationType model.OrchestrationType) (bool, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 	_, exists := d.orchestrationDefinitions[orchestrationType.String()]
@@ -88,7 +94,9 @@ func (d *MemoryDefinitionStore) FindActivityDefinition(_ context.Context, activi
 	return &definitionCopy, nil
 }
 
-func (d *MemoryDefinitionStore) FindActivityDefinitionsByPredicate(_ context.Context, predicate query.Predicate) iter.Seq2[api.ActivityDefinition, error] {
+func (d *MemoryDefinitionStore) FindActivityDefinitionsByPredicate(
+	_ context.Context,
+	predicate query.Predicate) iter.Seq2[api.ActivityDefinition, error] {
 	return findDefinitionsByPredicate(d, predicate, d.activityDefinitions)
 }
 
@@ -106,7 +114,9 @@ func (d *MemoryDefinitionStore) GetActivityDefinitionCount(_ context.Context, pr
 	return countByPredicate(d.activityDefinitions, predicate), nil
 }
 
-func (d *MemoryDefinitionStore) StoreOrchestrationDefinition(_ context.Context, definition *api.OrchestrationDefinition) (*api.OrchestrationDefinition, error) {
+func (d *MemoryDefinitionStore) StoreOrchestrationDefinition(
+	_ context.Context,
+	definition *api.OrchestrationDefinition) (*api.OrchestrationDefinition, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -120,7 +130,9 @@ func (d *MemoryDefinitionStore) StoreOrchestrationDefinition(_ context.Context, 
 	return definition, nil
 }
 
-func (d *MemoryDefinitionStore) StoreActivityDefinition(_ context.Context, definition *api.ActivityDefinition) (*api.ActivityDefinition, error) {
+func (d *MemoryDefinitionStore) StoreActivityDefinition(
+	_ context.Context,
+	definition *api.ActivityDefinition) (*api.ActivityDefinition, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -133,7 +145,9 @@ func (d *MemoryDefinitionStore) StoreActivityDefinition(_ context.Context, defin
 	return definition, nil
 }
 
-func (d *MemoryDefinitionStore) DeleteOrchestrationDefinition(_ context.Context, orchestrationType model.OrchestrationType) (bool, error) {
+func (d *MemoryDefinitionStore) DeleteOrchestrationDefinition(
+	_ context.Context,
+	orchestrationType model.OrchestrationType) (bool, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -142,6 +156,19 @@ func (d *MemoryDefinitionStore) DeleteOrchestrationDefinition(_ context.Context,
 		delete(d.orchestrationDefinitions, orchestrationType.String())
 	}
 	return exists, nil
+}
+
+func (d *MemoryDefinitionStore) ActivityDefinitionReferenced(_ context.Context, activityType api.ActivityType) (bool, error) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	for _, oDefinition := range d.orchestrationDefinitions {
+		for _, aDefinition := range oDefinition.Activities {
+			if aDefinition.Type == activityType {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 func (d *MemoryDefinitionStore) DeleteActivityDefinition(_ context.Context, activityType api.ActivityType) (bool, error) {
@@ -155,14 +182,20 @@ func (d *MemoryDefinitionStore) DeleteActivityDefinition(_ context.Context, acti
 	return exists, nil
 }
 
-func (d *MemoryDefinitionStore) ListOrchestrationDefinitions(_ context.Context, offset, limit int) ([]*api.OrchestrationDefinition, bool, error) {
+func (d *MemoryDefinitionStore) ListOrchestrationDefinitions(
+	_ context.Context,
+	offset int,
+	limit int) ([]*api.OrchestrationDefinition, bool, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
 	return listDefinitions[api.OrchestrationDefinition](d.orchestrationDefinitions, offset, limit)
 }
 
-func (d *MemoryDefinitionStore) ListActivityDefinitions(_ context.Context, offset, limit int) ([]*api.ActivityDefinition, bool, error) {
+func (d *MemoryDefinitionStore) ListActivityDefinitions(
+	_ context.Context,
+	offset,
+	limit int) ([]*api.ActivityDefinition, bool, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 

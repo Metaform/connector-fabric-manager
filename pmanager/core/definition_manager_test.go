@@ -15,9 +15,11 @@ package core
 import (
 	"context"
 	"errors"
+	"iter"
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/query"
 	cstore "github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -27,7 +29,7 @@ import (
 )
 
 func TestDefinitionManager_CreateOrchestrationDefinition_Success(t *testing.T) {
-	// Given
+
 	store := memorystore.NewDefinitionStore()
 	manager := definitionManager{
 		trxContext: cstore.NoOpTransactionContext{},
@@ -70,7 +72,7 @@ func TestDefinitionManager_CreateOrchestrationDefinition_Success(t *testing.T) {
 }
 
 func TestDefinitionManager_CreateOrchestrationDefinition_MissingActivityDefinition(t *testing.T) {
-	// Given
+
 	store := memorystore.NewDefinitionStore()
 	manager := definitionManager{
 		trxContext: cstore.NoOpTransactionContext{},
@@ -343,4 +345,569 @@ func TestDefinitionManager_Integration_CompleteWorkflow(t *testing.T) {
 	retrievedActivity2, err := store.FindActivityDefinition(ctx, "deploy")
 	require.NoError(t, err, "Should retrieve second activity definition")
 	assert.Equal(t, api.ActivityType("deploy"), retrievedActivity2.Type, "Retrieved activity type should match")
+}
+
+func TestDefinitionManager_DeleteOrchestrationDefinition_Success(t *testing.T) {
+	store := memorystore.NewDefinitionStore()
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      store,
+	}
+
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:        model.OrchestrationType("test-orchestration-to-delete"),
+		Description: "Orchestration to be deleted",
+		Active:      true,
+		Schema:      map[string]any{"type": "object"},
+		Activities:  []api.Activity{},
+	}
+
+	ctx := context.Background()
+
+	_, err := store.StoreOrchestrationDefinition(ctx, orchestrationDef)
+	require.NoError(t, err, "Failed to store orchestration definition")
+
+	err = manager.DeleteOrchestrationDefinition(ctx, orchestrationDef.Type)
+
+	require.NoError(t, err, "DeleteOrchestrationDefinition should succeed")
+
+	exists, err := store.ExistsOrchestrationDefinition(ctx, orchestrationDef.Type)
+	require.NoError(t, err, "Failed to check existence")
+	assert.False(t, exists, "Orchestration definition should no longer exist")
+}
+
+func TestDefinitionManager_DeleteOrchestrationDefinition_NotFound(t *testing.T) {
+	store := memorystore.NewDefinitionStore()
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      store,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteOrchestrationDefinition(ctx, model.OrchestrationType("non-existent-orchestration"))
+
+	require.Error(t, err, "DeleteOrchestrationDefinition should fail for non-existent orchestration")
+	assert.True(t, errors.Is(err, types.ErrNotFound), "Error should be ErrNotFound")
+}
+
+func TestDefinitionManager_DeleteOrchestrationDefinition_ExistsCheckError(t *testing.T) {
+	mockStore := newMockDefinitionStore()
+	mockStore.simulateError("existsOrchestration")
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      mockStore,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteOrchestrationDefinition(ctx, model.OrchestrationType("test-orchestration"))
+
+	require.Error(t, err, "DeleteOrchestrationDefinition should fail when exists check errors")
+	assert.True(t, types.IsRecoverable(err), "Error should be a RecoverableError")
+	assert.Contains(t, err.Error(), "failed to check orchestration definition for type",
+		"Error message should indicate existence check failure")
+}
+
+func TestDefinitionManager_DeleteOrchestrationDefinition_DeleteError(t *testing.T) {
+	mockStore := newMockDefinitionStore()
+	mockStore.setOrchestrationExists(true)
+	mockStore.simulateError("deleteOrchestration")
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      mockStore,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteOrchestrationDefinition(ctx, model.OrchestrationType("test-orchestration"))
+
+	require.Error(t, err, "DeleteOrchestrationDefinition should fail when delete errors")
+	assert.True(t, types.IsRecoverable(err), "Error should be a RecoverableError")
+	assert.Contains(t, err.Error(), "failed to delete orchestration definition for type",
+		"Error message should indicate deletion failure")
+}
+
+func TestDefinitionManager_DeleteOrchestrationDefinition_DeleteReturnsFalse(t *testing.T) {
+	mockStore := newMockDefinitionStore()
+	mockStore.setOrchestrationExists(true)
+	mockStore.setDeleteOrchestrationDefinitionReturned(false)
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      mockStore,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteOrchestrationDefinition(ctx, model.OrchestrationType("test-orchestration"))
+
+	require.Error(t, err, "DeleteOrchestrationDefinition should fail when delete returns false")
+	assert.True(t, types.IsClientError(err), "Error should be a ClientError")
+	assert.Contains(t, err.Error(), "unable to delete orchestration definition type",
+		"Error message should indicate deletion failed")
+}
+
+func TestDefinitionManager_DeleteOrchestrationDefinition_Multiple(t *testing.T) {
+	store := memorystore.NewDefinitionStore()
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      store,
+	}
+
+	ctx := context.Background()
+
+	// Create multiple orchestration definitions
+	orchestration1 := &api.OrchestrationDefinition{
+		Type:       model.OrchestrationType("orchestration-1"),
+		Active:     true,
+		Schema:     map[string]any{"type": "object"},
+		Activities: []api.Activity{},
+	}
+	orchestration2 := &api.OrchestrationDefinition{
+		Type:       model.OrchestrationType("orchestration-2"),
+		Active:     true,
+		Schema:     map[string]any{"type": "object"},
+		Activities: []api.Activity{},
+	}
+	orchestration3 := &api.OrchestrationDefinition{
+		Type:       model.OrchestrationType("orchestration-3"),
+		Active:     true,
+		Schema:     map[string]any{"type": "object"},
+		Activities: []api.Activity{},
+	}
+
+	_, err := store.StoreOrchestrationDefinition(ctx, orchestration1)
+	require.NoError(t, err)
+	_, err = store.StoreOrchestrationDefinition(ctx, orchestration2)
+	require.NoError(t, err)
+	_, err = store.StoreOrchestrationDefinition(ctx, orchestration3)
+	require.NoError(t, err)
+
+	// Delete first one
+	err = manager.DeleteOrchestrationDefinition(ctx, orchestration1.Type)
+	require.NoError(t, err, "First deletion should succeed")
+
+	exists, err := store.ExistsOrchestrationDefinition(ctx, orchestration1.Type)
+	require.NoError(t, err)
+	assert.False(t, exists, "First orchestration should be deleted")
+
+	// Verify others still exist
+	exists, err = store.ExistsOrchestrationDefinition(ctx, orchestration2.Type)
+	require.NoError(t, err)
+	assert.True(t, exists, "Second orchestration should still exist")
+
+	exists, err = store.ExistsOrchestrationDefinition(ctx, orchestration3.Type)
+	require.NoError(t, err)
+	assert.True(t, exists, "Third orchestration should still exist")
+
+	// Delete second one
+	err = manager.DeleteOrchestrationDefinition(ctx, orchestration2.Type)
+	require.NoError(t, err, "Second deletion should succeed")
+
+	exists, err = store.ExistsOrchestrationDefinition(ctx, orchestration2.Type)
+	require.NoError(t, err)
+	assert.False(t, exists, "Second orchestration should be deleted")
+
+	// Verify third still exists
+	exists, err = store.ExistsOrchestrationDefinition(ctx, orchestration3.Type)
+	require.NoError(t, err)
+	assert.True(t, exists, "Third orchestration should still exist")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_Success(t *testing.T) {
+	store := memorystore.NewDefinitionStore()
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      store,
+	}
+
+	activityDef := &api.ActivityDefinition{
+		Type:         "test-activity-to-delete",
+		Description:  "Activity to be deleted",
+		InputSchema:  map[string]any{"type": "object"},
+		OutputSchema: map[string]any{"type": "object"},
+	}
+
+	ctx := context.Background()
+
+	_, err := store.StoreActivityDefinition(ctx, activityDef)
+	require.NoError(t, err, "Failed to store activity definition")
+
+	err = manager.DeleteActivityDefinition(ctx, activityDef.Type)
+
+	require.NoError(t, err, "DeleteActivityDefinition should succeed")
+
+	exists, err := store.ExistsActivityDefinition(ctx, activityDef.Type)
+	require.NoError(t, err, "Failed to check existence")
+	assert.False(t, exists, "Activity definition should no longer exist")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_NotFound(t *testing.T) {
+	store := memorystore.NewDefinitionStore()
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      store,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteActivityDefinition(ctx, "non-existent-activity")
+
+	require.Error(t, err, "DeleteActivityDefinition should fail for non-existent activity")
+	assert.True(t, errors.Is(err, types.ErrNotFound), "Error should be ErrNotFound")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_ReferencedByOrchestration(t *testing.T) {
+
+	store := memorystore.NewDefinitionStore()
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      store,
+	}
+
+	// Create an activity definition
+	activityDef := &api.ActivityDefinition{
+		Type:         "referenced-activity",
+		Description:  "Activity referenced by orchestration",
+		InputSchema:  map[string]any{"type": "object"},
+		OutputSchema: map[string]any{"type": "object"},
+	}
+
+	ctx := context.Background()
+	_, err := store.StoreActivityDefinition(ctx, activityDef)
+
+	require.NoError(t, err, "Failed to store activity definition")
+
+	// Create an orchestration definition that references the activity
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("test-orchestration-with-ref"),
+		Active: true,
+		Schema: map[string]any{"type": "object"},
+		Activities: []api.Activity{
+			{
+				ID:        "activity-1",
+				Type:      activityDef.Type,
+				Inputs:    []api.MappingEntry{{Source: "input1", Target: "target1"}},
+				DependsOn: []string{},
+			},
+		},
+	}
+	_, err = store.StoreOrchestrationDefinition(ctx, orchestrationDef)
+	require.NoError(t, err, "Failed to store orchestration definition")
+
+	err = manager.DeleteActivityDefinition(ctx, activityDef.Type)
+
+	// Then: Should fail with a client error indicating it's referenced
+	require.Error(t, err, "DeleteActivityDefinition should fail when activity is referenced")
+	assert.True(t, types.IsClientError(err), "Error should be a ClientError")
+	assert.Contains(t, err.Error(), "referenced by an orchestration definition",
+		"Error message should indicate the activity is referenced")
+	assert.Contains(t, err.Error(), activityDef.Type,
+		"Error message should contain the activity type")
+
+	// Verify the activity definition still exists
+	exists, err := store.ExistsActivityDefinition(ctx, activityDef.Type)
+	require.NoError(t, err, "Failed to check existence")
+	assert.True(t, exists, "Activity definition should still exist after failed deletion")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_ExistsCheckError(t *testing.T) {
+	mockStore := newMockDefinitionStore()
+	mockStore.simulateError("existsActivity")
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      mockStore,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteActivityDefinition(ctx, "test-activity")
+
+	require.Error(t, err, "DeleteActivityDefinition should fail when exists check errors")
+	assert.True(t, types.IsRecoverable(err), "Error should be a RecoverableError")
+	assert.Contains(t, err.Error(), "failed to check activity definition for type",
+		"Error message should indicate existence check failure")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_ReferenceCheckError(t *testing.T) {
+	mockStore := newMockDefinitionStore()
+	mockStore.setActivityExists(true)
+	mockStore.simulateError("referenced")
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      mockStore,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteActivityDefinition(ctx, "test-activity")
+
+	// Then: Should return a recoverable error
+	require.Error(t, err, "DeleteActivityDefinition should fail when reference check errors")
+	assert.True(t, types.IsRecoverable(err), "Error should be a RecoverableError")
+	assert.Contains(t, err.Error(), "failed to check activity definition references for type",
+		"Error message should indicate reference check failure")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_DeleteError(t *testing.T) {
+
+	mockStore := newMockDefinitionStore()
+	mockStore.setActivityExists(true)
+	mockStore.simulateError("deleteActivity")
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      mockStore,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteActivityDefinition(ctx, "test-activity")
+
+	require.Error(t, err, "DeleteActivityDefinition should fail when delete errors")
+	assert.True(t, types.IsRecoverable(err), "Error should be a RecoverableError")
+	assert.Contains(t, err.Error(), "failed to check activity definition references for type",
+		"Error message should mention the operation that failed")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_DeleteReturnsFalse(t *testing.T) {
+	mockStore := newMockDefinitionStore()
+	mockStore.setActivityExists(true)
+	mockStore.setDeleteActivityDefinitionReturned(false)
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      mockStore,
+	}
+
+	ctx := context.Background()
+	err := manager.DeleteActivityDefinition(ctx, "test-activity")
+
+	require.Error(t, err, "DeleteActivityDefinition should fail when delete returns false")
+	assert.True(t, types.IsClientError(err), "Error should be a ClientError")
+	assert.Contains(t, err.Error(), "unable to delete activity definition type",
+		"Error message should indicate deletion failed")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_MultipleReferences(t *testing.T) {
+
+	store := memorystore.NewDefinitionStore()
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      store,
+	}
+
+	ctx := context.Background()
+
+	// Create an activity definition
+	activityDef := &api.ActivityDefinition{
+		Type:         "shared-activity",
+		Description:  "Activity used by multiple orchestrations",
+		InputSchema:  map[string]any{"type": "object"},
+		OutputSchema: map[string]any{"type": "object"},
+	}
+	_, err := store.StoreActivityDefinition(ctx, activityDef)
+	require.NoError(t, err, "Failed to store activity definition")
+
+	// Create first orchestration that references the activity
+	orchestrationDef1 := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("orchestration-1"),
+		Active: true,
+		Schema: map[string]any{"type": "object"},
+		Activities: []api.Activity{
+			{
+				ID:        "activity-1",
+				Type:      activityDef.Type,
+				Inputs:    []api.MappingEntry{{Source: "input", Target: "output"}},
+				DependsOn: []string{},
+			},
+		},
+	}
+	_, err = store.StoreOrchestrationDefinition(ctx, orchestrationDef1)
+	require.NoError(t, err, "Failed to store first orchestration")
+
+	// Create second orchestration that also references the activity
+	orchestrationDef2 := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("orchestration-2"),
+		Active: true,
+		Schema: map[string]any{"type": "object"},
+		Activities: []api.Activity{
+			{
+				ID:        "activity-2",
+				Type:      activityDef.Type,
+				Inputs:    []api.MappingEntry{{Source: "input", Target: "output"}},
+				DependsOn: []string{},
+			},
+		},
+	}
+	_, err = store.StoreOrchestrationDefinition(ctx, orchestrationDef2)
+	require.NoError(t, err, "Failed to store second orchestration")
+
+	err = manager.DeleteActivityDefinition(ctx, activityDef.Type)
+
+	require.Error(t, err, "DeleteActivityDefinition should fail when activity is referenced")
+	assert.True(t, types.IsClientError(err), "Error should be a ClientError")
+	assert.Contains(t, err.Error(), "referenced by an orchestration definition",
+		"Error message should indicate it's referenced")
+}
+
+func TestDefinitionManager_DeleteActivityDefinition_AfterOrchestrationDeletion(t *testing.T) {
+
+	store := memorystore.NewDefinitionStore()
+	manager := definitionManager{
+		trxContext: cstore.NoOpTransactionContext{},
+		store:      store,
+	}
+	ctx := context.Background()
+
+	// Create an activity definition
+	activityDef := &api.ActivityDefinition{
+		Type:         "deletable-activity",
+		Description:  "Activity that can be deleted",
+		InputSchema:  map[string]any{"type": "object"},
+		OutputSchema: map[string]any{"type": "object"},
+	}
+	_, err := store.StoreActivityDefinition(ctx, activityDef)
+	require.NoError(t, err, "Failed to store activity definition")
+
+	// Create an orchestration that references the activity
+	orchestrationDef := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("temp-orchestration"),
+		Active: true,
+		Schema: map[string]any{"type": "object"},
+		Activities: []api.Activity{
+			{
+				ID:        "activity-1",
+				Type:      activityDef.Type,
+				Inputs:    []api.MappingEntry{{Source: "input", Target: "output"}},
+				DependsOn: []string{},
+			},
+		},
+	}
+	_, err = store.StoreOrchestrationDefinition(ctx, orchestrationDef)
+	require.NoError(t, err, "Failed to store orchestration")
+
+	// First deletion attempt should fail
+	err = manager.DeleteActivityDefinition(ctx, activityDef.Type)
+	require.Error(t, err, "First deletion should fail because activity is referenced")
+
+	// Delete the orchestration definition
+	deleted, err := store.DeleteOrchestrationDefinition(ctx, orchestrationDef.Type)
+	require.NoError(t, err, "Failed to delete orchestration")
+	assert.True(t, deleted, "Orchestration should be deleted")
+
+	err = manager.DeleteActivityDefinition(ctx, activityDef.Type)
+
+	require.NoError(t, err, "DeleteActivityDefinition should succeed after orchestration is deleted")
+
+	exists, err := store.ExistsActivityDefinition(ctx, activityDef.Type)
+	require.NoError(t, err, "Failed to check existence")
+	assert.False(t, exists, "Activity definition should no longer exist")
+}
+
+// Helper mock store for testing error scenarios
+type mockDefinitionStore struct {
+	simulatedErrors map[string]error
+	state           map[string]bool
+}
+
+func newMockDefinitionStore() *mockDefinitionStore {
+	return &mockDefinitionStore{
+		simulatedErrors: make(map[string]error),
+		state:           make(map[string]bool),
+	}
+}
+
+// simulateError sets an error condition for a given operation
+func (m *mockDefinitionStore) simulateError(operation string) {
+	m.simulatedErrors[operation] = errors.New("simulated error for " + operation)
+}
+
+// setDeleteOrchestrationDefinitionReturned sets whether delete returns true
+func (m *mockDefinitionStore) setDeleteOrchestrationDefinitionReturned(returned bool) {
+	m.state["deleteOrchestrationReturned"] = returned
+}
+
+// setOrchestrationExists sets whether the orchestration exists
+func (m *mockDefinitionStore) setOrchestrationExists(exists bool) {
+	m.state["orchestrationExists"] = exists
+}
+
+func (m *mockDefinitionStore) ExistsOrchestrationDefinition(context.Context, model.OrchestrationType) (bool, error) {
+	if err, exists := m.simulatedErrors["existsOrchestration"]; exists {
+		return false, err
+	}
+	return m.state["orchestrationExists"], nil
+}
+
+func (m *mockDefinitionStore) DeleteOrchestrationDefinition(context.Context, model.OrchestrationType) (bool, error) {
+	if err, exists := m.simulatedErrors["deleteOrchestration"]; exists {
+		return false, err
+	}
+	return m.state["deleteOrchestrationReturned"], nil
+}
+
+// setActivityExists sets whether the activity exists
+func (m *mockDefinitionStore) setActivityExists(exists bool) {
+	m.state["activityExists"] = exists
+}
+
+// setDeleteActivityDefinitionReturned sets whether delete returns true
+func (m *mockDefinitionStore) setDeleteActivityDefinitionReturned(returned bool) {
+	m.state["deleteActivityReturned"] = returned
+}
+
+func (m *mockDefinitionStore) FindOrchestrationDefinition(context.Context, model.OrchestrationType) (*api.OrchestrationDefinition, error) {
+	return nil, types.ErrNotFound
+}
+
+func (m *mockDefinitionStore) FindOrchestrationDefinitionsByPredicate(context.Context, query.Predicate) iter.Seq2[api.OrchestrationDefinition, error] {
+	return nil
+}
+
+func (m *mockDefinitionStore) GetOrchestrationDefinitionCount(context.Context, query.Predicate) (int, error) {
+	return 0, nil
+}
+
+func (m *mockDefinitionStore) FindActivityDefinition(context.Context, api.ActivityType) (*api.ActivityDefinition, error) {
+	return nil, types.ErrNotFound
+}
+
+func (m *mockDefinitionStore) FindActivityDefinitionsByPredicate(context.Context, query.Predicate) iter.Seq2[api.ActivityDefinition, error] {
+	return nil
+}
+
+func (m *mockDefinitionStore) ExistsActivityDefinition(context.Context, api.ActivityType) (bool, error) {
+	if err, exists := m.simulatedErrors["existsActivity"]; exists {
+		return false, err
+	}
+	return m.state["activityExists"], nil
+}
+
+func (m *mockDefinitionStore) GetActivityDefinitionCount(context.Context, query.Predicate) (int, error) {
+	return 0, nil
+}
+
+func (m *mockDefinitionStore) StoreOrchestrationDefinition(
+	_ context.Context,
+	definition *api.OrchestrationDefinition) (*api.OrchestrationDefinition, error) {
+	return definition, nil
+}
+
+func (m *mockDefinitionStore) StoreActivityDefinition(
+	_ context.Context,
+	definition *api.ActivityDefinition) (*api.ActivityDefinition, error) {
+	return definition, nil
+}
+
+func (m *mockDefinitionStore) ActivityDefinitionReferenced(context.Context, api.ActivityType) (bool, error) {
+	if err, exists := m.simulatedErrors["referenced"]; exists {
+		return false, err
+	}
+	return m.state["activityReferenced"], nil
+}
+
+func (m *mockDefinitionStore) DeleteActivityDefinition(context.Context, api.ActivityType) (bool, error) {
+	if err, exists := m.simulatedErrors["deleteActivity"]; exists {
+		return false, err
+	}
+	return m.state["deleteActivityReturned"], nil
+}
+
+func (m *mockDefinitionStore) ListOrchestrationDefinitions(context.Context, int, int) ([]*api.OrchestrationDefinition, bool, error) {
+	return nil, false, nil
+}
+
+func (m *mockDefinitionStore) ListActivityDefinitions(context.Context, int, int) ([]*api.ActivityDefinition, bool, error) {
+	return nil, false, nil
 }

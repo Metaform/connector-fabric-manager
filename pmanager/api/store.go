@@ -58,12 +58,14 @@ type DefinitionStore interface {
 	// DeleteOrchestrationDefinition removes a OrchestrationDefinition for the given type, returning true if successful.
 	DeleteOrchestrationDefinition(ctx context.Context, orchestrationType model.OrchestrationType) (bool, error)
 
+	ActivityDefinitionReferenced(ctx context.Context, activityType ActivityType) (bool, error)
+
 	// DeleteActivityDefinition removes an ActivityDefinition for the given type, returning true if successful.
 	DeleteActivityDefinition(ctx context.Context, activityType ActivityType) (bool, error)
 
 	// ListOrchestrationDefinitions returns OrchestrationDefinition instances with pagination support
-	ListOrchestrationDefinitions(ctx context.Context, offset, limit int) ([]*OrchestrationDefinition, bool, error)
+	ListOrchestrationDefinitions(ctx context.Context, offset int, limit int) ([]*OrchestrationDefinition, bool, error)
 
 	// ListActivityDefinitions returns ActivityDefinition instances with pagination support
-	ListActivityDefinitions(ctx context.Context, offset, limit int) ([]*ActivityDefinition, bool, error)
+	ListActivityDefinitions(ctx context.Context, offset int, limit int) ([]*ActivityDefinition, bool, error)
 }
