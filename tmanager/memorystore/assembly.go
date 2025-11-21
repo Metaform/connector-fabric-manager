@@ -13,6 +13,7 @@
 package memorystore
 
 import (
+	memorystore2 "github.com/metaform/connector-fabric-manager/common/memorystore"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
@@ -30,16 +31,16 @@ func (a *InMemoryServiceAssembly) Provides() []system.ServiceType {
 }
 
 func (a *InMemoryServiceAssembly) Init(ictx *system.InitContext) error {
-	cellStore := NewInMemoryEntityStore[api.Cell](func(c *api.Cell) string {
+	cellStore := memorystore2.NewInMemoryEntityStore[api.Cell](func(c *api.Cell) string {
 		return c.ID
 	})
-	dataspaceStore := NewInMemoryEntityStore[api.DataspaceProfile](func(p *api.DataspaceProfile) string {
+	dataspaceStore := memorystore2.NewInMemoryEntityStore[api.DataspaceProfile](func(p *api.DataspaceProfile) string {
 		return p.ID
 	})
-	participantStore := NewInMemoryEntityStore[api.ParticipantProfile](func(p *api.ParticipantProfile) string {
+	participantStore := memorystore2.NewInMemoryEntityStore[api.ParticipantProfile](func(p *api.ParticipantProfile) string {
 		return p.ID
 	})
-	tenantStore := NewInMemoryEntityStore[api.Tenant](func(t *api.Tenant) string {
+	tenantStore := memorystore2.NewInMemoryEntityStore[api.Tenant](func(t *api.Tenant) string {
 		return t.ID
 	})
 

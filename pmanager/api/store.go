@@ -19,6 +19,11 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/query"
+	"github.com/metaform/connector-fabric-manager/common/system"
+)
+
+const (
+	OrchestrationIndexKey system.ServiceType = "pmstore:OrchestrationIndex"
 )
 
 // DefinitionStore manages OrchestrationDefinition and ActivityDefinitions.

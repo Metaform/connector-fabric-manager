@@ -13,6 +13,7 @@
 package memorystore
 
 import (
+	"github.com/metaform/connector-fabric-manager/common/memorystore"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
@@ -31,5 +32,8 @@ func (m MemoryStoreServiceAssembly) Provides() []system.ServiceType {
 
 func (m MemoryStoreServiceAssembly) Init(context *system.InitContext) error {
 	context.Registry.Register(api.DefinitionStoreKey, NewDefinitionStore())
+	context.Registry.Register(
+		api.OrchestrationIndexKey,
+		memorystore.NewInMemoryEntityStore(func(e *api.OrchestrationEntry) string { return e.ID }))
 	return nil
 }

@@ -16,11 +16,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/metaform/connector-fabric-manager/common/memorystore"
 	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
-	"github.com/metaform/connector-fabric-manager/tmanager/memorystore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

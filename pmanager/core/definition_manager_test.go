@@ -890,11 +890,11 @@ func (m *mockDefinitionStore) StoreActivityDefinition(
 	return definition, nil
 }
 
-func (m *mockDefinitionStore) ActivityDefinitionReferences(context.Context, api.ActivityType) (bool, error) {
+func (m *mockDefinitionStore) ActivityDefinitionReferences(ctx context.Context, activityType api.ActivityType) ([]string, error) {
 	if err, exists := m.simulatedErrors["referenced"]; exists {
-		return false, err
+		return nil, err
 	}
-	return m.state["activityReferenced"], nil
+	return []string{}, nil
 }
 
 func (m *mockDefinitionStore) DeleteActivityDefinition(context.Context, api.ActivityType) (bool, error) {
