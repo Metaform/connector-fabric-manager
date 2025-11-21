@@ -23,7 +23,7 @@ type MemoryStoreServiceAssembly struct {
 }
 
 func (m MemoryStoreServiceAssembly) Name() string {
-	return "Definition Memory Store"
+	return "Provision Manager Memory Store"
 }
 
 func (m MemoryStoreServiceAssembly) Provides() []system.ServiceType {
