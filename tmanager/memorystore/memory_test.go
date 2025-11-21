@@ -18,8 +18,9 @@ import (
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/collection"
+	"github.com/metaform/connector-fabric-manager/common/query"
+	store2 "github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/types"
-	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -278,7 +279,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	}
 
 	t.Run("pagination with limit", func(t *testing.T) {
-		opts := api.PaginationOptions{Offset: 0, Limit: 3}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 3}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -286,7 +287,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	})
 
 	t.Run("pagination with offset", func(t *testing.T) {
-		opts := api.PaginationOptions{Offset: 2, Limit: 2}
+		opts := store2.PaginationOptions{Offset: 2, Limit: 2}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -294,7 +295,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	})
 
 	t.Run("pagination with offset beyond range", func(t *testing.T) {
-		opts := api.PaginationOptions{Offset: 10, Limit: 2}
+		opts := store2.PaginationOptions{Offset: 10, Limit: 2}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -302,7 +303,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	})
 
 	t.Run("pagination with negative offset", func(t *testing.T) {
-		opts := api.PaginationOptions{Offset: -1, Limit: 2}
+		opts := store2.PaginationOptions{Offset: -1, Limit: 2}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -310,7 +311,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 	})
 
 	t.Run("pagination with no limit", func(t *testing.T) {
-		opts := api.PaginationOptions{Offset: 0, Limit: 0}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 0}
 		result, err := collection.CollectAll(store.GetAllPaginated(ctx, opts))
 
 		require.NoError(t, err)
@@ -370,7 +371,7 @@ func TestInMemoryEntityStore_ContextCancellation(t *testing.T) {
 		var results []testEntity
 		var lastErr error
 
-		for entity, err := range store.GetAllPaginated(ctx, api.DefaultPaginationOptions()) {
+		for entity, err := range store.GetAllPaginated(ctx, store2.DefaultPaginationOptions()) {
 			if err != nil {
 				lastErr = err
 				break
@@ -410,4 +411,107 @@ func TestInMemoryEntityStore_CopyIsolation(t *testing.T) {
 	// The modification to retrieved1 should not be visible in retrieved2
 	assert.Equal(t, "original-value", retrieved2.Value)
 	assert.NotEqual(t, retrieved1.Value, retrieved2.Value)
+}
+
+func TestDeleteByPredicate(t *testing.T) {
+	type args struct {
+		entities  []testEntity
+		predicate query.Predicate
+	}
+
+	tests := []struct {
+		name             string
+		args             args
+		wantDeletedCount int
+		wantRemaining    int
+		wantErr          bool
+	}{
+		{
+			name: "delete single entity matching predicate",
+			args: args{
+				entities: []testEntity{
+					{ID: "1", Value: "apple"},
+					{ID: "2", Value: "banana"},
+					{ID: "3", Value: "cherry"},
+				},
+				predicate: query.Eq("Value", "banana"),
+			},
+			wantDeletedCount: 1,
+			wantRemaining:    2,
+			wantErr:          false,
+		},
+		{
+			name: "delete multiple entities matching predicate",
+			args: args{
+				entities: []testEntity{
+					{ID: "1", Value: "test"},
+					{ID: "2", Value: "test"},
+					{ID: "3", Value: "other"},
+				},
+				predicate: query.Eq("Value", "test"),
+			},
+			wantDeletedCount: 2,
+			wantRemaining:    1,
+			wantErr:          false,
+		},
+		{
+			name: "delete no entities when predicate matches nothing",
+			args: args{
+				entities: []testEntity{
+					{ID: "1", Value: "apple"},
+					{ID: "2", Value: "banana"},
+				},
+				predicate: query.Eq("Value", "nonexistent"),
+			},
+			wantDeletedCount: 0,
+			wantRemaining:    2,
+			wantErr:          false,
+		},
+		{
+			name: "delete all entities matching predicate",
+			args: args{
+				entities: []testEntity{
+					{ID: "1", Value: "delete_me"},
+					{ID: "2", Value: "delete_me"},
+					{ID: "3", Value: "delete_me"},
+				},
+				predicate: query.Eq("Value", "delete_me"),
+			},
+			wantDeletedCount: 3,
+			wantRemaining:    0,
+			wantErr:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := NewInMemoryEntityStore(func(te *testEntity) string { return te.ID })
+
+			for _, entity := range tt.args.entities {
+				e := entity
+				_, err := store.Create(context.Background(), &e)
+				if err != nil {
+					t.Fatalf("failed to create entity: %v", err)
+				}
+			}
+
+			err := store.DeleteByPredicate(context.Background(), tt.args.predicate)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DeleteByPredicate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			count := 0
+			for _, err := range store.GetAll(context.Background()) {
+				if err != nil {
+					t.Fatalf("error iterating: %v", err)
+				}
+				count++
+			}
+
+			if count != tt.wantRemaining {
+				t.Errorf("DeleteByPredicate() remaining = %d, want %d", count, tt.wantRemaining)
+			}
+		})
+	}
 }

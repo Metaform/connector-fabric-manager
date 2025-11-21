@@ -19,6 +19,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/nats-io/nats.go"
 )
 
 const (
@@ -32,6 +33,7 @@ type natsOrchestratorServiceAssembly struct {
 	natsClient *natsclient.NatsClient
 	system.DefaultServiceAssembly
 	processCancel context.CancelFunc
+	subscription  *nats.Subscription
 }
 
 func NewOrchestratorServiceAssembly(uri string, bucket string, streamName string) system.ServiceAssembly {
@@ -74,6 +76,10 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 		}
 	}
 
+	a.subscription, err = a.natsClient.JetStream.Conn().Subscribe("$KV."+a.bucket+".>", func(msg *nats.Msg) {
+		_ = msg.Ack()
+	})
+
 	ctx.Registry.Register(api.OrchestratorKey, NewNatsOrchestrator(natsclient.NewMsgClient(natsClient), ctx.LogMonitor))
 
 	return nil
@@ -82,6 +88,9 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 func (a *natsOrchestratorServiceAssembly) Shutdown() error {
 	if a.processCancel != nil {
 		a.processCancel()
+	}
+	if a.subscription != nil {
+		_ = a.subscription.Unsubscribe()
 	}
 	if a.natsClient != nil {
 		a.natsClient.Connection.Close()

@@ -15,6 +15,7 @@ package api
 import (
 	"context"
 	"iter"
+	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/query"
@@ -68,4 +69,13 @@ type DefinitionStore interface {
 
 	// ListActivityDefinitions returns ActivityDefinition instances with pagination support
 	ListActivityDefinitions(ctx context.Context, offset int, limit int) ([]*ActivityDefinition, bool, error)
+}
+
+type OrchestrationEntry struct {
+	ID                string                  `json:"id"`
+	CorrelationID     string                  `json:"correlationId"`
+	State             OrchestrationState      `json:"state"`
+	StateTimestamp    time.Time               `json:"stateTimestamp"`
+	CreatedTimestamp  time.Time               `json:"createdTimestamp"`
+	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
 }

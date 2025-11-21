@@ -21,7 +21,7 @@ import (
 
 type cellService struct {
 	trxContext store.TransactionContext
-	store      api.EntityStore[api.Cell]
+	store      store.EntityStore[api.Cell]
 }
 
 func (d cellService) RecordExternalDeployment(ctx context.Context, cell *api.Cell) (*api.Cell, error) {

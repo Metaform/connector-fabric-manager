@@ -17,6 +17,7 @@ import (
 	"iter"
 
 	"github.com/metaform/connector-fabric-manager/common/query"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
@@ -32,7 +33,7 @@ type TenantService interface {
 	GetTenant(ctx context.Context, tenantID string) (*Tenant, error)
 	CreateTenant(ctx context.Context, tenant *Tenant) (*Tenant, error)
 	DeleteTenant(ctx context.Context, tenantID string) error
-	QueryTenants(ctx context.Context, predicate query.Predicate, options PaginationOptions) iter.Seq2[Tenant, error]
+	QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[Tenant, error]
 	CountTenants(ctx context.Context, predicate query.Predicate) (int, error)
 }
 

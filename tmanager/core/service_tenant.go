@@ -24,7 +24,7 @@ import (
 
 type tenantService struct {
 	trxContext  store.TransactionContext
-	tenantStore api.EntityStore[api.Tenant]
+	tenantStore store.EntityStore[api.Tenant]
 	monitor     system.LogMonitor
 }
 
@@ -45,7 +45,7 @@ func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error 
 	panic("implement me")
 }
 
-func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predicate, options api.PaginationOptions) iter.Seq2[api.Tenant, error] {
+func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.Tenant, error] {
 	return func(yield func(api.Tenant, error) bool) {
 		err := t.trxContext.Execute(ctx, func(ctx context.Context) error {
 			for tenant, err := range t.tenantStore.FindByPredicatePaginated(ctx, predicate, options) {

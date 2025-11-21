@@ -18,17 +18,17 @@ import (
 	"sync"
 
 	"github.com/metaform/connector-fabric-manager/common/query"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/types"
-	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
 func NewInMemoryEntityStore[T any](idFunc func(*T) string) *InMemoryEntityStore[T] {
-	store := &InMemoryEntityStore[T]{
+	estore := &InMemoryEntityStore[T]{
 		cache:   make(map[string]T),
 		idFunc:  idFunc,
 		matcher: &query.DefaultFieldMatcher{},
 	}
-	return store
+	return estore
 }
 
 type InMemoryEntityStore[T any] struct {
@@ -109,58 +109,14 @@ func (s *InMemoryEntityStore[T]) Delete(_ context.Context, id string) error {
 }
 
 func (s *InMemoryEntityStore[T]) GetAll(ctx context.Context) iter.Seq2[T, error] {
-	return s.GetAllPaginated(ctx, api.DefaultPaginationOptions())
+	return s.GetAllPaginated(ctx, store.DefaultPaginationOptions())
 }
 
-func (s *InMemoryEntityStore[T]) GetAllPaginated(ctx context.Context, opts api.PaginationOptions) iter.Seq2[T, error] {
-	return func(yield func(T, error) bool) {
-		s.mu.RLock()
-		defer s.mu.RUnlock()
-
-		// Convert map to slice for consistent ordering and pagination
-		entities := make([]T, 0, len(s.cache))
-		for _, entity := range s.cache {
-			entities = append(entities, entity)
-		}
-
-		// Apply offset
-		start := opts.Offset
-		if start < 0 {
-			start = 0
-		}
-		if start >= len(entities) {
-			return // No items to return
-		}
-
-		// Apply limit
-		end := len(entities)
-		if opts.Limit > 0 {
-			requestedEnd := start + opts.Limit
-			if requestedEnd < end {
-				end = requestedEnd
-			}
-		}
-
-		// Yield entities within the paginated range
-		for i := start; i < end; i++ {
-			// Check if context is cancelled
-			select {
-			case <-ctx.Done():
-				var zero T
-				yield(zero, ctx.Err())
-				return
-			default:
-			}
-
-			// Yield the entity with nil error
-			if !yield(entities[i], nil) {
-				return // Consumer stopped iteration
-			}
-		}
-	}
+func (s *InMemoryEntityStore[T]) GetAllPaginated(ctx context.Context, opts store.PaginationOptions) iter.Seq2[T, error] {
+	return s.paginateEntities(ctx, nil, opts)
 }
 
-func (s *InMemoryEntityStore[T]) FindByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[T, error] {
+func (s *InMemoryEntityStore[T]) FindByPredicate(_ context.Context, predicate query.Predicate) iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
@@ -179,16 +135,26 @@ func (s *InMemoryEntityStore[T]) FindByPredicate(ctx context.Context, predicate 
 func (s *InMemoryEntityStore[T]) FindByPredicatePaginated(
 	ctx context.Context,
 	predicate query.Predicate,
-	opts api.PaginationOptions) iter.Seq2[T, error] {
+	opts store.PaginationOptions) iter.Seq2[T, error] {
+
+	return s.paginateEntities(ctx, predicate, opts)
+}
+
+// paginateEntities is a common helper for both GetAllPaginated and FindByPredicatePaginated
+// If predicate is nil, all entities are included; otherwise only matching entities are included
+func (s *InMemoryEntityStore[T]) paginateEntities(
+	ctx context.Context,
+	predicate query.Predicate,
+	opts store.PaginationOptions) iter.Seq2[T, error] {
 
 	return func(yield func(T, error) bool) {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
 
-		// Filter entities matching the predicate into a slice
+		// Filter entities matching the predicate (or all if predicate is nil) into a slice
 		var filtered []T
 		for _, entity := range s.cache {
-			if predicate.Matches(entity, s.matcher) {
+			if predicate == nil || predicate.Matches(entity, s.matcher) {
 				filtered = append(filtered, entity)
 			}
 		}
@@ -231,7 +197,7 @@ func (s *InMemoryEntityStore[T]) FindByPredicatePaginated(
 }
 
 // FindFirstByPredicate returns the first entity matching the predicate or types.ErrNotFound if none found
-func (s *InMemoryEntityStore[T]) FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (*T, error) {
+func (s *InMemoryEntityStore[T]) FindFirstByPredicate(_ context.Context, predicate query.Predicate) (*T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -243,7 +209,7 @@ func (s *InMemoryEntityStore[T]) FindFirstByPredicate(ctx context.Context, predi
 	return nil, types.ErrNotFound
 }
 
-func (s *InMemoryEntityStore[T]) CountByPredicate(ctx context.Context, predicate query.Predicate) (int, error) {
+func (s *InMemoryEntityStore[T]) CountByPredicate(_ context.Context, predicate query.Predicate) (int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -256,3 +222,13 @@ func (s *InMemoryEntityStore[T]) CountByPredicate(ctx context.Context, predicate
 	return count, nil
 }
 
+func (s *InMemoryEntityStore[T]) DeleteByPredicate(_ context.Context, predicate query.Predicate) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for id, entity := range s.cache {
+		if predicate.Matches(entity, s.matcher) {
+			delete(s.cache, id)
+		}
+	}
+	return nil
+}

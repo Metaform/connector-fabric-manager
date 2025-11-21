@@ -23,8 +23,8 @@ import (
 
 type dataspaceProfileService struct {
 	trxContext   store.TransactionContext
-	profileStore api.EntityStore[api.DataspaceProfile]
-	cellStore    api.EntityStore[api.Cell]
+	profileStore store.EntityStore[api.DataspaceProfile]
+	cellStore    store.EntityStore[api.Cell]
 }
 
 func (d dataspaceProfileService) GetProfile(ctx context.Context, profileID string) (*api.DataspaceProfile, error) {

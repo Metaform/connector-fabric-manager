@@ -131,7 +131,7 @@ func TestQueryTenants(t *testing.T) {
 			Operator: query.OpEqual,
 			Value:    "Tenant One",
 		}
-		options := api.DefaultPaginationOptions()
+		options := store.DefaultPaginationOptions()
 
 		results := make([]api.Tenant, 0)
 		for tenant, err := range service.QueryTenants(ctx, predicate, options) {

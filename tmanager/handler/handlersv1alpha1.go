@@ -20,6 +20,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/handler"
 	"github.com/metaform/connector-fabric-manager/common/query"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
@@ -150,7 +151,7 @@ func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request, path s
 	}
 	first := true
 
-	for tenant, err := range h.tenantService.QueryTenants(req.Context(), predicate, api.PaginationOptions{
+	for tenant, err := range h.tenantService.QueryTenants(req.Context(), predicate, store.PaginationOptions{
 		Offset: tenantQuery.Offset,
 		Limit:  limit,
 	}) {

@@ -30,9 +30,9 @@ type participantService struct {
 	participantGenerator participantGenerator
 	provisionClient      api.ProvisionClient
 	trxContext           store.TransactionContext
-	participantStore     api.EntityStore[api.ParticipantProfile]
-	cellStore            api.EntityStore[api.Cell]
-	dataspaceStore       api.EntityStore[api.DataspaceProfile]
+	participantStore     store.EntityStore[api.ParticipantProfile]
+	cellStore            store.EntityStore[api.Cell]
+	dataspaceStore       store.EntityStore[api.DataspaceProfile]
 	monitor              system.LogMonitor
 }
 
@@ -177,7 +177,7 @@ func (d participantService) DisposeProfile(ctx context.Context, tenantID string,
 }
 
 type vpaCallbackHandler struct {
-	participantStore api.EntityStore[api.ParticipantProfile]
+	participantStore store.EntityStore[api.ParticipantProfile]
 	trxContext       store.TransactionContext
 	monitor          system.LogMonitor
 }

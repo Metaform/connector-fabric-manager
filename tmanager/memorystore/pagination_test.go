@@ -18,7 +18,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/collection"
 	"github.com/metaform/connector-fabric-manager/common/query"
-	"github.com/metaform/connector-fabric-manager/tmanager/api"
+	store2 "github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +31,7 @@ func TestFindByPredicatePaginated_BasicPredicate_WithPagination(t *testing.T) {
 	t.Run("find with equal predicate and limit", func(t *testing.T) {
 		// 4 entities have Active=true, get first 2
 		predicate := query.Eq("Active", true)
-		opts := api.PaginationOptions{Offset: 0, Limit: 2}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 2}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -45,7 +45,7 @@ func TestFindByPredicatePaginated_BasicPredicate_WithPagination(t *testing.T) {
 	t.Run("find with equal predicate and offset", func(t *testing.T) {
 		// 4 entities have Active=true, skip first 2, get remaining
 		predicate := query.Eq("Active", true)
-		opts := api.PaginationOptions{Offset: 2, Limit: 10}
+		opts := store2.PaginationOptions{Offset: 2, Limit: 10}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -59,7 +59,7 @@ func TestFindByPredicatePaginated_BasicPredicate_WithPagination(t *testing.T) {
 	t.Run("find with equal predicate offset and limit both specified", func(t *testing.T) {
 		// 3 entities in Engineering, get 2nd entity
 		predicate := query.Eq("Department", "Engineering")
-		opts := api.PaginationOptions{Offset: 1, Limit: 1}
+		opts := store2.PaginationOptions{Offset: 1, Limit: 1}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -70,7 +70,7 @@ func TestFindByPredicatePaginated_BasicPredicate_WithPagination(t *testing.T) {
 
 	t.Run("find with string equal predicate and pagination", func(t *testing.T) {
 		predicate := query.Eq("Region", "South")
-		opts := api.PaginationOptions{Offset: 0, Limit: 1}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 1}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -87,7 +87,7 @@ func TestFindByPredicatePaginated_EdgeCases(t *testing.T) {
 
 	t.Run("offset equals number of filtered results", func(t *testing.T) {
 		predicate := query.Eq("Region", "North")
-		opts := api.PaginationOptions{Offset: 2, Limit: 10} // 2 entities in North
+		opts := store2.PaginationOptions{Offset: 2, Limit: 10} // 2 entities in North
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -97,7 +97,7 @@ func TestFindByPredicatePaginated_EdgeCases(t *testing.T) {
 
 	t.Run("negative offset treated as zero", func(t *testing.T) {
 		predicate := query.Eq("Department", "Sales")
-		opts := api.PaginationOptions{Offset: -5, Limit: 1}
+		opts := store2.PaginationOptions{Offset: -5, Limit: 1}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -109,7 +109,7 @@ func TestFindByPredicatePaginated_EdgeCases(t *testing.T) {
 	t.Run("zero limit returns all remaining", func(t *testing.T) {
 		// 4 entities with Active=true
 		predicate := query.Eq("Active", true)
-		opts := api.PaginationOptions{Offset: 0, Limit: 0}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 0}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -119,7 +119,7 @@ func TestFindByPredicatePaginated_EdgeCases(t *testing.T) {
 
 	t.Run("limit greater than filtered results", func(t *testing.T) {
 		predicate := query.Eq("Department", "Marketing")
-		opts := api.PaginationOptions{Offset: 0, Limit: 100}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 100}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -129,7 +129,7 @@ func TestFindByPredicatePaginated_EdgeCases(t *testing.T) {
 
 	t.Run("no predicate matches", func(t *testing.T) {
 		predicate := query.Eq("Department", "NonExistent")
-		opts := api.PaginationOptions{Offset: 0, Limit: 10}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 10}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -139,7 +139,7 @@ func TestFindByPredicatePaginated_EdgeCases(t *testing.T) {
 
 	t.Run("empty pagination options", func(t *testing.T) {
 		predicate := query.Eq("Active", true)
-		opts := api.PaginationOptions{}
+		opts := store2.PaginationOptions{}
 
 		results, err := collection.CollectAll(store.FindByPredicatePaginated(ctx, predicate, opts))
 
@@ -157,7 +157,7 @@ func TestFindByPredicatePaginated_ContextHandling(t *testing.T) {
 		cancel()
 
 		predicate := query.Eq("Active", true)
-		opts := api.PaginationOptions{Offset: 0, Limit: 10}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 10}
 
 		var lastErr error
 		count := 0
@@ -179,7 +179,7 @@ func TestFindByPredicatePaginated_ContextHandling(t *testing.T) {
 		cancel()
 
 		predicate := query.Eq("Department", "Engineering")
-		opts := api.PaginationOptions{Offset: 0, Limit: 100}
+		opts := store2.PaginationOptions{Offset: 0, Limit: 100}
 
 		var lastErr error
 
@@ -204,7 +204,7 @@ func TestFindByPredicatePaginated_ConsistencyWithFindByPredicate(t *testing.T) {
 
 		// Get all with pagination (limit=0 means no limit)
 		paginatedResults, err := collection.CollectAll(
-			store.FindByPredicatePaginated(ctx, predicate, api.PaginationOptions{Offset: 0, Limit: 0}),
+			store.FindByPredicatePaginated(ctx, predicate, store2.PaginationOptions{Offset: 0, Limit: 0}),
 		)
 		require.NoError(t, err)
 
@@ -223,14 +223,14 @@ func TestFindByPredicatePaginated_ConsistencyWithFindByPredicate(t *testing.T) {
 
 		// Page 1
 		results1, err := collection.CollectAll(
-			store.FindByPredicatePaginated(ctx, predicate, api.PaginationOptions{Offset: 0, Limit: pageSize}),
+			store.FindByPredicatePaginated(ctx, predicate, store2.PaginationOptions{Offset: 0, Limit: pageSize}),
 		)
 		require.NoError(t, err)
 		allResults = append(allResults, results1...)
 
 		// Page 2
 		results2, err := collection.CollectAll(
-			store.FindByPredicatePaginated(ctx, predicate, api.PaginationOptions{Offset: pageSize, Limit: pageSize}),
+			store.FindByPredicatePaginated(ctx, predicate, store2.PaginationOptions{Offset: pageSize, Limit: pageSize}),
 		)
 		require.NoError(t, err)
 		allResults = append(allResults, results2...)
@@ -273,7 +273,7 @@ func TestFindByPredicatePaginated_LargeDataset(t *testing.T) {
 		// Fetch all pages
 		for offset := 0; offset < 100; offset += pageSize {
 			results, err := collection.CollectAll(
-				store.FindByPredicatePaginated(ctx, predicate, api.PaginationOptions{Offset: offset, Limit: pageSize}),
+				store.FindByPredicatePaginated(ctx, predicate, store2.PaginationOptions{Offset: offset, Limit: pageSize}),
 			)
 			require.NoError(t, err)
 
@@ -298,7 +298,7 @@ func TestFindByPredicatePaginated_LargeDataset(t *testing.T) {
 		)
 
 		results, err := collection.CollectAll(
-			store.FindByPredicatePaginated(ctx, predicate, api.PaginationOptions{Offset: 0, Limit: 20}),
+			store.FindByPredicatePaginated(ctx, predicate, store2.PaginationOptions{Offset: 0, Limit: 20}),
 		)
 		require.NoError(t, err)
 

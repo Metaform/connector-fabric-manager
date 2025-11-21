@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/dag"
 	"github.com/metaform/connector-fabric-manager/common/model"
@@ -39,11 +40,18 @@ type Orchestration struct {
 	ID                string                  `json:"id"`
 	CorrelationID     string                  `json:"correlationId"`
 	State             OrchestrationState      `json:"state"`
+	StateTimestamp    time.Time               `json:"stateTimestamp"`
+	CreatedTimestamp   time.Time               `json:"createdTimestamp"`
 	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
 	Steps             []OrchestrationStep     `json:"steps"`
 	ProcessingData    map[string]any          `json:"processingData"`
 	OutputData        map[string]any          `json:"outputData"`
 	Completed         map[string]struct{}     `json:"completed"`
+}
+
+func (o *Orchestration) SetState(state OrchestrationState)  {
+	o.State = state
+	o.StateTimestamp = time.Now()
 }
 
 // CanProceedToNextStep returns if the orchestration is able to proceed to the next step or must wait.
@@ -180,11 +188,14 @@ func InstantiateOrchestration(
 		processingData[k] = v
 	}
 
+	now := time.Now()
 	orchestration := &Orchestration{
 		ID:                id,
 		CorrelationID:     correlationID,
 		OrchestrationType: orchestrationType,
 		State:             OrchestrationStateInitialized,
+		StateTimestamp:    now,
+		CreatedTimestamp:  now,
 		Steps:             make([]OrchestrationStep, 0, len(activities)),
 		ProcessingData:    processingData,
 		OutputData:        make(map[string]any),

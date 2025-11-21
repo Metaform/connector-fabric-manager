@@ -210,7 +210,7 @@ func (e *NatsActivityExecutor) handleOrchestrationCompletion(
 	message jetstream.Msg) error {
 	// Mark as completed
 	_, _, err := UpdateOrchestration(activityContext.Context(), orchestration, revision, e.Client, func(o *api.Orchestration) {
-		o.State = api.OrchestrationStateCompleted
+		o.SetState(api.OrchestrationStateCompleted)
 	})
 	if err != nil {
 		// Error marking, redeliver the message
@@ -277,7 +277,7 @@ func (e *NatsActivityExecutor) handleFatalError(
 		for key, value := range activityContext.OutputValues() {
 			orchestration.OutputData[key] = value
 		}
-		o.State = api.OrchestrationStateErrored
+		o.SetState(api.OrchestrationStateErrored)
 	}); err != nil {
 		e.Monitor.Warnf("Failed to mark orchestration %s as fatal: %v", orchestration.ID, err)
 	}
