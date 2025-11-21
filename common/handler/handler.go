@@ -20,13 +20,12 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
 )
 
-var vInstance = validator.New()
 
 const contentType = "application/json"
 
@@ -89,7 +88,7 @@ func (h HttpHandler) ReadPayload(w http.ResponseWriter, req *http.Request, defin
 		return false
 	}
 
-	if err := vInstance.Struct(definition); err != nil {
+	if err := model.Validator.Struct(definition); err != nil {
 		h.WriteError(w, "Invalid definition: "+err.Error(), http.StatusBadRequest)
 		return false
 	}
@@ -98,6 +97,8 @@ func (h HttpHandler) ReadPayload(w http.ResponseWriter, req *http.Request, defin
 
 func (h HttpHandler) HandleError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, types.ErrNotFound):
+		h.WriteError(w, "Not found", http.StatusNotFound)
 	case types.IsClientError(err):
 		var clientErr types.ClientError
 		errors.As(err, &clientErr)

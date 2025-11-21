@@ -98,3 +98,31 @@ func (h *PMHandler) health(w http.ResponseWriter, _ *http.Request) {
 	response := response{Message: "OK"}
 	h.ResponseOK(w, response)
 }
+
+func (h *PMHandler) deleteOrchestrationDefinition(w http.ResponseWriter, req *http.Request, oType string) {
+	if h.InvalidMethod(w, req, http.MethodDelete) {
+		return
+	}
+
+	err := h.definitionManager.DeleteOrchestrationDefinition(req.Context(), model.OrchestrationType(oType))
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.OK(w)
+}
+
+func (h *PMHandler) deleteActivityDefinition(w http.ResponseWriter, req *http.Request, aType string) {
+	if h.InvalidMethod(w, req, http.MethodDelete) {
+		return
+	}
+
+	err := h.definitionManager.DeleteActivityDefinition(req.Context(), api.ActivityType(aType))
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.OK(w)
+}

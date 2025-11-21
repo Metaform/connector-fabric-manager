@@ -131,3 +131,47 @@ func comparePayload(t *testing.T, original, unmarshaled map[string]any) {
 		}
 	}
 }
+
+func TestModelTypeValidation(t *testing.T) {
+	type TypedStruct struct {
+		Type string `validate:"required,modeltype"`
+	}
+
+	tests := []struct {
+		name    string
+		obj     TypedStruct
+		wantErr bool
+	}{
+		{
+			name:    "valid type",
+			obj:     TypedStruct{Type: "valid-type"},
+			wantErr: false,
+		},
+		{
+			name:    "invalid type",
+			obj:     TypedStruct{Type: "invalid@type"},
+			wantErr: true,
+		},
+		{
+			name:    "invalid # type",
+			obj:     TypedStruct{Type: "invalid$type"},
+			wantErr: true,
+		},
+		{
+			name:    "empty type",
+			obj:     TypedStruct{Type: ""},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Validator.Struct(tt.obj)
+			if tt.wantErr {
+				require.Error(t, err, "expected validation error")
+			} else {
+				require.NoError(t, err, "expected no validation error")
+			}
+		})
+	}
+}

@@ -12,6 +12,14 @@
 
 package model
 
+import (
+	"regexp"
+
+	"github.com/go-playground/validator/v10"
+)
+
+var Validator = initValidator()
+
 // OrchestrationManifest represents the configuration details for the execution of an orchestration.
 //
 // The manifest includes a unique identifier, the orchestration type, and a payload of orchestration-specific data, which
@@ -69,3 +77,16 @@ const (
 	ConnectorId       = "cfm.connector.id"
 	CredentialService = "cfm.credentialservice.id"
 )
+
+func initValidator() *validator.Validate {
+	v := validator.New()
+
+	_ = v.RegisterValidation("modeltype", func(fl validator.FieldLevel) bool {
+		value := fl.Field().String()
+		// Only allow alphanumeric, dots, underscores, and hyphens
+		match, _ := regexp.MatchString(`^[a-zA-Z0-9._-]+$`, value)
+		return match
+	})
+	return v
+}
+

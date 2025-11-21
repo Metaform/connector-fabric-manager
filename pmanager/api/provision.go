@@ -21,7 +21,6 @@ import (
 
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
@@ -32,8 +31,6 @@ const (
 	OrchestratorKey      system.ServiceType = "pmapi:Orchestrator"
 	DefinitionManagerKey system.ServiceType = "pmapi:DefinitionManager"
 )
-
-var vInstance = validator.New()
 
 // ProvisionManager handles orchestration execution and resource management.
 type ProvisionManager interface {
@@ -206,7 +203,7 @@ func (d defaultActivityContext) ReadValues(result any) error {
 		kind = reflect.TypeOf(result).Elem().Kind()
 	}
 	if kind == reflect.Struct || kind == reflect.Interface {
-		if err := vInstance.Struct(result); err != nil {
+		if err := model.Validator.Struct(result); err != nil {
 			return err
 		}
 	}

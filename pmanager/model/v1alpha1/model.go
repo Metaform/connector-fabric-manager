@@ -13,7 +13,7 @@
 package v1alpha1
 
 type ActivityDefinition struct {
-	Type         string         `json:"type" validate:"required"`
+	Type         string         `json:"type" validate:"required,modeltype"`
 	Description  string         `json:"description omitempty"`
 	InputSchema  map[string]any `json:"inputSchema omitempty"`
 	OutputSchema map[string]any `json:"outputSchema omitempty"`
@@ -21,7 +21,7 @@ type ActivityDefinition struct {
 
 type Activity struct {
 	ID            string         `json:"id" validate:"required"`
-	Type          string         `json:"type" validate:"required"`
+	Type          string         `json:"type" validate:"required,modeltype"`
 	Discriminator string         `json:"discriminator" validate:"false"`
 	Inputs        []MappingEntry `json:"inputs omitempty"`
 	DependsOn     []string       `json:"dependsOn omitempty"`
@@ -33,7 +33,7 @@ type MappingEntry struct {
 }
 
 type OrchestrationDefinition struct {
-	Type        string         `json:"type" validate:"required"`
+	Type        string         `json:"type" validate:"required,modeltype"`
 	Description string         `json:"description omitempty"`
 	Schema      map[string]any `json:"schema omitempty"`
 	Activities  []Activity     `json:"activities" validate:"required,min=1"`

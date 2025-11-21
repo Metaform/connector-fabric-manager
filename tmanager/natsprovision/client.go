@@ -17,15 +17,12 @@ import (
 	"encoding/json"
 	"sync/atomic"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/nats-io/nats.go/jetstream"
 )
-
-var vInstance = validator.New()
 
 type natsOrchestrationClient struct {
 	natsclient.RetriableMessageProcessor[model.OrchestrationResponse]
@@ -41,7 +38,7 @@ func newNatsOrchestrationClient(
 			Monitor:    monitor,
 			Processing: atomic.Bool{},
 			Dispatcher: func(ctx context.Context, payload model.OrchestrationResponse) error {
-				err := vInstance.Struct(payload)
+				err := model.Validator.Struct(payload)
 				if err != nil {
 					return types.NewClientError("invalid response: %s", err.Error())
 				}

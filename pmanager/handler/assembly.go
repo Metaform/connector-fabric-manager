@@ -13,6 +13,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
@@ -45,11 +47,46 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	handler := NewHandler(provisionManager, definitionManager, context.LogMonitor)
 
 	router.Route("/api/v1alpha1", func(r chi.Router) {
-		r.Post("/orchestrations", handler.createOrchestration)
-		r.Post("/activity-definitions", handler.createActivityDefinition)
-		r.Post("/orchestration-definitions", handler.createOrchestrationDefinition)
-		r.Get("/health", handler.health)
+		h.registerV1Alpha1(r, handler)
 	})
 
 	return nil
+}
+
+func (h *HandlerServiceAssembly) registerV1Alpha1(router chi.Router, handler *PMHandler) {
+	h.registerActivityDefinitionRoutes(router, handler)
+	h.registerOrchestrationDefinitionRoutes(router, handler)
+
+	router.Post("/orchestrations", handler.createOrchestration)
+	router.Get("/health", handler.health)
+}
+
+func (h *HandlerServiceAssembly) registerActivityDefinitionRoutes(router chi.Router, handler *PMHandler) {
+	router.Route("/activity-definitions", func(r chi.Router) {
+		r.Post("/", handler.createActivityDefinition)
+		r.Route("/{activityType}", func(r chi.Router) {
+			r.Delete("/", func(w http.ResponseWriter, req *http.Request) {
+				definitionType, found := handler.ExtractPathVariable(w, req, "activityType")
+				if !found {
+					return
+				}
+				handler.deleteActivityDefinition(w, req, definitionType)
+			})
+		})
+	})
+}
+
+func (h *HandlerServiceAssembly) registerOrchestrationDefinitionRoutes(router chi.Router, handler *PMHandler) {
+	router.Route("/orchestration-definitions", func(r chi.Router) {
+		r.Post("/", handler.createOrchestrationDefinition)
+		r.Route("/{orchestrationType}", func(r chi.Router) {
+			r.Delete("/", func(w http.ResponseWriter, req *http.Request) {
+				definitionType, found := handler.ExtractPathVariable(w, req, "orchestrationType")
+				if !found {
+					return
+				}
+				handler.deleteActivityDefinition(w, req, definitionType)
+			})
+		})
+	})
 }

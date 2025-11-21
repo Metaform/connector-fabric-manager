@@ -172,6 +172,22 @@ func TestInvalidMethod(t *testing.T) {
 func TestHandleError(t *testing.T) {
 	handler := HttpHandler{Monitor: system.NoopMonitor{}}
 
+	t.Run("handles ErrNotFound", func(t *testing.T) {
+		w := newMockResponseWriter()
+		err := types.ErrNotFound
+
+		handler.HandleError(w, err)
+
+		assert.Equal(t, http.StatusNotFound, w.statusCode)
+
+		var response ErrorResponse
+		jsonErr := json.Unmarshal(w.body.Bytes(), &response)
+		require.NoError(t, jsonErr)
+
+		assert.NotEmpty(t, response.Message)
+		assert.Equal(t, 404, response.Code)
+	})
+
 	t.Run("handles BadRequestError", func(t *testing.T) {
 		w := newMockResponseWriter()
 		err := &types.BadRequestError{Message: "invalid input"}
