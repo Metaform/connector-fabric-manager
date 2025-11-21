@@ -12,38 +12,58 @@
 
 package api
 
-import "github.com/metaform/connector-fabric-manager/common/model"
+import (
+	"context"
+	"iter"
+
+	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/query"
+)
 
 // DefinitionStore manages OrchestrationDefinition and ActivityDefinitions.
 type DefinitionStore interface {
 
 	// FindOrchestrationDefinition retrieves the OrchestrationDefinition associated with the given type.
 	// Returns the OrchestrationDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindOrchestrationDefinition(orchestrationType model.OrchestrationType) (*OrchestrationDefinition, error)
+	FindOrchestrationDefinition(ctx context.Context, orchestrationType model.OrchestrationType) (*OrchestrationDefinition, error)
+
+	// FindOrchestrationDefinitionsByPredicate retrieves OrchestrationDefinition instances matching the given predicate.
+	FindOrchestrationDefinitionsByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[OrchestrationDefinition, error]
+
+	// ExistsOrchestrationDefinition returns true if an OrchestrationDefinition exists for the given type.
+	ExistsOrchestrationDefinition(ctx context.Context, orchestrationType model.OrchestrationType) (bool, error)
+
+	// GetOrchestrationDefinitionCount returns the number of OrchestrationDefinitions matching the given predicate.
+	GetOrchestrationDefinitionCount(_ context.Context, predicate query.Predicate) (int, error)
 
 	// FindActivityDefinition retrieves the ActivityDefinition associated with the given type.
 	// Returns the ActivityDefinition object or store.ErrNotFound if the definition cannot be found.
-	FindActivityDefinition(activityType ActivityType) (*ActivityDefinition, error)
+	FindActivityDefinition(ctx context.Context, activityType ActivityType) (*ActivityDefinition, error)
 
-	ExistsOrchestrationDefinition(orchestrationType model.OrchestrationType) (bool, error)
+	// FindActivityDefinitionsByPredicate retrieves ActivityDefinition instances matching the given predicate.
+	FindActivityDefinitionsByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[ActivityDefinition, error]
 
-	ExistsActivityDefinition(activityType ActivityType) (bool, error)
+	// ExistsActivityDefinition returns true if an ActivityDefinition exists for the given type.
+	ExistsActivityDefinition(ctx context.Context, activityType ActivityType) (bool, error)
+
+	// GetActivityDefinitionCount returns the number of ActivityDefinitions matching the given predicate.
+	GetActivityDefinitionCount(_ context.Context, predicate query.Predicate) (int, error)
 
 	// StoreOrchestrationDefinition saves or updates a OrchestrationDefinition
-	StoreOrchestrationDefinition(definition *OrchestrationDefinition) (*OrchestrationDefinition, error)
+	StoreOrchestrationDefinition(ctx context.Context, definition *OrchestrationDefinition) (*OrchestrationDefinition, error)
 
 	// StoreActivityDefinition saves or updates a ActivityDefinition
-	StoreActivityDefinition(definition *ActivityDefinition) (*ActivityDefinition, error)
+	StoreActivityDefinition(ctx context.Context, definition *ActivityDefinition) (*ActivityDefinition, error)
 
 	// DeleteOrchestrationDefinition removes a OrchestrationDefinition for the given type, returning true if successful.
-	DeleteOrchestrationDefinition(orchestrationType model.OrchestrationType) (bool, error)
+	DeleteOrchestrationDefinition(ctx context.Context, orchestrationType model.OrchestrationType) (bool, error)
 
 	// DeleteActivityDefinition removes an ActivityDefinition for the given type, returning true if successful.
-	DeleteActivityDefinition(activityType ActivityType) (bool, error)
+	DeleteActivityDefinition(ctx context.Context, activityType ActivityType) (bool, error)
 
 	// ListOrchestrationDefinitions returns OrchestrationDefinition instances with pagination support
-	ListOrchestrationDefinitions(offset, limit int) ([]*OrchestrationDefinition, bool, error)
+	ListOrchestrationDefinitions(ctx context.Context, offset, limit int) ([]*OrchestrationDefinition, bool, error)
 
 	// ListActivityDefinitions returns ActivityDefinition instances with pagination support
-	ListActivityDefinitions(offset, limit int) ([]*ActivityDefinition, bool, error)
+	ListActivityDefinitions(ctx context.Context, offset, limit int) ([]*ActivityDefinition, bool, error)
 }

@@ -38,7 +38,7 @@ func NewHandler(provisionManager api.ProvisionManager, definitionManager api.Def
 	}
 }
 
-func (h *PMHandler) activityDefinition(w http.ResponseWriter, req *http.Request) {
+func (h *PMHandler) createActivityDefinition(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
@@ -57,7 +57,7 @@ func (h *PMHandler) activityDefinition(w http.ResponseWriter, req *http.Request)
 	h.Created(w)
 }
 
-func (h *PMHandler) orchestrationDefinition(w http.ResponseWriter, req *http.Request) {
+func (h *PMHandler) createOrchestrationDefinition(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
@@ -76,7 +76,7 @@ func (h *PMHandler) orchestrationDefinition(w http.ResponseWriter, req *http.Req
 	h.Created(w)
 }
 
-func (h *PMHandler) orchestration(w http.ResponseWriter, req *http.Request) {
+func (h *PMHandler) createOrchestration(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}

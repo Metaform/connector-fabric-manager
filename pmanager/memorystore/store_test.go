@@ -13,9 +13,11 @@
 package memorystore
 
 import (
+	"context"
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
@@ -34,15 +36,16 @@ func TestNewDefinitionStore(t *testing.T) {
 
 func TestDefinitionStore_OrchestrationDefinition_StoreAndFind(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	var oType model.OrchestrationType = "test-orchestration-1"
 	definition := &api.OrchestrationDefinition{
 		Type: oType,
 	}
 
-	definitionStore.StoreOrchestrationDefinition(definition)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, definition)
 
-	result, err := definitionStore.FindOrchestrationDefinition(oType)
+	result, err := definitionStore.FindOrchestrationDefinition(ctx, oType)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -54,8 +57,9 @@ func TestDefinitionStore_OrchestrationDefinition_StoreAndFind(t *testing.T) {
 
 func TestDefinitionStore_OrchestrationDefinition_FindNotFound(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
-	result, err := definitionStore.FindOrchestrationDefinition("non-existent")
+	result, err := definitionStore.FindOrchestrationDefinition(ctx, "non-existent")
 
 	assert.Error(t, err)
 	assert.Equal(t, store.ErrNotFound, err)
@@ -64,6 +68,7 @@ func TestDefinitionStore_OrchestrationDefinition_FindNotFound(t *testing.T) {
 
 func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	var activityType api.ActivityType = "test-activity-1"
 	definition := &api.ActivityDefinition{
@@ -71,9 +76,9 @@ func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
 		Description: "Test activity",
 	}
 
-	definitionStore.StoreActivityDefinition(definition)
+	_, _ = definitionStore.StoreActivityDefinition(ctx, definition)
 
-	result, err := definitionStore.FindActivityDefinition(activityType)
+	result, err := definitionStore.FindActivityDefinition(ctx, activityType)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -86,8 +91,9 @@ func TestDefinitionStore_ActivityDefinition_StoreAndFind(t *testing.T) {
 
 func TestDefinitionStore_ActivityDefinition_FindNotFound(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
-	result, err := definitionStore.FindActivityDefinition("non-existent")
+	result, err := definitionStore.FindActivityDefinition(ctx, "non-existent")
 
 	assert.Error(t, err)
 	assert.Equal(t, store.ErrNotFound, err)
@@ -96,60 +102,63 @@ func TestDefinitionStore_ActivityDefinition_FindNotFound(t *testing.T) {
 
 func TestDefinitionStore_OrchestrationDefinition_Delete(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	var oType model.OrchestrationType = "test-orchestration-1"
 	definition := &api.OrchestrationDefinition{Type: oType}
-	definitionStore.StoreOrchestrationDefinition(definition)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, definition)
 
-	_, err := definitionStore.FindOrchestrationDefinition(oType)
+	_, err := definitionStore.FindOrchestrationDefinition(ctx, oType)
 	assert.NoError(t, err)
 
-	deleted, err := definitionStore.DeleteOrchestrationDefinition(oType)
+	deleted, err := definitionStore.DeleteOrchestrationDefinition(ctx, oType)
 	assert.Nil(t, err)
 	assert.True(t, deleted)
 
-	_, err = definitionStore.FindOrchestrationDefinition(oType)
+	_, err = definitionStore.FindOrchestrationDefinition(ctx, oType)
 	assert.Equal(t, store.ErrNotFound, err)
 
-	deleted, err = definitionStore.DeleteOrchestrationDefinition(oType)
+	deleted, err = definitionStore.DeleteOrchestrationDefinition(ctx, oType)
 	assert.Nil(t, err)
 	assert.False(t, deleted)
 }
 
 func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	var activityType api.ActivityType = "test-activity-1"
 	definition := &api.ActivityDefinition{Type: activityType}
-	definitionStore.StoreActivityDefinition(definition)
+	_, _ = definitionStore.StoreActivityDefinition(ctx, definition)
 
-	_, err := definitionStore.FindActivityDefinition(activityType)
+	_, err := definitionStore.FindActivityDefinition(ctx, activityType)
 	assert.NoError(t, err)
 
-	deleted, err := definitionStore.DeleteActivityDefinition(activityType)
+	deleted, err := definitionStore.DeleteActivityDefinition(ctx, activityType)
 	assert.Nil(t, err)
 	assert.True(t, deleted)
 
-	_, err = definitionStore.FindActivityDefinition(activityType)
+	_, err = definitionStore.FindActivityDefinition(ctx, activityType)
 	assert.Equal(t, store.ErrNotFound, err)
 
-	deleted, err = definitionStore.DeleteActivityDefinition(activityType)
+	deleted, err = definitionStore.DeleteActivityDefinition(ctx, activityType)
 	assert.Nil(t, err)
 	assert.False(t, deleted)
 }
 
 func TestDefinitionStore_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	var originalType model.OrchestrationType = "original-type"
 	originalDef := &api.OrchestrationDefinition{
 		Type: originalType,
 	}
-	definitionStore.StoreOrchestrationDefinition(originalDef)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, originalDef)
 
 	originalDef.Type = "modified-type"
 
-	retrievedDef, err := definitionStore.FindOrchestrationDefinition(originalType)
+	retrievedDef, err := definitionStore.FindOrchestrationDefinition(ctx, originalType)
 	require.NoError(t, err)
 
 	assert.Equal(t, originalType, retrievedDef.Type)
@@ -157,13 +166,14 @@ func TestDefinitionStore_DataIsolation(t *testing.T) {
 
 	retrievedDef.Type = "retrieved-modified"
 
-	retrievedDef2, err := definitionStore.FindOrchestrationDefinition(originalType)
+	retrievedDef2, err := definitionStore.FindOrchestrationDefinition(ctx, originalType)
 	require.NoError(t, err)
 	assert.Equal(t, originalType, retrievedDef2.Type)
 }
 
 func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	var dType model.OrchestrationType = "test-orchestration"
 
@@ -171,29 +181,30 @@ func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 	definition1 := &api.OrchestrationDefinition{
 		Type: dType,
 	}
-	definitionStore.StoreOrchestrationDefinition(definition1)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, definition1)
 
 	// Store second definition with same ID (overwrite)
 	definition2 := &api.OrchestrationDefinition{
 		Type: dType,
 	}
-	definitionStore.StoreOrchestrationDefinition(definition2)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, definition2)
 
 	// Verify the second definition is stored
-	result, err := definitionStore.FindOrchestrationDefinition(dType)
+	result, err := definitionStore.FindOrchestrationDefinition(ctx, dType)
 	require.NoError(t, err)
 	assert.Equal(t, dType, result.Type)
 
 	// Verify only one definition exists
-	defintions, _, err := definitionStore.ListOrchestrationDefinitions(0, 1000)
+	defintions, _, err := definitionStore.ListOrchestrationDefinitions(ctx, 0, 1000)
 	assert.Equal(t, 1, len(defintions))
 }
 
 func TestDefinitionStore_ListOrchestrationDefinitions_WithPagination(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	// Test empty store
-	definitions, hasMore, err := definitionStore.ListOrchestrationDefinitions(0, 10)
+	definitions, hasMore, err := definitionStore.ListOrchestrationDefinitions(ctx, 0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(definitions))
 	assert.False(t, hasMore)
@@ -205,44 +216,44 @@ func TestDefinitionStore_ListOrchestrationDefinitions_WithPagination(t *testing.
 	def4 := &api.OrchestrationDefinition{Type: "type4"}
 	def5 := &api.OrchestrationDefinition{Type: "type5"}
 
-	definitionStore.StoreOrchestrationDefinition(def1)
-	definitionStore.StoreOrchestrationDefinition(def2)
-	definitionStore.StoreOrchestrationDefinition(def3)
-	definitionStore.StoreOrchestrationDefinition(def4)
-	definitionStore.StoreOrchestrationDefinition(def5)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def1)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def2)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def3)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def4)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def5)
 
 	// Test first page
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(0, 2)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 0, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.True(t, hasMore)
 
 	// Test second page
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(2, 2)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 2, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.True(t, hasMore)
 
 	// Test last page
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(4, 2)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 4, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test get all
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(0, 10)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 5, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test offset beyond total
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(10, 2)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 10, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test partial last page
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(3, 5)
+	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 3, 5)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.False(t, hasMore)
@@ -250,31 +261,33 @@ func TestDefinitionStore_ListOrchestrationDefinitions_WithPagination(t *testing.
 
 func TestDefinitionStore_ListOrchestrationDefinitions_ValidationErrors(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	// Test negative offset
-	_, _, err := definitionStore.ListOrchestrationDefinitions(-1, 10)
+	_, _, err := definitionStore.ListOrchestrationDefinitions(ctx, -1, 10)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "offset cannot be negative")
 
 	// Test zero limit
-	_, _, err = definitionStore.ListOrchestrationDefinitions(0, 0)
+	_, _, err = definitionStore.ListOrchestrationDefinitions(ctx, 0, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "limit must be positive")
 
 	// Test negative limit
-	_, _, err = definitionStore.ListOrchestrationDefinitions(0, -1)
+	_, _, err = definitionStore.ListOrchestrationDefinitions(ctx, 0, -1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "limit must be positive")
 }
 
 func TestDefinitionStore_ListOrchestrationDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	var originalType model.OrchestrationType = "original"
 	originalDef := &api.OrchestrationDefinition{Type: originalType}
-	definitionStore.StoreOrchestrationDefinition(originalDef)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, originalDef)
 
-	definitions, hasMore, err := definitionStore.ListOrchestrationDefinitions(0, 10)
+	definitions, hasMore, err := definitionStore.ListOrchestrationDefinitions(ctx, 0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
 	assert.False(t, hasMore)
@@ -289,16 +302,17 @@ func TestDefinitionStore_ListOrchestrationDefinitions_DataIsolation(t *testing.T
 	definitions[0].Type = "returned-modified"
 
 	// Verify stored definition is not affected
-	storedDef, err := definitionStore.FindOrchestrationDefinition(originalType)
+	storedDef, err := definitionStore.FindOrchestrationDefinition(ctx, originalType)
 	assert.NoError(t, err)
 	assert.Equal(t, originalType, storedDef.Type)
 }
 
 func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	// Test empty store
-	definitions, hasMore, err := definitionStore.ListActivityDefinitions(0, 10)
+	definitions, hasMore, err := definitionStore.ListActivityDefinitions(ctx, 0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(definitions))
 	assert.False(t, hasMore)
@@ -310,44 +324,44 @@ func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
 	def4 := &api.ActivityDefinition{Type: "type4", Description: "desc4"}
 	def5 := &api.ActivityDefinition{Type: "type5", Description: "desc5"}
 
-	definitionStore.StoreActivityDefinition(def1)
-	definitionStore.StoreActivityDefinition(def2)
-	definitionStore.StoreActivityDefinition(def3)
-	definitionStore.StoreActivityDefinition(def4)
-	definitionStore.StoreActivityDefinition(def5)
+	_, _ = definitionStore.StoreActivityDefinition(ctx, def1)
+	_, _ = definitionStore.StoreActivityDefinition(ctx, def2)
+	_, _ = definitionStore.StoreActivityDefinition(ctx, def3)
+	_, _ = definitionStore.StoreActivityDefinition(ctx, def4)
+	_, _ = definitionStore.StoreActivityDefinition(ctx, def5)
 
 	// Test first page
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(0, 2)
+	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 0, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.True(t, hasMore)
 
 	// Test second page
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(2, 2)
+	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 2, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.True(t, hasMore)
 
 	// Test last page
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(4, 2)
+	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 4, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test get all
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(0, 10)
+	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 5, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test offset beyond total
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(10, 2)
+	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 10, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(definitions))
 	assert.False(t, hasMore)
 
 	// Test partial last page
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(3, 5)
+	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 3, 5)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(definitions))
 	assert.False(t, hasMore)
@@ -355,31 +369,33 @@ func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
 
 func TestDefinitionStore_ListActivityDefinitions_ValidationErrors(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	// Test negative offset
-	_, _, err := definitionStore.ListActivityDefinitions(-1, 10)
+	_, _, err := definitionStore.ListActivityDefinitions(ctx, -1, 10)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "offset cannot be negative")
 
 	// Test zero limit
-	_, _, err = definitionStore.ListActivityDefinitions(0, 0)
+	_, _, err = definitionStore.ListActivityDefinitions(ctx, 0, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "limit must be positive")
 
 	// Test negative limit
-	_, _, err = definitionStore.ListActivityDefinitions(0, -1)
+	_, _, err = definitionStore.ListActivityDefinitions(ctx, 0, -1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "limit must be positive")
 }
 
 func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
 	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
 
 	var originalType api.ActivityType = "original"
 	originalDef := &api.ActivityDefinition{Type: originalType, Description: "desc1"}
-	definitionStore.StoreActivityDefinition(originalDef)
+	_, _ = definitionStore.StoreActivityDefinition(ctx, originalDef)
 
-	definitions, hasMore, err := definitionStore.ListActivityDefinitions(0, 10)
+	definitions, hasMore, err := definitionStore.ListActivityDefinitions(ctx, 0, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
 	assert.False(t, hasMore)
@@ -394,7 +410,105 @@ func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
 	definitions[0].Type = "returned-modified"
 
 	// Verify stored definition is not affected
-	storedDef, err := definitionStore.FindActivityDefinition(originalType)
+	storedDef, err := definitionStore.FindActivityDefinition(ctx, originalType)
 	assert.NoError(t, err)
 	assert.Equal(t, originalType, storedDef.Type)
+}
+
+func TestDefinitionStore_ExistsOrchestrationDefinition_Found(t *testing.T) {
+	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
+
+	var oType model.OrchestrationType = "test-orchestration-exists"
+	definition := &api.OrchestrationDefinition{Type: oType}
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, definition)
+
+	exists, err := definitionStore.ExistsOrchestrationDefinition(ctx, oType)
+
+	assert.NoError(t, err)
+	assert.True(t, exists)
+}
+
+func TestDefinitionStore_ExistsOrchestrationDefinition_NotFound(t *testing.T) {
+	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
+
+	exists, err := definitionStore.ExistsOrchestrationDefinition(ctx, "non-existent-orchestration")
+
+	assert.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func TestDefinitionStore_ExistsActivityDefinition_Found(t *testing.T) {
+	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
+
+	var activityType api.ActivityType = "test-activity-exists"
+	definition := &api.ActivityDefinition{Type: activityType}
+	_, _ = definitionStore.StoreActivityDefinition(ctx, definition)
+
+	exists, err := definitionStore.ExistsActivityDefinition(ctx, activityType)
+
+	assert.NoError(t, err)
+	assert.True(t, exists)
+}
+
+func TestDefinitionStore_ExistsActivityDefinition_NotFound(t *testing.T) {
+	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
+
+	exists, err := definitionStore.ExistsActivityDefinition(ctx, "non-existent-activity")
+
+	assert.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func TestDefinitionStore_GetOrchestrationDefinitionCount_WithPredicate(t *testing.T) {
+	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
+
+	def1 := &api.OrchestrationDefinition{
+		Type:        "deploy-orchestration",
+		Description: "Deploy",
+		Active:      true,
+	}
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def1)
+
+	def2 := &api.OrchestrationDefinition{
+		Type:        "dispose-orchestration",
+		Description: "Dispose",
+		Active:      false,
+	}
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def2)
+
+	// Count definitions where Active=true (should return 1)
+	predicate := query.Eq("Active", true)
+	count, err := definitionStore.GetOrchestrationDefinitionCount(ctx, predicate)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, count)
+}
+
+func TestDefinitionStore_GetActivityDefinitionCount_WithPredicate(t *testing.T) {
+	definitionStore := NewDefinitionStore()
+	ctx := context.Background()
+
+	def1 := &api.ActivityDefinition{
+		Type:        "deploy-activity",
+		Description: "Deploy resources",
+	}
+	_, _ = definitionStore.StoreActivityDefinition(ctx, def1)
+
+	def2 := &api.ActivityDefinition{
+		Type:        "cleanup-activity",
+		Description: "Cleanup temporary files",
+	}
+	_, _ = definitionStore.StoreActivityDefinition(ctx, def2)
+
+	// Count definitions where Description contains "Deploy" (should return 1)
+	predicate := query.Contains("Description", "Deploy")
+	count, err := definitionStore.GetActivityDefinitionCount(ctx, predicate)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, count)
 }

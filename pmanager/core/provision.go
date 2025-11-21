@@ -33,7 +33,7 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.Orchestrati
 
 	manifestID := manifest.ID
 
-	definition, err := p.store.FindOrchestrationDefinition(manifest.OrchestrationType)
+	definition, err := p.store.FindOrchestrationDefinition(ctx, manifest.OrchestrationType)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			// Not found is a client error
@@ -94,7 +94,7 @@ func (d definitionManager) CreateOrchestrationDefinition(ctx context.Context, de
 
 		// Verify that all referenced activities exist
 		for _, activity := range definition.Activities {
-			exists, err := d.store.ExistsActivityDefinition(activity.Type)
+			exists, err := d.store.ExistsActivityDefinition(ctx, activity.Type)
 			if err != nil {
 				return nil, err
 			}
@@ -107,7 +107,7 @@ func (d definitionManager) CreateOrchestrationDefinition(ctx context.Context, de
 			return nil, errors.Join(missingErrors...)
 		}
 
-		persisted, err := d.store.StoreOrchestrationDefinition(definition)
+		persisted, err := d.store.StoreOrchestrationDefinition(ctx, definition)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +117,7 @@ func (d definitionManager) CreateOrchestrationDefinition(ctx context.Context, de
 
 func (d definitionManager) CreateActivityDefinition(ctx context.Context, definition *api.ActivityDefinition) (*api.ActivityDefinition, error) {
 	return store.Trx[api.ActivityDefinition](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ActivityDefinition, error) {
-		definition, err := d.store.StoreActivityDefinition(definition)
+		definition, err := d.store.StoreActivityDefinition(ctx, definition)
 		if err != nil {
 			return nil, err
 		}

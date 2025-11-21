@@ -56,7 +56,8 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreOrchestrationDefinition(definition)
+				ctx := context.Background()
+				_, _ = store.StoreOrchestrationDefinition(ctx, definition)
 			},
 			setupOrch: func(orch *mocks.MockOrchestrator) {
 				orch.EXPECT().GetOrchestration(mock.Anything, "test-orchestration-1").Return(nil, nil)
@@ -83,7 +84,8 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreOrchestrationDefinition(definition)
+				ctx := context.Background()
+				_, _ = store.StoreOrchestrationDefinition(ctx, definition)
 			},
 			setupOrch: func(orch *mocks.MockOrchestrator) {
 				existingOrch := &api.Orchestration{
@@ -127,7 +129,8 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreOrchestrationDefinition(definition)
+				ctx := context.Background()
+				_, _ = store.StoreOrchestrationDefinition(ctx, definition)
 			},
 			setupOrch: func(orch *mocks.MockOrchestrator) {
 				orch.EXPECT().GetOrchestration(mock.Anything, "test-orchestration-5").Return(nil, errors.New("orchestrator error"))
@@ -151,7 +154,8 @@ func TestProvisionManager_Start(t *testing.T) {
 						},
 					},
 				}
-				store.StoreOrchestrationDefinition(definition)
+				ctx := context.Background()
+				_, _ = store.StoreOrchestrationDefinition(ctx, definition)
 			},
 			setupOrch: func(orch *mocks.MockOrchestrator) {
 				orch.EXPECT().GetOrchestration(mock.Anything, "test-orchestration-6").Return(nil, nil)
@@ -217,7 +221,9 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	// Setup memory store with test definition
 	store := memorystore.NewDefinitionStore()
 	definition := createTestOrchestrationDefinition("test-type", true)
-	store.StoreOrchestrationDefinition(definition)
+
+	ctx := context.Background()
+	_, _ = store.StoreOrchestrationDefinition(ctx, definition)
 
 	// Setup mock orchestrator
 	mockOrch := mocks.NewMockOrchestrator(t)
@@ -242,7 +248,6 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	}
 
 	// Execute test
-	ctx := context.Background()
 	result, err := pm.Start(ctx, manifest)
 
 	// Assert results

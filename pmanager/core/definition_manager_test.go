@@ -42,7 +42,7 @@ func TestDefinitionManager_CreateOrchestrationDefinition_Success(t *testing.T) {
 		InputSchema:  map[string]any{"type": "object"},
 		OutputSchema: map[string]any{"type": "object"},
 	}
-	_, err := store.StoreActivityDefinition(activityDef)
+	_, err := store.StoreActivityDefinition(context.Background(), activityDef)
 	require.NoError(t, err, "Failed to store activity definition")
 
 	// Create an orchestration definition that references the activity
@@ -120,7 +120,7 @@ func TestDefinitionManager_CreateOrchestrationDefinition_MultipleMissingActivity
 		InputSchema:  map[string]any{"type": "object"},
 		OutputSchema: map[string]any{"type": "object"},
 	}
-	_, err := store.StoreActivityDefinition(activityDef)
+	_, err := store.StoreActivityDefinition(context.Background(), activityDef)
 	require.NoError(t, err, "Failed to store valid activity definition")
 
 	// Create orchestration definition with mix of valid and invalid activity references
@@ -199,7 +199,7 @@ func TestDefinitionManager_CreateOrchestrationDefinition_StoreError(t *testing.T
 		Activities: []api.Activity{},
 	}
 
-	_, err := store.StoreOrchestrationDefinition(orchestrationDef)
+	_, err := store.StoreOrchestrationDefinition(context.Background(), orchestrationDef)
 	require.NoError(t, err, "First store should succeed")
 
 	// Attempt to store the same orchestration definition again
@@ -252,7 +252,7 @@ func TestDefinitionManager_CreateActivityDefinition_Duplicate(t *testing.T) {
 		OutputSchema: map[string]any{"type": "object"},
 	}
 
-	_, err := store.StoreActivityDefinition(activityDef)
+	_, err := store.StoreActivityDefinition(context.Background(), activityDef)
 	require.NoError(t, err, "First store should succeed")
 
 	// Try to create the same activity definition again
@@ -332,15 +332,15 @@ func TestDefinitionManager_Integration_CompleteWorkflow(t *testing.T) {
 	assert.True(t, activityTypes["deploy"], "Should contain deploy activity")
 
 	// Verify stored definitions can be retrieved
-	retrievedOrchestration, err := store.FindOrchestrationDefinition(orchestrationDef.Type)
+	retrievedOrchestration, err := store.FindOrchestrationDefinition(context.Background(), orchestrationDef.Type)
 	require.NoError(t, err, "Should retrieve orchestration definition")
 	assert.Equal(t, orchestrationDef.Type, retrievedOrchestration.Type, "Retrieved deployment type should match")
 
-	retrievedActivity1, err := store.FindActivityDefinition("prepare")
+	retrievedActivity1, err := store.FindActivityDefinition(ctx, "prepare")
 	require.NoError(t, err, "Should retrieve first activity definition")
 	assert.Equal(t, api.ActivityType("prepare"), retrievedActivity1.Type, "Retrieved activity type should match")
 
-	retrievedActivity2, err := store.FindActivityDefinition("deploy")
+	retrievedActivity2, err := store.FindActivityDefinition(ctx, "deploy")
 	require.NoError(t, err, "Should retrieve second activity definition")
 	assert.Equal(t, api.ActivityType("deploy"), retrievedActivity2.Type, "Retrieved activity type should match")
 }

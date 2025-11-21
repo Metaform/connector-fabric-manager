@@ -45,9 +45,9 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	handler := NewHandler(provisionManager, definitionManager, context.LogMonitor)
 
 	router.Route("/api/v1alpha1", func(r chi.Router) {
-		r.Post("/orchestrations", handler.orchestration)
-		r.Post("/activity-definitions", handler.activityDefinition)
-		r.Post("/orchestration-definitions", handler.orchestrationDefinition)
+		r.Post("/orchestrations", handler.createOrchestration)
+		r.Post("/activity-definitions", handler.createActivityDefinition)
+		r.Post("/orchestration-definitions", handler.createOrchestrationDefinition)
 		r.Get("/health", handler.health)
 	})
 
