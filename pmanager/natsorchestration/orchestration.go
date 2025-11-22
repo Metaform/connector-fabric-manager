@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go/jetstream"
@@ -29,12 +30,16 @@ import (
 // activity, a message is published to a durable queue based on the activity type. Activity messages are then dequeued
 // and reliably processed by a NatsActivityExecutor that handles the activity type.
 type NatsOrchestrator struct {
-	Client  natsclient.MsgClient
-	Monitor system.LogMonitor
+	Client     natsclient.MsgClient
+	index      store.EntityStore[api.OrchestrationEntry]
+	trxContext store.TransactionContext
+	monitor    system.LogMonitor
 }
 
-func NewNatsOrchestrator(client natsclient.MsgClient, monitor system.LogMonitor) *NatsOrchestrator {
-	return &NatsOrchestrator{Client: client, Monitor: monitor}
+func NewNatsOrchestrator(
+	client natsclient.MsgClient,
+	monitor system.LogMonitor) *NatsOrchestrator {
+	return &NatsOrchestrator{Client: client, monitor: monitor}
 }
 
 func (o *NatsOrchestrator) GetOrchestration(ctx context.Context, id string) (*api.Orchestration, error) {

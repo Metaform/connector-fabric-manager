@@ -48,7 +48,7 @@ func TestNatsOrchestrator_GetOrchestration_Success(t *testing.T) {
 	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := &NatsOrchestrator{
 		Client:  adapter,
-		Monitor: system.NoopMonitor{},
+		monitor: system.NoopMonitor{},
 	}
 
 	// Create and execute an orchestration
@@ -88,7 +88,7 @@ func TestNatsOrchestrator_GetOrchestration_NotFound(t *testing.T) {
 	adapter := natsclient.NewMsgClient(nt.Client)
 	orchestrator := &NatsOrchestrator{
 		Client:  adapter,
-		Monitor: system.NoopMonitor{},
+		monitor: system.NoopMonitor{},
 	}
 
 	// Test GetOrchestration for non-existent orchestration
@@ -180,7 +180,7 @@ func Test_ValuePersistence(t *testing.T) {
 
 			orchestrator := &NatsOrchestrator{
 				Client:  adapter,
-				Monitor: system.NoopMonitor{},
+				monitor: system.NoopMonitor{},
 			}
 
 			err = orchestrator.Execute(ctx, &orchestration)
@@ -307,7 +307,7 @@ func Test_ValuePersistenceOnRetry(t *testing.T) {
 
 			orchestrator := &NatsOrchestrator{
 				Client:  adapter,
-				Monitor: system.NoopMonitor{},
+				monitor: system.NoopMonitor{},
 			}
 
 			err = orchestrator.Execute(ctx, &orchestration)
@@ -439,7 +439,7 @@ func Test_ValuePersistenceMultipleActivities(t *testing.T) {
 
 			orchestrator := &NatsOrchestrator{
 				Client:  adapter,
-				Monitor: system.NoopMonitor{},
+				monitor: system.NoopMonitor{},
 			}
 
 			err = orchestrator.Execute(ctx, &orchestration)
@@ -549,7 +549,7 @@ func Test_ValuePersistenceOnWait(t *testing.T) {
 
 			orchestrator := &NatsOrchestrator{
 				Client:  adapter,
-				Monitor: system.NoopMonitor{},
+				monitor: system.NoopMonitor{},
 			}
 
 			err = orchestrator.Execute(ctx, &orchestration)

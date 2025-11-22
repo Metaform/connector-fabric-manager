@@ -10,3 +10,10 @@ packages:
           filename: msg_client_mock.go
           outpkg: mocks
           dir: ./mocks
+  github.com/metaform/connector-fabric-manager/common/store:
+    interfaces:
+      EntityStore:
+        config:
+          filename: store.go
+          outpkg: mocks
+          dir: ./mocks

@@ -17,6 +17,7 @@ import (
 	"fmt"
 
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/nats-io/nats.go"
@@ -52,6 +53,10 @@ func (a *natsOrchestratorServiceAssembly) Provides() []system.ServiceType {
 	return []system.ServiceType{api.OrchestratorKey, natsclient.NatsClientKey}
 }
 
+func (d *natsOrchestratorServiceAssembly) Requires() []system.ServiceType {
+	return []system.ServiceType{api.OrchestrationIndexKey, store.TransactionContextKey}
+}
+
 func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 	natsClient, err := natsclient.NewNatsClient(a.uri, a.bucket)
 	if err != nil {
@@ -76,11 +81,21 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 		}
 	}
 
-	a.subscription, err = a.natsClient.JetStream.Conn().Subscribe("$KV."+a.bucket+".>", func(msg *nats.Msg) {
-		_ = msg.Ack()
+	index := ctx.Registry.Resolve(api.OrchestrationIndexKey).(store.EntityStore[api.OrchestrationEntry])
+	trxContext := ctx.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
+
+	watcher := &OrchestrationIndexWatcher{
+		index:      index,
+		trxContext: trxContext,
+		monitor:    ctx.LogMonitor,
+	}
+	a.subscription, err = a.natsClient.JetStream.Conn().Subscribe("$KV."+a.bucket+".>",func(msg *nats.Msg){
+		watcher.onMessage(msg.Data, msg)
 	})
 
-	ctx.Registry.Register(api.OrchestratorKey, NewNatsOrchestrator(natsclient.NewMsgClient(natsClient), ctx.LogMonitor))
+	client := natsclient.NewMsgClient(natsClient)
+	orchestrator := NewNatsOrchestrator(client, ctx.LogMonitor)
+	ctx.Registry.Register(api.OrchestratorKey, orchestrator)
 
 	return nil
 }

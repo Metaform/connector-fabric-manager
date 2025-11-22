@@ -309,7 +309,7 @@ func TestActivityProcessor_ScheduleThenContinue(t *testing.T) {
 	// Create and start the orchestrator
 	orchestrator := &NatsOrchestrator{
 		Client:  adapter,
-		Monitor: system.NoopMonitor{},
+		monitor: system.NoopMonitor{},
 	}
 
 	err = orchestrator.Execute(context.Background(), &orchestration)

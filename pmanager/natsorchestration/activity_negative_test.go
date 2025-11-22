@@ -103,7 +103,7 @@ func TestExecuteOrchestration_Errors(t *testing.T) {
 
 			orchestrator := &NatsOrchestrator{
 				Client:  mockClient,
-				Monitor: system.NoopMonitor{},
+				monitor: system.NoopMonitor{},
 			}
 
 			err := orchestrator.Execute(context.Background(), &tt.orchestration)
