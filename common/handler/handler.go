@@ -103,6 +103,10 @@ func (h HttpHandler) HandleError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, types.ErrNotFound):
 		h.WriteError(w, "Not found", http.StatusNotFound)
+	case errors.Is(err, types.ErrConflict):
+		h.WriteError(w, "Conflict", http.StatusConflict)
+	case errors.Is(err, types.ErrInvalidInput):
+		h.WriteError(w, "Invalid input", http.StatusBadRequest)
 	case types.IsClientError(err):
 		var clientErr types.ClientError
 		errors.As(err, &clientErr)
