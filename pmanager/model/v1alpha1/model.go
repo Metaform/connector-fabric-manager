@@ -12,6 +12,12 @@
 
 package v1alpha1
 
+import (
+	"time"
+
+	"github.com/metaform/connector-fabric-manager/common/model"
+)
+
 type ActivityDefinition struct {
 	Type         string         `json:"type" validate:"required,modeltype"`
 	Description  string         `json:"description omitempty"`
@@ -37,4 +43,30 @@ type OrchestrationDefinition struct {
 	Description string         `json:"description omitempty"`
 	Schema      map[string]any `json:"schema omitempty"`
 	Activities  []Activity     `json:"activities" validate:"required,min=1"`
+}
+
+type OrchestrationEntry struct {
+	ID                string                  `json:"id"`
+	CorrelationID     string                  `json:"correlationId"`
+	State             int                     `json:"state"`
+	StateTimestamp    time.Time               `json:"stateTimestamp"`
+	CreatedTimestamp  time.Time               `json:"createdTimestamp"`
+	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
+}
+
+type Orchestration struct {
+	ID                string                  `json:"id"`
+	CorrelationID     string                  `json:"correlationId"`
+	State             int                     `json:"state"`
+	StateTimestamp    time.Time               `json:"stateTimestamp"`
+	CreatedTimestamp  time.Time               `json:"createdTimestamp"`
+	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
+	Steps             []OrchestrationStep     `json:"steps"`
+	ProcessingData    map[string]any          `json:"processingData"`
+	OutputData        map[string]any          `json:"outputData"`
+	Completed         map[string]struct{}     `json:"completed"`
+}
+
+type OrchestrationStep struct {
+	Activities []Activity `json:"activities"`
 }

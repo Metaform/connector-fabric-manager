@@ -27,12 +27,6 @@ type NewTenant struct {
 	Properties map[string]any `json:"properties,omitempty"`
 }
 
-type Query struct {
-	Predicate string `json:"predicate" required:"true"`
-	Offset    int    `json:"offset"`
-	Limit     int    `json:"limit"`
-}
-
 type Tenant struct {
 	Entity
 	NewTenant

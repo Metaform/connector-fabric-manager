@@ -10,21 +10,23 @@
 //       Metaform Systems, Inc. - initial API and implementation
 //
 
-//go:build test
-
 package core
 
 import (
 	"context"
 	"errors"
+	"iter"
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/query"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	cmocks "github.com/metaform/connector-fabric-manager/common/mocks"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/api/mocks"
 	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
@@ -135,7 +137,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			setupOrch: func(orch *mocks.MockOrchestrator) {
 				orch.EXPECT().GetOrchestration(mock.Anything, "test-orchestration-5").Return(nil, errors.New("orchestrator error"))
 			},
-			expectedError: "error checking for orchestration test-orchestration-5: orchestrator error",
+			expectedError: "error performing de-duplication for test-orchestration-5",
 		},
 		{
 			name: "orchestrator execute orchestration error",
@@ -203,19 +205,6 @@ func TestProvisionManager_Start(t *testing.T) {
 	}
 }
 
-// Helper function to create a test orchestration definition
-func createTestOrchestrationDefinition(orchestrationType string, active bool) *api.OrchestrationDefinition {
-	return &api.OrchestrationDefinition{
-		Type: model.OrchestrationType(orchestrationType),
-		Activities: []api.Activity{
-			{
-				ID:   "activity1",
-				Type: "test-activity",
-			},
-		},
-	}
-}
-
 // Test helper to verify orchestration instantiation
 func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	// Setup memory store with test definition
@@ -254,4 +243,380 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, "test-deployment", result.ID)
+}
+
+// TestCountOrchestrations_WithEmptyResult tests counting with no matching orchestrations
+func TestCountOrchestrations_WithEmptyResult(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	mockEntityStore.On("CountByPredicate", ctx, &query.AtomicPredicate{}).
+		Return(0, nil)
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	count, err := pm.CountOrchestrations(ctx, &query.AtomicPredicate{})
+
+	require.NoError(t, err)
+	assert.Equal(t, 0, count)
+	mockEntityStore.AssertExpectations(t)
+}
+
+// TestCountOrchestrations_WithResults tests counting multiple matching orchestrations
+func TestCountOrchestrations_WithResults(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	predicate := &query.AtomicPredicate{}
+	mockEntityStore.On("CountByPredicate", ctx, predicate).
+		Return(5, nil)
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	count, err := pm.CountOrchestrations(ctx, predicate)
+
+	require.NoError(t, err)
+	assert.Equal(t, 5, count)
+	mockEntityStore.AssertExpectations(t)
+}
+
+// TestCountOrchestrations_WithStorageError tests handling of storage layer errors
+func TestCountOrchestrations_WithStorageError(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	expectedErr := store.ErrNotFound
+
+	mockEntityStore.On("CountByPredicate", ctx, &query.AtomicPredicate{}).
+		Return(0, expectedErr)
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	count, err := pm.CountOrchestrations(ctx, &query.AtomicPredicate{})
+
+	require.Error(t, err)
+	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, 0, count)
+	mockEntityStore.AssertExpectations(t)
+}
+
+// TestQueryOrchestrations_WithEmptyResult tests querying with no matching orchestrations
+func TestQueryOrchestrations_WithEmptyResult(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+			return func(yield func(api.OrchestrationEntry, error) bool) {
+				// Return empty sequence
+			}
+		})
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	predicate := &query.AtomicPredicate{}
+	options := store.PaginationOptions{}
+
+	var results []api.OrchestrationEntry
+	var errs []error
+
+	for entry, err := range pm.QueryOrchestrations(ctx, predicate, options) {
+		results = append(results, entry)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	require.Equal(t, 0, len(errs))
+	assert.Equal(t, 0, len(results))
+	mockEntityStore.AssertExpectations(t)
+}
+
+// TestQueryOrchestrations_WithResults tests querying multiple matching orchestrations
+func TestQueryOrchestrations_WithResults(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	expectedEntries := []api.OrchestrationEntry{
+		{
+			ID:                "orch-1",
+			CorrelationID:     "corr-1",
+			OrchestrationType: "test-type",
+		},
+		{
+			ID:                "orch-2",
+			CorrelationID:     "corr-2",
+			OrchestrationType: "test-type",
+		},
+	}
+
+	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+			return func(yield func(api.OrchestrationEntry, error) bool) {
+				for _, entry := range expectedEntries {
+					if !yield(entry, nil) {
+						return
+					}
+				}
+			}
+		})
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	predicate := &query.AtomicPredicate{}
+	options := store.PaginationOptions{}
+
+	var results []api.OrchestrationEntry
+
+	for entry, err := range pm.QueryOrchestrations(ctx, predicate, options) {
+		require.NoError(t, err)
+		results = append(results, entry)
+	}
+
+	require.Equal(t, 2, len(results))
+	assert.Equal(t, "orch-1", results[0].ID)
+	assert.Equal(t, "orch-2", results[1].ID)
+	mockEntityStore.AssertExpectations(t)
+}
+
+// TestQueryOrchestrations_WithStorageError tests handling of storage layer errors
+func TestQueryOrchestrations_WithStorageError(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	expectedErr := store.ErrNotFound
+
+	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+			return func(yield func(api.OrchestrationEntry, error) bool) {
+				yield(api.OrchestrationEntry{}, expectedErr)
+			}
+		})
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	predicate := &query.AtomicPredicate{}
+	options := store.PaginationOptions{}
+
+	var errorCount int
+
+	for _, err := range pm.QueryOrchestrations(ctx, predicate, options) {
+		if err != nil {
+			errorCount++
+			require.Equal(t, expectedErr, err)
+		}
+	}
+
+	require.Equal(t, 1, errorCount)
+	mockEntityStore.AssertExpectations(t)
+}
+
+// TestQueryOrchestrations_WithPagination tests pagination of results
+func TestQueryOrchestrations_WithPagination(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	expectedEntries := []api.OrchestrationEntry{
+		{
+			ID:                "orch-1",
+			CorrelationID:     "corr-1",
+			OrchestrationType: "test-type",
+		},
+		{
+			ID:                "orch-2",
+			CorrelationID:     "corr-2",
+			OrchestrationType: "test-type",
+		},
+	}
+
+	paginationOptions := store.PaginationOptions{
+		Limit:  2,
+		Offset: 0,
+	}
+
+	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, paginationOptions).
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+			return func(yield func(api.OrchestrationEntry, error) bool) {
+				for _, entry := range expectedEntries {
+					if !yield(entry, nil) {
+						return
+					}
+				}
+			}
+		})
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	predicate := &query.AtomicPredicate{}
+
+	var results []api.OrchestrationEntry
+
+	for entry, err := range pm.QueryOrchestrations(ctx, predicate, paginationOptions) {
+		require.NoError(t, err)
+		results = append(results, entry)
+	}
+
+	require.Equal(t, 2, len(results))
+	mockEntityStore.AssertExpectations(t)
+}
+
+// TestQueryOrchestrations_ContextCancellation tests early termination via iterator
+func TestQueryOrchestrations_ContextCancellation(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	expectedEntries := []api.OrchestrationEntry{
+		{
+			ID:                "orch-1",
+			CorrelationID:     "corr-1",
+			OrchestrationType: "test-type",
+		},
+		{
+			ID:                "orch-2",
+			CorrelationID:     "corr-2",
+			OrchestrationType: "test-type",
+		},
+		{
+			ID:                "orch-3",
+			CorrelationID:     "corr-3",
+			OrchestrationType: "test-type",
+		},
+	}
+
+	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+			return func(yield func(api.OrchestrationEntry, error) bool) {
+				for _, entry := range expectedEntries {
+					if !yield(entry, nil) {
+						return
+					}
+				}
+			}
+		})
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	predicate := &query.AtomicPredicate{}
+	options := store.PaginationOptions{}
+
+	var results []api.OrchestrationEntry
+	count := 0
+
+	for entry, err := range pm.QueryOrchestrations(ctx, predicate, options) {
+		require.NoError(t, err)
+		results = append(results, entry)
+		count++
+		// Stop after first iteration
+		if count >= 1 {
+			break
+		}
+	}
+
+	require.Equal(t, 1, len(results))
+	assert.Equal(t, "orch-1", results[0].ID)
+}
+
+// TestQueryOrchestrations_ComplexPredicate tests querying with complex predicates
+func TestQueryOrchestrations_ComplexPredicate(t *testing.T) {
+	ctx := context.Background()
+	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	trxContext := store.NoOpTransactionContext{}
+
+	// Create a complex predicate (example: AND of multiple conditions)
+	complexPredicate := &query.CompoundPredicate{
+		Operator: "AND",
+		Predicates: []query.Predicate{
+			&query.AtomicPredicate{},
+		},
+	}
+
+	expectedEntries := []api.OrchestrationEntry{
+		{
+			ID:                "orch-filtered-1",
+			CorrelationID:     "corr-1",
+			OrchestrationType: "specific-type",
+		},
+	}
+
+	mockEntityStore.On("FindByPredicatePaginated", ctx, complexPredicate, store.PaginationOptions{}).
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+			return func(yield func(api.OrchestrationEntry, error) bool) {
+				for _, entry := range expectedEntries {
+					if !yield(entry, nil) {
+						return
+					}
+				}
+			}
+		})
+
+	pm := &provisionManager{
+		store:      nil,
+		index:      mockEntityStore,
+		trxContext: trxContext,
+	}
+
+	var results []api.OrchestrationEntry
+
+	for entry, err := range pm.QueryOrchestrations(ctx, complexPredicate, store.PaginationOptions{}) {
+		require.NoError(t, err)
+		results = append(results, entry)
+	}
+
+	require.Equal(t, 1, len(results))
+	assert.Equal(t, "orch-filtered-1", results[0].ID)
+	assert.Equal(t, model.OrchestrationType("specific-type"), results[0].OrchestrationType)
+	mockEntityStore.AssertExpectations(t)
+}
+
+// Helper function to create a test orchestration definition
+func createTestOrchestrationDefinition(orchestrationType string, active bool) *api.OrchestrationDefinition {
+	return &api.OrchestrationDefinition{
+		Type: model.OrchestrationType(orchestrationType),
+		Activities: []api.Activity{
+			{
+				ID:   "activity1",
+				Type: "test-activity",
+			},
+		},
+	}
 }

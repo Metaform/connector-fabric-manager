@@ -126,3 +126,30 @@ func (h *PMHandler) deleteActivityDefinition(w http.ResponseWriter, req *http.Re
 
 	h.OK(w)
 }
+
+func (h *PMHandler) queryOrchestrations(w http.ResponseWriter, req *http.Request, path string) {
+	handler.QueryEntities[api.OrchestrationEntry](
+		&h.HttpHandler,
+		w,
+		req,
+		path,
+		h.provisionManager.CountOrchestrations,
+		h.provisionManager.QueryOrchestrations,
+		func(entry *api.OrchestrationEntry) any {
+			return v1alpha1.ToOrchestrationEntry(entry)
+		})
+}
+
+func (h *PMHandler) getOrchestration(w http.ResponseWriter, req *http.Request, id string) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+    orchestration, err := h.provisionManager.GetOrchestration(req.Context(), id)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	response := v1alpha1.ToOrchestration(orchestration)
+	h.ResponseOK(w, response)
+}

@@ -57,8 +57,27 @@ func (h *HandlerServiceAssembly) registerV1Alpha1(router chi.Router, handler *PM
 	h.registerActivityDefinitionRoutes(router, handler)
 	h.registerOrchestrationDefinitionRoutes(router, handler)
 
-	router.Post("/orchestrations", handler.createOrchestration)
+	h.registerOrchestrationRoutes(router, handler)
 	router.Get("/health", handler.health)
+}
+
+func (h *HandlerServiceAssembly) registerOrchestrationRoutes(router chi.Router, handler *PMHandler) {
+	router.Route("/orchestrations", func(r chi.Router) {
+		r.Post("/", handler.createOrchestration)
+		r.Post("/query", func(w http.ResponseWriter, req *http.Request) {
+			handler.queryOrchestrations(w, req, "/orchestrations/query")
+		})
+
+		r.Route("/{orchestrationID}", func(r chi.Router) {
+			r.Get("/", func(w http.ResponseWriter, req *http.Request) {
+				orchestrationID, found := handler.ExtractPathVariable(w, req, "orchestrationID")
+				if !found {
+					return
+				}
+				handler.getOrchestration(w, req, orchestrationID)
+			})
+		})
+	})
 }
 
 func (h *HandlerServiceAssembly) registerActivityDefinitionRoutes(router chi.Router, handler *PMHandler) {

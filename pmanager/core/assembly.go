@@ -13,7 +13,7 @@
 package core
 
 import (
-	cstore "github.com/metaform/connector-fabric-manager/common/store"
+	store "github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
@@ -31,20 +31,24 @@ func (m PMCoreServiceAssembly) Provides() []system.ServiceType {
 }
 
 func (m PMCoreServiceAssembly) Requires() []system.ServiceType {
-	return []system.ServiceType{api.DefinitionStoreKey, api.OrchestratorKey, cstore.TransactionContextKey}
+	return []system.ServiceType{api.DefinitionStoreKey, api.OrchestratorKey, store.TransactionContextKey}
 }
 
 func (m PMCoreServiceAssembly) Init(context *system.InitContext) error {
-	store := context.Registry.Resolve(api.DefinitionStoreKey).(api.DefinitionStore)
+	definitionStore := context.Registry.Resolve(api.DefinitionStoreKey).(api.DefinitionStore)
+	transactionContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
+
 	context.Registry.Register(api.ProvisionManagerKey, provisionManager{
 		orchestrator: context.Registry.Resolve(api.OrchestratorKey).(api.Orchestrator),
-		store:        store,
+		index:        context.Registry.Resolve(api.OrchestrationIndexKey).(store.EntityStore[api.OrchestrationEntry]),
+		store:        definitionStore,
+		trxContext:   transactionContext,
 		monitor:      context.LogMonitor,
 	})
 
 	context.Registry.Register(api.DefinitionManagerKey, definitionManager{
-		trxContext: context.Registry.Resolve(cstore.TransactionContextKey).(cstore.TransactionContext),
-		store:      store,
+		trxContext: transactionContext,
+		store:      definitionStore,
 	})
 	return nil
 }

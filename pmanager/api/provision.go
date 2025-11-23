@@ -17,11 +17,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"iter"
 	"reflect"
 
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/query"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 )
 
@@ -45,6 +48,15 @@ type ProvisionManager interface {
 
 	// GetOrchestration returns an orchestration by its ID or nil if not found.
 	GetOrchestration(ctx context.Context, orchestrationID string) (*Orchestration, error)
+
+	// QueryOrchestrations returns a sequence of orchestration entries matching the given predicate.
+	QueryOrchestrations(
+		ctx context.Context,
+		predicate query.Predicate,
+		options store.PaginationOptions) iter.Seq2[OrchestrationEntry, error]
+
+	// CountOrchestrations returns the number of orchestrations matching the given predicate.
+	CountOrchestrations(ctx context.Context, predicate query.Predicate) (int, error)
 }
 
 // Orchestrator manages asynchronous execution of orchestrations.

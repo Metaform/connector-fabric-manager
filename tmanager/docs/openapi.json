@@ -220,7 +220,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/V1Alpha1Query"
+                "$ref": "#/components/schemas/ModelQuery"
               }
             }
           }
@@ -381,6 +381,23 @@
   },
   "components": {
     "schemas": {
+      "ModelQuery": {
+        "required": [
+          "predicate"
+        ],
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "predicate": {
+            "type": "string"
+          }
+        }
+      },
       "V1Alpha1Cell": {
         "required": [
           "id",
@@ -551,23 +568,6 @@
             "items": {
               "$ref": "#/components/schemas/V1Alpha1VirtualParticipantAgent"
             }
-          }
-        }
-      },
-      "V1Alpha1Query": {
-        "required": [
-          "predicate"
-        ],
-        "type": "object",
-        "properties": {
-          "limit": {
-            "type": "integer"
-          },
-          "offset": {
-            "type": "integer"
-          },
-          "predicate": {
-            "type": "string"
           }
         }
       },

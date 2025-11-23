@@ -13,19 +13,23 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/query"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
 )
-
 
 const contentType = "application/json"
 
@@ -159,4 +163,117 @@ func (h HttpHandler) ExtractPathVariable(w http.ResponseWriter, req *http.Reques
 		return "", false
 	}
 	return value, true
+}
+
+func (h HttpHandler) WriteLinkHeaders(w http.ResponseWriter, path string, offset int, limit int, totalCount int) {
+	var links []string
+	selfLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"self\"", path, offset, limit)
+	links = append(links, selfLink)
+
+	if offset+limit < totalCount {
+		nextLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"next\"", path, offset+limit, limit)
+		links = append(links, nextLink)
+	}
+
+	if offset > 0 {
+		prevOffset := offset - limit
+		if prevOffset < 0 {
+			prevOffset = 0
+		}
+		prevLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"prev\"", path, prevOffset, limit)
+		links = append(links, prevLink)
+	}
+
+	firstLink := fmt.Sprintf("<%s?offset=0&limit=%d>; rel=\"first\"", path, limit)
+	links = append(links, firstLink)
+
+	lastOffset := ((totalCount - 1) / limit) * limit
+	if lastOffset < 0 {
+		lastOffset = 0
+	}
+	lastLink := fmt.Sprintf("<%s=%d&limit=%d>; rel=\"last\"", path, lastOffset, limit)
+	links = append(links, lastLink)
+
+	w.Header().Set("Link", strings.Join(links, ", "))
+	w.Header().Set("X-Total-Count", fmt.Sprintf("%d", totalCount))
+}
+
+func QueryEntities[T any](
+	h *HttpHandler,
+	w http.ResponseWriter,
+	req *http.Request,
+	path string,
+	countFn func(context.Context, query.Predicate) (int, error),
+	queryFn func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[T, error],
+	transformFn func(*T) any) {
+
+	if h.InvalidMethod(w, req, http.MethodPost) {
+		return
+	}
+	var queryMessage model.Query
+	if !h.ReadPayload(w, req, &queryMessage) {
+		return
+	}
+	offset := queryMessage.Offset
+	limit := queryMessage.Limit
+	if limit == 0 || limit > 10000 {
+		limit = 10000
+	}
+
+	predicate, err := query.ParsePredicate(queryMessage.Predicate)
+	if err != nil {
+		h.WriteError(w, fmt.Sprintf("Client error: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	totalCount, err := countFn(req.Context(), predicate)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.WriteLinkHeaders(w, path, offset, limit, totalCount)
+
+	h.OK(w)
+	_, err = w.Write([]byte("["))
+	if err != nil {
+		h.Monitor.Infow("Error writing response: %v", err)
+		return
+	}
+	first := true
+
+	for entity, err := range queryFn(req.Context(), predicate, store.PaginationOptions{
+		Offset: offset,
+		Limit:  limit,
+	}) {
+		if err != nil {
+			h.Monitor.Infow("Error streaming results: %v", err)
+			break
+		}
+
+		if !first {
+			_, err = w.Write([]byte(","))
+			if err != nil {
+				h.Monitor.Infow("Error writing response: %v", err)
+				return
+			}
+		}
+		first = false
+
+		response := transformFn(&entity)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			h.Monitor.Infow("Error encoding response: %v", err)
+			break
+		}
+
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+	}
+
+	_, err = w.Write([]byte("]"))
+	if err != nil {
+		h.Monitor.Infow("Error writing response: %v", err)
+		return
+	}
 }

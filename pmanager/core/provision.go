@@ -15,8 +15,10 @@ package core
 import (
 	"context"
 	"errors"
+	"iter"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
@@ -26,6 +28,8 @@ import (
 type provisionManager struct {
 	orchestrator api.Orchestrator
 	store        api.DefinitionStore
+	index        store.EntityStore[api.OrchestrationEntry]
+	trxContext   store.TransactionContext
 	monitor      system.LogMonitor
 }
 
@@ -81,4 +85,33 @@ func (p provisionManager) Cancel(ctx context.Context, orchestrationID string) er
 
 func (p provisionManager) GetOrchestration(ctx context.Context, orchestrationID string) (*api.Orchestration, error) {
 	return p.orchestrator.GetOrchestration(ctx, orchestrationID)
+}
+
+func (p provisionManager) QueryOrchestrations(
+	ctx context.Context,
+	predicate query.Predicate,
+	options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+	return func(yield func(api.OrchestrationEntry, error) bool) {
+		err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
+			for entry, err := range p.index.FindByPredicatePaginated(ctx, predicate, options) {
+				if !yield(entry, err) {
+					return context.Canceled
+				}
+			}
+			return nil
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			yield(api.OrchestrationEntry{}, err)
+		}
+	}
+}
+
+func (p provisionManager) CountOrchestrations(ctx context.Context, predicate query.Predicate) (int, error) {
+	var count int
+	err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
+		c, err := p.index.CountByPredicate(ctx, predicate)
+		count = c
+		return err
+	})
+	return count, err
 }

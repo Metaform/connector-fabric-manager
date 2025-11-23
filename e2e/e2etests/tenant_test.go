@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
@@ -49,11 +50,11 @@ func Test_VerifyTenantQueries(t *testing.T) {
 	require.NoError(t, err)
 
 	var result []v1alpha1.Tenant
-	err = client.PostToTManagerWithResponse("tenants/query", v1alpha1.Query{Predicate: "properties.group = 'suppliers'"}, &result)
+	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "properties.group = 'suppliers'"}, &result)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(result))
 
-	err = client.PostToTManagerWithResponse("tenants/query", v1alpha1.Query{Predicate: "properties.group = 'suppliers' OR properties.group = 'manufacturers'"}, &result)
+	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "properties.group = 'suppliers' OR properties.group = 'manufacturers'"}, &result)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(result))
 

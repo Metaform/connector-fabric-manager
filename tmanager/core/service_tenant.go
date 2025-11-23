@@ -14,6 +14,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"iter"
 
 	"github.com/metaform/connector-fabric-manager/common/query"
@@ -55,7 +56,7 @@ func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predica
 			}
 			return nil
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			yield(api.Tenant{}, err)
 		}
 	}

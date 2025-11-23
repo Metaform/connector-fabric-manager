@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 	"github.com/oaswrap/spec"
 	"github.com/oaswrap/spec/option"
@@ -67,7 +68,7 @@ func generateTenantEndpoints(r spec.Generator) {
 	tenants.Post("query",
 		option.Summary("Perform a Tenant query"),
 		option.Description("Perform a Tenant query"),
-		option.Request(v1alpha1.Query{}),
+		option.Request(model.Query{}),
 		option.Response(http.StatusOK, []v1alpha1.Tenant{}),
 	)
 

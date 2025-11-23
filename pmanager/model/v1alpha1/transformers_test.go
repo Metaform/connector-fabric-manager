@@ -14,6 +14,7 @@ package v1alpha1
 
 import (
 	"testing"
+	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -265,53 +266,70 @@ func TestToAPIMappingEntries_NilInput(t *testing.T) {
 	assert.Len(t, result, 0)
 }
 
-// Benchmark tests
-func BenchmarkToAPIActivityDefinition(b *testing.B) {
-	definition := &ActivityDefinition{
-		Type:         "http-request",
-		Description:  "Makes HTTP requests",
-		InputSchema:  map[string]any{"url": "string"},
-		OutputSchema: map[string]any{"response": "object"},
+func TestToOrchestrationEntry_VerifiesInputs(t *testing.T) {
+	testTime := time.Now()
+	input := api.OrchestrationEntry{
+		ID:                "test-id-123",
+		CorrelationID:     "corr-id-456",
+		State:             5,
+		StateTimestamp:    testTime,
+		CreatedTimestamp:  testTime.Add(-time.Hour),
+		OrchestrationType: model.OrchestrationType("TestType"),
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		ToAPIActivityDefinition(definition)
-	}
+	result := ToOrchestrationEntry(&input)
+
+	assert.Equal(t, input.ID, result.ID)
+	assert.Equal(t, input.CorrelationID, result.CorrelationID)
+	assert.Equal(t, int(input.State), result.State)
+	assert.Equal(t, input.StateTimestamp, result.StateTimestamp)
+	assert.Equal(t, input.CreatedTimestamp, result.CreatedTimestamp)
+	assert.Equal(t, input.OrchestrationType, result.OrchestrationType)
 }
 
-func BenchmarkToAPIOrchestrationDefinition(b *testing.B) {
-	definition := &OrchestrationDefinition{
-		Type:   "kubernetes",
-		Schema: map[string]any{"version": "v1"},
-		Activities: []Activity{
+func TestToOrchestration(t *testing.T) {
+	now := time.Now()
+	apiOrchestration := &api.Orchestration{
+		ID:                "test-orch-1",
+		CorrelationID:     "corr-123",
+		State:             api.OrchestrationStateRunning,
+		StateTimestamp:    now,
+		CreatedTimestamp:  now.Add(-1 * time.Hour),
+		OrchestrationType: "test-type",
+		ProcessingData:    map[string]any{"key1": "value1"},
+		OutputData:        map[string]any{"key2": "value2"},
+		Completed:         map[string]struct{}{"activity1": {}},
+		Steps: []api.OrchestrationStep{
 			{
-				ID:   "activity-1",
-				Type: "http-request",
-				Inputs: []MappingEntry{
-					{Source: "input.url", Target: "request.url"},
-					{Source: "input.method", Target: "request.method"},
+				Activities: []api.Activity{
+					{
+						ID:            "activity-1",
+						Type:          "test.activity",
+						Discriminator: "test-disc",
+						Inputs: []api.MappingEntry{
+							{Source: "src1", Target: "tgt1"},
+						},
+						DependsOn: []string{"activity-0"},
+					},
 				},
-				DependsOn: []string{"activity-0"},
 			},
 		},
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		ToAPIOrchestrationDefinition(definition)
-	}
-}
+	result := ToOrchestration(apiOrchestration)
 
-func BenchmarkToAPIMappingEntries(b *testing.B) {
-	entries := []MappingEntry{
-		{Source: "input.name", Target: "output.fullName"},
-		{Source: "input.age", Target: "output.yearsOld"},
-		{Source: "input.email", Target: "output.contactEmail"},
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		ToAPIMappingEntries(entries)
-	}
+	assert.Equal(t, "test-orch-1", result.ID)
+	assert.Equal(t, "corr-123", result.CorrelationID)
+	assert.Equal(t, int(api.OrchestrationStateRunning), result.State)
+	assert.Equal(t, now, result.StateTimestamp)
+	assert.Equal(t, now.Add(-1*time.Hour), result.CreatedTimestamp)
+	assert.Equal(t, model.OrchestrationType("test-type"), result.OrchestrationType)
+	assert.Equal(t, map[string]any{"key1": "value1"}, result.ProcessingData)
+	assert.Equal(t, map[string]any{"key2": "value2"}, result.OutputData)
+	assert.Equal(t, 1, len(result.Steps))
+	assert.Equal(t, 1, len(result.Steps[0].Activities))
+	assert.Equal(t, "activity-1", result.Steps[0].Activities[0].ID)
+	assert.Equal(t, "test.activity", result.Steps[0].Activities[0].Type)
+	assert.Equal(t, 1, len(result.Steps[0].Activities[0].Inputs))
+	assert.Equal(t, "src1", result.Steps[0].Activities[0].Inputs[0].Source)
 }

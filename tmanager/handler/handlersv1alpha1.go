@@ -13,14 +13,9 @@
 package handler
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/metaform/connector-fabric-manager/common/handler"
-	"github.com/metaform/connector-fabric-manager/common/query"
-	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
@@ -113,78 +108,17 @@ func (h *TMHandler) createTenant(w http.ResponseWriter, req *http.Request) {
 	response := v1alpha1.ToTenant(tenant)
 	h.ResponseCreated(w, response)
 }
-
-func (h *TMHandler) queryTenant(w http.ResponseWriter, req *http.Request, path string) {
-	if h.InvalidMethod(w, req, http.MethodPost) {
-		return
-	}
-	var tenantQuery v1alpha1.Query
-	if !h.ReadPayload(w, req, &tenantQuery) {
-		return
-	}
-	offset := tenantQuery.Offset
-	limit := tenantQuery.Limit
-	if limit == 0 || limit > 10000 { // TODO make configurable
-		limit = 10000
-	}
-
-	predicate, err := query.ParsePredicate(tenantQuery.Predicate)
-	if err != nil {
-		h.WriteError(w, fmt.Sprintf("Client error: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	// Set count before response body
-	totalCount, err := h.tenantService.CountTenants(req.Context(), predicate)
-	if err != nil {
-		h.HandleError(w, err)
-		return
-	}
-
-	h.writeLinkHeaders(w, path, offset, limit, totalCount)
-
-	h.OK(w)
-	_, err = w.Write([]byte("["))
-	if err != nil {
-		h.Monitor.Infow("Error writing response: %v", err)
-		return
-	}
-	first := true
-
-	for tenant, err := range h.tenantService.QueryTenants(req.Context(), predicate, store.PaginationOptions{
-		Offset: tenantQuery.Offset,
-		Limit:  limit,
-	}) {
-		if err != nil {
-			h.Monitor.Infow("Error streaming tenant: %v", err)
-			break
-		}
-
-		if !first {
-			_, err = w.Write([]byte(","))
-			if err != nil {
-				h.Monitor.Infow("Error writing response: %v", err)
-				return
-			}
-		}
-		first = false
-
-		response := v1alpha1.ToTenant(&tenant)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			h.Monitor.Infow("Error encoding tenant response: %v", err)
-			break
-		}
-
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
-		}
-	}
-
-	_, err = w.Write([]byte("]"))
-	if err != nil {
-		h.Monitor.Infow("Error writing response: %v", err)
-		return
-	}
+func (h *TMHandler) queryTenants(w http.ResponseWriter, req *http.Request, path string) {
+	handler.QueryEntities[api.Tenant](
+		&h.HttpHandler,
+		w,
+		req,
+		path,
+		h.tenantService.CountTenants,
+		h.tenantService.QueryTenants,
+		func(tenant *api.Tenant) any {
+			return v1alpha1.ToTenant(tenant)
+		})
 }
 
 func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request, tenantID string, participantID string) {
@@ -266,37 +200,4 @@ func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Requ
 func (h *TMHandler) health(w http.ResponseWriter, _ *http.Request) {
 	response := response{Message: "OK"}
 	h.ResponseOK(w, response)
-}
-
-func (h *TMHandler) writeLinkHeaders(w http.ResponseWriter, path string, offset int, limit int, totalCount int) {
-	var links []string
-	selfLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"self\"", path, offset, limit)
-	links = append(links, selfLink)
-
-	if offset+limit < totalCount {
-		nextLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"next\"", path, offset+limit, limit)
-		links = append(links, nextLink)
-	}
-
-	if offset > 0 {
-		prevOffset := offset - limit
-		if prevOffset < 0 {
-			prevOffset = 0
-		}
-		prevLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"prev\"", path, prevOffset, limit)
-		links = append(links, prevLink)
-	}
-
-	firstLink := fmt.Sprintf("<%s?offset=0&limit=%d>; rel=\"first\"", path, limit)
-	links = append(links, firstLink)
-
-	lastOffset := ((totalCount - 1) / limit) * limit
-	if lastOffset < 0 {
-		lastOffset = 0
-	}
-	lastLink := fmt.Sprintf("<%s=%d&limit=%d>; rel=\"last\"", path, lastOffset, limit)
-	links = append(links, lastLink)
-
-	w.Header().Set("Link", strings.Join(links, ", "))
-	w.Header().Set("X-Total-Count", fmt.Sprintf("%d", totalCount))
 }

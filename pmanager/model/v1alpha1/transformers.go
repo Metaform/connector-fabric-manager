@@ -63,3 +63,64 @@ func ToAPIMappingEntries(entries []MappingEntry) []api.MappingEntry {
 	}
 	return apiEntries
 }
+
+func ToOrchestrationEntry(entry *api.OrchestrationEntry) OrchestrationEntry {
+	return OrchestrationEntry{
+		ID:                entry.ID,
+		CorrelationID:     entry.CorrelationID,
+		State:             int(entry.State),
+		StateTimestamp:    entry.StateTimestamp,
+		CreatedTimestamp:  entry.CreatedTimestamp,
+		OrchestrationType: entry.OrchestrationType,
+	}
+}
+
+func ToOrchestration(orchestration *api.Orchestration) Orchestration {
+	return Orchestration{
+		ID:                orchestration.ID,
+		CorrelationID:     orchestration.CorrelationID,
+		State:             int(orchestration.State),
+		StateTimestamp:    orchestration.StateTimestamp,
+		CreatedTimestamp:  orchestration.CreatedTimestamp,
+		OrchestrationType: orchestration.OrchestrationType,
+		ProcessingData:    orchestration.ProcessingData,
+		Steps:             toSteps(orchestration.Steps),
+		OutputData:        orchestration.OutputData,
+		Completed:         orchestration.Completed,
+	}
+}
+
+func toSteps(steps []api.OrchestrationStep) []OrchestrationStep {
+	result := make([]OrchestrationStep, len(steps))
+	for i, step := range steps {
+		result[i] = OrchestrationStep{
+			Activities: toActivities(step.Activities),
+		}
+	}
+	return result
+}
+
+func toActivities(activities []api.Activity) []Activity {
+	result := make([]Activity, len(activities))
+	for i, activity := range activities {
+		result[i] = Activity{
+			ID:            activity.ID,
+			Type:          string(activity.Type),
+			Discriminator: string(activity.Discriminator),
+			Inputs:        toMappingEntries(activity.Inputs),
+			DependsOn:     activity.DependsOn,
+		}
+	}
+	return result
+}
+
+func toMappingEntries(entries []api.MappingEntry) []MappingEntry {
+	result := make([]MappingEntry, len(entries))
+	for i, entry := range entries {
+		result[i] = MappingEntry{
+			Source: entry.Source,
+			Target: entry.Target,
+		}
+	}
+	return result
+}

@@ -48,14 +48,30 @@ func main() {
 	}
 }
 
-func generateOrchestrationEndpoints(r spec.Generator) {
-	orchestration := r.Group("/api/v1alpha1/orchestration")
 
-	orchestration.Post("",
+func generateOrchestrationEndpoints(r spec.Generator) {
+	orchestrations := r.Group("/api/v1alpha1/orchestrations")
+
+	orchestrations.Post("",
 		option.Summary("Execute an Orchestration"),
 		option.Description("Execute an Orchestration"),
 		option.Request(model.OrchestrationManifest{}),
 		option.Response(http.StatusAccepted, nil),
+	)
+
+	orchestrations.Post("query",
+		option.Summary("Perform an Orchestration query"),
+		option.Description("Perform an Orchestration query"),
+		option.Request(model.Query{}),
+		option.Response(http.StatusOK, []v1alpha1.OrchestrationEntry{}),
+	)
+
+	orchestrations.Get("/{id}",
+		option.Summary("Get an Orchestration"),
+		option.Description("Retrieve an Orchestration by ID"),
+		option.Request(new(IDParam)),
+		option.Response(http.StatusOK, v1alpha1.Orchestration{}),
+		option.Tags("Not implemented yet"),
 	)
 }
 
@@ -96,4 +112,8 @@ func generateOrchestrationDefinitionEndpoints(r spec.Generator) {
 
 type TypeParam struct {
 	ID string `path:"type" required:"true"`
+}
+
+type IDParam struct {
+	ID string `path:"id" required:"true"`
 }

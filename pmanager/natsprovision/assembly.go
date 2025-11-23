@@ -21,10 +21,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
-const (
-	setupStreamKey = "setupStream"
-)
-
 type natsProvisionServiceAssembly struct {
 	streamName       string
 	natsClient       *natsclient.NatsClient

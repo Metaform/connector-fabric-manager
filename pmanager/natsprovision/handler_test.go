@@ -16,11 +16,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"iter"
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/mocks"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
+	"github.com/metaform/connector-fabric-manager/common/query"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -179,4 +182,12 @@ func (m *MockProvisionManager) GetOrchestration(ctx context.Context, id string) 
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*api.Orchestration), args.Error(1)
+}
+
+func (m *MockProvisionManager) QueryOrchestrations(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+	panic("not implemented")
+}
+
+func (m *MockProvisionManager) CountOrchestrations(ctx context.Context, predicate query.Predicate) (int, error) {
+	panic("not implemented")
 }

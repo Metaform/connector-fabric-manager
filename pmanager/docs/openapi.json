@@ -53,26 +53,6 @@
         }
       }
     },
-    "/api/v1alpha1/orchestration": {
-      "post": {
-        "summary": "Execute an Orchestration",
-        "description": "Execute an Orchestration",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ModelOrchestrationManifest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "202": {
-            "description": "Accepted"
-          }
-        }
-      }
-    },
     "/api/v1alpha1/orchestration-definitions": {
       "post": {
         "summary": "Create an Orchestration Definition",
@@ -113,6 +93,87 @@
           }
         }
       }
+    },
+    "/api/v1alpha1/orchestrations": {
+      "post": {
+        "summary": "Execute an Orchestration",
+        "description": "Execute an Orchestration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelOrchestrationManifest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/api/v1alpha1/orchestrations/query": {
+      "post": {
+        "summary": "Perform an Orchestration query",
+        "description": "Perform an Orchestration query",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/V1Alpha1OrchestrationEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1alpha1/orchestrations/{id}": {
+      "get": {
+        "tags": [
+          "Not implemented yet"
+        ],
+        "summary": "Get an Orchestration",
+        "description": "Retrieve an Orchestration by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1Alpha1Orchestration"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -133,6 +194,23 @@
             "type": "object",
             "additionalProperties": {},
             "nullable": true
+          }
+        }
+      },
+      "ModelQuery": {
+        "required": [
+          "predicate"
+        ],
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "predicate": {
+            "type": "string"
           }
         }
       },
@@ -196,6 +274,55 @@
           }
         }
       },
+      "V1Alpha1Orchestration": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            },
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string"
+          },
+          "createdTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string"
+          },
+          "orchestrationType": {
+            "type": "string"
+          },
+          "outputData": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "processingData": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "state": {
+            "type": "integer"
+          },
+          "stateTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V1Alpha1OrchestrationStep"
+            },
+            "nullable": true
+          }
+        }
+      },
       "V1Alpha1OrchestrationDefinition": {
         "type": "object",
         "properties": {
@@ -216,6 +343,43 @@
           },
           "type": {
             "type": "string"
+          }
+        }
+      },
+      "V1Alpha1OrchestrationEntry": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "createdTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string"
+          },
+          "orchestrationType": {
+            "type": "string"
+          },
+          "state": {
+            "type": "integer"
+          },
+          "stateTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "V1Alpha1OrchestrationStep": {
+        "type": "object",
+        "properties": {
+          "activities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V1Alpha1Activity"
+            },
+            "nullable": true
           }
         }
       }
