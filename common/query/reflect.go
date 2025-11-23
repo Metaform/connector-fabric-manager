@@ -79,6 +79,10 @@ func getFieldValueCaseInsensitive(val reflect.Value, fieldName string) (reflect.
 // CompareValues compares two values based on an Operator
 // Works with various types: strings, numbers, slices, etc.
 func CompareValues(op Operator, fieldValue, compareValue any) bool {
+	// Normalize string aliases to plain strings before comparison
+	fieldValue = normalizeTypeAlias(fieldValue)
+	compareValue = normalizeTypeAlias(compareValue)
+
 	switch op {
 	case OpEqual:
 		// Try numeric comparison for numbers
@@ -230,12 +234,18 @@ func toFloat64(v any) (float64, bool) {
 
 // inSlice checks if a Value is in a slice
 func inSlice(value, slice any) bool {
+	// Normalize the search value to handle type aliases
+	value = normalizeTypeAlias(value)
+
 	sliceVal := reflect.ValueOf(slice)
 	if sliceVal.Kind() != reflect.Slice {
 		return false
 	}
 	for i := 0; i < sliceVal.Len(); i++ {
 		sliceItem := sliceVal.Index(i).Interface()
+		// Normalize the slice item to handle type aliases
+		sliceItem = normalizeTypeAlias(sliceItem)
+
 		// Try numeric comparison first
 		aNum, aOk := toFloat64(value)
 		bNum, bOk := toFloat64(sliceItem)
@@ -258,4 +268,35 @@ func toString(v any) string {
 		return s
 	}
 	return fmt.Sprintf("%v", v)
+}
+
+// normalizeTypeAlias converts type aliases to their underlying types for comparison.
+// Handles string aliases, numeric aliases (int*, uint*, float*), and iota-based enum types.
+func normalizeTypeAlias(value any) any {
+	t := reflect.TypeOf(value)
+	if t == nil {
+		return value
+	}
+
+	kind := t.Kind()
+	typeName := t.String()
+
+	// If the type name matches the kind name, it's a base type (not an alias)
+	if typeName == kind.String() {
+		return value
+	}
+
+	// Convert aliases to their underlying types
+	switch kind {
+	case reflect.String:
+		return reflect.ValueOf(value).String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return reflect.ValueOf(value).Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return reflect.ValueOf(value).Uint()
+	case reflect.Float32, reflect.Float64:
+		return reflect.ValueOf(value).Float()
+	default:
+		return value
+	}
 }

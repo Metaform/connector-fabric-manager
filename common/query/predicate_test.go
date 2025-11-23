@@ -1051,3 +1051,62 @@ func TestCompoundPredicate_Matches_MapPropertiesWithLogic(t *testing.T) {
 		})
 	}
 }
+
+// TestAtomicPredicate_StringAliasNormalization verifies that string type aliases are properly normalized during predicate matching
+func TestAtomicPredicate_StringAliasNormalization(t *testing.T) {
+	type Status string
+
+	// Create a test object with a plain string field
+	testObj := struct {
+		Name   string
+		Status string
+	}{
+		Name:   "test",
+		Status: "active",
+	}
+
+	matcher := &DefaultFieldMatcher{}
+
+	tests := []struct {
+		name      string
+		predicate *AtomicPredicate
+		expected  bool
+	}{
+		{
+			name: "string alias matches plain string field",
+			predicate: &AtomicPredicate{
+				Field:    "Status",
+				Operator: OpEqual,
+				Value:    Status("active"), // String alias
+			},
+			expected: true,
+		},
+		{
+			name: "string alias does not match different value",
+			predicate: &AtomicPredicate{
+				Field:    "Status",
+				Operator: OpEqual,
+				Value:    Status("inactive"), // String alias with different value
+			},
+			expected: false,
+		},
+		{
+			name: "string alias with contains operator",
+			predicate: &AtomicPredicate{
+				Field:    "Status",
+				Operator: OpContains,
+				Value:    Status("act"), // String alias substring
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.predicate.Matches(testObj, matcher)
+			if result != tt.expected {
+				t.Errorf("predicate.Matches() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
