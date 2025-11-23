@@ -18,6 +18,22 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+const (
+	ConnectorType         VPAType = "cfm.connector"
+	CredentialServiceType VPAType = "cfm.credentialservice"
+	DataPlaneType         VPAType = "cfm.dataplane"
+	ParticipantIdentifier         = "cfm.participant.id"
+
+	VPADeployType  OrchestrationType = "cfm.orchestration.vpa.deploy"
+	VPADisposeType OrchestrationType = "cfm.orchestration.vpa.dispose"
+
+	VPAData      = "cfm.vpa.data"
+	VPAStateData = "cfm.vpa.state"
+
+	ConnectorId       = "cfm.connector.id"
+	CredentialService = "cfm.credentialservice.id"
+)
+
 var Validator = initValidator()
 
 // OrchestrationManifest represents the configuration details for the execution of an orchestration.
@@ -62,21 +78,11 @@ func (dt VPAType) String() string {
 	return string(dt)
 }
 
-const (
-	ConnectorType         VPAType = "cfm.connector"
-	CredentialServiceType VPAType = "cfm.credentialservice"
-	DataPlaneType         VPAType = "cfm.dataplane"
-	ParticipantIdentifier         = "cfm.participant.id"
-
-	VPADeployType  OrchestrationType = "cfm.orchestration.vpa.deploy"
-	VPADisposeType OrchestrationType = "cfm.orchestration.vpa.dispose"
-
-	VPAData      = "cfm.vpa.data"
-	VPAStateData = "cfm.vpa.state"
-
-	ConnectorId       = "cfm.connector.id"
-	CredentialService = "cfm.credentialservice.id"
-)
+type Query struct {
+	Predicate string `json:"predicate" required:"true"`
+	Offset    int    `json:"offset"`
+	Limit     int    `json:"limit"`
+}
 
 func initValidator() *validator.Validate {
 	v := validator.New()
@@ -88,10 +94,4 @@ func initValidator() *validator.Validate {
 		return match
 	})
 	return v
-}
-
-type Query struct {
-	Predicate string `json:"predicate" required:"true"`
-	Offset    int    `json:"offset"`
-	Limit     int    `json:"limit"`
 }
