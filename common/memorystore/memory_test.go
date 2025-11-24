@@ -516,3 +516,32 @@ func TestDeleteByPredicate(t *testing.T) {
 		})
 	}
 }
+
+func TestInMemoryEntityStore_Update_VersionIncremented(t *testing.T) {
+	store := NewInMemoryEntityStore[*testEntity]()
+	ctx := context.Background()
+
+	// Create an entity
+	entity := &testEntity{
+		ID:    "test-id",
+		Value: "initial data",
+	}
+
+	_, err := store.Create(ctx, entity)
+	require.NoError(t, err, "Create should succeed")
+
+	// Verify initial version
+	retrieved, err := store.FindById(ctx, "test-id")
+	require.NoError(t, err, "FindById should succeed")
+	assert.Equal(t, int64(0), retrieved.GetVersion(), "Initial version should be 0")
+
+	// Update the entity
+	entity.Value = "updated data"
+	err = store.Update(ctx, entity)
+	require.NoError(t, err, "Update should succeed")
+
+	// Verify version is incremented
+	updated, err := store.FindById(ctx, "test-id")
+	require.NoError(t, err, "FindById should succeed after update")
+	assert.Equal(t, int64(1), updated.GetVersion(), "Version should be incremented to 1 after update")
+}
