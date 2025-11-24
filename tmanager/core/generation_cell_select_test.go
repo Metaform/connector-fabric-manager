@@ -25,7 +25,7 @@ func TestResolveCell(t *testing.T) {
 	now := time.Now().UTC()
 
 	t.Run("returns active cell with active deployment", func(t *testing.T) {
-		cells := []*api.Cell{
+		cells := []api.Cell{
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -38,7 +38,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		dProfiles := []*api.DataspaceProfile{
+		dProfiles := []api.DataspaceProfile{
 			{
 				Entity: api.Entity{
 					ID:      "profile1",
@@ -75,7 +75,7 @@ func TestResolveCell(t *testing.T) {
 	})
 
 	t.Run("returns first matching active cell when multiple exist", func(t *testing.T) {
-		cells := []*api.Cell{
+		cells := []api.Cell{
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -98,7 +98,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		dProfiles := []*api.DataspaceProfile{
+		dProfiles := []api.DataspaceProfile{
 			{
 				Entity: api.Entity{
 					ID:      "profile1",
@@ -151,7 +151,7 @@ func TestResolveCell(t *testing.T) {
 	})
 
 	t.Run("returns error when no active cells exist", func(t *testing.T) {
-		cells := []*api.Cell{
+		cells := []api.Cell{
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -164,7 +164,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		dProfiles := []*api.DataspaceProfile{
+		dProfiles := []api.DataspaceProfile{
 			{
 				Entity: api.Entity{
 					ID:      "profile1",
@@ -200,7 +200,7 @@ func TestResolveCell(t *testing.T) {
 	})
 
 	t.Run("returns error when active cell has no active deployments", func(t *testing.T) {
-		cells := []*api.Cell{
+		cells := []api.Cell{
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -213,7 +213,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		dProfiles := []*api.DataspaceProfile{
+		dProfiles := []api.DataspaceProfile{
 			{
 				Entity: api.Entity{
 					ID:      "profile1",
@@ -249,9 +249,9 @@ func TestResolveCell(t *testing.T) {
 	})
 
 	t.Run("returns error when cells slice is empty", func(t *testing.T) {
-		cells := []*api.Cell{}
+		cells := []api.Cell{}
 
-		dProfiles := []*api.DataspaceProfile{
+		dProfiles := []api.DataspaceProfile{
 			{
 				Entity: api.Entity{
 					ID:      "profile1",
@@ -287,7 +287,7 @@ func TestResolveCell(t *testing.T) {
 	})
 
 	t.Run("returns error when dataspace profiles slice is empty", func(t *testing.T) {
-		cells := []*api.Cell{
+		cells := []api.Cell{
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -300,7 +300,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		dProfiles := []*api.DataspaceProfile{}
+		dProfiles := []api.DataspaceProfile{}
 
 		result, err := defaultCellSelector("test", cells, dProfiles)
 
@@ -310,7 +310,7 @@ func TestResolveCell(t *testing.T) {
 	})
 
 	t.Run("returns error when dataspace profile has no deployments", func(t *testing.T) {
-		cells := []*api.Cell{
+		cells := []api.Cell{
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -323,7 +323,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		dProfiles := []*api.DataspaceProfile{
+		dProfiles := []api.DataspaceProfile{
 			{
 				Entity: api.Entity{
 					ID:      "profile1",
@@ -341,7 +341,7 @@ func TestResolveCell(t *testing.T) {
 	})
 
 	t.Run("handles multiple dataspace profiles with different deployment states", func(t *testing.T) {
-		cells := []*api.Cell{
+		cells := []api.Cell{
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -354,7 +354,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		dProfiles := []*api.DataspaceProfile{
+		dProfiles := []api.DataspaceProfile{
 			{
 				Entity: api.Entity{
 					ID:      "profile1",
@@ -416,7 +416,7 @@ func TestResolveCell(t *testing.T) {
 	})
 
 	t.Run("handles cells with different deployment states", func(t *testing.T) {
-		cells := []*api.Cell{
+		cells := []api.Cell{
 			{
 				DeployableEntity: api.DeployableEntity{
 					Entity: api.Entity{
@@ -449,7 +449,7 @@ func TestResolveCell(t *testing.T) {
 			},
 		}
 
-		dProfiles := []*api.DataspaceProfile{
+		dProfiles := []api.DataspaceProfile{
 			{
 				Entity: api.Entity{
 					ID:      "profile1",

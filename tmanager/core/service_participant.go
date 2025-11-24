@@ -58,12 +58,12 @@ func (d participantService) DeployProfile(
 
 	// TODO perform property validation against a custom schema
 	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
-		cells, err := collection.CollectAll(d.cellStore.GetAll(ctx))
+		cells, err := collection.CollectAllDeref(d.cellStore.GetAll(ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		dProfiles, err := collection.CollectAll(d.dataspaceStore.GetAll(ctx))
+		dProfiles, err := collection.CollectAllDeref(d.dataspaceStore.GetAll(ctx))
 		if err != nil {
 			return nil, err
 		}

@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/metaform/connector-fabric-manager/common/collection"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
@@ -31,8 +30,8 @@ func (g participantGenerator) Generate(
 	tenantID string,
 	vpaProperties api.VPAPropMap,
 	properties map[string]any,
-	cells []*api.Cell,
-	dProfiles []*api.DataspaceProfile) (*api.ParticipantProfile, error) {
+	cells []api.Cell,
+	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
 
 	cell, err := g.CellSelector(model.VPADeployType, cells, dProfiles)
 	if err != nil {
@@ -44,8 +43,6 @@ func (g participantGenerator) Generate(
 	dPlane := g.generateVPA(model.DataPlaneType, vpaProperties, cell)
 	vpas := []api.VirtualParticipantAgent{connector, cService, dPlane}
 
-	dProfileValues := collection.DerefSlice(dProfiles)
-
 	pProfile := &api.ParticipantProfile{
 		Entity: api.Entity{
 			ID:      uuid.New().String(),
@@ -53,7 +50,7 @@ func (g participantGenerator) Generate(
 		},
 		Identifier:        identifier,
 		TenantID:          tenantID,
-		DataSpaceProfiles: dProfileValues,
+		DataSpaceProfiles: dProfiles,
 		VPAs:              vpas,
 		Properties:        properties,
 	}
