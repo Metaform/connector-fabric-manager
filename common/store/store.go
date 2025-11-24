@@ -105,17 +105,24 @@ func DefaultPaginationOptions() PaginationOptions {
 }
 
 // EntityStore defines the interface for entity storage.
-type EntityStore[T any] interface {
-	FindById(ctx context.Context, id string) (*T, error)
+type EntityStore[T EntityType] interface {
+	FindById(ctx context.Context, id string) (T, error)
 	Exists(ctx context.Context, id string) (bool, error)
-	Create(ctx context.Context, entity *T) (*T, error)
-	Update(ctx context.Context, entity *T) error
+	Create(ctx context.Context, entity T) (T, error)
+	Update(ctx context.Context, entity T) error // T is already a pointer type
+	Delete(ctx context.Context, id string) error
 	GetAll(ctx context.Context) iter.Seq2[T, error]
 	GetAllPaginated(ctx context.Context, opts PaginationOptions) iter.Seq2[T, error]
 	FindByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[T, error]
 	FindByPredicatePaginated(ctx context.Context, predicate query.Predicate, opts PaginationOptions) iter.Seq2[T, error]
-	FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (*T, error)
+	FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (T, error)
 	CountByPredicate(ctx context.Context, predicate query.Predicate) (int, error)
 	DeleteByPredicate(ctx context.Context, predicate query.Predicate) error
 }
 
+// EntityType defines a versionable entity.
+type EntityType interface {
+	GetID() string
+	GetVersion() int64
+	IncrementVersion()
+}

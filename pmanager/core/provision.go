@@ -28,7 +28,7 @@ import (
 type provisionManager struct {
 	orchestrator api.Orchestrator
 	store        api.DefinitionStore
-	index        store.EntityStore[api.OrchestrationEntry]
+	index        store.EntityStore[*api.OrchestrationEntry]
 	trxContext   store.TransactionContext
 	monitor      system.LogMonitor
 }
@@ -90,8 +90,8 @@ func (p provisionManager) GetOrchestration(ctx context.Context, orchestrationID 
 func (p provisionManager) QueryOrchestrations(
 	ctx context.Context,
 	predicate query.Predicate,
-	options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
-	return func(yield func(api.OrchestrationEntry, error) bool) {
+	options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
+	return func(yield func(*api.OrchestrationEntry, error) bool) {
 		err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
 			for entry, err := range p.index.FindByPredicatePaginated(ctx, predicate, options) {
 				if !yield(entry, err) {
@@ -101,7 +101,7 @@ func (p provisionManager) QueryOrchestrations(
 			return nil
 		})
 		if err != nil && !errors.Is(err, context.Canceled) {
-			yield(api.OrchestrationEntry{}, err)
+			yield(nil, err)
 		}
 	}
 }

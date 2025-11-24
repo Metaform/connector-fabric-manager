@@ -30,9 +30,9 @@ type participantService struct {
 	participantGenerator participantGenerator
 	provisionClient      api.ProvisionClient
 	trxContext           store.TransactionContext
-	participantStore     store.EntityStore[api.ParticipantProfile]
-	cellStore            store.EntityStore[api.Cell]
-	dataspaceStore       store.EntityStore[api.DataspaceProfile]
+	participantStore     store.EntityStore[*api.ParticipantProfile]
+	cellStore            store.EntityStore[*api.Cell]
+	dataspaceStore       store.EntityStore[*api.DataspaceProfile]
 	monitor              system.LogMonitor
 }
 
@@ -49,7 +49,12 @@ func (d participantService) GetProfile(ctx context.Context, tenantID string, par
 	})
 }
 
-func (d participantService) DeployProfile(ctx context.Context, tenantID string, identifier string, vpaProperties api.VPAPropMap, properties map[string]any) (*api.ParticipantProfile, error) {
+func (d participantService) DeployProfile(
+	ctx context.Context,
+	tenantID string,
+	identifier string,
+	vpaProperties api.VPAPropMap,
+	properties map[string]any) (*api.ParticipantProfile, error) {
 
 	// TODO perform property validation against a custom schema
 	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
@@ -177,7 +182,7 @@ func (d participantService) DisposeProfile(ctx context.Context, tenantID string,
 }
 
 type vpaCallbackHandler struct {
-	participantStore store.EntityStore[api.ParticipantProfile]
+	participantStore store.EntityStore[*api.ParticipantProfile]
 	trxContext       store.TransactionContext
 	monitor          system.LogMonitor
 }

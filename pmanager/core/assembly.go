@@ -40,7 +40,7 @@ func (m PMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	context.Registry.Register(api.ProvisionManagerKey, provisionManager{
 		orchestrator: context.Registry.Resolve(api.OrchestratorKey).(api.Orchestrator),
-		index:        context.Registry.Resolve(api.OrchestrationIndexKey).(store.EntityStore[api.OrchestrationEntry]),
+		index:        context.Registry.Resolve(api.OrchestrationIndexKey).(store.EntityStore[*api.OrchestrationEntry]),
 		store:        definitionStore,
 		trxContext:   transactionContext,
 		monitor:      context.LogMonitor,

@@ -31,7 +31,7 @@ import (
 // and reliably processed by a NatsActivityExecutor that handles the activity type.
 type NatsOrchestrator struct {
 	Client     natsclient.MsgClient
-	index      store.EntityStore[api.OrchestrationEntry]
+	index      store.EntityStore[*api.OrchestrationEntry]
 	trxContext store.TransactionContext
 	monitor    system.LogMonitor
 }

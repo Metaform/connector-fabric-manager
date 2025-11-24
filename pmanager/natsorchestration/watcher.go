@@ -34,7 +34,7 @@ type MessageAck interface {
 // the Jetstream KV store is not optimized for queries. The Jetstream KV store is using an underlying stream and
 // the watcher consumers update messages, recording relevant changes in the index.
 type OrchestrationIndexWatcher struct {
-	index      store.EntityStore[api.OrchestrationEntry]
+	index      store.EntityStore[*api.OrchestrationEntry]
 	trxContext store.TransactionContext
 	monitor    system.LogMonitor
 }

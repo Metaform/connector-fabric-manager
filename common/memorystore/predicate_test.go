@@ -26,6 +26,7 @@ import (
 // complexEntity is a more complex test entity with multiple fields for predicate testing
 type complexEntity struct {
 	ID         string
+	Version    int64
 	Name       string
 	Age        int
 	Score      float64
@@ -34,13 +35,21 @@ type complexEntity struct {
 	Department string
 }
 
-func complexIdFunc(e *complexEntity) string {
+func (e *complexEntity) GetID() string {
 	return e.ID
 }
 
+func (e *complexEntity) GetVersion() int64 {
+	return e.Version
+}
+
+func (e *complexEntity) IncrementVersion() {
+	e.Version++
+}
+
 // setupComplexEntityStore creates a store with test data
-func setupComplexEntityStore(t *testing.T) *InMemoryEntityStore[complexEntity] {
-	store := NewInMemoryEntityStore[complexEntity](complexIdFunc)
+func setupComplexEntityStore(t *testing.T) *InMemoryEntityStore[*complexEntity] {
+	store := NewInMemoryEntityStore[*complexEntity]()
 	ctx := context.Background()
 
 	entities := []complexEntity{
@@ -425,7 +434,7 @@ func TestFindByPredicate_SimplePredicate_StringPatterns(t *testing.T) {
 func TestFindByPredicate_SimplePredicate_IsNull(t *testing.T) {
 
 	t.Run("IS NOT NULL always matches non-nil", func(t *testing.T) {
-		store := NewInMemoryEntityStore[complexEntity](complexIdFunc)
+		store := NewInMemoryEntityStore[*complexEntity]()
 		ctx := context.Background()
 
 		// Populate with test data
@@ -751,7 +760,7 @@ func TestFindByPredicate_ComplexQueries(t *testing.T) {
 func TestFindByPredicate_EdgeCases(t *testing.T) {
 
 	t.Run("find by predicate in empty store", func(t *testing.T) {
-		store := NewInMemoryEntityStore[complexEntity](complexIdFunc)
+		store := NewInMemoryEntityStore[*complexEntity]()
 		ctx := context.Background()
 		predicate := query.Eq("Name", "Alice")
 		results, err := collection.CollectAll(store.FindByPredicate(ctx, predicate))
@@ -761,7 +770,7 @@ func TestFindByPredicate_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("find by predicate with single entity", func(t *testing.T) {
-		store := NewInMemoryEntityStore[complexEntity](complexIdFunc)
+		store := NewInMemoryEntityStore[*complexEntity]()
 		ctx := context.Background()
 		entity := &complexEntity{ID: "1", Name: "Alice", Age: 30}
 		_, err := store.Create(ctx, entity)
@@ -775,7 +784,7 @@ func TestFindByPredicate_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("find by predicate with non-matching fields", func(t *testing.T) {
-		store := NewInMemoryEntityStore[complexEntity](complexIdFunc)
+		store := NewInMemoryEntityStore[*complexEntity]()
 		ctx := context.Background()
 		entity := &complexEntity{ID: "1", Name: "Alice", Age: 30}
 		_, err := store.Create(ctx, entity)
@@ -789,7 +798,7 @@ func TestFindByPredicate_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("find by predicate that matches all entities", func(t *testing.T) {
-		store := NewInMemoryEntityStore[complexEntity](complexIdFunc)
+		store := NewInMemoryEntityStore[*complexEntity]()
 		ctx := context.Background()
 		for i := 1; i <= 5; i++ {
 			entity := &complexEntity{ID: string(rune('0' + i)), Name: "Name" + string(rune('0'+i)), Age: 20 + i}
@@ -972,7 +981,7 @@ func TestFindByPredicate_PredicateOptimization(t *testing.T) {
 
 // TestFindFirstByPredicate_SingleElement tests finding the first result from a single element
 func TestFindFirstByPredicate_SingleElement(t *testing.T) {
-	store := NewInMemoryEntityStore[complexEntity](complexIdFunc)
+	store := NewInMemoryEntityStore[*complexEntity]()
 	ctx := context.Background()
 
 	entity := &complexEntity{ID: "1", Name: "Alice", Age: 30, Active: true, Department: "Engineering"}

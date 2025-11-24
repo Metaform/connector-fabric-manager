@@ -34,6 +34,6 @@ func (m MemoryStoreServiceAssembly) Init(context *system.InitContext) error {
 	context.Registry.Register(api.DefinitionStoreKey, NewDefinitionStore())
 	context.Registry.Register(
 		api.OrchestrationIndexKey,
-		memorystore.NewInMemoryEntityStore(func(e *api.OrchestrationEntry) string { return e.ID }))
+		memorystore.NewInMemoryEntityStore[*api.OrchestrationEntry]())
 	return nil
 }

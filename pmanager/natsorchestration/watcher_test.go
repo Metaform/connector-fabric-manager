@@ -371,15 +371,11 @@ func TestOnMessage_EntryPropertiesPreserved(t *testing.T) {
 	assert.Equal(t, api.OrchestrationStateCompleted, entry.State)
 }
 
-func createTestStore(t *testing.T) store.EntityStore[api.OrchestrationEntry] {
-	return memorystore.NewInMemoryEntityStore[api.OrchestrationEntry](
-		func(entry *api.OrchestrationEntry) string {
-			return entry.ID
-		},
-	)
+func createTestStore(t *testing.T) store.EntityStore[*api.OrchestrationEntry] {
+	return memorystore.NewInMemoryEntityStore[*api.OrchestrationEntry]()
 }
 
-func createTestWatcher(index store.EntityStore[api.OrchestrationEntry],
+func createTestWatcher(index store.EntityStore[*api.OrchestrationEntry],
 	trxContext store.TransactionContext) *OrchestrationIndexWatcher {
 	return &OrchestrationIndexWatcher{
 		index:      index,

@@ -78,9 +78,23 @@ type DefinitionStore interface {
 
 type OrchestrationEntry struct {
 	ID                string                  `json:"id"`
+	Version           int64                   `json:"version"`
 	CorrelationID     string                  `json:"correlationId"`
 	State             OrchestrationState      `json:"state"`
 	StateTimestamp    time.Time               `json:"stateTimestamp"`
 	CreatedTimestamp  time.Time               `json:"createdTimestamp"`
 	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
 }
+
+func (o *OrchestrationEntry) GetID() string {
+	return o.ID
+}
+
+func (o *OrchestrationEntry) GetVersion() int64 {
+	return o.Version
+}
+
+func (o *OrchestrationEntry) IncrementVersion() {
+	o.Version++
+}
+

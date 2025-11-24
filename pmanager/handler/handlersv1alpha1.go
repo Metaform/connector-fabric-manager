@@ -128,7 +128,7 @@ func (h *PMHandler) deleteActivityDefinition(w http.ResponseWriter, req *http.Re
 }
 
 func (h *PMHandler) queryOrchestrations(w http.ResponseWriter, req *http.Request, path string) {
-	handler.QueryEntities[api.OrchestrationEntry](
+	handler.QueryEntities[*api.OrchestrationEntry](
 		&h.HttpHandler,
 		w,
 		req,

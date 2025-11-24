@@ -15,6 +15,7 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"iter"
 
 	"github.com/metaform/connector-fabric-manager/common/query"
@@ -25,7 +26,7 @@ import (
 
 type tenantService struct {
 	trxContext  store.TransactionContext
-	tenantStore store.EntityStore[api.Tenant]
+	tenantStore store.EntityStore[*api.Tenant]
 	monitor     system.LogMonitor
 }
 
@@ -41,13 +42,34 @@ func (t tenantService) CreateTenant(ctx context.Context, tenant *api.Tenant) (*a
 	})
 }
 
-func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error {
-	//TODO implement me
-	panic("implement me")
+func (t tenantService) PatchTenant(ctx context.Context, id string, diff map[string]any) error {
+	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
+		tenant, err := t.tenantStore.FindById(ctx, id)
+		if err != nil {
+			return fmt.Errorf("tenant %s not found: %w", id, err)
+		}
+		for key, value := range diff {
+			if value == nil {
+				delete(tenant.Properties, key)
+			} else {
+				tenant.Properties[key] = value
+			}
+		}
+		err = t.tenantStore.Update(ctx, tenant)
+		if err != nil {
+			return fmt.Errorf("unable to patch tenant %s: %w", id, err)
+		}
+		return nil
+	})
 }
 
-func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.Tenant, error] {
-	return func(yield func(api.Tenant, error) bool) {
+func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error {
+	//TODO implement me
+	panic("not implemented")
+}
+
+func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.Tenant, error] {
+	return func(yield func(*api.Tenant, error) bool) {
 		err := t.trxContext.Execute(ctx, func(ctx context.Context) error {
 			for tenant, err := range t.tenantStore.FindByPredicatePaginated(ctx, predicate, options) {
 				if !yield(tenant, err) {
@@ -57,7 +79,7 @@ func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predica
 			return nil
 		})
 		if err != nil && !errors.Is(err, context.Canceled) {
-			yield(api.Tenant{}, err)
+			yield(&api.Tenant{}, err)
 		}
 	}
 }

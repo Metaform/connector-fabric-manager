@@ -14,6 +14,8 @@ package memorystore
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"iter"
 	"sync"
 
@@ -22,32 +24,36 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/types"
 )
 
-func NewInMemoryEntityStore[T any](idFunc func(*T) string) *InMemoryEntityStore[T] {
+func NewInMemoryEntityStore[T store.EntityType]() *InMemoryEntityStore[T] {
 	estore := &InMemoryEntityStore[T]{
 		cache:   make(map[string]T),
-		idFunc:  idFunc,
 		matcher: &query.DefaultFieldMatcher{},
 	}
 	return estore
 }
 
-type InMemoryEntityStore[T any] struct {
+type InMemoryEntityStore[T store.EntityType] struct {
 	cache   map[string]T
 	mu      sync.RWMutex
-	idFunc  func(*T) string
 	matcher query.FieldMatcher
 }
 
-func (s *InMemoryEntityStore[T]) FindById(_ context.Context, id string) (*T, error) {
+func (s *InMemoryEntityStore[T]) FindById(_ context.Context, id string) (T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	entity, exists := s.cache[id]
 	if !exists {
-		return nil, types.ErrNotFound
+		var zero T
+		return zero, types.ErrNotFound
+	}
+	copied, err := copyEntity(entity)
+	if err != nil {
+		var zero T
+		return zero, err
 	}
 
-	return &entity, nil
+	return copied, nil
 }
 
 func (s *InMemoryEntityStore[T]) Exists(_ context.Context, id string) (bool, error) {
@@ -57,38 +63,47 @@ func (s *InMemoryEntityStore[T]) Exists(_ context.Context, id string) (bool, err
 	return exists, nil
 }
 
-func (s *InMemoryEntityStore[T]) Create(_ context.Context, entity *T) (*T, error) {
-	if s.idFunc(entity) == "" {
-		return nil, types.ErrInvalidInput
+func (s *InMemoryEntityStore[T]) Create(_ context.Context, entity T) (T, error) {
+	if entity.GetID() == "" {
+		var zero T
+		return zero, types.ErrInvalidInput
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.cache[s.idFunc(entity)]; exists {
-		return nil, types.ErrConflict
+	if _, exists := s.cache[entity.GetID()]; exists {
+		var zero T
+		return zero, types.ErrConflict
 	}
 
-	s.cache[s.idFunc(entity)] = *entity
+	copied, err := copyEntity(entity)
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+
+	s.cache[copied.GetID()] = copied
 	return entity, nil
 }
 
-func (s *InMemoryEntityStore[T]) Update(_ context.Context, entity *T) error {
-	if entity == nil {
+func (s *InMemoryEntityStore[T]) Update(_ context.Context, entity T) error {
+	if entity.GetID() == "" {
 		return types.ErrInvalidInput
 	}
-	if s.idFunc(entity) == "" {
-		return types.ErrInvalidInput
-	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	entity.IncrementVersion()
 
-	if _, exists := s.cache[s.idFunc(entity)]; !exists {
+	if _, exists := s.cache[entity.GetID()]; !exists {
 		return types.ErrNotFound
 	}
 
-	s.cache[s.idFunc(entity)] = *entity
+	copied, err := copyEntity(entity)
+	if err != nil {
+		return fmt.Errorf("error copying entity: %w", err)
+	}
+	s.cache[copied.GetID()] = copied
 	return nil
 }
 
@@ -123,7 +138,11 @@ func (s *InMemoryEntityStore[T]) FindByPredicate(_ context.Context, predicate qu
 
 		for _, entity := range s.cache {
 			if predicate.Matches(entity, s.matcher) {
-				if !yield(entity, nil) {
+				copied, err := copyEntity(entity)
+				if err != nil {
+					return
+				}
+				if !yield(copied, nil) {
 					return
 				}
 			}
@@ -189,7 +208,11 @@ func (s *InMemoryEntityStore[T]) paginateEntities(
 			}
 
 			// Yield the entity with nil error
-			if !yield(filtered[i], nil) {
+			copied, err := copyEntity(filtered[i])
+			if err != nil {
+				return
+			}
+			if !yield(copied, nil) {
 				return // Consumer stopped iteration
 			}
 		}
@@ -197,16 +220,22 @@ func (s *InMemoryEntityStore[T]) paginateEntities(
 }
 
 // FindFirstByPredicate returns the first entity matching the predicate or types.ErrNotFound if none found
-func (s *InMemoryEntityStore[T]) FindFirstByPredicate(_ context.Context, predicate query.Predicate) (*T, error) {
+func (s *InMemoryEntityStore[T]) FindFirstByPredicate(_ context.Context, predicate query.Predicate) (T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	for _, entity := range s.cache {
 		if predicate.Matches(entity, s.matcher) {
-			return &entity, nil
+			copied, err := copyEntity(entity)
+			if err != nil {
+				var zero T
+				return zero, err
+			}
+			return copied, nil
 		}
 	}
-	return nil, types.ErrNotFound
+	var zero T
+	return zero, types.ErrNotFound
 }
 
 func (s *InMemoryEntityStore[T]) CountByPredicate(_ context.Context, predicate query.Predicate) (int, error) {
@@ -231,4 +260,24 @@ func (s *InMemoryEntityStore[T]) DeleteByPredicate(_ context.Context, predicate 
 		}
 	}
 	return nil
+}
+
+// copyEntity creates a copy of a pointer entity by dereferencing, copying, and re-addressing
+func copyEntity[T store.EntityType](entity T) (T, error) {
+	// Marshal to JSON
+	data, err := json.Marshal(entity)
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+
+	// Unmarshal back to a new instance
+	var copied T
+	err = json.Unmarshal(data, &copied)
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+
+	return copied, nil
 }

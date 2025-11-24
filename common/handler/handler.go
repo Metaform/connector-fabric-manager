@@ -209,7 +209,7 @@ func QueryEntities[T any](
 	path string,
 	countFn func(context.Context, query.Predicate) (int, error),
 	queryFn func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[T, error],
-	transformFn func(*T) any) {
+	transformFn func(T) any) {
 
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
@@ -264,7 +264,7 @@ func QueryEntities[T any](
 		}
 		first = false
 
-		response := transformFn(&entity)
+		response := transformFn(entity)
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			h.Monitor.Infow("Error encoding response: %v", err)
 			break

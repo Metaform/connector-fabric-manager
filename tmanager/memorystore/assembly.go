@@ -31,18 +31,10 @@ func (a *InMemoryServiceAssembly) Provides() []system.ServiceType {
 }
 
 func (a *InMemoryServiceAssembly) Init(ictx *system.InitContext) error {
-	cellStore := memorystore2.NewInMemoryEntityStore[api.Cell](func(c *api.Cell) string {
-		return c.ID
-	})
-	dataspaceStore := memorystore2.NewInMemoryEntityStore[api.DataspaceProfile](func(p *api.DataspaceProfile) string {
-		return p.ID
-	})
-	participantStore := memorystore2.NewInMemoryEntityStore[api.ParticipantProfile](func(p *api.ParticipantProfile) string {
-		return p.ID
-	})
-	tenantStore := memorystore2.NewInMemoryEntityStore[api.Tenant](func(t *api.Tenant) string {
-		return t.ID
-	})
+	cellStore := memorystore2.NewInMemoryEntityStore[*api.Cell]()
+	dataspaceStore := memorystore2.NewInMemoryEntityStore[*api.DataspaceProfile]()
+	participantStore := memorystore2.NewInMemoryEntityStore[*api.ParticipantProfile]()
+	tenantStore := memorystore2.NewInMemoryEntityStore[*api.Tenant]()
 
 	ictx.Registry.Register(api.TenantStoreKey, tenantStore)
 	ictx.Registry.Register(api.ParticipantProfileStoreKey, participantStore)

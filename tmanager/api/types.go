@@ -28,6 +28,18 @@ type Entity struct {
 	Version int64
 }
 
+func (e *Entity) GetID() string {
+	return e.ID
+}
+
+func (e *Entity) GetVersion() int64 {
+	return e.Version
+}
+
+func (e *Entity) IncrementVersion() {
+	e.Version++
+}
+
 // DeployableEntity is an entity that can be deployed and follows a deployment lifecycle.
 // It extends Entity with state tracking capabilities for managing deployment phases.
 type DeployableEntity struct {
@@ -109,7 +121,14 @@ func (c DeploymentState) String() string {
 // IsValid validates the enum value
 func (c DeploymentState) IsValid() bool {
 	switch c {
-	case DeploymentStateInitial, DeploymentStatePending, DeploymentStateActive, DeploymentStateOffline, DeploymentStateError, DeploymentStateLocked:
+	case DeploymentStateInitial,
+		DeploymentStatePending,
+		DeploymentStateActive,
+		DeploymentStateOffline,
+		DeploymentStateError,
+		DeploymentStateLocked,
+		DeploymentStateDisposing,
+		DeploymentStateDisposed:
 		return true
 	default:
 		return false
@@ -273,25 +292,3 @@ func ToProperties(props map[string]any) Properties {
 	return converted
 }
 
-type DeploymentRecord struct {
-	ID                 string                  `json:"id"`
-	CorrelationID      string                  `json:"correlationId"`
-	DeploymentType     model.OrchestrationType `json:"deploymentType"`
-	State              ProcessingState         `json:"state"`
-	Timestamp          time.Time               `json:"timestamp"`
-	TenantID           string                  `json:"tenantId"`
-	ManifestID         string                  `json:"manifestId"`
-	ResponseID         string                  `json:"responseId"`
-	Success            bool                    `json:"success"`
-	ErrorDetail        string                  `json:"errorDetail,omitempty"`
-	ResponseProperties map[string]any          `json:"reponseProperties,omitempty"`
-}
-
-type ProcessingState string
-
-const (
-	ProcessingStateInitialized ProcessingState = "initialed"
-	ProcessingStateRunning     ProcessingState = "running"
-	ProcessingStateCompleted   ProcessingState = "completed"
-	ProcessingStateErrored     DeploymentState = "errored"
-)

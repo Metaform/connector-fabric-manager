@@ -27,25 +27,33 @@ import (
 
 // testEntity is a simple test entity for testing the InMemoryEntityStore
 type testEntity struct {
-	ID    string
-	Value string
+	ID      string
+	Value   string
+	Version int64
 }
 
-func testIdFunc(e *testEntity) string {
-	return e.ID
+func (t *testEntity) GetID() string {
+	return t.ID
+}
+
+func (t *testEntity) GetVersion() int64 {
+	return t.Version
+}
+
+func (t *testEntity) IncrementVersion() {
+	t.Version++
 }
 
 func TestNewInMemoryEntityStore(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 
 	require.NotNil(t, store)
 	require.NotNil(t, store.cache)
-	require.NotNil(t, store.idFunc)
 	assert.Equal(t, 0, len(store.cache))
 }
 
 func TestInMemoryEntityStore_Create(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	t.Run("successful create", func(t *testing.T) {
@@ -88,7 +96,7 @@ func TestInMemoryEntityStore_Create(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_FindById(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	t.Run("find existing entity", func(t *testing.T) {
@@ -113,7 +121,7 @@ func TestInMemoryEntityStore_FindById(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_Exists(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	t.Run("entity exists", func(t *testing.T) {
@@ -136,7 +144,7 @@ func TestInMemoryEntityStore_Exists(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_Update(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	t.Run("successful update", func(t *testing.T) {
@@ -154,13 +162,6 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.Equal(t, "updated-value", result.Value)
-	})
-
-	t.Run("update nil entity should fail", func(t *testing.T) {
-		err := store.Update(ctx, nil)
-
-		require.Error(t, err)
-		assert.Equal(t, types.ErrInvalidInput, err)
 	})
 
 	t.Run("update entity with empty ID should fail", func(t *testing.T) {
@@ -183,7 +184,7 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_Delete(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	t.Run("successful delete", func(t *testing.T) {
@@ -221,7 +222,7 @@ func TestInMemoryEntityStore_Delete(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_GetAll(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	t.Run("get all from empty store", func(t *testing.T) {
@@ -261,7 +262,7 @@ func TestInMemoryEntityStore_GetAll(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	// Create test entities
@@ -320,7 +321,7 @@ func TestInMemoryEntityStore_GetAllPaginated(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_ConcurrentAccess(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	t.Run("concurrent create and read", func(t *testing.T) {
@@ -355,7 +356,7 @@ func TestInMemoryEntityStore_ConcurrentAccess(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_ContextCancellation(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 
 	// Create some test data
 	for i := 0; i < 5; i++ {
@@ -368,7 +369,7 @@ func TestInMemoryEntityStore_ContextCancellation(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately
 
-		var results []testEntity
+		var results []*testEntity
 		var lastErr error
 
 		for entity, err := range store.GetAllPaginated(ctx, store2.DefaultPaginationOptions()) {
@@ -386,7 +387,7 @@ func TestInMemoryEntityStore_ContextCancellation(t *testing.T) {
 }
 
 func TestInMemoryEntityStore_CopyIsolation(t *testing.T) {
-	store := NewInMemoryEntityStore[testEntity](testIdFunc)
+	store := NewInMemoryEntityStore[*testEntity]()
 	ctx := context.Background()
 
 	entity := &testEntity{ID: "test-1", Value: "original-value"}
@@ -485,7 +486,7 @@ func TestDeleteByPredicate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := NewInMemoryEntityStore(func(te *testEntity) string { return te.ID })
+			store := NewInMemoryEntityStore[*testEntity]()
 
 			for _, entity := range tt.args.entities {
 				e := entity

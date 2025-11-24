@@ -184,7 +184,7 @@ func (m *MockProvisionManager) GetOrchestration(ctx context.Context, id string) 
 	return args.Get(0).(*api.Orchestration), args.Error(1)
 }
 
-func (m *MockProvisionManager) QueryOrchestrations(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
+func (m *MockProvisionManager) QueryOrchestrations(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
 	panic("not implemented")
 }
 

@@ -109,7 +109,7 @@ func (h *TMHandler) createTenant(w http.ResponseWriter, req *http.Request) {
 	h.ResponseCreated(w, response)
 }
 func (h *TMHandler) queryTenants(w http.ResponseWriter, req *http.Request, path string) {
-	handler.QueryEntities[api.Tenant](
+	handler.QueryEntities[*api.Tenant](
 		&h.HttpHandler,
 		w,
 		req,

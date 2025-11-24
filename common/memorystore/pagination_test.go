@@ -219,7 +219,7 @@ func TestFindByPredicatePaginated_ConsistencyWithFindByPredicate(t *testing.T) {
 		predicate := query.Eq("Active", true) // 4 entities
 		pageSize := 2
 
-		var allResults []complexEntity
+		allResults := make([]* complexEntity, 0)
 
 		// Page 1
 		results1, err := collection.CollectAll(
@@ -246,7 +246,7 @@ func TestFindByPredicatePaginated_ConsistencyWithFindByPredicate(t *testing.T) {
 
 // TestFindByPredicatePaginated_LargeDataset tests with larger number of entities
 func TestFindByPredicatePaginated_LargeDataset(t *testing.T) {
-	store := NewInMemoryEntityStore[complexEntity](complexIdFunc)
+	store := NewInMemoryEntityStore[*complexEntity]()
 	ctx := context.Background()
 
 	// Create 100 entities
@@ -268,7 +268,7 @@ func TestFindByPredicatePaginated_LargeDataset(t *testing.T) {
 		predicate := query.Eq("Active", true)
 		pageSize := 10
 
-		var allResults []complexEntity
+		allResults := make([]* complexEntity, 0)
 
 		// Fetch all pages
 		for offset := 0; offset < 100; offset += pageSize {

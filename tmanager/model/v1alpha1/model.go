@@ -93,3 +93,7 @@ type DeployableEntity struct {
 	State          string    `json:"state" required:"true"`
 	StateTimestamp time.Time `json:"stateTimestamp" required:"true"`
 }
+
+type TenantPropertiesPatch struct {
+	Properties map[string]any `json:"properties"`
+}

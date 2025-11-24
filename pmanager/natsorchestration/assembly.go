@@ -81,7 +81,7 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 		}
 	}
 
-	index := ctx.Registry.Resolve(api.OrchestrationIndexKey).(store.EntityStore[api.OrchestrationEntry])
+	index := ctx.Registry.Resolve(api.OrchestrationIndexKey).(store.EntityStore[*api.OrchestrationEntry])
 	trxContext := ctx.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
 
 	watcher := &OrchestrationIndexWatcher{
@@ -89,7 +89,7 @@ func (a *natsOrchestratorServiceAssembly) Init(ctx *system.InitContext) error {
 		trxContext: trxContext,
 		monitor:    ctx.LogMonitor,
 	}
-	a.subscription, err = a.natsClient.JetStream.Conn().Subscribe("$KV."+a.bucket+".>",func(msg *nats.Msg){
+	a.subscription, err = a.natsClient.JetStream.Conn().Subscribe("$KV."+a.bucket+".>", func(msg *nats.Msg) {
 		watcher.onMessage(msg.Data, msg)
 	})
 

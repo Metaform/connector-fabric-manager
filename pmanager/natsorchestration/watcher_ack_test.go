@@ -29,7 +29,7 @@ import (
 
 // FindById returns error - verify Nak is called exactly once
 func TestOnMessage_FindByIdError_NakCalledOnce(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -53,7 +53,7 @@ func TestOnMessage_FindByIdError_NakCalledOnce(t *testing.T) {
 
 // Create returns error - verify Nak is called once, Ack not called
 func TestOnMessage_CreateError_NakCalledNotAck(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -84,7 +84,7 @@ func TestOnMessage_CreateError_NakCalledNotAck(t *testing.T) {
 
 // Update returns error - verify Nak is called once, Ack not called
 func TestOnMessage_UpdateError_NakCalledNotAck(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -124,7 +124,7 @@ func TestOnMessage_UpdateError_NakCalledNotAck(t *testing.T) {
 
 // FindById unexpected error - verify Nak is called, no further operations
 func TestOnMessage_FindByIdUnexpectedError_NakCalledImmediately(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -148,7 +148,7 @@ func TestOnMessage_FindByIdUnexpectedError_NakCalledImmediately(t *testing.T) {
 
 // Multiple sequential index errors - each results in single Nak
 func TestOnMessage_SequentialErrors_EachNakOnce(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -194,7 +194,7 @@ func TestOnMessage_SequentialErrors_EachNakOnce(t *testing.T) {
 
 // Transient Create error - verify Nak for retry
 func TestOnMessage_CreateTransientError_NakForRetry(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -225,7 +225,7 @@ func TestOnMessage_CreateTransientError_NakForRetry(t *testing.T) {
 
 // Update with state conflict - verify Nak for retry
 func TestOnMessage_UpdateStateConflict_NakForRetry(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -265,7 +265,7 @@ func TestOnMessage_UpdateStateConflict_NakForRetry(t *testing.T) {
 
 // No Nak when successful create
 func TestOnMessage_SuccessfulCreate_AckCalledNotNak(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -294,7 +294,7 @@ func TestOnMessage_SuccessfulCreate_AckCalledNotNak(t *testing.T) {
 
 // No Nak when successful update
 func TestOnMessage_SuccessfulUpdate_AckCalledNotNak(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 
@@ -332,7 +332,7 @@ func TestOnMessage_SuccessfulUpdate_AckCalledNotNak(t *testing.T) {
 
 // Malformed JSON - verify Ack is called (not Nak)
 func TestOnMessage_MalformedJSON_AckCalled(t *testing.T) {
-	mockStore := mocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
 

@@ -136,7 +136,7 @@ func TestQueryTenants(t *testing.T) {
 		results := make([]api.Tenant, 0)
 		for tenant, err := range service.QueryTenants(ctx, predicate, options) {
 			require.NoError(t, err)
-			results = append(results, tenant)
+			results = append(results, *tenant)
 		}
 
 		assert.Equal(t, 1, len(results))
@@ -146,7 +146,7 @@ func TestQueryTenants(t *testing.T) {
 // TestCountTenants tests the CountTenants method
 func TestCountTenants(t *testing.T) {
 	ctx := context.Background()
-	tenantStore := memorystore.NewInMemoryEntityStore[api.Tenant](tenantIdFunc)
+	tenantStore := memorystore.NewInMemoryEntityStore[*api.Tenant]()
 	service := &tenantService{
 		trxContext:  store.NoOpTransactionContext{},
 		tenantStore: tenantStore,
@@ -180,13 +180,6 @@ func TestCountTenants(t *testing.T) {
 
 }
 
-func tenantIdFunc(t *api.Tenant) string {
-	if t == nil {
-		return ""
-	}
-	return t.ID
-}
-
 func newTestTenant(id string) *api.Tenant {
 	return &api.Tenant{
 		Entity: api.Entity{
@@ -202,7 +195,7 @@ func newTestTenant(id string) *api.Tenant {
 func newTestTenantService() *tenantService {
 	return &tenantService{
 		trxContext:  store.NoOpTransactionContext{},
-		tenantStore: memorystore.NewInMemoryEntityStore[api.Tenant](tenantIdFunc),
+		tenantStore: memorystore.NewInMemoryEntityStore[*api.Tenant](),
 		monitor:     nil,
 	}
 }

@@ -248,7 +248,7 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 // TestCountOrchestrations_WithEmptyResult tests counting with no matching orchestrations
 func TestCountOrchestrations_WithEmptyResult(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	mockEntityStore.On("CountByPredicate", ctx, &query.AtomicPredicate{}).
@@ -270,7 +270,7 @@ func TestCountOrchestrations_WithEmptyResult(t *testing.T) {
 // TestCountOrchestrations_WithResults tests counting multiple matching orchestrations
 func TestCountOrchestrations_WithResults(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	predicate := &query.AtomicPredicate{}
@@ -293,7 +293,7 @@ func TestCountOrchestrations_WithResults(t *testing.T) {
 // TestCountOrchestrations_WithStorageError tests handling of storage layer errors
 func TestCountOrchestrations_WithStorageError(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	expectedErr := store.ErrNotFound
@@ -318,12 +318,12 @@ func TestCountOrchestrations_WithStorageError(t *testing.T) {
 // TestQueryOrchestrations_WithEmptyResult tests querying with no matching orchestrations
 func TestQueryOrchestrations_WithEmptyResult(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
-		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
-			return func(yield func(api.OrchestrationEntry, error) bool) {
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
+			return func(yield func(*api.OrchestrationEntry, error) bool) {
 				// Return empty sequence
 			}
 		})
@@ -341,7 +341,7 @@ func TestQueryOrchestrations_WithEmptyResult(t *testing.T) {
 	var errs []error
 
 	for entry, err := range pm.QueryOrchestrations(ctx, predicate, options) {
-		results = append(results, entry)
+		results = append(results, *entry)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -355,7 +355,7 @@ func TestQueryOrchestrations_WithEmptyResult(t *testing.T) {
 // TestQueryOrchestrations_WithResults tests querying multiple matching orchestrations
 func TestQueryOrchestrations_WithResults(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	expectedEntries := []api.OrchestrationEntry{
@@ -372,10 +372,10 @@ func TestQueryOrchestrations_WithResults(t *testing.T) {
 	}
 
 	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
-		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
-			return func(yield func(api.OrchestrationEntry, error) bool) {
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
+			return func(yield func(*api.OrchestrationEntry, error) bool) {
 				for _, entry := range expectedEntries {
-					if !yield(entry, nil) {
+					if !yield(&entry, nil) {
 						return
 					}
 				}
@@ -395,7 +395,7 @@ func TestQueryOrchestrations_WithResults(t *testing.T) {
 
 	for entry, err := range pm.QueryOrchestrations(ctx, predicate, options) {
 		require.NoError(t, err)
-		results = append(results, entry)
+		results = append(results, *entry)
 	}
 
 	require.Equal(t, 2, len(results))
@@ -407,15 +407,15 @@ func TestQueryOrchestrations_WithResults(t *testing.T) {
 // TestQueryOrchestrations_WithStorageError tests handling of storage layer errors
 func TestQueryOrchestrations_WithStorageError(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	expectedErr := store.ErrNotFound
 
 	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
-		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
-			return func(yield func(api.OrchestrationEntry, error) bool) {
-				yield(api.OrchestrationEntry{}, expectedErr)
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
+			return func(yield func(*api.OrchestrationEntry, error) bool) {
+				yield(&api.OrchestrationEntry{}, expectedErr)
 			}
 		})
 
@@ -444,7 +444,7 @@ func TestQueryOrchestrations_WithStorageError(t *testing.T) {
 // TestQueryOrchestrations_WithPagination tests pagination of results
 func TestQueryOrchestrations_WithPagination(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	expectedEntries := []api.OrchestrationEntry{
@@ -466,10 +466,10 @@ func TestQueryOrchestrations_WithPagination(t *testing.T) {
 	}
 
 	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, paginationOptions).
-		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
-			return func(yield func(api.OrchestrationEntry, error) bool) {
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
+			return func(yield func(*api.OrchestrationEntry, error) bool) {
 				for _, entry := range expectedEntries {
-					if !yield(entry, nil) {
+					if !yield(&entry, nil) {
 						return
 					}
 				}
@@ -488,7 +488,7 @@ func TestQueryOrchestrations_WithPagination(t *testing.T) {
 
 	for entry, err := range pm.QueryOrchestrations(ctx, predicate, paginationOptions) {
 		require.NoError(t, err)
-		results = append(results, entry)
+		results = append(results, *entry)
 	}
 
 	require.Equal(t, 2, len(results))
@@ -498,7 +498,7 @@ func TestQueryOrchestrations_WithPagination(t *testing.T) {
 // TestQueryOrchestrations_ContextCancellation tests early termination via iterator
 func TestQueryOrchestrations_ContextCancellation(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	expectedEntries := []api.OrchestrationEntry{
@@ -520,10 +520,10 @@ func TestQueryOrchestrations_ContextCancellation(t *testing.T) {
 	}
 
 	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
-		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
-			return func(yield func(api.OrchestrationEntry, error) bool) {
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
+			return func(yield func(*api.OrchestrationEntry, error) bool) {
 				for _, entry := range expectedEntries {
-					if !yield(entry, nil) {
+					if !yield(&entry, nil) {
 						return
 					}
 				}
@@ -544,7 +544,7 @@ func TestQueryOrchestrations_ContextCancellation(t *testing.T) {
 
 	for entry, err := range pm.QueryOrchestrations(ctx, predicate, options) {
 		require.NoError(t, err)
-		results = append(results, entry)
+		results = append(results, *entry)
 		count++
 		// Stop after first iteration
 		if count >= 1 {
@@ -559,7 +559,7 @@ func TestQueryOrchestrations_ContextCancellation(t *testing.T) {
 // TestQueryOrchestrations_ComplexPredicate tests querying with complex predicates
 func TestQueryOrchestrations_ComplexPredicate(t *testing.T) {
 	ctx := context.Background()
-	mockEntityStore := cmocks.NewMockEntityStore[api.OrchestrationEntry](t)
+	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
 	// Create a complex predicate (example: AND of multiple conditions)
@@ -579,10 +579,10 @@ func TestQueryOrchestrations_ComplexPredicate(t *testing.T) {
 	}
 
 	mockEntityStore.On("FindByPredicatePaginated", ctx, complexPredicate, store.PaginationOptions{}).
-		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[api.OrchestrationEntry, error] {
-			return func(yield func(api.OrchestrationEntry, error) bool) {
+		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
+			return func(yield func(*api.OrchestrationEntry, error) bool) {
 				for _, entry := range expectedEntries {
-					if !yield(entry, nil) {
+					if !yield(&entry, nil) {
 						return
 					}
 				}
@@ -599,7 +599,7 @@ func TestQueryOrchestrations_ComplexPredicate(t *testing.T) {
 
 	for entry, err := range pm.QueryOrchestrations(ctx, complexPredicate, store.PaginationOptions{}) {
 		require.NoError(t, err)
-		results = append(results, entry)
+		results = append(results, *entry)
 	}
 
 	require.Equal(t, 1, len(results))

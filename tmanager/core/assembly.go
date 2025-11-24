@@ -48,10 +48,10 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	trxContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
 	provisionClient := context.Registry.Resolve(api.ProvisionClientKey).(api.ProvisionClient)
-	participantStore := context.Registry.Resolve(api.ParticipantProfileStoreKey).(store.EntityStore[api.ParticipantProfile])
-	cellStore := context.Registry.Resolve(api.CellStoreKey).(store.EntityStore[api.Cell])
-	dataspaceStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(store.EntityStore[api.DataspaceProfile])
-	tenantStore := context.Registry.Resolve(api.TenantStoreKey).(store.EntityStore[api.Tenant])
+	participantStore := context.Registry.Resolve(api.ParticipantProfileStoreKey).(store.EntityStore[*api.ParticipantProfile])
+	cellStore := context.Registry.Resolve(api.CellStoreKey).(store.EntityStore[*api.Cell])
+	dataspaceStore := context.Registry.Resolve(api.DataspaceProfileStoreKey).(store.EntityStore[*api.DataspaceProfile])
+	tenantStore := context.Registry.Resolve(api.TenantStoreKey).(store.EntityStore[*api.Tenant])
 
 	tenantService := tenantService{
 		trxContext:  trxContext,
