@@ -542,6 +542,6 @@ func TestInMemoryEntityStore_Update_VersionIncremented(t *testing.T) {
 
 	// Verify version is incremented
 	updated, err := store.FindById(ctx, "test-id")
-	require.NoError(t, err, "FindById should succeed after update")
+	require.NoError(t, err, "find should succeed after update")
 	assert.Equal(t, int64(1), updated.GetVersion(), "Version should be incremented to 1 after update")
 }
