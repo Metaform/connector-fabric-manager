@@ -33,7 +33,7 @@ type TenantService interface {
 	GetTenant(ctx context.Context, tenantID string) (*Tenant, error)
 	CreateTenant(ctx context.Context, tenant *Tenant) (*Tenant, error)
 	DeleteTenant(ctx context.Context, tenantID string) error
-	PatchTenant(ctx context.Context, id string, diff map[string]any) error
+	PatchTenant(ctx context.Context, id string, properties map[string]any, remove []string) error
 	QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*Tenant, error]
 	CountTenants(ctx context.Context, predicate query.Predicate) (int, error)
 }

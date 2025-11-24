@@ -21,6 +21,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -42,18 +43,20 @@ func (t tenantService) CreateTenant(ctx context.Context, tenant *api.Tenant) (*a
 	})
 }
 
-func (t tenantService) PatchTenant(ctx context.Context, id string, diff map[string]any) error {
+func (t tenantService) PatchTenant(ctx context.Context, id string, properties map[string]any, remove []string) error {
 	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
 		tenant, err := t.tenantStore.FindById(ctx, id)
 		if err != nil {
+			if errors.Is(err, types.ErrNotFound) {
+				return err
+			}
 			return fmt.Errorf("tenant %s not found: %w", id, err)
 		}
-		for key, value := range diff {
-			if value == nil {
-				delete(tenant.Properties, key)
-			} else {
-				tenant.Properties[key] = value
-			}
+		for key, value := range properties {
+			tenant.Properties[key] = value
+		}
+		for _, key := range remove {
+			delete(tenant.Properties, key)
 		}
 		err = t.tenantStore.Update(ctx, tenant)
 		if err != nil {

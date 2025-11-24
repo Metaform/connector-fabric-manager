@@ -94,6 +94,7 @@ type DeployableEntity struct {
 	StateTimestamp time.Time `json:"stateTimestamp" required:"true"`
 }
 
-type TenantPropertiesPatch struct {
+type TenantPropertiesDiff struct {
 	Properties map[string]any `json:"properties"`
+	Removed    []string       `json:"removed"`
 }
