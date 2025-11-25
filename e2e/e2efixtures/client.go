@@ -38,7 +38,7 @@ func NewApiClient(tmanagerBaseUrl string, pmanagerBaseUrl string) *ApiClient {
 // PostToPManager makes a POST request to Provision Manager API
 func (c *ApiClient) PostToPManager(endpoint string, payload any) error {
 	url := fmt.Sprintf("%s/%s", c.pmanagerBaseUrl, endpoint)
-	_, err := c.postRequest(url, payload, nil)
+	_, err := c.bodyRequestWithResponse(url, http.MethodPost, payload, nil)
 	return err
 }
 
@@ -50,13 +50,18 @@ func (c *ApiClient) DeleteToPManager(endpoint string) error {
 
 func (c *ApiClient) PostToTManager(endpoint string, payload any) error {
 	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
-	_, err := c.postRequest(url, payload, nil)
+	_, err := c.bodyRequestWithResponse(url, http.MethodPost, payload, nil)
 	return err
 }
 
 func (c *ApiClient) PostToTManagerWithResponse(endpoint string, payload any, result any) error {
 	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
 	return c.postWithResponse(url, payload, result)
+}
+
+func (c *ApiClient) PatchToTManager(endpoint string, payload any) error {
+	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
+	return c.bodyRequest(url, http.MethodPatch, payload, nil)
 }
 
 func (c *ApiClient) GetTManager(endpoint string, result any) error {
@@ -91,21 +96,21 @@ func (c *ApiClient) DeleteToTManager(endpoint string) error {
 }
 
 func (c *ApiClient) postWithResponse(url string, payload any, result any) error {
-	ser, err := c.postRequest(url, payload, nil)
+	ser, err := c.bodyRequestWithResponse(url, http.MethodPost, payload, nil)
 	if err != nil {
 		return err
 	}
 	return json.Unmarshal(ser, result)
 }
 
-// postRequest handles POST requests with JSON payload
-func (c *ApiClient) postRequest(url string, payload any, headers map[string]string) ([]byte, error) {
+// bodyRequestWithResponse handles POST requests with JSON payload
+func (c *ApiClient) bodyRequestWithResponse(url string, method string, payload any, headers map[string]string) ([]byte, error) {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -134,6 +139,37 @@ func (c *ApiClient) postRequest(url string, payload any, headers map[string]stri
 	}
 
 	return body, nil
+}
+
+// bodyRequestWithResponse handles POST requests with JSON payload
+func (c *ApiClient) bodyRequest(url string, method string, payload any, headers map[string]string) error {
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK &&
+		resp.StatusCode != http.StatusCreated &&
+		resp.StatusCode != http.StatusNoContent &&
+		resp.StatusCode != http.StatusAccepted {
+		return fmt.Errorf("request failed with status %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 // deleteRequest handles DELETE requests

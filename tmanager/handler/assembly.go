@@ -87,6 +87,13 @@ func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler
 		})
 
 		r.Route("/{tenantID}", func(r chi.Router) {
+			r.Patch("/", func(w http.ResponseWriter, req *http.Request) {
+				tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
+				if !found {
+					return
+				}
+				handler.patchTenant(w, req, tenantID)
+			})
 			h.registerParticipantRoutes(r, handler)
 		})
 	})

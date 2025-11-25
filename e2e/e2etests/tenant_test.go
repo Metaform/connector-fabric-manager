@@ -14,6 +14,7 @@ package e2etests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -25,8 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_VerifyTenantQueries(t *testing.T) {
-
+func Test_VerifyTenantOperations(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -46,6 +46,11 @@ func Test_VerifyTenantQueries(t *testing.T) {
 	}
 	require.NoError(t, err)
 
+	verifyQueries(t, err, client)
+	verifyPatch(t, err, client)
+}
+
+func verifyQueries(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	_, err = e2efixtures.CreateTenant(client, map[string]any{"group": "manufacturers"})
 	require.NoError(t, err)
 
@@ -57,5 +62,27 @@ func Test_VerifyTenantQueries(t *testing.T) {
 	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "properties.group = 'suppliers' OR properties.group = 'manufacturers'"}, &result)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(result))
+}
 
+func verifyPatch(t *testing.T, err error, client *e2efixtures.ApiClient) {
+	_, err = e2efixtures.CreateTenant(client, map[string]any{"group": "patch"})
+	require.NoError(t, err)
+
+	var result []v1alpha1.Tenant
+	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "properties.group = 'patch'"}, &result)
+
+	diff := &v1alpha1.TenantPropertiesDiff{
+		Properties: map[string]any{"customer": "gold"},
+		Removed:    []string{"group"},
+	}
+	err = client.PatchToTManager(fmt.Sprintf("tenants/%s", result[0].ID), diff)
+	require.NoError(t, err)
+
+	result = nil
+	//var result []v1alpha1.Tenant
+	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "properties.customer = 'gold'"}, &result)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(result))
+	assert.Equal(t, 1, len(result[0].Properties))
+	assert.Equal(t, "gold", result[0].Properties["customer"])
 }

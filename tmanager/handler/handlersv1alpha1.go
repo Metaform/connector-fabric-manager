@@ -108,6 +108,25 @@ func (h *TMHandler) createTenant(w http.ResponseWriter, req *http.Request) {
 	response := v1alpha1.ToTenant(tenant)
 	h.ResponseCreated(w, response)
 }
+
+func (h *TMHandler) patchTenant(w http.ResponseWriter, req *http.Request, tenantID string) {
+	if h.InvalidMethod(w, req, http.MethodPatch) {
+		return
+	}
+	var diff v1alpha1.TenantPropertiesDiff
+	if !h.ReadPayload(w, req, &diff) {
+		return
+	}
+
+	err := h.tenantService.PatchTenant(req.Context(), tenantID, diff.Properties, diff.Removed)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.OK(w)
+}
+
 func (h *TMHandler) queryTenants(w http.ResponseWriter, req *http.Request, path string) {
 	handler.QueryEntities[*api.Tenant](
 		&h.HttpHandler,
