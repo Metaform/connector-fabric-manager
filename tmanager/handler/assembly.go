@@ -117,7 +117,7 @@ func (h *HandlerServiceAssembly) registerParticipantRoutes(r chi.Router, handler
 			if !found {
 				return
 			}
-			handler.deployParticipant(w, req, tenantID)
+			handler.deployParticipantProfile(w, req, tenantID)
 		})
 
 		r.Route("/{participantID}", func(r chi.Router) {
@@ -141,7 +141,7 @@ func (h *HandlerServiceAssembly) registerParticipantRoutes(r chi.Router, handler
 				if !found {
 					return
 				}
-				handler.disposeParticipant(w, req, tenantID, participantID)
+				handler.disposeParticipantProfile(w, req, tenantID, participantID)
 			})
 		})
 	})

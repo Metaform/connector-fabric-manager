@@ -46,7 +46,31 @@ func NewHandler(
 	}
 }
 
-func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request, tenantID string) {
+func (h *TMHandler) getParticipantProfile(
+	w http.ResponseWriter,
+	req *http.Request,
+	tenantID string,
+	participantID string) {
+
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+
+	profile, err := h.participantService.GetProfile(req.Context(), tenantID, participantID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	response := v1alpha1.ToParticipantProfile(profile)
+	h.ResponseOK(w, response)
+}
+
+func (h *TMHandler) deployParticipantProfile(
+	w http.ResponseWriter,
+	req *http.Request,
+	tenantID string) {
+
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
@@ -76,7 +100,12 @@ func (h *TMHandler) deployParticipant(w http.ResponseWriter, req *http.Request, 
 	h.ResponseAccepted(w, response)
 }
 
-func (h *TMHandler) disposeParticipant(w http.ResponseWriter, req *http.Request, tenantID string, participantID string) {
+func (h *TMHandler) disposeParticipantProfile(
+	w http.ResponseWriter,
+	req *http.Request,
+	tenantID string,
+	participantID string) {
+
 	if h.InvalidMethod(w, req, http.MethodDelete) {
 		return
 	}
@@ -164,21 +193,6 @@ func (h *TMHandler) queryTenants(w http.ResponseWriter, req *http.Request, path 
 		func(tenant *api.Tenant) any {
 			return v1alpha1.ToTenant(tenant)
 		})
-}
-
-func (h *TMHandler) getParticipantProfile(w http.ResponseWriter, req *http.Request, tenantID string, participantID string) {
-	if h.InvalidMethod(w, req, http.MethodGet) {
-		return
-	}
-
-	profile, err := h.participantService.GetProfile(req.Context(), tenantID, participantID)
-	if err != nil {
-		h.HandleError(w, err)
-		return
-	}
-
-	response := v1alpha1.ToParticipantProfile(profile)
-	h.ResponseOK(w, response)
 }
 
 func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
