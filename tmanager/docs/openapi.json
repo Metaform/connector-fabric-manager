@@ -243,10 +243,33 @@
       }
     },
     "/api/v1alpha1/tenants/{id}": {
-      "get": {
-        "tags": [
-          "Not implemented yet"
+      "delete": {
+        "summary": "Delete Tenant",
+        "description": "Deletes a Tenant by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1Alpha1Tenant"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
         "summary": "Get Tenant",
         "description": "Retrieve a Tenant by ID",
         "parameters": [
@@ -259,6 +282,41 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1Alpha1Tenant"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Updates a Tenant",
+        "description": "Updates a Tenant by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/V1Alpha1TenantPropertiesDiff"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -388,10 +446,12 @@
         "type": "object",
         "properties": {
           "limit": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int64"
           },
           "offset": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int64"
           },
           "predicate": {
             "type": "string"
@@ -588,6 +648,23 @@
           "version": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "V1Alpha1TenantPropertiesDiff": {
+        "type": "object",
+        "properties": {
+          "properties": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         }
       },

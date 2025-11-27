@@ -77,7 +77,20 @@ func generateTenantEndpoints(r spec.Generator) {
 		option.Description("Retrieve a Tenant by ID"),
 		option.Request(new(IDParam)),
 		option.Response(http.StatusOK, v1alpha1.Tenant{}),
-		option.Tags("Not implemented yet"),
+	)
+
+	tenants.Delete("/{id}",
+		option.Summary("Delete Tenant"),
+		option.Description("Deletes a Tenant by ID"),
+		option.Request(new(IDParam)),
+		option.Response(http.StatusOK, v1alpha1.Tenant{}),
+	)
+	tenants.Patch("/{id}",
+		option.Summary("Updates a Tenant"),
+		option.Description("Updates a Tenant by ID"),
+		option.Request(new(IDParam)),
+		option.Request(v1alpha1.TenantPropertiesDiff{}),
+		option.Response(http.StatusOK, v1alpha1.Tenant{}),
 	)
 }
 
