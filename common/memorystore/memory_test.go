@@ -545,3 +545,70 @@ func TestInMemoryEntityStore_Update_VersionIncremented(t *testing.T) {
 	require.NoError(t, err, "find should succeed after update")
 	assert.Equal(t, int64(1), updated.GetVersion(), "Version should be incremented to 1 after update")
 }
+
+func TestInMemoryEntityStore_GetAllCount(t *testing.T) {
+	store := NewInMemoryEntityStore[*testEntity]()
+	ctx := context.Background()
+
+	// Test empty store
+	count, err := store.GetAllCount(ctx)
+	if err != nil {
+		t.Fatalf("GetAllCount failed on empty store: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected count to be 0, got %d", count)
+	}
+
+	// Create and add multiple entities
+	entity1 := &testEntity{ID: "entity-1", Value: "value1", Version: 1}
+	entity2 := &testEntity{ID: "entity-2", Value: "value2", Version: 1}
+	entity3 := &testEntity{ID: "entity-3", Value: "value3", Version: 1}
+
+	_, err = store.Create(ctx, entity1)
+	if err != nil {
+		t.Fatalf("failed to create entity1: %v", err)
+	}
+
+	_, err = store.Create(ctx, entity2)
+	if err != nil {
+		t.Fatalf("failed to create entity2: %v", err)
+	}
+
+	// Test count after adding 2 entities
+	count, err = store.GetAllCount(ctx)
+	if err != nil {
+		t.Fatalf("GetAllCount failed: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("expected count to be 2, got %d", count)
+	}
+
+	// Add one more entity
+	_, err = store.Create(ctx, entity3)
+	if err != nil {
+		t.Fatalf("failed to create entity3: %v", err)
+	}
+
+	// Test count after adding 3 entities
+	count, err = store.GetAllCount(ctx)
+	if err != nil {
+		t.Fatalf("GetAllCount failed: %v", err)
+	}
+	if count != 3 {
+		t.Errorf("expected count to be 3, got %d", count)
+	}
+
+	// Test count after deleting an entity
+	err = store.Delete(ctx, "entity-2")
+	if err != nil {
+		t.Fatalf("failed to delete entity2: %v", err)
+	}
+
+	count, err = store.GetAllCount(ctx)
+	if err != nil {
+		t.Fatalf("GetAllCount failed after delete: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("expected count to be 2 after delete, got %d", count)
+	}
+}

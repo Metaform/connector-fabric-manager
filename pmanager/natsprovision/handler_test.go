@@ -188,6 +188,6 @@ func (m *MockProvisionManager) QueryOrchestrations(ctx context.Context, predicat
 	panic("not implemented")
 }
 
-func (m *MockProvisionManager) CountOrchestrations(ctx context.Context, predicate query.Predicate) (int, error) {
+func (m *MockProvisionManager) CountOrchestrations(ctx context.Context, predicate query.Predicate) (int64, error) {
 	panic("not implemented")
 }

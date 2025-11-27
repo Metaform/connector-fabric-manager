@@ -217,9 +217,9 @@ func TestFindByPredicatePaginated_ConsistencyWithFindByPredicate(t *testing.T) {
 
 	t.Run("multiple paginated requests cover all results", func(t *testing.T) {
 		predicate := query.Eq("Active", true) // 4 entities
-		pageSize := 2
+		var pageSize int64 = 2
 
-		allResults := make([]* complexEntity, 0)
+		allResults := make([]*complexEntity, 0)
 
 		// Page 1
 		results1, err := collection.CollectAll(
@@ -266,12 +266,12 @@ func TestFindByPredicatePaginated_LargeDataset(t *testing.T) {
 
 	t.Run("paginate through 50 active entities", func(t *testing.T) {
 		predicate := query.Eq("Active", true)
-		pageSize := 10
+		var pageSize int64 = 10
 
-		allResults := make([]* complexEntity, 0)
+		allResults := make([]*complexEntity, 0)
 
 		// Fetch all pages
-		for offset := 0; offset < 100; offset += pageSize {
+		for offset := int64(0); offset < 100; offset += pageSize {
 			results, err := collection.CollectAll(
 				store.FindByPredicatePaginated(ctx, predicate, store2.PaginationOptions{Offset: offset, Limit: pageSize}),
 			)

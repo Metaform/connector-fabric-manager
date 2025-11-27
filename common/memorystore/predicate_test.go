@@ -1032,7 +1032,7 @@ func TestCountByPredicate_SimplePredicate_Equal(t *testing.T) {
 		count, err := store.CountByPredicate(ctx, predicate)
 
 		require.NoError(t, err)
-		assert.Equal(t, 1, count)
+		assert.Equal(t, int64(1), count)
 	})
 
 	t.Run("count equal non-existing value", func(t *testing.T) {
@@ -1043,6 +1043,6 @@ func TestCountByPredicate_SimplePredicate_Equal(t *testing.T) {
 		count, err := store.CountByPredicate(ctx, predicate)
 
 		require.NoError(t, err)
-		assert.Equal(t, 0, count)
+		assert.Equal(t, int64(0), count)
 	})
 }

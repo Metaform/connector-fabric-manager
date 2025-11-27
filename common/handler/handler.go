@@ -20,6 +20,7 @@ import (
 	"io"
 	"iter"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -169,7 +170,7 @@ func (h HttpHandler) ExtractPathVariable(w http.ResponseWriter, req *http.Reques
 	return value, true
 }
 
-func (h HttpHandler) WriteLinkHeaders(w http.ResponseWriter, path string, offset int, limit int, totalCount int) {
+func (h HttpHandler) WriteLinkHeaders(w http.ResponseWriter, path string, offset int64, limit int64, totalCount int64) {
 	var links []string
 	selfLink := fmt.Sprintf("<%s?offset=%d&limit=%d>; rel=\"self\"", path, offset, limit)
 	links = append(links, selfLink)
@@ -191,12 +192,14 @@ func (h HttpHandler) WriteLinkHeaders(w http.ResponseWriter, path string, offset
 	firstLink := fmt.Sprintf("<%s?offset=0&limit=%d>; rel=\"first\"", path, limit)
 	links = append(links, firstLink)
 
-	lastOffset := ((totalCount - 1) / limit) * limit
-	if lastOffset < 0 {
-		lastOffset = 0
+	if limit > 0 {
+		lastOffset := ((totalCount - 1) / limit) * limit
+		if lastOffset < 0 {
+			lastOffset = 0
+		}
+		lastLink := fmt.Sprintf("<%s=%d&limit=%d>; rel=\"last\"", path, lastOffset, limit)
+		links = append(links, lastLink)
 	}
-	lastLink := fmt.Sprintf("<%s=%d&limit=%d>; rel=\"last\"", path, lastOffset, limit)
-	links = append(links, lastLink)
 
 	w.Header().Set("Link", strings.Join(links, ", "))
 	w.Header().Set("X-Total-Count", fmt.Sprintf("%d", totalCount))
@@ -207,8 +210,8 @@ func QueryEntities[T any](
 	w http.ResponseWriter,
 	req *http.Request,
 	path string,
-	countFn func(context.Context, query.Predicate) (int, error),
-	queryFn func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[T, error],
+	countFn func(context.Context, query.Predicate) (int64, error),
+	queryFn func(context.Context, query.Predicate, store.PaginationOptions) iter.Seq2[T, error],
 	transformFn func(T) any) {
 
 	if h.InvalidMethod(w, req, http.MethodPost) {
@@ -250,6 +253,87 @@ func QueryEntities[T any](
 		Offset: offset,
 		Limit:  limit,
 	}) {
+		if err != nil {
+			h.Monitor.Infow("Error streaming results: %v", err)
+			break
+		}
+
+		if !first {
+			_, err = w.Write([]byte(","))
+			if err != nil {
+				h.Monitor.Infow("Error writing response: %v", err)
+				return
+			}
+		}
+		first = false
+
+		response := transformFn(entity)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			h.Monitor.Infow("Error encoding response: %v", err)
+			break
+		}
+
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+	}
+
+	_, err = w.Write([]byte("]"))
+	if err != nil {
+		h.Monitor.Infow("Error writing response: %v", err)
+		return
+	}
+}
+
+func ListEntities[T any](
+	h *HttpHandler,
+	w http.ResponseWriter,
+	req *http.Request,
+	path string,
+	countFn func(context.Context) (int64, error),
+	listFn func(context.Context, store.PaginationOptions) iter.Seq2[T, error],
+	transformFn func(T) any) {
+
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+
+	totalCount, err := countFn(req.Context())
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+	offset := req.URL.Query().Get("offset")
+	limit := req.URL.Query().Get("limit")
+	options := store.PaginationOptions{}
+	if offset != "" {
+		offsetVal, err := strconv.Atoi(offset) // Safe conversion as prevision will not be lost
+		if err != nil {
+			h.WriteError(w, fmt.Sprintf("Invalid offset: %s", err), http.StatusBadRequest)
+			return
+		}
+		options.Offset = int64(offsetVal) // Safe conversion as prevision will not be lost
+	}
+	if limit != "" {
+		limitVal, err := strconv.Atoi(limit)
+		if err != nil {
+			h.WriteError(w, fmt.Sprintf("Invalid limit: %s", err), http.StatusBadRequest)
+			return
+		}
+		options.Limit = int64(limitVal)
+	}
+
+	h.WriteLinkHeaders(w, path, options.Offset, options.Limit, totalCount)
+
+	h.OK(w)
+	_, err = w.Write([]byte("["))
+	if err != nil {
+		h.Monitor.Infow("Error writing response: %v", err)
+		return
+	}
+	first := true
+
+	for entity, err := range listFn(req.Context(), options) {
 		if err != nil {
 			h.Monitor.Infow("Error streaming results: %v", err)
 			break

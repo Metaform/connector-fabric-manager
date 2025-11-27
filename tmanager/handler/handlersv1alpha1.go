@@ -127,13 +127,26 @@ func (h *TMHandler) patchTenant(w http.ResponseWriter, req *http.Request, tenant
 	h.OK(w)
 }
 
+func (h *TMHandler) getTenants(w http.ResponseWriter, req *http.Request, path string, ) {
+	handler.ListEntities[*api.Tenant](
+		&h.HttpHandler,
+		w,
+		req,
+		path,
+		h.tenantService.GetTenantsCount,
+		h.tenantService.GetTenants,
+		func(tenant *api.Tenant) any {
+			return v1alpha1.ToTenant(tenant)
+		})
+}
+
 func (h *TMHandler) queryTenants(w http.ResponseWriter, req *http.Request, path string) {
 	handler.QueryEntities[*api.Tenant](
 		&h.HttpHandler,
 		w,
 		req,
 		path,
-		h.tenantService.CountTenants,
+		h.tenantService.QueryTenantsCount,
 		h.tenantService.QueryTenants,
 		func(tenant *api.Tenant) any {
 			return v1alpha1.ToTenant(tenant)

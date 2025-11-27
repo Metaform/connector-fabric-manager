@@ -56,7 +56,7 @@ type ProvisionManager interface {
 		options store.PaginationOptions) iter.Seq2[*OrchestrationEntry, error]
 
 	// CountOrchestrations returns the number of orchestrations matching the given predicate.
-	CountOrchestrations(ctx context.Context, predicate query.Predicate) (int, error)
+	CountOrchestrations(ctx context.Context, predicate query.Predicate) (int64, error)
 }
 
 // Orchestrator manages asynchronous execution of orchestrations.

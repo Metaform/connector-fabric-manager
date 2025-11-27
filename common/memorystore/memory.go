@@ -127,6 +127,10 @@ func (s *InMemoryEntityStore[T]) GetAll(ctx context.Context) iter.Seq2[T, error]
 	return s.GetAllPaginated(ctx, store.DefaultPaginationOptions())
 }
 
+func (s *InMemoryEntityStore[T]) GetAllCount(ctx context.Context) (int64, error) {
+	return int64(len(s.cache)), nil
+}
+
 func (s *InMemoryEntityStore[T]) GetAllPaginated(ctx context.Context, opts store.PaginationOptions) iter.Seq2[T, error] {
 	return s.paginateEntities(ctx, nil, opts)
 }
@@ -183,12 +187,13 @@ func (s *InMemoryEntityStore[T]) paginateEntities(
 		if start < 0 {
 			start = 0
 		}
-		if start >= len(filtered) {
+		length := int64(len(filtered))
+		if start >= length {
 			return // No items to return
 		}
 
 		// Apply limit
-		end := len(filtered)
+		end := length
 		if opts.Limit > 0 {
 			requestedEnd := start + opts.Limit
 			if requestedEnd < end {
@@ -238,11 +243,11 @@ func (s *InMemoryEntityStore[T]) FindFirstByPredicate(_ context.Context, predica
 	return zero, types.ErrNotFound
 }
 
-func (s *InMemoryEntityStore[T]) CountByPredicate(_ context.Context, predicate query.Predicate) (int, error) {
+func (s *InMemoryEntityStore[T]) CountByPredicate(_ context.Context, predicate query.Predicate) (int64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	count := 0
+	var count int64
 	for _, entity := range s.cache {
 		if predicate.Matches(entity, s.matcher) {
 			count++
@@ -281,3 +286,4 @@ func copyEntity[T store.EntityType](entity T) (T, error) {
 
 	return copied, nil
 }
+

@@ -88,9 +88,9 @@ func (n *NoOpTrxAssembly) Init(context *system.InitContext) error {
 // PaginationOptions defines pagination parameters for entity retrieval.
 type PaginationOptions struct {
 	// Offset is the number of items to skip from the beginning.
-	Offset int
+	Offset int64
 	// Limit is the maximum number of items to return. If 0, returns all items.
-	Limit int
+	Limit int64
 	// Cursor is an optional cursor for cursor-based pagination (implementation-specific).
 	Cursor string
 }
@@ -112,11 +112,12 @@ type EntityStore[T EntityType] interface {
 	Update(ctx context.Context, entity T) error // T is already a pointer type
 	Delete(ctx context.Context, id string) error
 	GetAll(ctx context.Context) iter.Seq2[T, error]
+	GetAllCount(ctx context.Context) (int64, error)
 	GetAllPaginated(ctx context.Context, opts PaginationOptions) iter.Seq2[T, error]
 	FindByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[T, error]
 	FindByPredicatePaginated(ctx context.Context, predicate query.Predicate, opts PaginationOptions) iter.Seq2[T, error]
 	FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (T, error)
-	CountByPredicate(ctx context.Context, predicate query.Predicate) (int, error)
+	CountByPredicate(ctx context.Context, predicate query.Predicate) (int64, error)
 	DeleteByPredicate(ctx context.Context, predicate query.Predicate) error
 }
 

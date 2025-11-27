@@ -72,9 +72,36 @@ func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error 
 }
 
 func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.Tenant, error] {
+	return t.executeStoreIterator(ctx, func(ctx context.Context) iter.Seq2[*api.Tenant, error] {
+		return t.tenantStore.FindByPredicatePaginated(ctx, predicate, options)
+	})
+}
+
+func (t tenantService) GetTenants(ctx context.Context, options store.PaginationOptions) iter.Seq2[*api.Tenant, error] {
+	return t.executeStoreIterator(ctx, func(ctx context.Context) iter.Seq2[*api.Tenant, error] {
+		return t.tenantStore.GetAllPaginated(ctx, options)
+	})
+}
+
+func (t tenantService) GetTenantsCount(ctx context.Context) (int64, error) {
+	return t.tenantStore.GetAllCount(ctx)
+}
+
+func (t tenantService) QueryTenantsCount(ctx context.Context, predicate query.Predicate) (int64, error) {
+	var count int64
+	err := t.trxContext.Execute(ctx, func(ctx context.Context) error {
+		c, err := t.tenantStore.CountByPredicate(ctx, predicate)
+		count = int64(c)
+		return err
+	})
+	return count, err
+}
+
+// executeStoreIterator wraps store iterator operations in a transaction context
+func (t tenantService) executeStoreIterator(ctx context.Context, storeOp func(context.Context) iter.Seq2[*api.Tenant, error]) iter.Seq2[*api.Tenant, error] {
 	return func(yield func(*api.Tenant, error) bool) {
 		err := t.trxContext.Execute(ctx, func(ctx context.Context) error {
-			for tenant, err := range t.tenantStore.FindByPredicatePaginated(ctx, predicate, options) {
+			for tenant, err := range storeOp(ctx) {
 				if !yield(tenant, err) {
 					return context.Canceled
 				}
@@ -85,14 +112,4 @@ func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predica
 			yield(&api.Tenant{}, err)
 		}
 	}
-}
-
-func (t tenantService) CountTenants(ctx context.Context, predicate query.Predicate) (int, error) {
-	var count int
-	err := t.trxContext.Execute(ctx, func(ctx context.Context) error {
-		c, err := t.tenantStore.CountByPredicate(ctx, predicate)
-		count = c
-		return err
-	})
-	return count, err
 }

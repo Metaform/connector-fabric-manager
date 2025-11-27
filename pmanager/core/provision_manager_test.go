@@ -252,7 +252,7 @@ func TestCountOrchestrations_WithEmptyResult(t *testing.T) {
 	trxContext := store.NoOpTransactionContext{}
 
 	mockEntityStore.On("CountByPredicate", ctx, &query.AtomicPredicate{}).
-		Return(0, nil)
+		Return(int64(0), nil)
 
 	pm := &provisionManager{
 		store:      nil,
@@ -263,7 +263,7 @@ func TestCountOrchestrations_WithEmptyResult(t *testing.T) {
 	count, err := pm.CountOrchestrations(ctx, &query.AtomicPredicate{})
 
 	require.NoError(t, err)
-	assert.Equal(t, 0, count)
+	assert.Equal(t, int64(0), count)
 	mockEntityStore.AssertExpectations(t)
 }
 
@@ -275,7 +275,7 @@ func TestCountOrchestrations_WithResults(t *testing.T) {
 
 	predicate := &query.AtomicPredicate{}
 	mockEntityStore.On("CountByPredicate", ctx, predicate).
-		Return(5, nil)
+		Return(int64(5), nil)
 
 	pm := &provisionManager{
 		store:      nil,
@@ -286,7 +286,7 @@ func TestCountOrchestrations_WithResults(t *testing.T) {
 	count, err := pm.CountOrchestrations(ctx, predicate)
 
 	require.NoError(t, err)
-	assert.Equal(t, 5, count)
+	assert.Equal(t, int64(5), count)
 	mockEntityStore.AssertExpectations(t)
 }
 
@@ -299,7 +299,7 @@ func TestCountOrchestrations_WithStorageError(t *testing.T) {
 	expectedErr := store.ErrNotFound
 
 	mockEntityStore.On("CountByPredicate", ctx, &query.AtomicPredicate{}).
-		Return(0, expectedErr)
+		Return(int64(0), expectedErr)
 
 	pm := &provisionManager{
 		store:      nil,
@@ -311,7 +311,7 @@ func TestCountOrchestrations_WithStorageError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Equal(t, expectedErr, err)
-	assert.Equal(t, 0, count)
+	assert.Equal(t, int64(0), count)
 	mockEntityStore.AssertExpectations(t)
 }
 

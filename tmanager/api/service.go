@@ -34,8 +34,10 @@ type TenantService interface {
 	CreateTenant(ctx context.Context, tenant *Tenant) (*Tenant, error)
 	DeleteTenant(ctx context.Context, tenantID string) error
 	PatchTenant(ctx context.Context, id string, properties map[string]any, remove []string) error
+	GetTenants(ctx context.Context, options store.PaginationOptions) iter.Seq2[*Tenant, error]
+	GetTenantsCount(ctx context.Context) (int64, error)
 	QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*Tenant, error]
-	CountTenants(ctx context.Context, predicate query.Predicate) (int, error)
+	QueryTenantsCount(ctx context.Context, predicate query.Predicate) (int64, error)
 }
 
 // ParticipantProfileService performs participant profile operations, including deploying associated VPAs.

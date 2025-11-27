@@ -46,8 +46,17 @@ func Test_VerifyTenantOperations(t *testing.T) {
 	}
 	require.NoError(t, err)
 
+	verifyGetAll(t, err, client)
 	verifyQueries(t, err, client)
 	verifyPatch(t, err, client)
+}
+
+func verifyGetAll(t *testing.T, err error, client *e2efixtures.ApiClient) {
+	var result []v1alpha1.Tenant
+	err = client.GetTManager("tenants", &result)
+	require.NoError(t, err)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(result))
 }
 
 func verifyQueries(t *testing.T, err error, client *e2efixtures.ApiClient) {

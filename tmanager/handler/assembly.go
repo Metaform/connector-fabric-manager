@@ -81,6 +81,9 @@ func (h *HandlerServiceAssembly) registerV1Alpha1(router chi.Router, handler *TM
 
 func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler *TMHandler) {
 	router.Route("/tenants", func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, req *http.Request) {
+			handler.getTenants(w, req, "/tenants")
+		})
 		r.Post("/", handler.createTenant)
 		r.Post("/query", func(w http.ResponseWriter, req *http.Request) {
 			handler.queryTenants(w, req, "/tenants/query")

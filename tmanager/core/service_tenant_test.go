@@ -143,7 +143,7 @@ func TestQueryTenants(t *testing.T) {
 	})
 }
 
-// TestCountTenants tests the CountTenants method
+// TestCountTenants tests the QueryTenantsCount method
 func TestCountTenants(t *testing.T) {
 	ctx := context.Background()
 	tenantStore := memorystore.NewInMemoryEntityStore[*api.Tenant]()
@@ -159,10 +159,10 @@ func TestCountTenants(t *testing.T) {
 			Value:    "Tenant One",
 		}
 
-		count, err := service.CountTenants(ctx, predicate)
+		count, err := service.QueryTenantsCount(ctx, predicate)
 
 		require.NoError(t, err)
-		assert.Equal(t, 0, count)
+		assert.Equal(t, int64(0), count)
 	})
 
 	t.Run("count with matching predicate", func(t *testing.T) {
@@ -172,12 +172,105 @@ func TestCountTenants(t *testing.T) {
 			Value:    "Tenant One",
 		}
 
-		count, err := service.CountTenants(ctx, predicate)
+		count, err := service.QueryTenantsCount(ctx, predicate)
 
 		require.NoError(t, err)
-		assert.GreaterOrEqual(t, count, 0)
+		assert.GreaterOrEqual(t, count, int64(0))
 	})
 
+}
+
+func TestGetTenants(t *testing.T) {
+
+	t.Run("get all tenants with pagination", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		// Create multiple test tenants
+		tenants := []*api.Tenant{
+			newTestTenant("tenant-1"),
+			newTestTenant("tenant-2"),
+			newTestTenant("tenant-3"),
+		}
+
+		for _, tenant := range tenants {
+			_, err := service.tenantStore.Create(ctx, tenant)
+			require.NoError(t, err)
+		}
+
+		options := store.DefaultPaginationOptions()
+		results := make([]*api.Tenant, 0)
+
+		for tenant, err := range service.GetTenants(ctx, options) {
+			require.NoError(t, err)
+			results = append(results, tenant)
+		}
+
+		require.Equal(t, 3, len(results))
+		expectedIDs := []string{"tenant-1", "tenant-2", "tenant-3"}
+		resultIDs := make([]string, len(results))
+		for i, tenant := range results {
+			resultIDs[i] = tenant.ID
+		}
+		assert.ElementsMatch(t, expectedIDs, resultIDs)
+
+		// test pagination
+		options.Limit = 2
+		results = make([]*api.Tenant, 0)
+
+		for tenant, err := range service.GetTenants(ctx, options) {
+			require.NoError(t, err)
+			results = append(results, tenant)
+		}
+		assert.Equal(t, 2, len(results))
+
+	})
+
+	t.Run("get tenants from empty store", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		options := store.DefaultPaginationOptions()
+		results := make([]*api.Tenant, 0)
+
+		for tenant, err := range service.GetTenants(ctx, options) {
+			require.NoError(t, err)
+			results = append(results, tenant)
+		}
+
+		require.Equal(t, 0, len(results))
+	})
+}
+
+func TestGetTenantsCount(t *testing.T) {
+
+	t.Run("count tenants in populated store", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		// Create multiple test tenants
+		tenants := []*api.Tenant{
+			newTestTenant("tenant-1"),
+			newTestTenant("tenant-2"),
+			newTestTenant("tenant-3"),
+		}
+
+		for _, tenant := range tenants {
+			_, err := service.tenantStore.Create(ctx, tenant)
+			require.NoError(t, err)
+		}
+
+		count, err := service.GetTenantsCount(ctx)
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), count)
+	})
+
+	t.Run("count tenants in empty store", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		count, err := service.GetTenantsCount(ctx)
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count)
+	})
 }
 
 func newTestTenant(id string) *api.Tenant {

@@ -106,8 +106,8 @@ func (p provisionManager) QueryOrchestrations(
 	}
 }
 
-func (p provisionManager) CountOrchestrations(ctx context.Context, predicate query.Predicate) (int, error) {
-	var count int
+func (p provisionManager) CountOrchestrations(ctx context.Context, predicate query.Predicate) (int64, error) {
+	var count int64
 	err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
 		c, err := p.index.CountByPredicate(ctx, predicate)
 		count = c
