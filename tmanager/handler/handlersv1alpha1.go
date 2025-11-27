@@ -169,7 +169,7 @@ func (h *TMHandler) deleteTenant(w http.ResponseWriter, req *http.Request, tenan
 	h.OK(w)
 }
 
-func (h *TMHandler) getTenants(w http.ResponseWriter, req *http.Request, path string, ) {
+func (h *TMHandler) getTenants(w http.ResponseWriter, req *http.Request, path string) {
 	handler.ListEntities[*api.Tenant](
 		&h.HttpHandler,
 		w,
