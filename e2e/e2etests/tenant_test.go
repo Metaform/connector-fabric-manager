@@ -40,27 +40,56 @@ func Test_VerifyTenantOperations(t *testing.T) {
 
 	// Wait for the tmanager to be ready
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		if _, err = e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"}); err == nil {
+		if tenant, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"}); err == nil {
+			err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant.ID))
+			require.NoError(t, err)
 			break
 		}
 	}
 	require.NoError(t, err)
 
 	verifyGetAll(t, err, client)
+	verifyDelete(t, err, client)
 	verifyQueries(t, err, client)
 	verifyPatch(t, err, client)
 }
 
+func verifyDelete(t *testing.T, err error, client *e2efixtures.ApiClient) {
+	tenant, err := e2efixtures.CreateTenant(client, map[string]any{"group": "delete"})
+	require.NoError(t, err)
+
+	var result []v1alpha1.Tenant
+	err = client.GetTManager("tenants", &result)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(result))
+
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant.ID))
+	require.NoError(t, err)
+
+	result = nil
+	err = client.GetTManager("tenants", &result)
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(result))
+}
+
 func verifyGetAll(t *testing.T, err error, client *e2efixtures.ApiClient) {
+	tenant, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"})
+	require.NoError(t, err)
 	var result []v1alpha1.Tenant
 	err = client.GetTManager("tenants", &result)
 	require.NoError(t, err)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(result))
+
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant.ID))
+	require.NoError(t, err)
+
 }
 
 func verifyQueries(t *testing.T, err error, client *e2efixtures.ApiClient) {
-	_, err = e2efixtures.CreateTenant(client, map[string]any{"group": "manufacturers"})
+	tenant1, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"})
+	require.NoError(t, err)
+	tenant2, err := e2efixtures.CreateTenant(client, map[string]any{"group": "manufacturers"})
 	require.NoError(t, err)
 
 	var result []v1alpha1.Tenant
@@ -71,10 +100,18 @@ func verifyQueries(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "properties.group = 'suppliers' OR properties.group = 'manufacturers'"}, &result)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(result))
+
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant1.ID))
+	require.NoError(t, err)
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant2.ID))
+	require.NoError(t, err)
+
 }
 
 func verifyPatch(t *testing.T, err error, client *e2efixtures.ApiClient) {
-	_, err = e2efixtures.CreateTenant(client, map[string]any{"group": "patch"})
+	tenant1, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"})
+	require.NoError(t, err)
+	tenant2, err := e2efixtures.CreateTenant(client, map[string]any{"group": "patch"})
 	require.NoError(t, err)
 
 	var result []v1alpha1.Tenant
@@ -94,4 +131,10 @@ func verifyPatch(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	assert.Equal(t, 1, len(result))
 	assert.Equal(t, 1, len(result[0].Properties))
 	assert.Equal(t, "gold", result[0].Properties["customer"])
+
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant1.ID))
+	require.NoError(t, err)
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant2.ID))
+	require.NoError(t, err)
+
 }

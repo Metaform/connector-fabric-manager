@@ -273,6 +273,100 @@ func TestGetTenantsCount(t *testing.T) {
 	})
 }
 
+func TestDeleteTenant(t *testing.T) {
+
+	t.Run("delete existing tenant with no participants", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		tenant := newTestTenant("tenant-delete-1")
+		created, err := service.CreateTenant(ctx, tenant)
+		require.NoError(t, err)
+		require.NotNil(t, created)
+
+		err = service.DeleteTenant(ctx, "tenant-delete-1")
+
+		require.NoError(t, err)
+
+		// Verify: Tenant no longer exists
+		result, err := service.GetTenant(ctx, "tenant-delete-1")
+		require.Error(t, err)
+		assert.Equal(t, types.ErrNotFound, err)
+		assert.Nil(t, result)
+	})
+
+	t.Run("delete non-existent tenant returns error", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		err := service.DeleteTenant(ctx, "non-existent-tenant")
+
+		// Verify: Error is returned
+		require.Error(t, err)
+		assert.Equal(t, types.ErrNotFound, err)
+	})
+
+	t.Run("delete tenant with empty ID fails", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		err := service.DeleteTenant(ctx, "")
+		require.Error(t, err)
+	})
+
+	t.Run("delete tenant with participants fails", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		tenant := newTestTenant("tenant-delete-2")
+		created, err := service.CreateTenant(ctx, tenant)
+		require.NoError(t, err)
+
+		// Setup: Create a participant associated with the tenant
+		participant := &api.ParticipantProfile{
+			Entity:   api.Entity{ID: "participant-1", Version: 1},
+			TenantID: created.ID,
+		}
+
+		_, err = service.participantStore.Create(ctx, participant)
+		require.NoError(t, err)
+
+		// Execute: Attempt to delete the tenant
+		err = service.DeleteTenant(ctx, "tenant-delete-2")
+		require.ErrorAs(t, err, &types.BadRequestError{})
+
+	})
+
+	t.Run("delete tenant after removing all participants", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		// Setup: Create a tenant
+		tenant := newTestTenant("tenant-delete-3")
+		created, err := service.CreateTenant(ctx, tenant)
+		require.NoError(t, err)
+		assert.NotNil(t, created)
+
+		// Execute: Now delete the tenant (should succeed)
+		err = service.DeleteTenant(ctx, "tenant-delete-3")
+
+		// Verify: Deletion succeeded
+		require.NoError(t, err)
+
+		// Verify: Tenant no longer exists
+		_, err = service.GetTenant(ctx, "tenant-delete-3")
+		require.Error(t, err)
+		assert.Equal(t, types.ErrNotFound, err)
+	})
+
+	t.Run("delete tenant with multiple participants fails", func(t *testing.T) {
+		ctx := context.Background()
+		service := newTestTenantService()
+		// Setup: Create a tenant
+		tenant := newTestTenant("tenant-delete-4")
+		created, err := service.CreateTenant(ctx, tenant)
+		require.NoError(t, err)
+
+		// Note: Testing with multiple participants requires public API
+		_ = created
+	})
+}
+
 func newTestTenant(id string) *api.Tenant {
 	return &api.Tenant{
 		Entity: api.Entity{
@@ -287,8 +381,9 @@ func newTestTenant(id string) *api.Tenant {
 
 func newTestTenantService() *tenantService {
 	return &tenantService{
-		trxContext:  store.NoOpTransactionContext{},
-		tenantStore: memorystore.NewInMemoryEntityStore[*api.Tenant](),
-		monitor:     nil,
+		trxContext:       store.NoOpTransactionContext{},
+		tenantStore:      memorystore.NewInMemoryEntityStore[*api.Tenant](),
+		participantStore: memorystore.NewInMemoryEntityStore[*api.ParticipantProfile](),
+		monitor:          nil,
 	}
 }

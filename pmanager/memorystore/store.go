@@ -20,7 +20,6 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/query"
-	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
@@ -50,7 +49,7 @@ func (d *MemoryDefinitionStore) FindOrchestrationDefinition(
 
 	definition, exists := d.orchestrationDefinitions[orchestrationType.String()]
 	if !exists {
-		return nil, store.ErrNotFound
+		return nil, types.ErrNotFound
 	}
 
 	// Return a copy to prevent external modifications
@@ -86,7 +85,7 @@ func (d *MemoryDefinitionStore) FindActivityDefinition(_ context.Context, activi
 
 	definition, exists := d.activityDefinitions[activityType.String()]
 	if !exists {
-		return nil, store.ErrNotFound
+		return nil, types.ErrNotFound
 	}
 
 	// Return a copy to prevent external modifications
@@ -166,7 +165,7 @@ func (d *MemoryDefinitionStore) ActivityDefinitionReferences(_ context.Context, 
 		for _, aDefinition := range oDefinition.Activities {
 			if aDefinition.Type == activityType {
 				results = append(results, oDefinition.Type.String())
-				break;
+				break
 			}
 		}
 	}

@@ -127,6 +127,19 @@ func (h *TMHandler) patchTenant(w http.ResponseWriter, req *http.Request, tenant
 	h.OK(w)
 }
 
+func (h *TMHandler) deleteTenant(w http.ResponseWriter, req *http.Request, tenantID string) {
+	if h.InvalidMethod(w, req, http.MethodDelete) {
+		return
+	}
+	err := h.tenantService.DeleteTenant(req.Context(), tenantID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.OK(w)
+}
+
 func (h *TMHandler) getTenants(w http.ResponseWriter, req *http.Request, path string, ) {
 	handler.ListEntities[*api.Tenant](
 		&h.HttpHandler,

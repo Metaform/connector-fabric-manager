@@ -22,6 +22,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -170,8 +171,8 @@ func TestProvisionManager_Start(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup memory store
-			store := memorystore.NewDefinitionStore()
-			tt.setupStore(store)
+			definitionStore := memorystore.NewDefinitionStore()
+			tt.setupStore(definitionStore)
 
 			// Setup mock orchestrator
 			mockOrch := mocks.NewMockOrchestrator(t)
@@ -180,7 +181,7 @@ func TestProvisionManager_Start(t *testing.T) {
 			// Create provision manager
 			pm := &provisionManager{
 				orchestrator: mockOrch,
-				store:        store,
+				store:        definitionStore,
 				monitor:      &system.NoopMonitor{},
 			}
 
@@ -208,11 +209,11 @@ func TestProvisionManager_Start(t *testing.T) {
 // Test helper to verify orchestration instantiation
 func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	// Setup memory store with test definition
-	store := memorystore.NewDefinitionStore()
-	definition := createTestOrchestrationDefinition("test-type", true)
+	definitionStore := memorystore.NewDefinitionStore()
+	definition := createTestOrchestrationDefinition("test-type")
 
 	ctx := context.Background()
-	_, _ = store.StoreOrchestrationDefinition(ctx, definition)
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, definition)
 
 	// Setup mock orchestrator
 	mockOrch := mocks.NewMockOrchestrator(t)
@@ -225,7 +226,7 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 	// Create provision manager
 	pm := &provisionManager{
 		orchestrator: mockOrch,
-		store:        store,
+		store:        definitionStore,
 		monitor:      &system.NoopMonitor{},
 	}
 
@@ -296,7 +297,7 @@ func TestCountOrchestrations_WithStorageError(t *testing.T) {
 	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
-	expectedErr := store.ErrNotFound
+	expectedErr := types.ErrNotFound
 
 	mockEntityStore.On("CountByPredicate", ctx, &query.AtomicPredicate{}).
 		Return(int64(0), expectedErr)
@@ -410,7 +411,7 @@ func TestQueryOrchestrations_WithStorageError(t *testing.T) {
 	mockEntityStore := cmocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := store.NoOpTransactionContext{}
 
-	expectedErr := store.ErrNotFound
+	expectedErr := types.ErrNotFound
 
 	mockEntityStore.On("FindByPredicatePaginated", ctx, &query.AtomicPredicate{}, store.PaginationOptions{}).
 		Return(func(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.OrchestrationEntry, error] {
@@ -609,7 +610,7 @@ func TestQueryOrchestrations_ComplexPredicate(t *testing.T) {
 }
 
 // Helper function to create a test orchestration definition
-func createTestOrchestrationDefinition(orchestrationType string, active bool) *api.OrchestrationDefinition {
+func createTestOrchestrationDefinition(orchestrationType string) *api.OrchestrationDefinition {
 	return &api.OrchestrationDefinition{
 		Type: model.OrchestrationType(orchestrationType),
 		Activities: []api.Activity{

@@ -18,7 +18,6 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/system"
-	"github.com/metaform/connector-fabric-manager/common/types"
 )
 
 const (
@@ -65,8 +64,6 @@ type NoOpTransactionContext struct{}
 func (n NoOpTransactionContext) Execute(ctx context.Context, callback func(ctx context.Context) error) error {
 	return callback(ctx)
 }
-
-var ErrNotFound = &types.BadRequestError{Message: "not found"}
 
 type NoOpTrxAssembly struct {
 	system.DefaultServiceAssembly

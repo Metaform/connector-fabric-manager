@@ -18,7 +18,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/query"
-	"github.com/metaform/connector-fabric-manager/common/store"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,7 +62,7 @@ func TestDefinitionStore_OrchestrationDefinition_FindNotFound(t *testing.T) {
 	result, err := definitionStore.FindOrchestrationDefinition(ctx, "non-existent")
 
 	assert.Error(t, err)
-	assert.Equal(t, store.ErrNotFound, err)
+	assert.Equal(t, types.ErrNotFound, err)
 	assert.Nil(t, result)
 }
 
@@ -96,7 +96,7 @@ func TestDefinitionStore_ActivityDefinition_FindNotFound(t *testing.T) {
 	result, err := definitionStore.FindActivityDefinition(ctx, "non-existent")
 
 	assert.Error(t, err)
-	assert.Equal(t, store.ErrNotFound, err)
+	assert.Equal(t, types.ErrNotFound, err)
 	assert.Nil(t, result)
 }
 
@@ -116,7 +116,7 @@ func TestDefinitionStore_OrchestrationDefinition_Delete(t *testing.T) {
 	assert.True(t, deleted)
 
 	_, err = definitionStore.FindOrchestrationDefinition(ctx, oType)
-	assert.Equal(t, store.ErrNotFound, err)
+	assert.Equal(t, types.ErrNotFound, err)
 
 	deleted, err = definitionStore.DeleteOrchestrationDefinition(ctx, oType)
 	assert.Nil(t, err)
@@ -139,7 +139,7 @@ func TestDefinitionStore_ActivityDefinition_Delete(t *testing.T) {
 	assert.True(t, deleted)
 
 	_, err = definitionStore.FindActivityDefinition(ctx, activityType)
-	assert.Equal(t, store.ErrNotFound, err)
+	assert.Equal(t, types.ErrNotFound, err)
 
 	deleted, err = definitionStore.DeleteActivityDefinition(ctx, activityType)
 	assert.Nil(t, err)

@@ -54,9 +54,10 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 	tenantStore := context.Registry.Resolve(api.TenantStoreKey).(store.EntityStore[*api.Tenant])
 
 	tenantService := tenantService{
-		trxContext:  trxContext,
-		tenantStore: tenantStore,
-		monitor:     context.LogMonitor,
+		trxContext:       trxContext,
+		tenantStore:      tenantStore,
+		participantStore: participantStore,
+		monitor:          context.LogMonitor,
 	}
 	context.Registry.Register(api.TenantServiceKey, tenantService)
 

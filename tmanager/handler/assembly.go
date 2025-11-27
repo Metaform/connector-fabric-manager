@@ -90,6 +90,13 @@ func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler
 		})
 
 		r.Route("/{tenantID}", func(r chi.Router) {
+			r.Delete("/", func(w http.ResponseWriter, req *http.Request) {
+				tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
+				if !found {
+					return
+				}
+				handler.deleteTenant(w, req, tenantID)
+			})
 			r.Patch("/", func(w http.ResponseWriter, req *http.Request) {
 				tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
 				if !found {
@@ -99,6 +106,7 @@ func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler
 			})
 			h.registerParticipantRoutes(r, handler)
 		})
+		h.registerParticipantRoutes(r, handler)
 	})
 }
 

@@ -26,9 +26,10 @@ import (
 )
 
 type tenantService struct {
-	trxContext  store.TransactionContext
-	tenantStore store.EntityStore[*api.Tenant]
-	monitor     system.LogMonitor
+	trxContext       store.TransactionContext
+	tenantStore      store.EntityStore[*api.Tenant]
+	participantStore store.EntityStore[*api.ParticipantProfile]
+	monitor          system.LogMonitor
 }
 
 func (t tenantService) GetTenant(ctx context.Context, tenantID string) (*api.Tenant, error) {
@@ -67,8 +68,26 @@ func (t tenantService) PatchTenant(ctx context.Context, id string, properties ma
 }
 
 func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error {
-	//TODO implement me
-	panic("not implemented")
+	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
+		tenant, err := t.tenantStore.FindById(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+
+		count, err := t.participantStore.CountByPredicate(ctx, &query.AtomicPredicate{
+			Field:    "TenantID",
+			Operator: query.OpEqual,
+			Value:    tenant.ID,
+		})
+
+		if count > 0 {
+			return types.NewClientError("cannot delete tenant with participants")
+		}
+
+		err = t.tenantStore.Delete(ctx, tenant.ID)
+		return nil
+	})
+
 }
 
 func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.Tenant, error] {

@@ -39,7 +39,7 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.Orchestrati
 
 	definition, err := p.store.FindOrchestrationDefinition(ctx, manifest.OrchestrationType)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
+		if errors.Is(err, types.ErrNotFound) {
 			// Not found is a client error
 			return nil, types.NewClientError("orchestration type '%s' not found", manifest.OrchestrationType)
 		}
