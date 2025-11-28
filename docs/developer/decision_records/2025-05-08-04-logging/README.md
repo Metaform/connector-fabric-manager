@@ -51,7 +51,7 @@ logged at the top of the call hierarchy.
 
 #### 2. Warn
 
-The WARN level should be only be used to indicate problematic or insecure configuration. For example, if a security
+The WARN level should only be used to indicate problematic or insecure configuration. For example, if a security
 feature is disabled for testing.
 
 #### 3. Info
