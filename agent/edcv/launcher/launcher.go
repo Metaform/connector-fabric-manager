@@ -52,7 +52,3 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 	}
 	natsagent.LaunchAgent(shutdown, config)
 }
-
-type ConnectorActivityProcessor struct {
-	monitor system.LogMonitor
-}
