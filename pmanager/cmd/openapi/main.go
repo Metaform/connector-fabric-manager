@@ -48,7 +48,6 @@ func main() {
 	}
 }
 
-
 func generateOrchestrationEndpoints(r spec.Generator) {
 	orchestrations := r.Group("/api/v1alpha1/orchestrations")
 
@@ -78,6 +77,12 @@ func generateOrchestrationEndpoints(r spec.Generator) {
 func generateActivityDefinitionEndpoints(r spec.Generator) {
 	activity := r.Group("/api/v1alpha1/activity-definitions")
 
+	activity.Get("",
+		option.Summary("Get Activity Definitions"),
+		option.Description("Returns all Activity Definitions"),
+		option.Response(http.StatusOK, []v1alpha1.ActivityDefinition{}),
+	)
+
 	activity.Post("",
 		option.Summary("Create an Activity Definition"),
 		option.Description("Create a new Activity Definition"),
@@ -94,6 +99,12 @@ func generateActivityDefinitionEndpoints(r spec.Generator) {
 
 func generateOrchestrationDefinitionEndpoints(r spec.Generator) {
 	orchestration := r.Group("/api/v1alpha1/orchestration-definitions")
+
+	orchestration.Get("",
+		option.Summary("Get Orchestration Definitions"),
+		option.Description("Returns all Orchestration Definitions"),
+		option.Response(http.StatusOK, []v1alpha1.OrchestrationDefinition{}),
+	)
 
 	orchestration.Post("",
 		option.Summary("Create an Orchestration Definition"),

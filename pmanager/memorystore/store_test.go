@@ -17,7 +17,6 @@ import (
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
-	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
@@ -195,88 +194,26 @@ func TestDefinitionStore_StoreOverwrite(t *testing.T) {
 	assert.Equal(t, dType, result.Type)
 
 	// Verify only one definition exists
-	defintions, _, err := definitionStore.ListOrchestrationDefinitions(ctx, 0, 1000)
+	defintions, err := definitionStore.ListOrchestrationDefinitions(ctx)
 	assert.Equal(t, 1, len(defintions))
 }
 
-func TestDefinitionStore_ListOrchestrationDefinitions_WithPagination(t *testing.T) {
+func TestDefinitionStore_ListOrchestrationDefinitions(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 	ctx := context.Background()
 
 	// Test empty store
-	definitions, hasMore, err := definitionStore.ListOrchestrationDefinitions(ctx, 0, 10)
+	definitions, err := definitionStore.ListOrchestrationDefinitions(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(definitions))
-	assert.False(t, hasMore)
 
 	// Add test data
-	def1 := &api.OrchestrationDefinition{Type: "type1"}
-	def2 := &api.OrchestrationDefinition{Type: "type2"}
-	def3 := &api.OrchestrationDefinition{Type: "type3"}
-	def4 := &api.OrchestrationDefinition{Type: "type4"}
-	def5 := &api.OrchestrationDefinition{Type: "type5"}
+	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, &api.OrchestrationDefinition{Type: "type1"})
 
-	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def1)
-	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def2)
-	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def3)
-	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def4)
-	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def5)
-
-	// Test first page
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 0, 2)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(definitions))
-	assert.True(t, hasMore)
-
-	// Test second page
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 2, 2)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(definitions))
-	assert.True(t, hasMore)
-
-	// Test last page
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 4, 2)
+	definitions, err = definitionStore.ListOrchestrationDefinitions(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
-	assert.False(t, hasMore)
 
-	// Test get all
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 0, 10)
-	assert.NoError(t, err)
-	assert.Equal(t, 5, len(definitions))
-	assert.False(t, hasMore)
-
-	// Test offset beyond total
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 10, 2)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(definitions))
-	assert.False(t, hasMore)
-
-	// Test partial last page
-	definitions, hasMore, err = definitionStore.ListOrchestrationDefinitions(ctx, 3, 5)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(definitions))
-	assert.False(t, hasMore)
-}
-
-func TestDefinitionStore_ListOrchestrationDefinitions_ValidationErrors(t *testing.T) {
-	definitionStore := NewDefinitionStore()
-	ctx := context.Background()
-
-	// Test negative offset
-	_, _, err := definitionStore.ListOrchestrationDefinitions(ctx, -1, 10)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "offset cannot be negative")
-
-	// Test zero limit
-	_, _, err = definitionStore.ListOrchestrationDefinitions(ctx, 0, 0)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "limit must be positive")
-
-	// Test negative limit
-	_, _, err = definitionStore.ListOrchestrationDefinitions(ctx, 0, -1)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "limit must be positive")
 }
 
 func TestDefinitionStore_ListOrchestrationDefinitions_DataIsolation(t *testing.T) {
@@ -287,10 +224,9 @@ func TestDefinitionStore_ListOrchestrationDefinitions_DataIsolation(t *testing.T
 	originalDef := &api.OrchestrationDefinition{Type: originalType}
 	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, originalDef)
 
-	definitions, hasMore, err := definitionStore.ListOrchestrationDefinitions(ctx, 0, 10)
+	definitions, err := definitionStore.ListOrchestrationDefinitions(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
-	assert.False(t, hasMore)
 
 	// Modify the original definition
 	originalDef.Type = "modified"
@@ -307,84 +243,20 @@ func TestDefinitionStore_ListOrchestrationDefinitions_DataIsolation(t *testing.T
 	assert.Equal(t, originalType, storedDef.Type)
 }
 
-func TestDefinitionStore_ListActivityDefinitions_WithPagination(t *testing.T) {
+func TestDefinitionStore_ListActivityDefinitions(t *testing.T) {
 	definitionStore := NewDefinitionStore()
 	ctx := context.Background()
 
 	// Test empty store
-	definitions, hasMore, err := definitionStore.ListActivityDefinitions(ctx, 0, 10)
+	definitions, err := definitionStore.ListActivityDefinitions(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(definitions))
-	assert.False(t, hasMore)
 
-	// Add test data
-	def1 := &api.ActivityDefinition{Type: "type1", Description: "desc1"}
-	def2 := &api.ActivityDefinition{Type: "type2", Description: "desc2"}
-	def3 := &api.ActivityDefinition{Type: "type3", Description: "desc3"}
-	def4 := &api.ActivityDefinition{Type: "type4", Description: "desc4"}
-	def5 := &api.ActivityDefinition{Type: "type5", Description: "desc5"}
+	_, _ = definitionStore.StoreActivityDefinition(ctx, &api.ActivityDefinition{Type: "type1", Description: "desc1"})
 
-	_, _ = definitionStore.StoreActivityDefinition(ctx, def1)
-	_, _ = definitionStore.StoreActivityDefinition(ctx, def2)
-	_, _ = definitionStore.StoreActivityDefinition(ctx, def3)
-	_, _ = definitionStore.StoreActivityDefinition(ctx, def4)
-	_, _ = definitionStore.StoreActivityDefinition(ctx, def5)
-
-	// Test first page
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 0, 2)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(definitions))
-	assert.True(t, hasMore)
-
-	// Test second page
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 2, 2)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(definitions))
-	assert.True(t, hasMore)
-
-	// Test last page
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 4, 2)
+	definitions, err = definitionStore.ListActivityDefinitions(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
-	assert.False(t, hasMore)
-
-	// Test get all
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 0, 10)
-	assert.NoError(t, err)
-	assert.Equal(t, 5, len(definitions))
-	assert.False(t, hasMore)
-
-	// Test offset beyond total
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 10, 2)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(definitions))
-	assert.False(t, hasMore)
-
-	// Test partial last page
-	definitions, hasMore, err = definitionStore.ListActivityDefinitions(ctx, 3, 5)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(definitions))
-	assert.False(t, hasMore)
-}
-
-func TestDefinitionStore_ListActivityDefinitions_ValidationErrors(t *testing.T) {
-	definitionStore := NewDefinitionStore()
-	ctx := context.Background()
-
-	// Test negative offset
-	_, _, err := definitionStore.ListActivityDefinitions(ctx, -1, 10)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "offset cannot be negative")
-
-	// Test zero limit
-	_, _, err = definitionStore.ListActivityDefinitions(ctx, 0, 0)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "limit must be positive")
-
-	// Test negative limit
-	_, _, err = definitionStore.ListActivityDefinitions(ctx, 0, -1)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "limit must be positive")
 }
 
 func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
@@ -395,10 +267,9 @@ func TestDefinitionStore_ListActivityDefinitions_DataIsolation(t *testing.T) {
 	originalDef := &api.ActivityDefinition{Type: originalType, Description: "desc1"}
 	_, _ = definitionStore.StoreActivityDefinition(ctx, originalDef)
 
-	definitions, hasMore, err := definitionStore.ListActivityDefinitions(ctx, 0, 10)
+	definitions, err := definitionStore.ListActivityDefinitions(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(definitions))
-	assert.False(t, hasMore)
 
 	// Modify the original definition
 	originalDef.Type = "modified"
@@ -461,56 +332,6 @@ func TestDefinitionStore_ExistsActivityDefinition_NotFound(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.False(t, exists)
-}
-
-func TestDefinitionStore_GetOrchestrationDefinitionCount_WithPredicate(t *testing.T) {
-	definitionStore := NewDefinitionStore()
-	ctx := context.Background()
-
-	def1 := &api.OrchestrationDefinition{
-		Type:        "deploy-orchestration",
-		Description: "Deploy",
-		Active:      true,
-	}
-	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def1)
-
-	def2 := &api.OrchestrationDefinition{
-		Type:        "dispose-orchestration",
-		Description: "Dispose",
-		Active:      false,
-	}
-	_, _ = definitionStore.StoreOrchestrationDefinition(ctx, def2)
-
-	// Count definitions where Active=true (should return 1)
-	predicate := query.Eq("Active", true)
-	count, err := definitionStore.GetOrchestrationDefinitionCount(ctx, predicate)
-
-	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
-}
-
-func TestDefinitionStore_GetActivityDefinitionCount_WithPredicate(t *testing.T) {
-	definitionStore := NewDefinitionStore()
-	ctx := context.Background()
-
-	def1 := &api.ActivityDefinition{
-		Type:        "deploy-activity",
-		Description: "Deploy resources",
-	}
-	_, _ = definitionStore.StoreActivityDefinition(ctx, def1)
-
-	def2 := &api.ActivityDefinition{
-		Type:        "cleanup-activity",
-		Description: "Cleanup temporary files",
-	}
-	_, _ = definitionStore.StoreActivityDefinition(ctx, def2)
-
-	// Count definitions where Description contains "Deploy" (should return 1)
-	predicate := query.Contains("Description", "Deploy")
-	count, err := definitionStore.GetActivityDefinitionCount(ctx, predicate)
-
-	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
 }
 
 func TestDefinitionStore_ActivityDefinitionReferenced_Found(t *testing.T) {

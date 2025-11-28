@@ -20,8 +20,10 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
+	papi "github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,12 +41,9 @@ func Test_VerifyE2E(t *testing.T) {
 
 	client := launchPlatform(t, nt)
 
-	// Wait for the pmanager to be ready
-	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		if err = e2efixtures.CreateTestActivityDefinition(client); err == nil {
-			break
-		}
-	}
+	waitPManager(t, client)
+
+	err = e2efixtures.CreateTestActivityDefinition(client)
 	require.NoError(t, err)
 
 	err = e2efixtures.CreateTestOrchestrationDefinitions(client)
@@ -106,6 +105,12 @@ func Test_VerifyE2E(t *testing.T) {
 	require.NotNil(t, connectorVPA, "Expected to find a VPA with cfm.connector type")
 	require.NotNil(t, connectorVPA.Properties, "Connector VPA properties should not be nil")
 	require.Contains(t, connectorVPA.Properties, "connectorkey", "Connector VPA should contain 'connectorkey' property")
+
+	var orchestrations []papi.OrchestrationEntry
+	err = client.PostToPManagerWithResponse("orchestrations/query", model.Query{Predicate: fmt.Sprintf("correlationID = '%s'", statusProfile.ID)}, &orchestrations)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(orchestrations), "Expected 1 orchestration to be created")
+	assert.Equal(t, papi.OrchestrationStateCompleted, papi.OrchestrationState(orchestrations[0].State))
 
 	// Dispose VPAs
 	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID))

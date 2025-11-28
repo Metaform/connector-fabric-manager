@@ -19,6 +19,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestToAPIActivityDefinition(t *testing.T) {
@@ -332,4 +333,445 @@ func TestToOrchestration(t *testing.T) {
 	assert.Equal(t, "test.activity", result.Steps[0].Activities[0].Type)
 	assert.Equal(t, 1, len(result.Steps[0].Activities[0].Inputs))
 	assert.Equal(t, "src1", result.Steps[0].Activities[0].Inputs[0].Source)
+}
+
+func TestToActivityDefinition_WithValidDefinition(t *testing.T) {
+	// Arrange
+	inputSchema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"field1": map[string]any{"type": "string"},
+		},
+	}
+	outputSchema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"result": map[string]any{"type": "boolean"},
+		},
+	}
+
+	apiDef := &api.ActivityDefinition{
+		Type:         api.ActivityType("HTTP_REQUEST"),
+		Description:  "Makes an HTTP request",
+		InputSchema:  inputSchema,
+		OutputSchema: outputSchema,
+	}
+
+	// Act
+	result := ToActivityDefinition(apiDef)
+
+	// Assert
+	require.NotNil(t, result)
+	assert.Equal(t, "HTTP_REQUEST", result.Type)
+	assert.Equal(t, "Makes an HTTP request", result.Description)
+	assert.Equal(t, inputSchema, result.InputSchema)
+	assert.Equal(t, outputSchema, result.OutputSchema)
+}
+
+func TestToActivityDefinition_WithNilDefinition(t *testing.T) {
+	// Act
+	result := ToActivityDefinition(nil)
+
+	// Assert
+	require.NotNil(t, result)
+	assert.Equal(t, "", result.Type)
+	assert.Equal(t, "", result.Description)
+	assert.Nil(t, result.InputSchema)
+	assert.Nil(t, result.OutputSchema)
+}
+
+func TestToActivityDefinition_WithEmptySchemas(t *testing.T) {
+	// Arrange
+	apiDef := &api.ActivityDefinition{
+		Type:         api.ActivityType("CUSTOM"),
+		Description:  "Custom activity",
+		InputSchema:  make(map[string]any),
+		OutputSchema: make(map[string]any),
+	}
+
+	// Act
+	result := ToActivityDefinition(apiDef)
+
+	// Assert
+	require.NotNil(t, result)
+	assert.Equal(t, "CUSTOM", result.Type)
+	assert.Equal(t, "Custom activity", result.Description)
+	assert.NotNil(t, result.InputSchema)
+	assert.NotNil(t, result.OutputSchema)
+	assert.Equal(t, 0, len(result.InputSchema))
+	assert.Equal(t, 0, len(result.OutputSchema))
+}
+
+func TestToActivityDefinition_WithComplexSchemas(t *testing.T) {
+	// Arrange
+	inputSchema := map[string]any{
+		"type":     "object",
+		"required": []string{"url", "method"},
+		"properties": map[string]any{
+			"url":    map[string]any{"type": "string", "format": "uri"},
+			"method": map[string]any{"type": "string", "enum": []string{"GET", "POST", "PUT"}},
+			"headers": map[string]any{
+				"type":                 "object",
+				"additionalProperties": map[string]any{"type": "string"},
+			},
+		},
+	}
+	outputSchema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"statusCode": map[string]any{"type": "integer"},
+			"body":       map[string]any{"type": "string"},
+		},
+	}
+
+	apiDef := &api.ActivityDefinition{
+		Type:         api.ActivityType("API_CALL"),
+		Description:  "Calls an external API",
+		InputSchema:  inputSchema,
+		OutputSchema: outputSchema,
+	}
+
+	// Act
+	result := ToActivityDefinition(apiDef)
+
+	// Assert
+	require.NotNil(t, result)
+	assert.Equal(t, "API_CALL", result.Type)
+	assert.Equal(t, inputSchema, result.InputSchema)
+	assert.Equal(t, outputSchema, result.OutputSchema)
+}
+
+func TestToOrchestrationDefinition(t *testing.T) {
+	tests := []struct {
+		name       string
+		definition *api.OrchestrationDefinition
+		expected   *OrchestrationDefinition
+	}{
+		{
+			name: "complete orchestration definition",
+			definition: &api.OrchestrationDefinition{
+				Type:        model.OrchestrationType("kubernetes"),
+				Description: "Deploy Kubernetes VPA",
+				Active:      true,
+				Schema:      map[string]any{"version": "v1", "kind": "Deployment"},
+				Activities: []api.Activity{
+					{
+						ID:            "activity-1",
+						Type:          api.ActivityType("http-request"),
+						Discriminator: api.Discriminator("deploy"),
+						Inputs: []api.MappingEntry{
+							{Source: "input.url", Target: "request.url"},
+							{Source: "input.method", Target: "request.method"},
+						},
+						DependsOn: []string{"activity-0"},
+					},
+					{
+						ID:        "activity-2",
+						Type:      api.ActivityType("data-transform"),
+						Inputs:    []api.MappingEntry{},
+						DependsOn: []string{"activity-1"},
+					},
+				},
+			},
+			expected: &OrchestrationDefinition{
+				Type:        "kubernetes",
+				Description: "Deploy Kubernetes VPA",
+				Schema:      map[string]any{"version": "v1", "kind": "Deployment"},
+				Activities: []Activity{
+					{
+						ID:            "activity-1",
+						Type:          "http-request",
+						Discriminator: "deploy",
+						Inputs: []MappingEntry{
+							{Source: "input.url", Target: "request.url"},
+							{Source: "input.method", Target: "request.method"},
+						},
+						DependsOn: []string{"activity-0"},
+					},
+					{
+						ID:        "activity-2",
+						Type:      "data-transform",
+						Inputs:    []MappingEntry{},
+						DependsOn: []string{"activity-1"},
+					},
+				},
+			},
+		},
+		{
+			name: "minimal orchestration definition",
+			definition: &api.OrchestrationDefinition{
+				Type:       model.OrchestrationType("docker"),
+				Active:     true,
+				Activities: []api.Activity{},
+			},
+			expected: &OrchestrationDefinition{
+				Type:       "docker",
+				Activities: []Activity{},
+			},
+		},
+		{
+			name: "empty orchestration definition",
+			definition: &api.OrchestrationDefinition{
+				Type:       model.OrchestrationType(""),
+				Active:     true,
+				Activities: []api.Activity{},
+			},
+			expected: &OrchestrationDefinition{
+				Type:       "",
+				Activities: []Activity{},
+			},
+		},
+		{
+			name: "single activity without dependencies",
+			definition: &api.OrchestrationDefinition{
+				Type:   model.OrchestrationType("local"),
+				Active: true,
+				Activities: []api.Activity{
+					{
+						ID:   "standalone-activity",
+						Type: api.ActivityType("file-processor"),
+						Inputs: []api.MappingEntry{
+							{Source: "file.path", Target: "processor.input"},
+						},
+					},
+				},
+			},
+			expected: &OrchestrationDefinition{
+				Type: "local",
+				Activities: []Activity{
+					{
+						ID:   "standalone-activity",
+						Type: "file-processor",
+						Inputs: []MappingEntry{
+							{Source: "file.path", Target: "processor.input"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple activities with complex dependencies",
+			definition: &api.OrchestrationDefinition{
+				Type:        model.OrchestrationType("cfm.orchestration.vpa.deploy"),
+				Description: "VPA Deployment Orchestration",
+				Active:      true,
+				Schema: map[string]any{
+					"orchestrationVersion": "1.0",
+					"timeoutSeconds":       3600,
+				},
+				Activities: []api.Activity{
+					{
+						ID:            "validate",
+						Type:          api.ActivityType("validation"),
+						Discriminator: api.Discriminator("schema-check"),
+						Inputs: []api.MappingEntry{
+							{Source: "manifest.payload", Target: "validator.input"},
+						},
+						DependsOn: []string{},
+					},
+					{
+						ID:            "provision",
+						Type:          api.ActivityType("provisioning"),
+						Discriminator: api.Discriminator("vpa-provision"),
+						Inputs: []api.MappingEntry{
+							{Source: "validated.data", Target: "provisioner.config"},
+							{Source: "credentials.service", Target: "provisioner.auth"},
+						},
+						DependsOn: []string{"validate"},
+					},
+					{
+						ID:            "deploy",
+						Type:          api.ActivityType("deployment"),
+						Discriminator: api.Discriminator("k8s-deploy"),
+						Inputs: []api.MappingEntry{
+							{Source: "provisioned.vpa", Target: "deployer.manifest"},
+						},
+						DependsOn: []string{"provision"},
+					},
+				},
+			},
+			expected: &OrchestrationDefinition{
+				Type:        "cfm.orchestration.vpa.deploy",
+				Description: "VPA Deployment Orchestration",
+				Schema: map[string]any{
+					"orchestrationVersion": "1.0",
+					"timeoutSeconds":       3600,
+				},
+				Activities: []Activity{
+					{
+						ID:            "validate",
+						Type:          "validation",
+						Discriminator: "schema-check",
+						Inputs: []MappingEntry{
+							{Source: "manifest.payload", Target: "validator.input"},
+						},
+						DependsOn: []string{},
+					},
+					{
+						ID:            "provision",
+						Type:          "provisioning",
+						Discriminator: "vpa-provision",
+						Inputs: []MappingEntry{
+							{Source: "validated.data", Target: "provisioner.config"},
+							{Source: "credentials.service", Target: "provisioner.auth"},
+						},
+						DependsOn: []string{"validate"},
+					},
+					{
+						ID:            "deploy",
+						Type:          "deployment",
+						Discriminator: "k8s-deploy",
+						Inputs: []MappingEntry{
+							{Source: "provisioned.vpa", Target: "deployer.manifest"},
+						},
+						DependsOn: []string{"provision"},
+					},
+				},
+			},
+		},
+		{
+			name: "orchestration with empty schema",
+			definition: &api.OrchestrationDefinition{
+				Type:       model.OrchestrationType("test"),
+				Schema:     make(map[string]any),
+				Active:     false,
+				Activities: []api.Activity{},
+			},
+			expected: &OrchestrationDefinition{
+				Type:       "test",
+				Schema:     make(map[string]any),
+				Activities: []Activity{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ToOrchestrationDefinition(tt.definition)
+			require.NotNil(t, result)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestToOrchestrationDefinition_NilInput(t *testing.T) {
+	// Test that the function handles nil input gracefully
+	assert.NotPanics(t, func() {
+		result := ToOrchestrationDefinition(nil)
+		require.NotNil(t, result)
+		assert.Empty(t, result.Type)
+		assert.Empty(t, result.Description)
+		assert.Nil(t, result.Schema)
+		assert.Len(t, result.Activities, 0)
+	})
+}
+
+func TestToOrchestrationDefinition_FieldMapping(t *testing.T) {
+	// Test that all fields are correctly mapped
+	definition := &api.OrchestrationDefinition{
+		Type:        model.OrchestrationType("test-type"),
+		Description: "Test Description",
+		Active:      true,
+		Schema:      map[string]any{"key": "value"},
+		Activities: []api.Activity{
+			{
+				ID:            "test-activity",
+				Type:          api.ActivityType("test"),
+				Discriminator: api.Discriminator("discriminator"),
+				Inputs: []api.MappingEntry{
+					{Source: "src", Target: "tgt"},
+				},
+				DependsOn: []string{"dep1", "dep2"},
+			},
+		},
+	}
+
+	result := ToOrchestrationDefinition(definition)
+
+	// Verify each field
+	assert.Equal(t, "test-type", result.Type)
+	assert.Equal(t, "Test Description", result.Description)
+	assert.Equal(t, map[string]any{"key": "value"}, result.Schema)
+	require.Len(t, result.Activities, 1)
+
+	activity := result.Activities[0]
+	assert.Equal(t, "test-activity", activity.ID)
+	assert.Equal(t, "test", activity.Type)
+	assert.Equal(t, "discriminator", activity.Discriminator)
+	require.Len(t, activity.Inputs, 1)
+	assert.Equal(t, "src", activity.Inputs[0].Source)
+	assert.Equal(t, "tgt", activity.Inputs[0].Target)
+	assert.Equal(t, []string{"dep1", "dep2"}, activity.DependsOn)
+}
+
+func TestToOrchestrationDefinition_PreservesActivityOrder(t *testing.T) {
+	// Test that activities maintain their order
+	definition := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("order-test"),
+		Active: true,
+		Activities: []api.Activity{
+			{ID: "first", Type: api.ActivityType("type1")},
+			{ID: "second", Type: api.ActivityType("type2")},
+			{ID: "third", Type: api.ActivityType("type3")},
+		},
+	}
+
+	result := ToOrchestrationDefinition(definition)
+
+	require.Len(t, result.Activities, 3)
+	assert.Equal(t, "first", result.Activities[0].ID)
+	assert.Equal(t, "second", result.Activities[1].ID)
+	assert.Equal(t, "third", result.Activities[2].ID)
+}
+
+func TestToOrchestrationDefinition_ActivityWithEmptyInputs(t *testing.T) {
+	// Test activity with nil and empty inputs
+	definition := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("test"),
+		Active: true,
+		Activities: []api.Activity{
+			{
+				ID:     "activity1",
+				Type:   api.ActivityType("test"),
+				Inputs: nil,
+			},
+			{
+				ID:     "activity2",
+				Type:   api.ActivityType("test"),
+				Inputs: []api.MappingEntry{},
+			},
+		},
+	}
+
+	result := ToOrchestrationDefinition(definition)
+
+	require.Len(t, result.Activities, 2)
+	assert.Len(t, result.Activities[0].Inputs, 0)
+	assert.Len(t, result.Activities[1].Inputs, 0)
+}
+
+func TestToOrchestrationDefinition_ActivityWithNoDependencies(t *testing.T) {
+	// Test activity with nil and empty DependsOn
+	definition := &api.OrchestrationDefinition{
+		Type:   model.OrchestrationType("test"),
+		Active: true,
+		Activities: []api.Activity{
+			{
+				ID:        "activity1",
+				Type:      api.ActivityType("test"),
+				DependsOn: nil,
+			},
+			{
+				ID:        "activity2",
+				Type:      api.ActivityType("test"),
+				DependsOn: []string{},
+			},
+		},
+	}
+
+	result := ToOrchestrationDefinition(definition)
+
+	require.Len(t, result.Activities, 2)
+	assert.Len(t, result.Activities[0].DependsOn, 0)
+	assert.Len(t, result.Activities[1].DependsOn, 0)
 }

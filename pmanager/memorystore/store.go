@@ -14,7 +14,6 @@ package memorystore
 
 import (
 	"context"
-	"fmt"
 	"iter"
 	"sync"
 
@@ -72,13 +71,6 @@ func (d *MemoryDefinitionStore) ExistsOrchestrationDefinition(
 	return exists, nil
 }
 
-func (d *MemoryDefinitionStore) GetOrchestrationDefinitionCount(_ context.Context, predicate query.Predicate) (int, error) {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
-	return countByPredicate(d.orchestrationDefinitions, predicate), nil
-}
-
 func (d *MemoryDefinitionStore) FindActivityDefinition(_ context.Context, activityType api.ActivityType) (*api.ActivityDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
@@ -104,13 +96,6 @@ func (d *MemoryDefinitionStore) ExistsActivityDefinition(_ context.Context, acti
 	defer d.mutex.RUnlock()
 	_, exists := d.activityDefinitions[activityType.String()]
 	return exists, nil
-}
-
-func (d *MemoryDefinitionStore) GetActivityDefinitionCount(_ context.Context, predicate query.Predicate) (int, error) {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-
-	return countByPredicate(d.activityDefinitions, predicate), nil
 }
 
 func (d *MemoryDefinitionStore) StoreOrchestrationDefinition(
@@ -183,24 +168,18 @@ func (d *MemoryDefinitionStore) DeleteActivityDefinition(_ context.Context, acti
 	return exists, nil
 }
 
-func (d *MemoryDefinitionStore) ListOrchestrationDefinitions(
-	_ context.Context,
-	offset int,
-	limit int) ([]*api.OrchestrationDefinition, bool, error) {
+func (d *MemoryDefinitionStore) ListOrchestrationDefinitions(_ context.Context) ([]api.OrchestrationDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	return listDefinitions[api.OrchestrationDefinition](d.orchestrationDefinitions, offset, limit)
+	return listDefinitions[api.OrchestrationDefinition](d.orchestrationDefinitions)
 }
 
-func (d *MemoryDefinitionStore) ListActivityDefinitions(
-	_ context.Context,
-	offset,
-	limit int) ([]*api.ActivityDefinition, bool, error) {
+func (d *MemoryDefinitionStore) ListActivityDefinitions(_ context.Context) ([]api.ActivityDefinition, error) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	return listDefinitions[api.ActivityDefinition](d.activityDefinitions, offset, limit)
+	return listDefinitions[api.ActivityDefinition](d.activityDefinitions)
 }
 
 // Clear removes all stored definitions
@@ -213,37 +192,18 @@ func (d *MemoryDefinitionStore) Clear() {
 }
 
 // listDefinitions lists definitions with pagination
-func listDefinitions[T any](definitionMap map[string]*T, offset, limit int) ([]*T, bool, error) {
-	if offset < 0 {
-		return nil, false, fmt.Errorf("offset cannot be negative")
-	}
-	if limit <= 0 {
-		return nil, false, fmt.Errorf("limit must be positive")
-	}
-
+func listDefinitions[T any](definitionMap map[string]*T) ([]T, error) {
 	// Get all definitions
-	allDefinitions := make([]*T, 0, len(definitionMap))
+	allDefinitions := make([]T, 0, len(definitionMap))
 	for _, definition := range definitionMap {
 		// Return a copy to prevent external modifications
 		definitionCopy := *definition
-		allDefinitions = append(allDefinitions, &definitionCopy)
+		allDefinitions = append(allDefinitions, definitionCopy)
 	}
 
 	total := len(allDefinitions)
 
-	// Check overflow
-	if offset >= total {
-		return []*T{}, false, nil
-	}
-
-	// Calculate end index
-	end := offset + limit
-	if end > total {
-		end = total
-	}
-
-	hasMore := end < total
-	return allDefinitions[offset:end], hasMore, nil
+	return allDefinitions[0:total], nil
 }
 
 // findDefinitionsByPredicate is a generic helper that filters definitions by predicate
@@ -262,15 +222,4 @@ func findDefinitionsByPredicate[T any](d *MemoryDefinitionStore, predicate query
 			}
 		}
 	}
-}
-
-// countByPredicate is a generic helper that counts definitions matching a predicate
-func countByPredicate[T any](definitionMap map[string]*T, predicate query.Predicate) int {
-	count := 0
-	for _, definition := range definitionMap {
-		if predicate.Matches(definition, defaultMatcher) {
-			count++
-		}
-	}
-	return count
 }

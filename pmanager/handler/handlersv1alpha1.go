@@ -144,7 +144,7 @@ func (h *PMHandler) getOrchestration(w http.ResponseWriter, req *http.Request, i
 	if h.InvalidMethod(w, req, http.MethodGet) {
 		return
 	}
-    orchestration, err := h.provisionManager.GetOrchestration(req.Context(), id)
+	orchestration, err := h.provisionManager.GetOrchestration(req.Context(), id)
 	if err != nil {
 		h.HandleError(w, err)
 		return
@@ -152,4 +152,38 @@ func (h *PMHandler) getOrchestration(w http.ResponseWriter, req *http.Request, i
 
 	response := v1alpha1.ToOrchestration(orchestration)
 	h.ResponseOK(w, response)
+}
+
+func (h *PMHandler) getActivityDefinitions(w http.ResponseWriter, req *http.Request) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+	definitions, err := h.definitionManager.GetActivityDefinitions(req.Context())
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+	converted := make([]v1alpha1.ActivityDefinition, len(definitions))
+	for i, def := range definitions {
+		converted[i] = *v1alpha1.ToActivityDefinition(&def)
+	}
+
+	h.ResponseOK(w, converted)
+}
+
+func (h *PMHandler) getOrchestrationDefinitions(w http.ResponseWriter, req *http.Request) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+	definitions, err := h.definitionManager.GetOrchestrationDefinitions(req.Context())
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+	converted := make([]v1alpha1.OrchestrationDefinition, len(definitions))
+	for i, def := range definitions {
+		converted[i] = *v1alpha1.ToOrchestrationDefinition(&def)
+	}
+
+	h.ResponseOK(w, converted)
 }

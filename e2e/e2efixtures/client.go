@@ -59,34 +59,22 @@ func (c *ApiClient) PostToTManagerWithResponse(endpoint string, payload any, res
 	return c.postWithResponse(url, payload, result)
 }
 
+func (c *ApiClient) PostToPManagerWithResponse(endpoint string, payload any, result any) error {
+	url := fmt.Sprintf("%s/%s", c.pmanagerBaseUrl, endpoint)
+	return c.postWithResponse(url, payload, result)
+}
+
 func (c *ApiClient) PatchToTManager(endpoint string, payload any) error {
 	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
 	return c.bodyRequest(url, http.MethodPatch, payload, nil)
 }
 
 func (c *ApiClient) GetTManager(endpoint string, result any) error {
-	url := fmt.Sprintf("%s/%s", c.tmanagerBaseUrl, endpoint)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
+	return c.getRequest(c.tmanagerBaseUrl, endpoint, result)
+}
 
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to make request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	return json.Unmarshal(body, result)
+func (c *ApiClient) GetPManager(endpoint string, result any) error {
+	return c.getRequest(c.pmanagerBaseUrl, endpoint, result)
 }
 
 // DeleteToTManager makes a DELETE request to Tenant Manager API
@@ -200,3 +188,31 @@ func (c *ApiClient) deleteRequest(url string) error {
 
 	return nil
 }
+
+
+func (c *ApiClient) getRequest(baseUrl string, endpoint string, result any) error {
+	url := fmt.Sprintf("%s/%s", baseUrl, endpoint)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return json.Unmarshal(body, result)
+}
+
+

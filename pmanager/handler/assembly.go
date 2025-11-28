@@ -69,6 +69,13 @@ func (h *HandlerServiceAssembly) registerOrchestrationRoutes(router chi.Router, 
 		})
 
 		r.Route("/{orchestrationID}", func(r chi.Router) {
+			r.Post("/", func(w http.ResponseWriter, req *http.Request) {
+				id, found := handler.ExtractPathVariable(w, req, "orchestrationID")
+				if !found {
+					return
+				}
+				handler.deleteOrchestrationDefinition(w, req, id)
+			})
 			r.Get("/", func(w http.ResponseWriter, req *http.Request) {
 				orchestrationID, found := handler.ExtractPathVariable(w, req, "orchestrationID")
 				if !found {
@@ -82,6 +89,7 @@ func (h *HandlerServiceAssembly) registerOrchestrationRoutes(router chi.Router, 
 
 func (h *HandlerServiceAssembly) registerActivityDefinitionRoutes(router chi.Router, handler *PMHandler) {
 	router.Route("/activity-definitions", func(r chi.Router) {
+		r.Get("/", handler.getActivityDefinitions)
 		r.Post("/", handler.createActivityDefinition)
 		r.Route("/{activityType}", func(r chi.Router) {
 			r.Delete("/", func(w http.ResponseWriter, req *http.Request) {
@@ -97,6 +105,7 @@ func (h *HandlerServiceAssembly) registerActivityDefinitionRoutes(router chi.Rou
 
 func (h *HandlerServiceAssembly) registerOrchestrationDefinitionRoutes(router chi.Router, handler *PMHandler) {
 	router.Route("/orchestration-definitions", func(r chi.Router) {
+		r.Get("/", handler.getOrchestrationDefinitions)
 		r.Post("/", handler.createOrchestrationDefinition)
 		r.Route("/{orchestrationType}", func(r chi.Router) {
 			r.Delete("/", func(w http.ResponseWriter, req *http.Request) {
@@ -104,7 +113,7 @@ func (h *HandlerServiceAssembly) registerOrchestrationDefinitionRoutes(router ch
 				if !found {
 					return
 				}
-				handler.deleteActivityDefinition(w, req, definitionType)
+				handler.deleteOrchestrationDefinition(w, req, definitionType)
 			})
 		})
 	})

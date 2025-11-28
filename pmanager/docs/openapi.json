@@ -13,6 +13,25 @@
   ],
   "paths": {
     "/api/v1alpha1/activity-definitions": {
+      "get": {
+        "summary": "Get Activity Definitions",
+        "description": "Returns all Activity Definitions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/V1Alpha1ActivityDefinition"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Create an Activity Definition",
         "description": "Create a new Activity Definition",
@@ -54,6 +73,25 @@
       }
     },
     "/api/v1alpha1/orchestration-definitions": {
+      "get": {
+        "summary": "Get Orchestration Definitions",
+        "description": "Returns all Orchestration Definitions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/V1Alpha1OrchestrationDefinition"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Create an Orchestration Definition",
         "description": "Create a new Orchestration Definition",
@@ -204,10 +242,12 @@
         "type": "object",
         "properties": {
           "limit": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int64"
           },
           "offset": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int64"
           },
           "predicate": {
             "type": "string"

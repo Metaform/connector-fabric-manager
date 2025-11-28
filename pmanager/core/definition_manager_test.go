@@ -855,10 +855,6 @@ func (m *mockDefinitionStore) FindOrchestrationDefinitionsByPredicate(context.Co
 	return nil
 }
 
-func (m *mockDefinitionStore) GetOrchestrationDefinitionCount(context.Context, query.Predicate) (int, error) {
-	return 0, nil
-}
-
 func (m *mockDefinitionStore) FindActivityDefinition(context.Context, api.ActivityType) (*api.ActivityDefinition, error) {
 	return nil, types.ErrNotFound
 }
@@ -872,10 +868,6 @@ func (m *mockDefinitionStore) ExistsActivityDefinition(context.Context, api.Acti
 		return false, err
 	}
 	return m.state["activityExists"], nil
-}
-
-func (m *mockDefinitionStore) GetActivityDefinitionCount(context.Context, query.Predicate) (int, error) {
-	return 0, nil
 }
 
 func (m *mockDefinitionStore) StoreOrchestrationDefinition(
@@ -904,10 +896,10 @@ func (m *mockDefinitionStore) DeleteActivityDefinition(context.Context, api.Acti
 	return m.state["deleteActivityReturned"], nil
 }
 
-func (m *mockDefinitionStore) ListOrchestrationDefinitions(context.Context, int, int) ([]*api.OrchestrationDefinition, bool, error) {
-	return nil, false, nil
+func (m *mockDefinitionStore) ListOrchestrationDefinitions(context.Context) ([]api.OrchestrationDefinition, error) {
+	return nil, nil
 }
 
-func (m *mockDefinitionStore) ListActivityDefinitions(context.Context, int, int) ([]*api.ActivityDefinition, bool, error) {
-	return nil, false, nil
+func (m *mockDefinitionStore) ListActivityDefinitions(context.Context) ([]api.ActivityDefinition, error) {
+	return nil, nil
 }

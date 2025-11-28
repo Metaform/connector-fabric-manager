@@ -17,6 +17,18 @@ import (
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
+func ToActivityDefinition(definition *api.ActivityDefinition) *ActivityDefinition {
+	if definition == nil {
+		return &ActivityDefinition{}
+	}
+	return &ActivityDefinition{
+		Type:         string(definition.Type),
+		Description:  definition.Description,
+		InputSchema:  definition.InputSchema,
+		OutputSchema: definition.OutputSchema,
+	}
+}
+
 func ToAPIActivityDefinition(definition *ActivityDefinition) *api.ActivityDefinition {
 	if definition == nil {
 		return &api.ActivityDefinition{}
@@ -53,10 +65,44 @@ func ToAPIOrchestrationDefinition(definition *OrchestrationDefinition) *api.Orch
 	}
 }
 
+func ToOrchestrationDefinition(definition *api.OrchestrationDefinition) *OrchestrationDefinition {
+	if definition == nil {
+		return &OrchestrationDefinition{}
+	}
+	apiActivities := make([]Activity, len(definition.Activities))
+	for i, activity := range definition.Activities {
+		apiActivities[i] = Activity{
+			ID:            activity.ID,
+			Type:          string(activity.Type),
+			Discriminator: string(activity.Discriminator),
+			Inputs:        ToMappingEntries(activity.Inputs),
+			DependsOn:     activity.DependsOn,
+		}
+	}
+
+	return &OrchestrationDefinition{
+		Type:        string(definition.Type),
+		Description: definition.Description,
+		Schema:      definition.Schema,
+		Activities:  apiActivities,
+	}
+}
+
 func ToAPIMappingEntries(entries []MappingEntry) []api.MappingEntry {
 	apiEntries := make([]api.MappingEntry, len(entries))
 	for i, entry := range entries {
 		apiEntries[i] = api.MappingEntry{
+			Source: entry.Source,
+			Target: entry.Target,
+		}
+	}
+	return apiEntries
+}
+
+func ToMappingEntries(entries []api.MappingEntry) []MappingEntry {
+	apiEntries := make([]MappingEntry, len(entries))
+	for i, entry := range entries {
+		apiEntries[i] = MappingEntry{
 			Source: entry.Source,
 			Target: entry.Target,
 		}

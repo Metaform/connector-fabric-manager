@@ -16,7 +16,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
@@ -38,15 +37,7 @@ func Test_VerifyTenantOperations(t *testing.T) {
 
 	client := launchPlatform(t, nt)
 
-	// Wait for the tmanager to be ready
-	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		if tenant, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"}); err == nil {
-			err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant.ID))
-			require.NoError(t, err)
-			break
-		}
-	}
-	require.NoError(t, err)
+	waitTManager(t, client)
 
 	verifyGetAll(t, err, client)
 	verifyDelete(t, err, client)

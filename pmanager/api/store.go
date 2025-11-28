@@ -39,9 +39,6 @@ type DefinitionStore interface {
 	// ExistsOrchestrationDefinition returns true if an OrchestrationDefinition exists for the given type.
 	ExistsOrchestrationDefinition(ctx context.Context, orchestrationType model.OrchestrationType) (bool, error)
 
-	// GetOrchestrationDefinitionCount returns the number of OrchestrationDefinitions matching the given predicate.
-	GetOrchestrationDefinitionCount(_ context.Context, predicate query.Predicate) (int, error)
-
 	// FindActivityDefinition retrieves the ActivityDefinition associated with the given type.
 	// Returns the ActivityDefinition object or store.ErrNotFound if the definition cannot be found.
 	FindActivityDefinition(ctx context.Context, activityType ActivityType) (*ActivityDefinition, error)
@@ -51,9 +48,6 @@ type DefinitionStore interface {
 
 	// ExistsActivityDefinition returns true if an ActivityDefinition exists for the given type.
 	ExistsActivityDefinition(ctx context.Context, activityType ActivityType) (bool, error)
-
-	// GetActivityDefinitionCount returns the number of ActivityDefinitions matching the given predicate.
-	GetActivityDefinitionCount(_ context.Context, predicate query.Predicate) (int, error)
 
 	// StoreOrchestrationDefinition saves or updates a OrchestrationDefinition
 	StoreOrchestrationDefinition(ctx context.Context, definition *OrchestrationDefinition) (*OrchestrationDefinition, error)
@@ -69,11 +63,11 @@ type DefinitionStore interface {
 	// DeleteActivityDefinition removes an ActivityDefinition for the given type, returning true if successful.
 	DeleteActivityDefinition(ctx context.Context, activityType ActivityType) (bool, error)
 
-	// ListOrchestrationDefinitions returns OrchestrationDefinition instances with pagination support
-	ListOrchestrationDefinitions(ctx context.Context, offset int, limit int) ([]*OrchestrationDefinition, bool, error)
+	// ListOrchestrationDefinitions returns OrchestrationDefinition instances
+	ListOrchestrationDefinitions(ctx context.Context) ([]OrchestrationDefinition, error)
 
-	// ListActivityDefinitions returns ActivityDefinition instances with pagination support
-	ListActivityDefinitions(ctx context.Context, offset int, limit int) ([]*ActivityDefinition, bool, error)
+	// ListActivityDefinitions returns ActivityDefinition instances
+	ListActivityDefinitions(ctx context.Context) ([]ActivityDefinition, error)
 }
 
 type OrchestrationEntry struct {
@@ -97,4 +91,3 @@ func (o *OrchestrationEntry) GetVersion() int64 {
 func (o *OrchestrationEntry) IncrementVersion() {
 	o.Version++
 }
-

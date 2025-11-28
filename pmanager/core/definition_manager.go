@@ -80,6 +80,19 @@ func (d definitionManager) DeleteOrchestrationDefinition(
 	})
 }
 
+func (d definitionManager) GetOrchestrationDefinitions(ctx context.Context) ([]api.OrchestrationDefinition, error) {
+	var result []api.OrchestrationDefinition
+	err := d.trxContext.Execute(ctx, func(ctx context.Context) error {
+		definitions, err := d.store.ListOrchestrationDefinitions(ctx)
+		if err != nil {
+			return err
+		}
+		result = definitions
+		return nil
+	})
+	return result, err
+}
+
 func (d definitionManager) CreateActivityDefinition(ctx context.Context, definition *api.ActivityDefinition) (*api.ActivityDefinition, error) {
 	return store.Trx[api.ActivityDefinition](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ActivityDefinition, error) {
 		definition, err := d.store.StoreActivityDefinition(ctx, definition)
@@ -117,5 +130,17 @@ func (d definitionManager) DeleteActivityDefinition(ctx context.Context, atype a
 		}
 		return nil
 	})
+}
 
+func (d definitionManager) GetActivityDefinitions(ctx context.Context) ([]api.ActivityDefinition, error) {
+	var result []api.ActivityDefinition
+	err := d.trxContext.Execute(ctx, func(ctx context.Context) error {
+		definitions, err := d.store.ListActivityDefinitions(ctx)
+		if err != nil {
+			return err
+		}
+		result = definitions
+		return nil
+	})
+	return result, err
 }

@@ -23,8 +23,10 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	alauncher "github.com/metaform/connector-fabric-manager/e2e/testagent/launcher"
+	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	plauncher "github.com/metaform/connector-fabric-manager/pmanager/cmd/server/launcher"
 	tlauncher "github.com/metaform/connector-fabric-manager/tmanager/cmd/server/launcher"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -64,6 +66,35 @@ func launchPlatform(t *testing.T, nt *natsfixtures.NatsTestContainer) *e2efixtur
 		alauncher.Launch(shutdownChannel)
 	}()
 	return e2efixtures.NewApiClient(fmt.Sprintf("http://localhost:%d/api/v1alpha1", tPort), fmt.Sprintf("http://localhost:%d/api/v1alpha1", pPort))
+}
+
+func waitTManager(t *testing.T, client *e2efixtures.ApiClient) {
+	var err error
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		// Wait until a tenant can be created
+		if tenant, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"}); err == nil {
+			err = client.DeleteToTManager(fmt.Sprintf("tenants/%s", tenant.ID))
+			require.NoError(t, err)
+			break
+		}
+	}
+	require.NoError(t, err)
+}
+
+func waitPManager(t *testing.T, client *e2efixtures.ApiClient) {
+	var err error
+	for start := time.Now(); time.Since(start) < 5*time.Second; {
+		// Wait until an activity definition can be created
+		requestBody := api.ActivityDefinition{
+			Type: "boot-activity",
+		}
+		if err = client.PostToPManager("activity-definitions", requestBody); err == nil {
+			err = client.DeleteToPManager("activity-definitions/boot-activity")
+			require.NoError(t, err)
+			break
+		}
+	}
+	require.NoError(t, err)
 }
 
 func cleanup() {

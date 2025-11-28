@@ -148,8 +148,11 @@ type ActivityContext interface {
 type DefinitionManager interface {
 	CreateOrchestrationDefinition(ctx context.Context, definition *OrchestrationDefinition) (*OrchestrationDefinition, error)
 	DeleteOrchestrationDefinition(ctx context.Context, atype model.OrchestrationType) error
+	GetOrchestrationDefinitions(ctx context.Context) ([]OrchestrationDefinition, error)
+
 	CreateActivityDefinition(ctx context.Context, definition *ActivityDefinition) (*ActivityDefinition, error)
 	DeleteActivityDefinition(ctx context.Context, atype ActivityType) error
+	GetActivityDefinitions(ctx context.Context) ([]ActivityDefinition, error)
 }
 
 type defaultActivityContext struct {
