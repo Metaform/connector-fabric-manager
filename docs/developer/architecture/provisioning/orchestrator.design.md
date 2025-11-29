@@ -39,7 +39,7 @@ extensibility point for the system.
 
 The messaging implementation will be pluggable. The initial system will be based
 on [NATS Jetstream](https://docs.nats.io/nats-concepts/jetstream). A design goal is to allow the use of other
-technologies such as [Temporal](https://github.com/temporalio).
+technologies such as [Kafka](https://kafka.apache.org/).
 
 ### Kubernetes Integration
 
@@ -141,8 +141,7 @@ The `ActivityDefinition` [JSON Schema](./activity-definition.schema.json) specif
 
 When an orchestration is executed, the Orchestrator reliably enqueues activity messages which will be
 dequeued and processed by an associated activity executor. The executor delegates to an `ActivityProcessor` to process
-the message. The Orchestrator is responsible for handling system reliability, context persistence, recovery,
-and activity coordination.
+the message. The Orchestrator is responsible for handling system reliability, context persistence, and recovery.
 
 An `ActivityProcessor` is an extensibility point for integrating technologies such as Terraform or custom operations
 code into the orchestration process. For example, a Terraform processor would gather input data associated with the
@@ -185,13 +184,119 @@ The `ActivityResult` indicates the following actions to be taken:
 - **ActivityResultRetryError** - A fatal error was raised, the orchestration is put into the error state, and the
   messsage is acknowledged so it will not be redelivered.
 
-### Activity Processors
+## Activity Agents
 
-The following providers will be created:
+An activity agent runs an activity executor in a dedicated process. A NATS-based agent framework is provided to
+facilitate the creation of activity agents. The framework is built on the core modularity system, allowing services such
+as the HTTP Client and Router to be used. An agent is instantiated by passing a configuration to the NATS agent
+launcher:
 
-- Terraform/Open Tofu
-- HTTP endpoint
-- Custom Go providers for handling required application-level resources
+```go
+package launcher
+
+import (
+	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/pmanager/api"
+)
+
+type LauncherConfig struct {
+	AgentName        string
+	ConfigPrefix     string
+	ActivityType     string
+	AssemblyProvider func() []system.ServiceAssembly
+	NewProcessor     func(ctx *AgentContext) api.ActivityProcessor
+}
+natsagent.LaunchAgent(shutdown, config)
+
+```
+
+The `AssemblyProvider` function is used to register services required by the agent. The `NewProcessor` function is used
+to instantiate the `ActivityProcessor` implementation.
+
+The following is an example of an activity agent configuration:
+
+```go
+package launcher
+
+import (
+	"github.com/metaform/connector-fabric-manager/agent/edcv/activity"
+	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
+	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
+	"github.com/metaform/connector-fabric-manager/assembly/vault"
+	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/pmanager/natsagent"
+)
+
+func LaunchAndWaitSignal(shutdown <-chan struct{}) {
+	config := natsagent.LauncherConfig{
+		AgentName:    "Test Agent",
+		ConfigPrefix: "test",
+		ActivityType: "test-activity",
+		AssemblyProvider: func() []system.ServiceAssembly {
+			return []system.ServiceAssembly{
+				&httpclient.HttpClientServiceAssembly{},
+				&vault.VaultServiceAssembly{},
+			}
+		},
+		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
+			httpClient := ctx.Registry.Resolve(serviceapi.HttpClientKey).(http.Client)
+			vaultClient := ctx.Registry.Resolve(serviceapi.VaultKey).(serviceapi.VaultClient)
+
+			return &activity.TestActivityProcessor{
+				HTTPClient:  &httpClient,
+				VaultClient: vaultClient,
+				Monitor:     ctx.Monitor,
+			}
+		},
+	}
+	natsagent.LaunchAgent(shutdown, config)
+}
+
+```
+
+The above example relies on the HTTP Client, Vault, and Monitor services, passing them to the activity processor in the
+`NewProcessor` function.
+
+## Resource Lifecycles
+
+Activities model resource lifecycles. For example, a resource may be deployed and undeployed. In many cases, it is not
+desirable to require separate agents for each resource lifecycle operation. Activity processors can use the
+`discriminator` property to distinguish between different resource lifecycle states:
+
+```go
+package example
+
+import "github.com/metaform/connector-fabric-manager/pmanager/api"
+
+func (p ExampleProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
+	if ctx.Discriminator() == api.DeployDiscriminator {
+		// deploy the resource
+	} else {
+		// dispose the resource
+	}
+}
+```
+
+The activity can be configured with `deploy` and `dispose` orchestrations:
+
+```json
+{
+  "type": "test.example.com",
+  "description": "Test Deploy Orchestration",
+  "active": true,
+  "schema": {},
+  "activities": [
+    {
+      "id": "test-activity",
+      "type": "test",
+      "discriminator": "deploy",
+      "inputs": [],
+      "dependsOn": []
+    }
+  ]
+}
+```
+
 
 ## Integration with External Systems
 
@@ -200,7 +305,7 @@ The following providers will be created:
 The Orchestrator is designed to work with IaC Automation and GitOps systems such
 as [Argo](https://argoproj.github.io/), [Atlantis](https://www.runatlantis.io/), [env0](https://www.env0.com/), [Scalr](https://scalr.com/),
 and [Spacelift](https://spacelift.io/). These systems can be used to drive deployments using the Orchestrator
-API. To facilitate integration, Terraform providers will be developed for common orchestration definitions.
+API.
 
 ### Infrastructure Provisioners
 
