@@ -284,14 +284,11 @@ The activity can be configured with `deploy` and `dispose` orchestrations:
   "type": "test.example.com",
   "description": "Test Deploy Orchestration",
   "active": true,
-  "schema": {},
   "activities": [
     {
       "id": "test-activity",
       "type": "test",
-      "discriminator": "deploy",
-      "inputs": [],
-      "dependsOn": []
+      "discriminator": "deploy"
     }
   ]
 }
