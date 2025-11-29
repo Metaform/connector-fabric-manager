@@ -74,7 +74,7 @@ func (a *TMCoreServiceAssembly) Init(context *system.InitContext) error {
 
 	context.Registry.Register(api.CellServiceKey, cellService{
 		trxContext: trxContext,
-		store:      cellStore,
+		cellStore:      cellStore,
 	})
 
 	context.Registry.Register(api.DataspaceProfileServiceKey, dataspaceProfileService{

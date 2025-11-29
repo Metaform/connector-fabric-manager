@@ -20,12 +20,13 @@ import (
 
 // GetFieldValue extracts a Value from an object by Field name
 // Supports nested fields with dot notation (e.g., "Entity.ID")
-// Also supports map access where a field is a map[string]any (e.g., "Properties.Foo")
+// Supports map access where a field is a map[string]any (e.g., "Properties.Foo")
+// Supports slice traversal with recursive field path evaluation (e.g., "Entities.Entity.ID")
 func GetFieldValue(obj any, fieldPath string) (any, error) {
 	parts := strings.Split(fieldPath, ".")
 	val := reflect.ValueOf(obj)
 
-	for _, part := range parts {
+	for i, part := range parts {
 		if val.Kind() == reflect.Ptr {
 			val = val.Elem()
 		}
@@ -50,6 +51,32 @@ func GetFieldValue(obj any, fieldPath string) (any, error) {
 		val, err = getFieldValueCaseInsensitive(val, part)
 		if err != nil {
 			return nil, fmt.Errorf("error getting Field %s not found %w", part, err)
+		}
+
+		// After getting the field, check if we have a slice and more parts to traverse
+		if i < len(parts)-1 {
+			// Dereference pointer if needed
+			if val.Kind() == reflect.Ptr {
+				val = val.Elem()
+			}
+
+			// If this field is a slice, recursively process remaining path on each element
+			if val.Kind() == reflect.Slice {
+				remainingPath := strings.Join(parts[i+1:], ".")
+				var results []any
+				for j := 0; j < val.Len(); j++ {
+					sliceElem := val.Index(j)
+					elemValue, err := GetFieldValue(sliceElem.Interface(), remainingPath)
+					if err == nil && elemValue != nil {
+						results = append(results, elemValue)
+					}
+				}
+				// Return the collected results as a slice
+				if len(results) > 0 {
+					return results, nil
+				}
+				return nil, fmt.Errorf("no matching values found in slice for path %s", remainingPath)
+			}
 		}
 	}
 	return val.Interface(), nil
@@ -78,7 +105,25 @@ func getFieldValueCaseInsensitive(val reflect.Value, fieldName string) (reflect.
 
 // CompareValues compares two values based on an Operator
 // Works with various types: strings, numbers, slices, etc.
+// When fieldValue is a slice (from nested slice traversal), checks if ANY element matches
 func CompareValues(op Operator, fieldValue, compareValue any) bool {
+	// If fieldValue is a slice, check if any element matches
+	fieldValueSlice := reflect.ValueOf(fieldValue)
+	if fieldValueSlice.Kind() == reflect.Slice {
+		for i := 0; i < fieldValueSlice.Len(); i++ {
+			elemValue := fieldValueSlice.Index(i).Interface()
+			if compareValueForSingleElement(op, elemValue, compareValue) {
+				return true
+			}
+		}
+		return false
+	}
+
+	return compareValueForSingleElement(op, fieldValue, compareValue)
+}
+
+// compareValueForSingleElement performs the actual comparison for a single value
+func compareValueForSingleElement(op Operator, fieldValue, compareValue any) bool {
 	// Normalize string aliases to plain strings before comparison
 	fieldValue = normalizeTypeAlias(fieldValue)
 	compareValue = normalizeTypeAlias(compareValue)
