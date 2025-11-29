@@ -297,7 +297,6 @@ The activity can be configured with `deploy` and `dispose` orchestrations:
 }
 ```
 
-
 ## Integration with External Systems
 
 ### Infrastructure as Code (IaC) Automation
