@@ -70,7 +70,6 @@ func generateOrchestrationEndpoints(r spec.Generator) {
 		option.Description("Retrieve an Orchestration by ID"),
 		option.Request(new(IDParam)),
 		option.Response(http.StatusOK, v1alpha1.Orchestration{}),
-		option.Tags("Not implemented yet"),
 	)
 }
 

@@ -184,9 +184,6 @@
     },
     "/api/v1alpha1/orchestrations/{id}": {
       "get": {
-        "tags": [
-          "Not implemented yet"
-        ],
         "summary": "Get an Orchestration",
         "description": "Retrieve an Orchestration by ID",
         "parameters": [
