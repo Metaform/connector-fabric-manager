@@ -284,7 +284,7 @@ asynchronously notifies the Tenant Manager when processing is completed.
 ### Provision Manager
 
 The Provision Manager implements asynchronous orchestration by executing stateful workflows defined through
-`OrchestrationDefinition` entities. The provisioning and orchestration architecture is
+`OrchestrationDefinition` entities. The orchestration architecture is
 described [here](./provisioning/orchestrator.design.md).
 
 ### Activity Agents
