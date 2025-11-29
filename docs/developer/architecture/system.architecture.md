@@ -30,11 +30,12 @@ block-beta
     CIF ["Cloud Infrastructure"]:4
 ```
 
-The CFM is composed of two subsystems:
+The CFM is composed of three subsystems:
 
 - The **Tenant Manager (TM)** which manages tenancy data and initiates deployment processes.
 - The **Provision Manager (PM)** which executes stateful orchestrations that configure services and
   infrastructure for participants.
+- **Activity Agents** that execute tasks specified by the Provision Manager
 
 The CFM is designed as a reliable message-based system that can be extended and deployed to diverse cloud and on-premise
 environments. Its design is simple; at a minimum it requires only a Postgres database and messaging system (NATS is the
