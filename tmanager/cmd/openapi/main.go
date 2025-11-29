@@ -55,7 +55,6 @@ func generateTenantEndpoints(r spec.Generator) {
 		option.Summary("List Tenants"),
 		option.Description("Retrieve all Tenants"),
 		option.Response(http.StatusOK, []v1alpha1.Tenant{}),
-		option.Tags("Not implemented yet"),
 	)
 
 	tenants.Post("",

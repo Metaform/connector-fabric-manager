@@ -165,9 +165,6 @@
     },
     "/api/v1alpha1/tenants": {
       "get": {
-        "tags": [
-          "Not implemented yet"
-        ],
         "summary": "List Tenants",
         "description": "Retrieve all Tenants",
         "responses": {
