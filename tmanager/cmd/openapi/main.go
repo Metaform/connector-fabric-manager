@@ -101,7 +101,6 @@ func generateParticipantEndpoints(r spec.Generator) {
 		option.Description("Retrieve all Participant Profiles"),
 		option.Request(new(IDParam)),
 		option.Response(http.StatusOK, []v1alpha1.ParticipantProfile{}),
-		option.Tags("Not implemented yet"),
 	)
 
 	participants.Post("",
@@ -147,7 +146,6 @@ func generateDataspaceEndpoints(r spec.Generator) {
 		option.Summary("List Dataspace Profiles"),
 		option.Description("Retrieve all dataspace profiles"),
 		option.Response(http.StatusOK, []v1alpha1.DataspaceProfile{}),
-		option.Tags("Not implemented yet"),
 		option.Tags("Not implemented yet"),
 	)
 

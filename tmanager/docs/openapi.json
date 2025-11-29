@@ -64,7 +64,6 @@
     "/api/v1alpha1/dataspace-profiles": {
       "get": {
         "tags": [
-          "Not implemented yet",
           "Not implemented yet"
         ],
         "summary": "List Dataspace Profiles",
@@ -330,9 +329,6 @@
     },
     "/api/v1alpha1/tenants/{id}/participants": {
       "get": {
-        "tags": [
-          "Not implemented yet"
-        ],
         "summary": "List Participant Profiles",
         "description": "Retrieve all Participant Profiles",
         "parameters": [
