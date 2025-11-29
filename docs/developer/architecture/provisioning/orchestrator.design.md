@@ -41,6 +41,13 @@ The messaging implementation will be pluggable. The initial system will be based
 on [NATS Jetstream](https://docs.nats.io/nats-concepts/jetstream). A design goal is to allow the use of other
 technologies such as [Kafka](https://kafka.apache.org/).
 
+The selection of a messaging design provides both spatial and temporal isolation between subsystems. For example, the
+orchestrator is decoupled from activities executed on worker nodes. Furthermore, activities are decoupled from one
+another. Security contexts can be isolated and worker nodes can be temporally offline (e.g. for maintenance) without
+affecting the ability to receive orchestration requests. The orchestration system provides persistence so
+data can be passed between activities. For non-senstive data, persistence is provided using a distributed key/value
+store. For sensitive data, persistence is provided using a secure vault.
+
 ### Kubernetes Integration
 
 The Orchestrator will be deployable as a standalone application or to a Kubernetes cluster. While it is
