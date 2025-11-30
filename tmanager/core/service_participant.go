@@ -38,7 +38,7 @@ type participantService struct {
 
 func (d participantService) GetProfile(ctx context.Context, tenantID string, participantID string) (*api.ParticipantProfile, error) {
 	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
-		profile, err := d.participantStore.FindById(ctx, participantID)
+		profile, err := d.participantStore.FindByID(ctx, participantID)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +118,7 @@ func (d participantService) DeployProfile(
 
 func (d participantService) DisposeProfile(ctx context.Context, tenantID string, participantID string) error {
 	return d.trxContext.Execute(ctx, func(c context.Context) error {
-		profile, err := d.participantStore.FindById(c, participantID)
+		profile, err := d.participantStore.FindByID(c, participantID)
 		if err != nil {
 			return err
 		}
@@ -223,7 +223,7 @@ func (h vpaCallbackHandler) handle(
 
 	return h.trxContext.Execute(ctx, func(c context.Context) error {
 		// Note de-duplication does not need to be performed as this operation is idempotent
-		profile, err := h.participantStore.FindById(c, response.CorrelationID)
+		profile, err := h.participantStore.FindByID(c, response.CorrelationID)
 		if err != nil {
 			h.monitor.Infof("Error retrieving participant profile '%s' for manifest %s: %w", response.CorrelationID, response.ManifestID, err)
 			// Do not return error as this is fatal and the message must be acked

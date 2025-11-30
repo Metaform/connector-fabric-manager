@@ -51,7 +51,7 @@ func (w *OrchestrationIndexWatcher) onMessage(data []byte, msg MessageAck) {
 	}
 
 	_ = w.trxContext.Execute(ctx, func(ctx context.Context) error {
-		currentEntry, err := w.index.FindById(ctx, orchestration.ID)
+		currentEntry, err := w.index.FindByID(ctx, orchestration.ID)
 		if err != nil && !errors.Is(err, types.ErrNotFound) {
 			w.monitor.Infof("Failed to lookup orchestration entry: %v", err)
 			_ = msg.Nak()

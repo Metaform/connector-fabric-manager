@@ -38,7 +38,7 @@ type InMemoryEntityStore[T store.EntityType] struct {
 	matcher query.FieldMatcher
 }
 
-func (s *InMemoryEntityStore[T]) FindById(_ context.Context, id string) (T, error) {
+func (s *InMemoryEntityStore[T]) FindByID(_ context.Context, id string) (T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -286,4 +286,3 @@ func copyEntity[T store.EntityType](entity T) (T, error) {
 
 	return copied, nil
 }
-

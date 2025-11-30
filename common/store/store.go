@@ -33,7 +33,7 @@ type TransactionContext interface {
 // For example:
 //
 //	store.Trx(ctx).AndReturn(ctx, func(ctx context.Context) (*MyType, error) {
-//		return store.FindById(ctx, "my-id")
+//		return store.FindByID(ctx, "my-id")
 //	})
 type TrxFunc[T any] struct {
 	ctx TransactionContext
@@ -103,7 +103,7 @@ func DefaultPaginationOptions() PaginationOptions {
 
 // EntityStore defines the interface for entity storage.
 type EntityStore[T EntityType] interface {
-	FindById(ctx context.Context, id string) (T, error)
+	FindByID(ctx context.Context, id string) (T, error)
 	Exists(ctx context.Context, id string) (bool, error)
 	Create(ctx context.Context, entity T) (T, error)
 	Update(ctx context.Context, entity T) error // T is already a pointer type

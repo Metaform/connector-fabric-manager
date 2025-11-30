@@ -104,7 +104,7 @@ func TestInMemoryEntityStore_FindById(t *testing.T) {
 		_, err := store.Create(ctx, entity)
 		require.NoError(t, err)
 
-		result, err := store.FindById(ctx, "test-1")
+		result, err := store.FindByID(ctx, "test-1")
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -113,7 +113,7 @@ func TestInMemoryEntityStore_FindById(t *testing.T) {
 	})
 
 	t.Run("find non-existing entity", func(t *testing.T) {
-		result, err := store.FindById(ctx, "non-existing")
+		result, err := store.FindByID(ctx, "non-existing")
 
 		require.Error(t, err)
 		assert.Nil(t, result)
@@ -158,7 +158,7 @@ func TestInMemoryEntityStore_Update(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify the update
-		result, err := store.FindById(ctx, "test-1")
+		result, err := store.FindByID(ctx, "test-1")
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.Equal(t, "updated-value", result.Value)
@@ -197,7 +197,7 @@ func TestInMemoryEntityStore_Delete(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify deletion
-		result, err := store.FindById(ctx, "test-1")
+		result, err := store.FindByID(ctx, "test-1")
 		require.Error(t, err)
 		assert.Nil(t, result)
 
@@ -339,7 +339,7 @@ func TestInMemoryEntityStore_ConcurrentAccess(t *testing.T) {
 		// Goroutine 2: Read entities
 		go func() {
 			for i := 0; i < 10; i++ {
-				store.FindById(ctx, fmt.Sprintf("test-%d", i))
+				store.FindByID(ctx, fmt.Sprintf("test-%d", i))
 			}
 			done <- true
 		}()
@@ -395,7 +395,7 @@ func TestInMemoryEntityStore_CopyIsolation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Retrieve the entity (first retrieval)
-	retrieved1, err := store.FindById(ctx, "test-1")
+	retrieved1, err := store.FindByID(ctx, "test-1")
 	require.NoError(t, err)
 	require.NotNil(t, retrieved1)
 	assert.Equal(t, "original-value", retrieved1.Value)
@@ -404,7 +404,7 @@ func TestInMemoryEntityStore_CopyIsolation(t *testing.T) {
 	retrieved1.Value = "modified-value"
 
 	// Retrieve the entity again (second retrieval)
-	retrieved2, err := store.FindById(ctx, "test-1")
+	retrieved2, err := store.FindByID(ctx, "test-1")
 	require.NoError(t, err)
 	require.NotNil(t, retrieved2)
 
@@ -531,8 +531,8 @@ func TestInMemoryEntityStore_Update_VersionIncremented(t *testing.T) {
 	require.NoError(t, err, "Create should succeed")
 
 	// Verify initial version
-	retrieved, err := store.FindById(ctx, "test-id")
-	require.NoError(t, err, "FindById should succeed")
+	retrieved, err := store.FindByID(ctx, "test-id")
+	require.NoError(t, err, "FindByID should succeed")
 	assert.Equal(t, int64(0), retrieved.GetVersion(), "Initial version should be 0")
 
 	// Update the entity
@@ -541,7 +541,7 @@ func TestInMemoryEntityStore_Update_VersionIncremented(t *testing.T) {
 	require.NoError(t, err, "Update should succeed")
 
 	// Verify version is incremented
-	updated, err := store.FindById(ctx, "test-id")
+	updated, err := store.FindByID(ctx, "test-id")
 	require.NoError(t, err, "find should succeed after update")
 	assert.Equal(t, int64(1), updated.GetVersion(), "Version should be incremented to 1 after update")
 }

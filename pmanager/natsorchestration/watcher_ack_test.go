@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// FindById returns error - verify Nak is called exactly once
+// FindByID returns error - verify Nak is called exactly once
 func TestOnMessage_FindByIdError_NakCalledOnce(t *testing.T) {
 	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
@@ -46,7 +46,7 @@ func TestOnMessage_FindByIdError_NakCalledOnce(t *testing.T) {
 
 	watcher.onMessage(data, msg)
 
-	assert.Equal(t, 1, msg.NakCalls, "Nak should be called exactly once when FindById returns error")
+	assert.Equal(t, 1, msg.NakCalls, "Nak should be called exactly once when FindByID returns error")
 	assert.Equal(t, 0, msg.AckCalls, "Ack should not be called when Nak is called")
 	mockStore.AssertExpectations(t)
 }
@@ -122,7 +122,7 @@ func TestOnMessage_UpdateError_NakCalledNotAck(t *testing.T) {
 	mockStore.AssertExpectations(t)
 }
 
-// FindById unexpected error - verify Nak is called, no further operations
+// FindByID unexpected error - verify Nak is called, no further operations
 func TestOnMessage_FindByIdUnexpectedError_NakCalledImmediately(t *testing.T) {
 	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
@@ -141,7 +141,7 @@ func TestOnMessage_FindByIdUnexpectedError_NakCalledImmediately(t *testing.T) {
 
 	watcher.onMessage(data, msg)
 
-	assert.Equal(t, 1, msg.NakCalls, "Nak should be called for FindById error")
+	assert.Equal(t, 1, msg.NakCalls, "Nak should be called for FindByID error")
 	assert.Equal(t, 0, msg.AckCalls, "Ack should not be called")
 	mockStore.AssertExpectations(t)
 }
@@ -154,7 +154,7 @@ func TestOnMessage_SequentialErrors_EachNakOnce(t *testing.T) {
 
 	dbError := errors.New("database unavailable")
 
-	// First message - FindById fails
+	// First message - FindByID fails
 	mockStore.EXPECT().
 		FindById(mock.Anything, "orch-1").
 		Return(nil, dbError).

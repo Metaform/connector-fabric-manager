@@ -28,7 +28,7 @@ type dataspaceProfileService struct {
 }
 
 func (d dataspaceProfileService) GetProfile(ctx context.Context, profileID string) (*api.DataspaceProfile, error) {
-	return d.profileStore.FindById(ctx, profileID)
+	return d.profileStore.FindByID(ctx, profileID)
 }
 
 func (d dataspaceProfileService) CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*api.DataspaceProfile, error) {
@@ -48,12 +48,12 @@ func (d dataspaceProfileService) CreateProfile(ctx context.Context, artifacts []
 
 func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID string, cellID string) error {
 	return d.trxContext.Execute(ctx, func(_ context.Context) error {
-		profile, err := d.profileStore.FindById(ctx, profileID)
+		profile, err := d.profileStore.FindByID(ctx, profileID)
 		if err != nil {
 			return err
 		}
 
-		cell, err := d.cellStore.FindById(ctx, cellID)
+		cell, err := d.cellStore.FindByID(ctx, cellID)
 		if err != nil {
 			return err
 		}

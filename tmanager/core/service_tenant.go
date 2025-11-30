@@ -34,7 +34,7 @@ type tenantService struct {
 
 func (t tenantService) GetTenant(ctx context.Context, tenantID string) (*api.Tenant, error) {
 	return store.Trx[api.Tenant](t.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.Tenant, error) {
-		return t.tenantStore.FindById(ctx, tenantID)
+		return t.tenantStore.FindByID(ctx, tenantID)
 	})
 }
 
@@ -46,7 +46,7 @@ func (t tenantService) CreateTenant(ctx context.Context, tenant *api.Tenant) (*a
 
 func (t tenantService) PatchTenant(ctx context.Context, id string, properties map[string]any, remove []string) error {
 	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
-		tenant, err := t.tenantStore.FindById(ctx, id)
+		tenant, err := t.tenantStore.FindByID(ctx, id)
 		if err != nil {
 			if errors.Is(err, types.ErrNotFound) {
 				return err
@@ -69,7 +69,7 @@ func (t tenantService) PatchTenant(ctx context.Context, id string, properties ma
 
 func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error {
 	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
-		tenant, err := t.tenantStore.FindById(ctx, tenantID)
+		tenant, err := t.tenantStore.FindByID(ctx, tenantID)
 		if err != nil {
 			return err
 		}

@@ -40,7 +40,7 @@ func TestOnMessage_CreateNewEntry(t *testing.T) {
 	watcher.onMessage(msg.Data, msg)
 
 	ctx := context.Background()
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.NotNil(t, entry)
 	assert.Equal(t, "orch-1", entry.ID)
@@ -69,7 +69,7 @@ func TestOnMessage_UpdateExistingEntry(t *testing.T) {
 
 	watcher.onMessage(msg.Data, msg)
 
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, api.OrchestrationStateCompleted, entry.State)
 }
@@ -86,7 +86,7 @@ func TestOnMessage_MalformedJSON(t *testing.T) {
 
 	// Should not crash, message handling completed
 	ctx := context.Background()
-	_, err := index.FindById(ctx, "")
+	_, err := index.FindByID(ctx, "")
 	// Entry should not exist, error is expected
 	assert.Error(t, err)
 }
@@ -115,7 +115,7 @@ func TestOnMessage_UpdateWhenStateUnchangedTimestampDifferent(t *testing.T) {
 	watcher.onMessage(msg.Data, msg)
 
 	// Verify state timestamp didn't change
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.True(t, entry.StateTimestamp.Equal(orch2.StateTimestamp))
 }
@@ -144,7 +144,7 @@ func TestOnMessage_IgnoreUpdatesWhenCompleted(t *testing.T) {
 	watcher.onMessage(msg.Data, msg)
 
 	// Verify state remains Completed
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, api.OrchestrationStateCompleted, entry.State)
 }
@@ -173,7 +173,7 @@ func TestOnMessage_ErroredStateUpdate(t *testing.T) {
 	watcher.onMessage(msg.Data, msg)
 
 	// Verify state remains Running
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, api.OrchestrationStateErrored, entry.State)
 }
@@ -199,15 +199,15 @@ func TestOnMessage_CreateMultipleEntries(t *testing.T) {
 	watcher.onMessage(msg3.Data, msg3)
 
 	// Verify all entries exist
-	entry1, err := index.FindById(ctx, "orch-1")
+	entry1, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, "corr-1", entry1.CorrelationID)
 
-	entry2, err := index.FindById(ctx, "orch-2")
+	entry2, err := index.FindByID(ctx, "orch-2")
 	require.NoError(t, err)
 	assert.Equal(t, "corr-2", entry2.CorrelationID)
 
-	entry3, err := index.FindById(ctx, "orch-3")
+	entry3, err := index.FindByID(ctx, "orch-3")
 	require.NoError(t, err)
 	assert.Equal(t, "corr-3", entry3.CorrelationID)
 }
@@ -237,7 +237,7 @@ func TestOnMessage_CorrectMetadataAfterCreate(t *testing.T) {
 
 	watcher.onMessage(msg.Data, msg)
 
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, "orch-1", entry.ID)
 	assert.Equal(t, "corr-1", entry.CorrelationID)
@@ -260,7 +260,7 @@ func TestOnMessage_StateTransitionSequence(t *testing.T) {
 	msg1 := createNatsMsg(t, orch1)
 	watcher.onMessage(msg1.Data, msg1)
 
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, api.OrchestrationStateInitialized, entry.State)
 
@@ -270,7 +270,7 @@ func TestOnMessage_StateTransitionSequence(t *testing.T) {
 	msg2 := createNatsMsg(t, orch2)
 	watcher.onMessage(msg2.Data, msg2)
 
-	entry, err = index.FindById(ctx, "orch-1")
+	entry, err = index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, api.OrchestrationStateRunning, entry.State)
 
@@ -280,7 +280,7 @@ func TestOnMessage_StateTransitionSequence(t *testing.T) {
 	msg3 := createNatsMsg(t, orch3)
 	watcher.onMessage(msg3.Data, msg3)
 
-	entry, err = index.FindById(ctx, "orch-1")
+	entry, err = index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, api.OrchestrationStateCompleted, entry.State)
 }
@@ -309,7 +309,7 @@ func TestOnMessage_MultipleUpdatesToSameEntry(t *testing.T) {
 		watcher.onMessage(msg.Data, msg)
 	}
 
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, api.OrchestrationStateCompleted, entry.State)
 }
@@ -326,7 +326,7 @@ func TestOnMessage_CorrelationIDPreserved(t *testing.T) {
 	msg := createNatsMsg(t, orch)
 	watcher.onMessage(msg.Data, msg)
 
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, "corr-1", entry.CorrelationID)
 }
@@ -363,7 +363,7 @@ func TestOnMessage_EntryPropertiesPreserved(t *testing.T) {
 	msg2 := createNatsMsg(t, orch2)
 	watcher.onMessage(msg2.Data, msg2)
 
-	entry, err := index.FindById(ctx, "orch-1")
+	entry, err := index.FindByID(ctx, "orch-1")
 	require.NoError(t, err)
 	assert.Equal(t, "corr-1", entry.CorrelationID)
 	assert.Equal(t, model.OrchestrationType("MyWorkflow"), entry.OrchestrationType)
