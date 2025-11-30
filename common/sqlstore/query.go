@@ -111,10 +111,10 @@ type JSONBSQLBuilder interface {
 }
 
 // PostgresJSONBBuilder handles SQL generation with JSONB field support
+// This builder is stateless and thread-safe
 type PostgresJSONBBuilder struct {
 	jsonbFields     map[string]bool
 	jsonbFieldTypes map[string]JSONBFieldType
-	paramCounter    int
 }
 
 // NewPostgresJSONBBuilder creates a new JSONB-aware SQL builder
@@ -122,7 +122,6 @@ func NewPostgresJSONBBuilder() *PostgresJSONBBuilder {
 	return &PostgresJSONBBuilder{
 		jsonbFields:     make(map[string]bool),
 		jsonbFieldTypes: make(map[string]JSONBFieldType),
-		paramCounter:    0,
 	}
 }
 
@@ -151,77 +150,78 @@ func (b *PostgresJSONBBuilder) WithJSONBFieldTypes(fieldTypes map[string]JSONBFi
 
 // BuildSQL converts a predicate to SQL WHERE clause with JSONB support
 func (b *PostgresJSONBBuilder) BuildSQL(predicate query.Predicate) (string, []any) {
-	b.paramCounter = 0 // Reset counter for each top-level BuildSQL call
-	return b.buildSQL(predicate)
+	paramCounter := 0
+	sql, args, _ := b.buildSQL(predicate, &paramCounter)
+	return sql, args
 }
 
-// buildSQL is the internal method that maintains parameter counter across recursive calls
-func (b *PostgresJSONBBuilder) buildSQL(predicate query.Predicate) (string, []any) {
+// buildSQL is the internal method that maintains parameter counter through recursion
+func (b *PostgresJSONBBuilder) buildSQL(predicate query.Predicate, paramCounter *int) (string, []any, int) {
 	switch p := predicate.(type) {
 	case *query.AtomicPredicate:
-		return b.buildSimplePredicateSQL(p)
+		return b.buildSimplePredicateSQL(p, paramCounter)
 	case *query.CompoundPredicate:
-		return b.buildCompoundPredicateSQL(p)
+		return b.buildCompoundPredicateSQL(p, paramCounter)
 	default:
-		return "true", nil
+		return "true", nil, *paramCounter
 	}
 }
 
-func (b *PostgresJSONBBuilder) buildSimplePredicateSQL(predicate *query.AtomicPredicate) (string, []any) {
+func (b *PostgresJSONBBuilder) buildSimplePredicateSQL(predicate *query.AtomicPredicate, paramCounter *int) (string, []any, int) {
 	// Check if this is a JSONB field path
-	if jsonbSQL, args, ok := b.tryBuildJSONBSQL(predicate); ok {
-		return jsonbSQL, args
+	if jsonbSQL, args, ok := b.tryBuildJSONBSQL(predicate, paramCounter); ok {
+		return jsonbSQL, args, *paramCounter
 	}
 
 	// Fall back to standard SQL building for non-JSONB fields
-	return b.buildStandardPredicateSQL(predicate)
+	return b.buildStandardPredicateSQL(predicate, paramCounter)
 }
 
-func (b *PostgresJSONBBuilder) buildCompoundPredicateSQL(predicate *query.CompoundPredicate) (string, []any) {
+func (b *PostgresJSONBBuilder) buildCompoundPredicateSQL(predicate *query.CompoundPredicate, paramCounter *int) (string, []any, int) {
 	if len(predicate.Predicates) == 0 {
-		return "true", nil
+		return "true", nil, *paramCounter
 	}
 	if len(predicate.Predicates) == 1 {
-		return b.buildSQL(predicate.Predicates[0])
+		return b.buildSQL(predicate.Predicates[0], paramCounter)
 	}
 
 	parts := make([]string, len(predicate.Predicates))
 	var args []any
 
 	for i, pred := range predicate.Predicates {
-		sql, predArgs := b.buildSQL(pred)
+		sql, predArgs, _ := b.buildSQL(pred, paramCounter)
 		parts[i] = fmt.Sprintf("(%s)", sql)
 		args = append(args, predArgs...)
 	}
 
-	return strings.Join(parts, fmt.Sprintf(" %s ", predicate.Operator)), args
+	return strings.Join(parts, fmt.Sprintf(" %s ", predicate.Operator)), args, *paramCounter
 }
 
 // buildStandardPredicateSQL builds SQL for non-JSONB fields using Postgres placeholders
-func (b *PostgresJSONBBuilder) buildStandardPredicateSQL(predicate *query.AtomicPredicate) (string, []any) {
+func (b *PostgresJSONBBuilder) buildStandardPredicateSQL(predicate *query.AtomicPredicate, paramCounter *int) (string, []any, int) {
 	switch predicate.Operator {
 	case query.OpIsNull:
-		return fmt.Sprintf("%s IS NULL", predicate.Field), nil
+		return fmt.Sprintf("%s IS NULL", predicate.Field), nil, *paramCounter
 	case query.OpIsNotNull:
-		return fmt.Sprintf("%s IS NOT NULL", predicate.Field), nil
+		return fmt.Sprintf("%s IS NOT NULL", predicate.Field), nil, *paramCounter
 	case query.OpIn, query.OpNotIn:
 		values := predicate.Value.([]any)
 		placeholders := make([]string, len(values))
 		for i := range placeholders {
-			b.paramCounter++
-			placeholders[i] = fmt.Sprintf("$%d", b.paramCounter)
+			*paramCounter++
+			placeholders[i] = fmt.Sprintf("$%d", *paramCounter)
 		}
 		sql := fmt.Sprintf("%s %s (%s)", predicate.Field, predicate.Operator, strings.Join(placeholders, ","))
-		return sql, values
+		return sql, values, *paramCounter
 	default:
-		b.paramCounter++
-		return fmt.Sprintf("%s %s $%d", predicate.Field, predicate.Operator, b.paramCounter), []any{predicate.Value}
+		*paramCounter++
+		return fmt.Sprintf("%s %s $%d", predicate.Field, predicate.Operator, *paramCounter), []any{predicate.Value}, *paramCounter
 	}
 }
 
 // tryBuildJSONBSQL attempts to build a JSONB query for the predicate
 // Returns (sqlString, args, success)
-func (b *PostgresJSONBBuilder) tryBuildJSONBSQL(predicate *query.AtomicPredicate) (string, []any, bool) {
+func (b *PostgresJSONBBuilder) tryBuildJSONBSQL(predicate *query.AtomicPredicate, paramCounter *int) (string, []any, bool) {
 	parts := strings.Split(string(predicate.Field), ".")
 
 	// Check if the first part is a JSONB field
@@ -238,13 +238,13 @@ func (b *PostgresJSONBBuilder) tryBuildJSONBSQL(predicate *query.AtomicPredicate
 
 	// If it's just a root field with no nested path
 	if len(parts) == 1 {
-		sql, args := b.buildJSONBCondition(rootField, []string{}, fieldType, predicate)
+		sql, args := b.buildJSONBCondition(rootField, []string{}, fieldType, predicate, paramCounter)
 		return sql, args, true
 	}
 
 	// Build the JSONB path: parts[1:] contains the nested path
 	path := parts[1:]
-	sql, args := b.buildJSONBCondition(rootField, path, fieldType, predicate)
+	sql, args := b.buildJSONBCondition(rootField, path, fieldType, predicate, paramCounter)
 	return sql, args, true
 }
 
@@ -254,6 +254,7 @@ func (b *PostgresJSONBBuilder) buildJSONBCondition(
 	path []string,
 	fieldType JSONBFieldType,
 	predicate *query.AtomicPredicate,
+	paramCounter *int,
 ) (string, []any) {
 
 	switch predicate.Operator {
@@ -262,27 +263,27 @@ func (b *PostgresJSONBBuilder) buildJSONBCondition(
 	case query.OpIsNotNull:
 		return b.buildJSONBIsNotNull(rootField, path, fieldType), nil
 	case query.OpEqual:
-		return b.buildJSONBEqual(rootField, path, fieldType, predicate.Value)
+		return b.buildJSONBEqual(rootField, path, fieldType, predicate.Value, paramCounter)
 	case query.OpNotEqual:
-		return b.buildJSONBNotEqual(rootField, path, fieldType, predicate.Value)
+		return b.buildJSONBNotEqual(rootField, path, fieldType, predicate.Value, paramCounter)
 	case query.OpIn:
-		return b.buildJSONBIn(rootField, path, fieldType, predicate.Value.([]any))
+		return b.buildJSONBIn(rootField, path, fieldType, predicate.Value.([]any), paramCounter)
 	case query.OpNotIn:
-		return b.buildJSONBNotIn(rootField, path, fieldType, predicate.Value.([]any))
+		return b.buildJSONBNotIn(rootField, path, fieldType, predicate.Value.([]any), paramCounter)
 	case query.OpLess:
-		return b.buildJSONBComparison(rootField, path, fieldType, "<", predicate.Value)
+		return b.buildJSONBComparison(rootField, path, fieldType, "<", predicate.Value, paramCounter)
 	case query.OpLessEqual:
-		return b.buildJSONBComparison(rootField, path, fieldType, "<=", predicate.Value)
+		return b.buildJSONBComparison(rootField, path, fieldType, "<=", predicate.Value, paramCounter)
 	case query.OpGreater:
-		return b.buildJSONBComparison(rootField, path, fieldType, ">", predicate.Value)
+		return b.buildJSONBComparison(rootField, path, fieldType, ">", predicate.Value, paramCounter)
 	case query.OpGreaterEqual:
-		return b.buildJSONBComparison(rootField, path, fieldType, ">=", predicate.Value)
+		return b.buildJSONBComparison(rootField, path, fieldType, ">=", predicate.Value, paramCounter)
 	case query.OpContains:
-		return b.buildJSONBContains(rootField, path, fieldType, predicate.Value)
+		return b.buildJSONBContains(rootField, path, fieldType, predicate.Value, paramCounter)
 	default:
 		// For unsupported operators, treat as a regular field
-		b.paramCounter++
-		return fmt.Sprintf("%s %s $%d", predicate.Field, predicate.Operator, b.paramCounter), []any{predicate.Value}
+		*paramCounter++
+		return fmt.Sprintf("%s %s $%d", predicate.Field, predicate.Operator, *paramCounter), []any{predicate.Value}
 	}
 }
 
@@ -321,42 +322,42 @@ func (b *PostgresJSONBBuilder) buildJSONBIsNotNull(field string, path []string, 
 }
 
 // buildJSONBEqual builds equality condition for JSONB fields
-func (b *PostgresJSONBBuilder) buildJSONBEqual(field string, path []string, fieldType JSONBFieldType, value any) (string, []any) {
-	b.paramCounter++
+func (b *PostgresJSONBBuilder) buildJSONBEqual(field string, path []string, fieldType JSONBFieldType, value any, paramCounter *int) (string, []any) {
+	*paramCounter++
 
 	// For scalar fields with no nested path, use direct accessor
 	if fieldType == JSONBFieldTypeScalar && len(path) == 0 {
-		return fmt.Sprintf("%s = $%d", field, b.paramCounter), []any{value}
+		return fmt.Sprintf("%s = $%d", field, *paramCounter), []any{value}
 	}
 
 	// For scalar fields with path (shouldn't happen but handle gracefully)
 	if fieldType == JSONBFieldTypeScalar {
 		jsonPath := b.buildJSONBAccessor(field, path, true)
-		return fmt.Sprintf("%s = $%d", jsonPath, b.paramCounter), []any{value}
+		return fmt.Sprintf("%s = $%d", jsonPath, *paramCounter), []any{value}
 	}
 
 	// For array types, use array search
-	sql := b.buildJSONBArraySearch(field, path, "=", b.paramCounter, fieldType)
+	sql := b.buildJSONBArraySearch(field, path, "=", *paramCounter, fieldType)
 	return sql, []any{value}
 }
 
 // buildJSONBNotEqual builds inequality condition for JSONB fields
-func (b *PostgresJSONBBuilder) buildJSONBNotEqual(field string, path []string, fieldType JSONBFieldType, value any) (string, []any) {
-	b.paramCounter++
+func (b *PostgresJSONBBuilder) buildJSONBNotEqual(field string, path []string, fieldType JSONBFieldType, value any, paramCounter *int) (string, []any) {
+	*paramCounter++
 
 	// For scalar fields with no nested path, use direct accessor
 	if fieldType == JSONBFieldTypeScalar && len(path) == 0 {
-		return fmt.Sprintf("%s != $%d", field, b.paramCounter), []any{value}
+		return fmt.Sprintf("%s != $%d", field, *paramCounter), []any{value}
 	}
 
 	// For scalar fields with path
 	if fieldType == JSONBFieldTypeScalar {
 		jsonPath := b.buildJSONBAccessor(field, path, true)
-		return fmt.Sprintf("%s != $%d", jsonPath, b.paramCounter), []any{value}
+		return fmt.Sprintf("%s != $%d", jsonPath, *paramCounter), []any{value}
 	}
 
 	// For array types, use array search
-	sql := b.buildJSONBArraySearch(field, path, "!=", b.paramCounter, fieldType)
+	sql := b.buildJSONBArraySearch(field, path, "!=", *paramCounter, fieldType)
 	return sql, []any{value}
 }
 
@@ -367,8 +368,9 @@ func (b *PostgresJSONBBuilder) buildJSONBComparison(
 	fieldType JSONBFieldType,
 	operator string,
 	value any,
+	paramCounter *int,
 ) (string, []any) {
-	b.paramCounter++
+	*paramCounter++
 
 	// For scalar fields, use direct accessor
 	if fieldType == JSONBFieldTypeScalar {
@@ -378,7 +380,8 @@ func (b *PostgresJSONBBuilder) buildJSONBComparison(
 		} else {
 			jsonPath = b.buildJSONBAccessor(field, path, true)
 		}
-		sql := fmt.Sprintf("%s::numeric %s $%d::numeric", jsonPath, operator, b.paramCounter)
+		// Wrap in parentheses to ensure proper precedence for type casting
+		sql := fmt.Sprintf("(%s)::numeric %s $%d::numeric", jsonPath, operator, *paramCounter)
 		return sql, []any{value}
 	}
 
@@ -390,7 +393,7 @@ func (b *PostgresJSONBBuilder) buildJSONBComparison(
 			field,
 			accessor,
 			operator,
-			b.paramCounter,
+			*paramCounter,
 		)
 		return sql, []any{value}
 	}
@@ -400,17 +403,17 @@ func (b *PostgresJSONBBuilder) buildJSONBComparison(
 		"EXISTS (SELECT 1 FROM jsonb_array_elements(%s) elem WHERE elem::text::numeric %s $%d::numeric)",
 		field,
 		operator,
-		b.paramCounter,
+		*paramCounter,
 	)
 	return sql, []any{value}
 }
 
 // buildJSONBIn builds "IN" operator for JSONB fields
-func (b *PostgresJSONBBuilder) buildJSONBIn(field string, path []string, fieldType JSONBFieldType, values []any) (string, []any) {
+func (b *PostgresJSONBBuilder) buildJSONBIn(field string, path []string, fieldType JSONBFieldType, values []any, paramCounter *int) (string, []any) {
 	placeholders := make([]string, len(values))
 	for i := range placeholders {
-		b.paramCounter++
-		placeholders[i] = fmt.Sprintf("$%d", b.paramCounter)
+		*paramCounter++
+		placeholders[i] = fmt.Sprintf("$%d", *paramCounter)
 	}
 
 	// For scalar fields, use direct accessor
@@ -443,11 +446,11 @@ func (b *PostgresJSONBBuilder) buildJSONBIn(field string, path []string, fieldTy
 }
 
 // buildJSONBNotIn builds "NOT IN" operator for JSONB fields
-func (b *PostgresJSONBBuilder) buildJSONBNotIn(field string, path []string, fieldType JSONBFieldType, values []any) (string, []any) {
+func (b *PostgresJSONBBuilder) buildJSONBNotIn(field string, path []string, fieldType JSONBFieldType, values []any, paramCounter *int) (string, []any) {
 	placeholders := make([]string, len(values))
 	for i := range placeholders {
-		b.paramCounter++
-		placeholders[i] = fmt.Sprintf("$%d", b.paramCounter)
+		*paramCounter++
+		placeholders[i] = fmt.Sprintf("$%d", *paramCounter)
 	}
 
 	// For scalar fields, use direct accessor
@@ -480,8 +483,8 @@ func (b *PostgresJSONBBuilder) buildJSONBNotIn(field string, path []string, fiel
 }
 
 // buildJSONBContains builds a JSONB contains query
-func (b *PostgresJSONBBuilder) buildJSONBContains(field string, path []string, fieldType JSONBFieldType, value any) (string, []any) {
-	b.paramCounter++
+func (b *PostgresJSONBBuilder) buildJSONBContains(field string, path []string, fieldType JSONBFieldType, value any, paramCounter *int) (string, []any) {
+	*paramCounter++
 
 	var jsonPath string
 	if fieldType == JSONBFieldTypeScalar {
@@ -495,7 +498,7 @@ func (b *PostgresJSONBBuilder) buildJSONBContains(field string, path []string, f
 		jsonPath = field
 	}
 
-	sql := fmt.Sprintf("%s @> $%d", jsonPath, b.paramCounter)
+	sql := fmt.Sprintf("%s @> $%d", jsonPath, *paramCounter)
 	return sql, []any{value}
 }
 

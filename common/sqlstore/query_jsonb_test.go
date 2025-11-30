@@ -274,7 +274,7 @@ func TestPostgreSQLJSONBBuilder_GreaterThan_Scalar(t *testing.T) {
 
 	sql, args := builder.BuildSQL(predicate)
 
-	assert.Equal(t, "metrics->>'count'::numeric > $1::numeric", sql)
+	assert.Equal(t, "(metrics->>'count')::numeric > $1::numeric", sql)
 	require.Len(t, args, 1)
 	assert.Equal(t, 100, args[0])
 }
