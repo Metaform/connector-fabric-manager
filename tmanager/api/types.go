@@ -89,7 +89,7 @@ type VirtualParticipantAgent struct {
 // DataspaceDeployment is runtime capabilities and configuration deployed when a dataspace profile to a cell.
 type DataspaceDeployment struct {
 	DeployableEntity
-	Cell       Cell
+	CellID       string
 	Properties Properties
 }
 

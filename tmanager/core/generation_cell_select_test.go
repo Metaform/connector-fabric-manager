@@ -54,13 +54,7 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStateActive,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell1",
-								},
-							},
-						},
+						CellID:"cell1",
 					},
 				},
 			},
@@ -114,13 +108,7 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStateActive,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell1",
-								},
-							},
-						},
+						CellID:"cell1",
 					},
 					{
 						DeployableEntity: api.DeployableEntity{
@@ -131,13 +119,8 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStateActive,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell2",
-								},
-							},
-						},
+						CellID:"cell2",
+
 					},
 				},
 			},
@@ -180,13 +163,7 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStateActive,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell1",
-								},
-							},
-						},
+						CellID:"cell1",
 					},
 				},
 			},
@@ -229,13 +206,7 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStatePending,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell1",
-								},
-							},
-						},
+						CellID:"cell1",
 					},
 				},
 			},
@@ -267,13 +238,7 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStateActive,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell1",
-								},
-							},
-						},
+						CellID:"cell1",
 					},
 				},
 			},
@@ -370,13 +335,7 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStatePending,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell1",
-								},
-							},
-						},
+						CellID:"cell1",
 					},
 				},
 			},
@@ -395,13 +354,7 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStateActive,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell1",
-								},
-							},
-						},
+						CellID:"cell1",
 					},
 				},
 			},
@@ -465,13 +418,7 @@ func TestResolveCell(t *testing.T) {
 							State:          api.DeploymentStateActive,
 							StateTimestamp: now,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID: "cell2",
-								},
-							},
-						},
+						CellID:"cell2",
 					},
 				},
 			},

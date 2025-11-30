@@ -68,7 +68,7 @@ func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID st
 				State:          api.DeploymentStateActive,
 				StateTimestamp: time.Time{}.UTC(),
 			},
-			Cell:       *cell,
+			CellID:       cell.ID,
 			Properties: make(map[string]any),
 		})
 		err = d.profileStore.Update(ctx, profile)

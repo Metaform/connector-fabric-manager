@@ -581,17 +581,7 @@ func TestToDataspaceProfile(t *testing.T) {
 					State:          api.DeploymentStateActive,
 					StateTimestamp: testTime,
 				},
-				Cell: api.Cell{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "cell-1",
-							Version: 1,
-						},
-						State:          api.DeploymentStateActive,
-						StateTimestamp: testTime,
-					},
-					Properties: api.Properties{"cell-type": "kubernetes"},
-				},
+				CellID: "cell-1",
 				Properties: api.Properties{
 					"orchestration-env": "production",
 					"replicas":          3,
@@ -606,17 +596,7 @@ func TestToDataspaceProfile(t *testing.T) {
 					State:          api.DeploymentStatePending,
 					StateTimestamp: testTime,
 				},
-				Cell: api.Cell{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "cell-2",
-							Version: 3,
-						},
-						State:          api.DeploymentStatePending,
-						StateTimestamp: testTime,
-					},
-					Properties: api.Properties{"cell-type": "docker"},
-				},
+				CellID: "cell-2",
 				Properties: api.Properties{
 					"orchestration-env": "staging",
 					"replicas":          1,
@@ -746,17 +726,7 @@ func TestToDataspaceProfile_EmptyProperties(t *testing.T) {
 					State:          api.DeploymentStateInitial,
 					StateTimestamp: testTime,
 				},
-				Cell: api.Cell{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "cell-empty-props",
-							Version: 1,
-						},
-						State:          api.DeploymentStateInitial,
-						StateTimestamp: testTime,
-					},
-					Properties: api.Properties{}, // Empty properties
-				},
+				CellID:     "cell-empty-props",
 				Properties: api.Properties{}, // Empty properties
 			},
 		},
@@ -846,17 +816,7 @@ func TestToDataspaceProfile_AllDeploymentStates(t *testing.T) {
 				State:          state,
 				StateTimestamp: testTime,
 			},
-			Cell: api.Cell{
-				DeployableEntity: api.DeployableEntity{
-					Entity: api.Entity{
-						ID:      fmt.Sprintf("cell-%d", i),
-						Version: 1,
-					},
-					State:          state,
-					StateTimestamp: testTime,
-				},
-				Properties: api.Properties{},
-			},
+			CellID: fmt.Sprintf("cell-%d", i),
 			Properties: api.Properties{
 				"state-test": true,
 			},
@@ -909,26 +869,7 @@ func TestToDataspaceProfile_ComplexProperties(t *testing.T) {
 					State:          api.DeploymentStateActive,
 					StateTimestamp: testTime,
 				},
-				Cell: api.Cell{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "complex-cell",
-							Version: 2,
-						},
-						State:          api.DeploymentStateActive,
-						StateTimestamp: testTime,
-					},
-					Properties: api.Properties{
-						"nested": map[string]any{
-							"level1": map[string]any{
-								"level2": "deep-value",
-								"array":  []string{"item1", "item2"},
-							},
-						},
-						"boolean": true,
-						"number":  42.5,
-					},
-				},
+				CellID: "complex-cell",
 				Properties: api.Properties{
 					"config": map[string]any{
 						"timeout":     30,
@@ -1023,17 +964,7 @@ func TestToDataspaceProfile_TimestampUTCConversion(t *testing.T) {
 							State:          api.DeploymentStateActive,
 							StateTimestamp: tz.time,
 						},
-						Cell: api.Cell{
-							DeployableEntity: api.DeployableEntity{
-								Entity: api.Entity{
-									ID:      "cell-" + tz.name,
-									Version: 1,
-								},
-								State:          api.DeploymentStateActive,
-								StateTimestamp: tz.time,
-							},
-							Properties: api.Properties{},
-						},
+						CellID:     "cell-" + tz.name,
 						Properties: api.Properties{},
 					},
 				},

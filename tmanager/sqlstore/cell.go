@@ -39,7 +39,6 @@ func newCellStore() store.EntityStore[*api.Cell] {
 	return estore
 }
 
-// recordToCellEntity converts a database record to a Cell entity
 func recordToCellEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Cell, error) {
 	cell := &api.Cell{}
 	if id, ok := record.Values["id"].(string); ok {
@@ -64,7 +63,6 @@ func recordToCellEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Cell,
 	return cell, nil
 }
 
-// cellEntityToRecord converts a Cell entity to a database record
 func cellEntityToRecord(cell *api.Cell) (*sqlstore.DatabaseRecord, error) {
 	record := &sqlstore.DatabaseRecord{
 		Values: make(map[string]any),

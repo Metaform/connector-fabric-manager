@@ -172,7 +172,7 @@ func ToDataspaceProfile(input *api.DataspaceProfile) *DataspaceProfile {
 				State:          deployment.State.String(),
 				StateTimestamp: deployment.StateTimestamp.UTC(), // Convert to UTC
 			},
-			CellID:     deployment.Cell.ID,
+			CellID:     deployment.CellID,
 			Properties: deployment.Properties,
 		}
 	}

@@ -26,7 +26,7 @@ func defaultCellSelector(_ model.OrchestrationType, cells []api.Cell, dProfiles 
 		if cell.State == api.DeploymentStateActive {
 			for _, dProfile := range dProfiles {
 				for _, deployment := range dProfile.Deployments {
-					if deployment.State == api.DeploymentStateActive && deployment.Cell.ID == cell.ID {
+					if deployment.State == api.DeploymentStateActive && deployment.CellID == cell.ID {
 						return &cell, nil
 					}
 				}
