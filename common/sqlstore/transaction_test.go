@@ -36,7 +36,7 @@ func setupTestDBTable(t *testing.T) {
 
 func TestDBTransactionContext(t *testing.T) {
 	setupTestDBTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	ctx := context.Background()
 	trxContext := NewDBTransactionContext(testDB)

@@ -1,4 +1,3 @@
-
 //  Copyright (c) 2025 Metaform Systems, Inc
 //
 //  This program and the accompanying materials are made available under the
@@ -103,7 +102,7 @@ func insertTestData(t *testing.T, model TestModel) {
 // TestPostgresJSONB_QueryVPAsSimpleEquality tests simple JSONB equality on VPA fields
 func TestPostgresJSONB_QueryVPAsSimpleEquality(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test data
 	testData := TestModel{
@@ -156,7 +155,7 @@ func TestPostgresJSONB_QueryVPAsSimpleEquality(t *testing.T) {
 // TestPostgresJSONB_QueryNestedCellID tests nested JSONB queries (VPAs.Cell.ID)
 func TestPostgresJSONB_QueryNestedCellID(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test data with specific cell IDs
 	testData := TestModel{
@@ -195,7 +194,7 @@ func TestPostgresJSONB_QueryNestedCellID(t *testing.T) {
 // TestPostgresJSONB_QueryCompoundAND tests compound AND queries
 func TestPostgresJSONB_QueryCompoundAND(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp3",
@@ -236,7 +235,7 @@ func TestPostgresJSONB_QueryCompoundAND(t *testing.T) {
 // TestPostgresJSONB_QueryCompoundOR tests compound OR queries
 func TestPostgresJSONB_QueryCompoundOR(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp4",
@@ -277,7 +276,7 @@ func TestPostgresJSONB_QueryCompoundOR(t *testing.T) {
 // TestPostgresJSONB_QueryInOperator tests IN operator for multiple values
 func TestPostgresJSONB_QueryInOperator(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp5",
@@ -321,7 +320,7 @@ func TestPostgresJSONB_QueryInOperator(t *testing.T) {
 // TestPostgresJSONB_QueryNotInOperator tests NOT IN operator
 func TestPostgresJSONB_QueryNotInOperator(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert first record with VPAs that should NOT be excluded
 	testData1 := TestModel{
@@ -388,7 +387,7 @@ func TestPostgresJSONB_QueryNotInOperator(t *testing.T) {
 // TestPostgresJSONB_QueryNotEqual tests not-equal operator
 func TestPostgresJSONB_QueryNotEqual(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp7",
@@ -424,7 +423,7 @@ func TestPostgresJSONB_QueryNotEqual(t *testing.T) {
 // TestPostgresJSONB_QueryIsNull tests IS NULL operator
 func TestPostgresJSONB_QueryIsNull(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert data with null Properties
 	_, err := testDB.Exec(`
@@ -456,7 +455,7 @@ func TestPostgresJSONB_QueryIsNull(t *testing.T) {
 // TestPostgresJSONB_QueryIsNotNull tests IS NOT NULL operator
 func TestPostgresJSONB_QueryIsNotNull(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	_, err := testDB.Exec(`
 		INSERT INTO participant_profiles 
@@ -486,7 +485,7 @@ func TestPostgresJSONB_QueryIsNotNull(t *testing.T) {
 // TestPostgresJSONB_QueryContains tests JSONB @> (contains) operator
 func TestPostgresJSONB_QueryContains(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp12",
@@ -512,7 +511,7 @@ func TestPostgresJSONB_QueryContains(t *testing.T) {
 // TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells tests querying across multiple records
 func TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert multiple records with different VPA configurations
 	records := []TestModel{
@@ -563,7 +562,7 @@ func TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells(t *testing.T) {
 // TestPostgresJSONB_QueryCombinedANDOR tests complex compound predicates (AND/OR combinations)
 func TestPostgresJSONB_QueryCombinedANDOR(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp16",
@@ -607,7 +606,7 @@ func TestPostgresJSONB_QueryCombinedANDOR(t *testing.T) {
 // TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields tests mixing JSONB and regular fields
 func TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp17",
@@ -637,7 +636,7 @@ func TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields(t *testing.T) {
 // TestPostgresJSONB_QueryEmptyVPAsArray tests records with empty VPA arrays
 func TestPostgresJSONB_QueryEmptyVPAsArray(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp18",
@@ -662,7 +661,7 @@ func TestPostgresJSONB_QueryEmptyVPAsArray(t *testing.T) {
 // TestPostgresJSONB_QueryCaseInsensitiveField tests case-insensitive JSONB field configuration
 func TestPostgresJSONB_QueryCaseInsensitiveField(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp19",
@@ -689,7 +688,7 @@ func TestPostgresJSONB_QueryCaseInsensitiveField(t *testing.T) {
 // TestPostgresJSONB_QuerySelectSpecificColumns tests retrieving actual data from JSONB queries
 func TestPostgresJSONB_QuerySelectSpecificColumns(t *testing.T) {
 	setupTestTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp20",

@@ -18,6 +18,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/metaform/connector-fabric-manager/common/sqlstore"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -33,7 +34,7 @@ func TestMain(m *testing.M) {
 
 	// Start PostgreSQL container once
 	var err error
-	testContainer, testDSN, err = SetupTestContainer(nil)
+	testContainer, testDSN, err = sqlstore.SetupTestContainer(nil)
 	if err != nil {
 		panic(err)
 	}

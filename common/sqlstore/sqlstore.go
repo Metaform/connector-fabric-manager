@@ -62,7 +62,7 @@ type PostgresEntityStore[T store.EntityType] struct {
 	builder        JSONBSQLBuilder
 }
 
-func (p PostgresEntityStore[T]) FindByID(ctx context.Context, id string) (T, error) {
+func (p *PostgresEntityStore[T]) FindByID(ctx context.Context, id string) (T, error) {
 	selectClause := strings.Join(p.columnNames, ", ")
 
 	tx := getTxFromContext(ctx)
@@ -90,7 +90,7 @@ func (p PostgresEntityStore[T]) FindByID(ctx context.Context, id string) (T, err
 	return p.recordToEntity(tx, &record)
 }
 
-func (p PostgresEntityStore[T]) Exists(ctx context.Context, id string) (bool, error) {
+func (p *PostgresEntityStore[T]) Exists(ctx context.Context, id string) (bool, error) {
 	var exists bool
 	row := getTxFromContext(ctx).QueryRowContext(ctx,
 		fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM %s WHERE id = $1)", p.tableName),
@@ -103,7 +103,7 @@ func (p PostgresEntityStore[T]) Exists(ctx context.Context, id string) (bool, er
 	return exists, nil
 }
 
-func (p PostgresEntityStore[T]) Create(ctx context.Context, entity T) (T, error) {
+func (p *PostgresEntityStore[T]) Create(ctx context.Context, entity T) (T, error) {
 	record, err := p.entityToRecord(entity)
 	if err != nil {
 		return entity, fmt.Errorf("failed to convert entity to record: %w", err)
@@ -149,7 +149,7 @@ func (p PostgresEntityStore[T]) Create(ctx context.Context, entity T) (T, error)
 	return p.recordToEntity(getTxFromContext(ctx), &returnedRecord)
 }
 
-func (p PostgresEntityStore[T]) Update(ctx context.Context, entity T) error {
+func (p *PostgresEntityStore[T]) Update(ctx context.Context, entity T) error {
 	record, err := p.entityToRecord(entity)
 	if err != nil {
 		return fmt.Errorf("failed to convert entity to record: %w", err)
@@ -201,7 +201,7 @@ func (p PostgresEntityStore[T]) Update(ctx context.Context, entity T) error {
 	return nil
 }
 
-func (p PostgresEntityStore[T]) Delete(ctx context.Context, id string) error {
+func (p *PostgresEntityStore[T]) Delete(ctx context.Context, id string) error {
 	result, err := getTxFromContext(ctx).ExecContext(ctx,
 		fmt.Sprintf("DELETE FROM %s WHERE id = $1", p.tableName),
 		id,
@@ -223,7 +223,7 @@ func (p PostgresEntityStore[T]) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (p PostgresEntityStore[T]) GetAll(ctx context.Context) iter.Seq2[T, error] {
+func (p *PostgresEntityStore[T]) GetAll(ctx context.Context) iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
 		selectClause := strings.Join(p.columnNames, ", ")
 
@@ -272,7 +272,7 @@ func (p PostgresEntityStore[T]) GetAll(ctx context.Context) iter.Seq2[T, error] 
 	}
 }
 
-func (p PostgresEntityStore[T]) GetAllCount(ctx context.Context) (int64, error) {
+func (p *PostgresEntityStore[T]) GetAllCount(ctx context.Context) (int64, error) {
 	var count int64
 	row := getTxFromContext(ctx).QueryRowContext(ctx,
 		fmt.Sprintf("SELECT COUNT(*) FROM %s", p.tableName),
@@ -284,19 +284,19 @@ func (p PostgresEntityStore[T]) GetAllCount(ctx context.Context) (int64, error) 
 	return count, nil
 }
 
-func (p PostgresEntityStore[T]) GetAllPaginated(ctx context.Context, opts store.PaginationOptions) iter.Seq2[T, error] {
+func (p *PostgresEntityStore[T]) GetAllPaginated(ctx context.Context, opts store.PaginationOptions) iter.Seq2[T, error] {
 	return p.queryEntities(ctx, nil, &opts)
 }
 
-func (p PostgresEntityStore[T]) FindByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[T, error] {
+func (p *PostgresEntityStore[T]) FindByPredicate(ctx context.Context, predicate query.Predicate) iter.Seq2[T, error] {
 	return p.queryEntities(ctx, predicate, nil)
 }
 
-func (p PostgresEntityStore[T]) FindByPredicatePaginated(ctx context.Context, predicate query.Predicate, opts store.PaginationOptions) iter.Seq2[T, error] {
+func (p *PostgresEntityStore[T]) FindByPredicatePaginated(ctx context.Context, predicate query.Predicate, opts store.PaginationOptions) iter.Seq2[T, error] {
 	return p.queryEntities(ctx, predicate, &opts)
 }
 
-func (p PostgresEntityStore[T]) FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (T, error) {
+func (p *PostgresEntityStore[T]) FindFirstByPredicate(ctx context.Context, predicate query.Predicate) (T, error) {
 	var result T
 	var lastErr error
 	found := false
@@ -323,7 +323,7 @@ func (p PostgresEntityStore[T]) FindFirstByPredicate(ctx context.Context, predic
 	return result, nil
 }
 
-func (p PostgresEntityStore[T]) CountByPredicate(ctx context.Context, predicate query.Predicate) (int64, error) {
+func (p *PostgresEntityStore[T]) CountByPredicate(ctx context.Context, predicate query.Predicate) (int64, error) {
 	var count int64
 	var whereClause string
 	var args []any
@@ -351,7 +351,7 @@ func (p PostgresEntityStore[T]) CountByPredicate(ctx context.Context, predicate 
 	return count, nil
 }
 
-func (p PostgresEntityStore[T]) DeleteByPredicate(ctx context.Context, predicate query.Predicate) error {
+func (p *PostgresEntityStore[T]) DeleteByPredicate(ctx context.Context, predicate query.Predicate) error {
 	var whereClause string
 	var args []any
 
@@ -388,7 +388,7 @@ func (p PostgresEntityStore[T]) DeleteByPredicate(ctx context.Context, predicate
 }
 
 // queryEntities queries entities with optional filtering and pagination
-func (p PostgresEntityStore[T]) queryEntities(
+func (p *PostgresEntityStore[T]) queryEntities(
 	ctx context.Context,
 	predicate query.Predicate,
 	opts *store.PaginationOptions,
@@ -465,7 +465,7 @@ func (p PostgresEntityStore[T]) queryEntities(
 	}
 }
 
-func (p PostgresEntityStore[T]) buildRecordFromScan(scanValues []any) DatabaseRecord {
+func (p *PostgresEntityStore[T]) buildRecordFromScan(scanValues []any) DatabaseRecord {
 	record := DatabaseRecord{
 		Values: make(map[string]any),
 	}

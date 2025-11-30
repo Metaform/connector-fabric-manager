@@ -138,7 +138,7 @@ func TestNewPostgresEntityStore_Creation(t *testing.T) {
 // TestNewPostgresEntityStore_FindByID_Success tests successful entity retrieval
 func TestNewPostgresEntityStore_FindByID_Success(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	entity := &testEntity{
 		ID:        "entity-1",
@@ -189,7 +189,7 @@ func TestNewPostgresEntityStore_FindByID_Success(t *testing.T) {
 // TestNewPostgresEntityStore_FindByID_NotFound tests entity not found
 func TestNewPostgresEntityStore_FindByID_NotFound(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	columnNames := []string{"id", "value", "version", "created_at", "metadata"}
 	estore := NewPostgresEntityStore("test_entities", columnNames, recordToEntity, entityToRecord, *createBuilder())
@@ -209,7 +209,7 @@ func TestNewPostgresEntityStore_FindByID_NotFound(t *testing.T) {
 // TestNewPostgresEntityStore_Exists tests checking entity existence
 func TestNewPostgresEntityStore_Exists(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	entity := &testEntity{
 		ID:        "exists-entity",
@@ -252,7 +252,7 @@ func TestNewPostgresEntityStore_Exists(t *testing.T) {
 // TestNewPostgresEntityStore_Create tests creating a new entity
 func TestNewPostgresEntityStore_Create(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	entity := &testEntity{
 		ID:        "new-entity",
@@ -280,7 +280,7 @@ func TestNewPostgresEntityStore_Create(t *testing.T) {
 // TestNewPostgresEntityStore_Update tests updating an entity
 func TestNewPostgresEntityStore_Update(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	entity := &testEntity{
 		ID:        "update-entity",
@@ -327,7 +327,7 @@ func TestNewPostgresEntityStore_Update(t *testing.T) {
 // TestNewPostgresEntityStore_Delete tests deleting an entity
 func TestNewPostgresEntityStore_Delete(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	entity := &testEntity{
 		ID:        "delete-entity",
@@ -369,7 +369,7 @@ func TestNewPostgresEntityStore_Delete(t *testing.T) {
 // TestNewPostgresEntityStore_GetAll tests retrieving all entities
 func TestNewPostgresEntityStore_GetAll(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	for i := 1; i <= 3; i++ {
 		entity := &testEntity{
@@ -412,7 +412,7 @@ func TestNewPostgresEntityStore_GetAll(t *testing.T) {
 // TestNewPostgresEntityStore_GetAllCount tests counting all entities
 func TestNewPostgresEntityStore_GetAllCount(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	for i := 1; i <= 5; i++ {
 		entity := &testEntity{
@@ -451,7 +451,7 @@ func TestNewPostgresEntityStore_GetAllCount(t *testing.T) {
 // TestNewPostgresEntityStore_GetAllPaginated tests paginated retrieval
 func TestNewPostgresEntityStore_GetAllPaginated(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	for i := 1; i <= 10; i++ {
 		entity := &testEntity{
@@ -469,9 +469,7 @@ func TestNewPostgresEntityStore_GetAllPaginated(t *testing.T) {
 			record.Values["version"],
 			record.Values["created_at"],
 		)
-		if err != nil {
-			continue
-		}
+		require.NoError(t, err)
 	}
 
 	columnNames := []string{"id", "value", "version", "created_at", "metadata"}
@@ -497,7 +495,7 @@ func TestNewPostgresEntityStore_GetAllPaginated(t *testing.T) {
 // TestNewPostgresEntityStore_WithMetadata tests entity with metadata in JSONB
 func TestNewPostgresEntityStore_WithMetadata(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	entity := &testEntity{
 		ID:        "entity-with-metadata",
@@ -547,7 +545,7 @@ func TestNewPostgresEntityStore_WithMetadata(t *testing.T) {
 // TestNewPostgresEntityStore_VersionIncrement tests version incrementing
 func TestNewPostgresEntityStore_VersionIncrement(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	entity := &testEntity{
 		ID:        "entity-version",

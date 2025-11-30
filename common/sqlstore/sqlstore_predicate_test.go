@@ -28,7 +28,7 @@ import (
 // TestPostgresEntityStore_FindByPredicate_MetadataProperty tests FindByPredicate with metadata JSONB property search
 func TestPostgresEntityStore_FindByPredicate_MetadataProperty(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -105,7 +105,7 @@ func TestPostgresEntityStore_FindByPredicate_MetadataProperty(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_SimpleColumn tests FindByPredicate with simple column search
 func TestPostgresEntityStore_FindByPredicate_SimpleColumn(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -171,7 +171,7 @@ func TestPostgresEntityStore_FindByPredicate_SimpleColumn(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicatePaginated tests FindByPredicatePaginated with limit and offset
 func TestPostgresEntityStore_FindByPredicatePaginated(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert 5 test entities
 	for i := 1; i <= 5; i++ {
@@ -230,7 +230,7 @@ func TestPostgresEntityStore_FindByPredicatePaginated(t *testing.T) {
 // TestPostgresEntityStore_FindFirstByPredicate tests FindFirstByPredicate returns only first entity
 func TestPostgresEntityStore_FindFirstByPredicate(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert multiple test entities with same value
 	for i := 1; i <= 3; i++ {
@@ -274,7 +274,7 @@ func TestPostgresEntityStore_FindFirstByPredicate(t *testing.T) {
 // TestPostgresEntityStore_FindFirstByPredicate_NotFound tests FindFirstByPredicate returns error when not found
 func TestPostgresEntityStore_FindFirstByPredicate_NotFound(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	columnNames := []string{"id", "value", "version", "created_at", "metadata"}
 	builder := NewPostgresJSONBBuilder()
@@ -297,7 +297,7 @@ func TestPostgresEntityStore_FindFirstByPredicate_NotFound(t *testing.T) {
 // TestPostgresEntityStore_CountByPredicate tests CountByPredicate
 func TestPostgresEntityStore_CountByPredicate(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	for i := 1; i <= 3; i++ {
@@ -340,7 +340,7 @@ func TestPostgresEntityStore_CountByPredicate(t *testing.T) {
 // TestPostgresEntityStore_CountByPredicate_NoMatches tests CountByPredicate returns 0 when no matches
 func TestPostgresEntityStore_CountByPredicate_NoMatches(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	columnNames := []string{"id", "value", "version", "created_at", "metadata"}
 	builder := NewPostgresJSONBBuilder()
@@ -363,7 +363,7 @@ func TestPostgresEntityStore_CountByPredicate_NoMatches(t *testing.T) {
 // TestPostgresEntityStore_CountByPredicate_NilPredicate tests CountByPredicate with nil predicate returns all count
 func TestPostgresEntityStore_CountByPredicate_NilPredicate(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	for i := 1; i <= 2; i++ {
@@ -404,7 +404,7 @@ func TestPostgresEntityStore_CountByPredicate_NilPredicate(t *testing.T) {
 // TestPostgresEntityStore_DeleteByPredicate tests DeleteByPredicate removes matching entities
 func TestPostgresEntityStore_DeleteByPredicate(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	toDelete := []*testEntity{
@@ -462,7 +462,7 @@ func TestPostgresEntityStore_DeleteByPredicate(t *testing.T) {
 // TestPostgresEntityStore_DeleteByPredicate_NotFound tests DeleteByPredicate returns error when no matches
 func TestPostgresEntityStore_DeleteByPredicate_NotFound(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	columnNames := []string{"id", "value", "version", "created_at", "metadata"}
 	builder := NewPostgresJSONBBuilder()
@@ -485,7 +485,7 @@ func TestPostgresEntityStore_DeleteByPredicate_NotFound(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_ComplexPredicate tests FindByPredicate with complex AND predicates
 func TestPostgresEntityStore_FindByPredicate_ComplexPredicate(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -555,7 +555,7 @@ func TestPostgresEntityStore_FindByPredicate_ComplexPredicate(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_GreaterThan tests FindByPredicate with GreaterThan predicate
 func TestPostgresEntityStore_FindByPredicate_GreaterThan(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities with different versions
 	for i := int32(1); i <= 3; i++ {
@@ -604,7 +604,7 @@ func TestPostgresEntityStore_FindByPredicate_GreaterThan(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_NestedJSONBPath tests FindByPredicate with nested JSONB paths
 func TestPostgresEntityStore_FindByPredicate_NestedJSONBPath(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities with nested metadata
 	entity1 := &testEntity{
@@ -686,7 +686,7 @@ func TestPostgresEntityStore_FindByPredicate_NestedJSONBPath(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_IsNull_JSONB tests FindByPredicate with IsNull on JSONB field
 func TestPostgresEntityStore_FindByPredicate_IsNull_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert entities with and without metadata properties
 	entity1 := &testEntity{
@@ -754,7 +754,7 @@ func TestPostgresEntityStore_FindByPredicate_IsNull_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_IsNotNull_JSONB tests FindByPredicate with IsNotNull on JSONB field
 func TestPostgresEntityStore_FindByPredicate_IsNotNull_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert entities with varying metadata
 	entity1 := &testEntity{
@@ -822,7 +822,7 @@ func TestPostgresEntityStore_FindByPredicate_IsNotNull_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_NotEqual_JSONB tests FindByPredicate with NotEqual on JSONB field
 func TestPostgresEntityStore_FindByPredicate_NotEqual_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -899,7 +899,7 @@ func TestPostgresEntityStore_FindByPredicate_NotEqual_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_In_JSONB tests FindByPredicate with In operator on JSONB field
 func TestPostgresEntityStore_FindByPredicate_In_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities with different statuses
 	entity1 := &testEntity{
@@ -985,7 +985,7 @@ func TestPostgresEntityStore_FindByPredicate_In_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_NotIn_JSONB tests FindByPredicate with NotIn operator on JSONB field
 func TestPostgresEntityStore_FindByPredicate_NotIn_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -1063,7 +1063,7 @@ func TestPostgresEntityStore_FindByPredicate_NotIn_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_GreaterThan_JSONB tests FindByPredicate with GreaterThan on numeric JSONB field
 func TestPostgresEntityStore_FindByPredicate_GreaterThan_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities with numeric metadata
 	entity1 := &testEntity{
@@ -1141,7 +1141,7 @@ func TestPostgresEntityStore_FindByPredicate_GreaterThan_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_LessThan_JSONB tests FindByPredicate with LessThan on numeric JSONB field
 func TestPostgresEntityStore_FindByPredicate_LessThan_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities with numeric metadata
 	entity1 := &testEntity{
@@ -1219,7 +1219,7 @@ func TestPostgresEntityStore_FindByPredicate_LessThan_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_GreaterEqual_JSONB tests FindByPredicate with GreaterEqual on JSONB field
 func TestPostgresEntityStore_FindByPredicate_GreaterEqual_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -1297,7 +1297,7 @@ func TestPostgresEntityStore_FindByPredicate_GreaterEqual_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_LessEqual_JSONB tests FindByPredicate with LessEqual on JSONB field
 func TestPostgresEntityStore_FindByPredicate_LessEqual_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -1375,7 +1375,7 @@ func TestPostgresEntityStore_FindByPredicate_LessEqual_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_CompoundAND_JSONB tests FindByPredicate with compound AND using JSONB predicates
 func TestPostgresEntityStore_FindByPredicate_CompoundAND_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities with multiple metadata properties
 	entity1 := &testEntity{
@@ -1457,7 +1457,7 @@ func TestPostgresEntityStore_FindByPredicate_CompoundAND_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_CompoundOR_JSONB tests FindByPredicate with compound OR using JSONB predicates
 func TestPostgresEntityStore_FindByPredicate_CompoundOR_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -1539,7 +1539,7 @@ func TestPostgresEntityStore_FindByPredicate_CompoundOR_JSONB(t *testing.T) {
 // TestPostgresEntityStore_CountByPredicate_JSONB tests CountByPredicate with JSONB predicate
 func TestPostgresEntityStore_CountByPredicate_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	for i := 1; i <= 3; i++ {
@@ -1592,7 +1592,7 @@ func TestPostgresEntityStore_CountByPredicate_JSONB(t *testing.T) {
 // TestPostgresEntityStore_DeleteByPredicate_JSONB tests DeleteByPredicate with JSONB predicate
 func TestPostgresEntityStore_DeleteByPredicate_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	toDelete := []*testEntity{
@@ -1677,7 +1677,7 @@ func TestPostgresEntityStore_DeleteByPredicate_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindFirstByPredicate_JSONB tests FindFirstByPredicate with JSONB predicate
 func TestPostgresEntityStore_FindFirstByPredicate_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert multiple test entities with same metadata property
 	for i := 1; i <= 3; i++ {
@@ -1731,7 +1731,7 @@ func TestPostgresEntityStore_FindFirstByPredicate_JSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicatePaginated_JSONB tests FindByPredicatePaginated with JSONB predicate
 func TestPostgresEntityStore_FindByPredicatePaginated_JSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert 5 test entities with same metadata
 	for i := 1; i <= 5; i++ {
@@ -1802,7 +1802,7 @@ func TestPostgresEntityStore_FindByPredicatePaginated_JSONB(t *testing.T) {
 // TestPostgresEntityStore_MixedPredicate_SimpleAndJSONB tests FindByPredicate with both simple column and JSONB predicates
 func TestPostgresEntityStore_MixedPredicate_SimpleAndJSONB(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert test entities
 	entity1 := &testEntity{
@@ -1884,7 +1884,7 @@ func TestPostgresEntityStore_MixedPredicate_SimpleAndJSONB(t *testing.T) {
 // TestPostgresEntityStore_FindByPredicate_EmptyMetadata tests FindByPredicate handles empty metadata gracefully
 func TestPostgresEntityStore_FindByPredicate_EmptyMetadata(t *testing.T) {
 	setupEntityTable(t)
-	defer cleanupTestData(t, testDB)
+	defer CleanupTestData(t, testDB)
 
 	// Insert entity with empty metadata
 	entity := &testEntity{
