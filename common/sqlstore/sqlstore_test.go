@@ -1,3 +1,15 @@
+//  Copyright (c) 2025 Metaform Systems, Inc
+//
+//  This program and the accompanying materials are made available under the
+//  terms of the Apache License, Version 2.0 which is available at
+//  https://www.apache.org/licenses/LICENSE-2.0
+//
+//  SPDX-License-Identifier: Apache-2.0
+//
+//  Contributors:
+//       Metaform Systems, Inc. - initial API and implementation
+//
+
 package sqlstore
 
 import (
@@ -8,38 +20,26 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func setupTestDB(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS test_table (
+func setupTestDBTable(t *testing.T) {
+	_, err := testDB.Exec(`
+		DROP TABLE IF EXISTS test_table CASCADE;
+		CREATE TABLE test_table (
 			id SERIAL PRIMARY KEY,
-			VALUE TEXT NOT NULL
+			value TEXT NOT NULL
 		)
 	`)
-	if err != nil {
-		t.Fatalf("Failed to create test table: %v", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestDBTransactionContext(t *testing.T) {
-	// Setup
+	setupTestDBTable(t)
+	defer cleanupTestData(t, testDB)
+
 	ctx := context.Background()
-	container, dsn := setupTestContainer(t)
-	defer func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("Failed to terminate container: %v", err)
-		}
-	}()
-
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		t.Fatalf("Failed to connect to database: %v", err)
-	}
-	defer db.Close()
-
-	setupTestDB(t, db)
-	trxContext := NewDBTransactionContext(db)
+	trxContext := NewDBTransactionContext(testDB)
 
 	t.Run("Successful transaction", func(t *testing.T) {
 		err := trxContext.Execute(ctx, func(ctx context.Context) error {
@@ -52,14 +52,14 @@ func TestDBTransactionContext(t *testing.T) {
 
 		// Verify the data was inserted
 		var count int
-		err = db.QueryRow("SELECT COUNT(*) FROM test_table WHERE value = $1", "test1").Scan(&count)
+		err = testDB.QueryRow("SELECT COUNT(*) FROM test_table WHERE value = $1", "test1").Scan(&count)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, count)
 	})
 
 	t.Run("Failed transaction should rollback", func(t *testing.T) {
 		initialCount := 0
-		err := db.QueryRow("SELECT COUNT(*) FROM test_table").Scan(&initialCount)
+		err := testDB.QueryRow("SELECT COUNT(*) FROM test_table").Scan(&initialCount)
 		assert.NoError(t, err)
 
 		err = trxContext.Execute(ctx, func(ctx context.Context) error {
@@ -76,14 +76,14 @@ func TestDBTransactionContext(t *testing.T) {
 
 		// Verify the data was rolled back
 		var count int
-		err = db.QueryRow("SELECT COUNT(*) FROM test_table").Scan(&count)
+		err = testDB.QueryRow("SELECT COUNT(*) FROM test_table").Scan(&count)
 		assert.NoError(t, err)
 		assert.Equal(t, initialCount, count)
 	})
 
 	t.Run("Panic should rollback", func(t *testing.T) {
 		initialCount := 0
-		err := db.QueryRow("SELECT COUNT(*) FROM test_table").Scan(&initialCount)
+		err := testDB.QueryRow("SELECT COUNT(*) FROM test_table").Scan(&initialCount)
 		assert.NoError(t, err)
 
 		assert.Panics(t, func() {
@@ -99,7 +99,7 @@ func TestDBTransactionContext(t *testing.T) {
 
 		// Verify the data was rolled back
 		var count int
-		err = db.QueryRow("SELECT COUNT(*) FROM test_table").Scan(&count)
+		err = testDB.QueryRow("SELECT COUNT(*) FROM test_table").Scan(&count)
 		assert.NoError(t, err)
 		assert.Equal(t, initialCount, count)
 	})

@@ -1,3 +1,4 @@
+
 //  Copyright (c) 2025 Metaform Systems, Inc
 //
 //  This program and the accompanying materials are made available under the
@@ -13,8 +14,6 @@
 package sqlstore
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 	"testing"
 	"time"
@@ -62,8 +61,8 @@ type Profile struct {
 type Properties map[string]any
 
 // setupTestTable creates the test table with JSONB columns
-func setupTestTable(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
+func setupTestTable(t *testing.T) {
+	_, err := testDB.Exec(`
 		DROP TABLE IF EXISTS participant_profiles CASCADE;
 		CREATE TABLE participant_profiles (
 			id TEXT PRIMARY KEY,
@@ -83,7 +82,7 @@ func setupTestTable(t *testing.T, db *sql.DB) {
 }
 
 // insertTestData inserts test participant profile data
-func insertTestData(t *testing.T, db *sql.DB, model TestModel) {
+func insertTestData(t *testing.T, model TestModel) {
 	vpasJSON, err := json.Marshal(model.VPAs)
 	require.NoError(t, err)
 
@@ -93,7 +92,7 @@ func insertTestData(t *testing.T, db *sql.DB, model TestModel) {
 	profilesJSON, err := json.Marshal(model.DataSpaceProfiles)
 	require.NoError(t, err)
 
-	_, err = db.Exec(`
+	_, err = testDB.Exec(`
 		INSERT INTO participant_profiles 
 		(id, identifier, tenantid, vpas, properties, dataspace_profiles, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -103,14 +102,8 @@ func insertTestData(t *testing.T, db *sql.DB, model TestModel) {
 
 // TestPostgresJSONB_QueryVPAsSimpleEquality tests simple JSONB equality on VPA fields
 func TestPostgresJSONB_QueryVPAsSimpleEquality(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	// Insert test data
 	testData := TestModel{
@@ -136,16 +129,16 @@ func TestPostgresJSONB_QueryVPAsSimpleEquality(t *testing.T) {
 		Properties: Properties{"region": "us-east", "owner": "admin"},
 		CreatedAt:  time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Verify data was inserted
 	var checkCount int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles").Scan(&checkCount)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles").Scan(&checkCount)
 	require.NoError(t, err)
 
 	// Verify JSONB data structure
 	var vpasRaw string
-	err = db.QueryRow("SELECT vpas FROM participant_profiles WHERE id = $1", "pp1").Scan(&vpasRaw)
+	err = testDB.QueryRow("SELECT vpas FROM participant_profiles WHERE id = $1", "pp1").Scan(&vpasRaw)
 	require.NoError(t, err)
 
 	// Build query for VPA Type = "connector"
@@ -155,21 +148,15 @@ func TestPostgresJSONB_QueryVPAsSimpleEquality(t *testing.T) {
 
 	// Execute query
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStatement, args...).Scan(&count)
+	err = testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStatement, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryNestedCellID tests nested JSONB queries (VPAs.Cell.ID)
 func TestPostgresJSONB_QueryNestedCellID(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	// Insert test data with specific cell IDs
 	testData := TestModel{
@@ -192,7 +179,7 @@ func TestPostgresJSONB_QueryNestedCellID(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query for VPAs with Cell.ID = "cell-prod"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -200,21 +187,15 @@ func TestPostgresJSONB_QueryNestedCellID(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryCompoundAND tests compound AND queries
 func TestPostgresJSONB_QueryCompoundAND(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp3",
@@ -236,7 +217,7 @@ func TestPostgresJSONB_QueryCompoundAND(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query: Type = "connector" AND Cell.ID = "cell1"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -247,21 +228,15 @@ func TestPostgresJSONB_QueryCompoundAND(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(compound)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryCompoundOR tests compound OR queries
 func TestPostgresJSONB_QueryCompoundOR(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp4",
@@ -283,7 +258,7 @@ func TestPostgresJSONB_QueryCompoundOR(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query: Type = "connector" OR Type = "credential-service"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -294,21 +269,15 @@ func TestPostgresJSONB_QueryCompoundOR(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(compound)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryInOperator tests IN operator for multiple values
 func TestPostgresJSONB_QueryInOperator(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp5",
@@ -336,7 +305,7 @@ func TestPostgresJSONB_QueryInOperator(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query: Type IN ("connector", "credential-service")
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -344,21 +313,15 @@ func TestPostgresJSONB_QueryInOperator(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryNotInOperator tests NOT IN operator
 func TestPostgresJSONB_QueryNotInOperator(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	// Insert first record with VPAs that should NOT be excluded
 	testData1 := TestModel{
@@ -375,7 +338,7 @@ func TestPostgresJSONB_QueryNotInOperator(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData1)
+	insertTestData(t, testData1)
 
 	// Insert second record with VPAs that should NOT be excluded
 	testData2 := TestModel{
@@ -392,7 +355,7 @@ func TestPostgresJSONB_QueryNotInOperator(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData2)
+	insertTestData(t, testData2)
 
 	// Insert third record with VPAs that SHOULD be excluded
 	testData3 := TestModel{
@@ -409,7 +372,7 @@ func TestPostgresJSONB_QueryNotInOperator(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData3)
+	insertTestData(t, testData3)
 
 	// Query: State NOT IN ("disposed", "deleted")
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -417,21 +380,15 @@ func TestPostgresJSONB_QueryNotInOperator(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
 }
 
 // TestPostgresJSONB_QueryNotEqual tests not-equal operator
 func TestPostgresJSONB_QueryNotEqual(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp7",
@@ -451,7 +408,7 @@ func TestPostgresJSONB_QueryNotEqual(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query: State != "disposed"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -459,24 +416,18 @@ func TestPostgresJSONB_QueryNotEqual(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryIsNull tests IS NULL operator
 func TestPostgresJSONB_QueryIsNull(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	// Insert data with null Properties
-	_, err = db.Exec(`
+	_, err := testDB.Exec(`
 		INSERT INTO participant_profiles 
 		(id, identifier, tenantid, vpas, properties, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -484,7 +435,7 @@ func TestPostgresJSONB_QueryIsNull(t *testing.T) {
 	require.NoError(t, err)
 
 	// Insert data with non-null Properties
-	_, err = db.Exec(`
+	_, err = testDB.Exec(`
 		INSERT INTO participant_profiles 
 		(id, identifier, tenantid, vpas, properties, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -497,30 +448,24 @@ func TestPostgresJSONB_QueryIsNull(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err = testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryIsNotNull tests IS NOT NULL operator
 func TestPostgresJSONB_QueryIsNotNull(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
-
-	_, err = db.Exec(`
+	_, err := testDB.Exec(`
 		INSERT INTO participant_profiles 
 		(id, identifier, tenantid, vpas, properties, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`, "pp10", "org-j", "tenant4", "[]", nil, time.Now())
 	require.NoError(t, err)
 
-	_, err = db.Exec(`
+	_, err = testDB.Exec(`
 		INSERT INTO participant_profiles 
 		(id, identifier, tenantid, vpas, properties, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -533,21 +478,15 @@ func TestPostgresJSONB_QueryIsNotNull(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err = testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryContains tests JSONB @> (contains) operator
 func TestPostgresJSONB_QueryContains(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp12",
@@ -557,7 +496,7 @@ func TestPostgresJSONB_QueryContains(t *testing.T) {
 		Properties: Properties{"region": "us-east", "env": "prod", "owner": "admin"},
 		CreatedAt:  time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query: Properties contains {"env":"prod"}
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("Properties")
@@ -565,21 +504,15 @@ func TestPostgresJSONB_QueryContains(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells tests querying across multiple records
 func TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	// Insert multiple records with different VPA configurations
 	records := []TestModel{
@@ -613,7 +546,7 @@ func TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells(t *testing.T) {
 	}
 
 	for _, record := range records {
-		insertTestData(t, db, record)
+		insertTestData(t, record)
 	}
 
 	// Query: Cell.ID = "cell-a"
@@ -622,21 +555,15 @@ func TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
 }
 
 // TestPostgresJSONB_QueryCombinedANDOR tests complex compound predicates (AND/OR combinations)
 func TestPostgresJSONB_QueryCombinedANDOR(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp16",
@@ -658,7 +585,7 @@ func TestPostgresJSONB_QueryCombinedANDOR(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query: (Type = "connector" AND State = "active") OR (Type = "credential-service")
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -672,21 +599,15 @@ func TestPostgresJSONB_QueryCombinedANDOR(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(compound)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields tests mixing JSONB and regular fields
 func TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp17",
@@ -697,7 +618,7 @@ func TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query: tenantid = "tenant8" AND VPAs.Type = "connector"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -708,21 +629,15 @@ func TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(compound)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QueryEmptyVPAsArray tests records with empty VPA arrays
 func TestPostgresJSONB_QueryEmptyVPAsArray(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp18",
@@ -731,7 +646,7 @@ func TestPostgresJSONB_QueryEmptyVPAsArray(t *testing.T) {
 		VPAs:       []VPA{},
 		CreatedAt:  time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query: VPAs.Type = "connector" (should find nothing)
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("vpas")
@@ -739,21 +654,15 @@ func TestPostgresJSONB_QueryEmptyVPAsArray(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)
 }
 
 // TestPostgresJSONB_QueryCaseInsensitiveField tests case-insensitive JSONB field configuration
 func TestPostgresJSONB_QueryCaseInsensitiveField(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp19",
@@ -764,7 +673,7 @@ func TestPostgresJSONB_QueryCaseInsensitiveField(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Register field as uppercase, query with lowercase
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -772,21 +681,15 @@ func TestPostgresJSONB_QueryCaseInsensitiveField(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
 
 // TestPostgresJSONB_QuerySelectSpecificColumns tests retrieving actual data from JSONB queries
 func TestPostgresJSONB_QuerySelectSpecificColumns(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
-	setupTestTable(t, db)
+	setupTestTable(t)
+	defer cleanupTestData(t, testDB)
 
 	testData := TestModel{
 		ID:         "pp20",
@@ -797,7 +700,7 @@ func TestPostgresJSONB_QuerySelectSpecificColumns(t *testing.T) {
 		},
 		CreatedAt: time.Now(),
 	}
-	insertTestData(t, db, testData)
+	insertTestData(t, testData)
 
 	// Query and retrieve specific fields
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
@@ -805,7 +708,7 @@ func TestPostgresJSONB_QuerySelectSpecificColumns(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var id, identifier string
-	err = db.QueryRow("SELECT id, identifier FROM participant_profiles WHERE "+sqlStr, args...).Scan(&id, &identifier)
+	err := testDB.QueryRow("SELECT id, identifier FROM participant_profiles WHERE "+sqlStr, args...).Scan(&id, &identifier)
 	require.NoError(t, err)
 	assert.Equal(t, "pp20", id)
 	assert.Equal(t, "org-t", identifier)
@@ -813,15 +716,8 @@ func TestPostgresJSONB_QuerySelectSpecificColumns(t *testing.T) {
 
 // TestPostgresJSONB_QueryGreaterThanComparison tests numeric comparisons in JSONB
 func TestPostgresJSONB_QueryGreaterThanComparison(t *testing.T) {
-	container, dsn := setupTestContainer(t)
-	defer container.Terminate(context.Background())
-
-	db, err := sql.Open("postgres", dsn)
-	require.NoError(t, err)
-	defer db.Close()
-
 	// Create custom table with numeric JSONB fields
-	_, err = db.Exec(`
+	_, err := testDB.Exec(`
 		DROP TABLE IF EXISTS test_numeric CASCADE;
 		CREATE TABLE test_numeric (
 			id TEXT PRIMARY KEY,
@@ -829,9 +725,12 @@ func TestPostgresJSONB_QueryGreaterThanComparison(t *testing.T) {
 		);
 	`)
 	require.NoError(t, err)
+	defer func() {
+		_, _ = testDB.Exec("DROP TABLE IF EXISTS test_numeric CASCADE;")
+	}()
 
 	// Insert test data with numeric properties
-	_, err = db.Exec(`
+	_, err = testDB.Exec(`
 		INSERT INTO test_numeric (id, data)
 		VALUES 
 			('r1', '[{"priority":5}]'),
@@ -846,7 +745,7 @@ func TestPostgresJSONB_QueryGreaterThanComparison(t *testing.T) {
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM test_numeric WHERE "+sqlStr, args...).Scan(&count)
+	err = testDB.QueryRow("SELECT COUNT(*) FROM test_numeric WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }
