@@ -25,7 +25,7 @@ import (
 
 func newOrchestrationEntryStore() store.EntityStore[*api.OrchestrationEntry] {
 	columnNames := []string{"id", "version", "correlationId", "state", "stateTimestamp", "createdTimestamp", "orchestrationType"}
-	builder := sqlstore.NewPostgresJSONBBuilder().WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{})
+	builder := sqlstore.NewPostgresJSONBBuilder()
 
 	estore := sqlstore.NewPostgresEntityStore[*api.OrchestrationEntry](
 		"orchestration_entries",
