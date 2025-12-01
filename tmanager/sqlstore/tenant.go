@@ -32,7 +32,7 @@ func newTenantStore() store.EntityStore[*api.Tenant] {
 		"tenants",
 		columnNames,
 		recordToTenantEntity,
-		toTenantEntityToRecord,
+		tenantEntityToRecord,
 		builder,
 	)
 
@@ -62,7 +62,7 @@ func recordToTenantEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Ten
 
 }
 
-func toTenantEntityToRecord(profile *api.Tenant) (*sqlstore.DatabaseRecord, error) {
+func tenantEntityToRecord(profile *api.Tenant) (*sqlstore.DatabaseRecord, error) {
 	record := &sqlstore.DatabaseRecord{
 		Values: make(map[string]any),
 	}

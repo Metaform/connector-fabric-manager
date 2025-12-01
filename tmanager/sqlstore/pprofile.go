@@ -43,7 +43,7 @@ func newParticipantProfileStore() store.EntityStore[*api.ParticipantProfile] {
 		"participant_profiles",
 		columnNames,
 		recordToPProfileEntity,
-		toPProfileEntityToRecord,
+		pProfileEntityToRecord,
 		builder,
 	)
 
@@ -110,7 +110,7 @@ func recordToPProfileEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.P
 	return profile, nil
 }
 
-func toPProfileEntityToRecord(profile *api.ParticipantProfile) (*sqlstore.DatabaseRecord, error) {
+func pProfileEntityToRecord(profile *api.ParticipantProfile) (*sqlstore.DatabaseRecord, error) {
 	record := &sqlstore.DatabaseRecord{
 		Values: make(map[string]any),
 	}

@@ -55,7 +55,7 @@ func TestNewTenantStore_FindByID_Success(t *testing.T) {
 		},
 	}
 
-	record, err := toTenantEntityToRecord(tenant)
+	record, err := tenantEntityToRecord(tenant)
 	require.NoError(t, err)
 
 	propertiesVal := []byte("{}")
@@ -182,7 +182,7 @@ func TestNewTenantStore_SearchByPropertiesPredicate_NameEquality(t *testing.T) {
 
 	// Insert test tenants
 	for _, tenant := range tenants {
-		record, err := toTenantEntityToRecord(tenant)
+		record, err := tenantEntityToRecord(tenant)
 		require.NoError(t, err)
 
 		propertiesVal := []byte("{}")
@@ -267,7 +267,7 @@ func TestNewTenantStore_SearchByPropertiesPredicate_RegionEquality(t *testing.T)
 
 	// Insert test tenants
 	for _, tenant := range tenants {
-		record, err := toTenantEntityToRecord(tenant)
+		record, err := tenantEntityToRecord(tenant)
 		require.NoError(t, err)
 
 		propertiesVal := []byte("{}")
@@ -353,7 +353,7 @@ func TestNewTenantStore_SearchByPropertiesPredicate_MultipleFields(t *testing.T)
 
 	// Insert test tenants
 	for _, tenant := range tenants {
-		record, err := toTenantEntityToRecord(tenant)
+		record, err := tenantEntityToRecord(tenant)
 		require.NoError(t, err)
 
 		propertiesVal := []byte("{}")
@@ -416,7 +416,7 @@ func TestNewTenantStore_SearchByPropertiesPredicate_Status(t *testing.T) {
 			},
 		}
 
-		record, err := toTenantEntityToRecord(tenant)
+		record, err := tenantEntityToRecord(tenant)
 		require.NoError(t, err)
 
 		propertiesVal := []byte("{}")
@@ -490,7 +490,7 @@ func TestNewTenantStore_SearchByIDPredicate(t *testing.T) {
 
 	// Insert test tenants
 	for _, tenant := range tenants {
-		record, err := toTenantEntityToRecord(tenant)
+		record, err := tenantEntityToRecord(tenant)
 		require.NoError(t, err)
 
 		propertiesVal := []byte("{}")
