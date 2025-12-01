@@ -78,6 +78,10 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 				Properties: make(api.Properties),
 			},
 		}
+		dProfileIDs := make([]string, len(dProfiles))
+		for i, profile := range dProfiles {
+			dProfileIDs[i] = profile.ID
+		}
 
 		profile, err := generator.Generate(identifier, "123", vpaProperties, properties, cells, dProfiles)
 
@@ -91,7 +95,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		assert.Equal(t, int64(0), profile.Version)
 		assert.Equal(t, identifier, profile.Identifier)
 		assert.Equal(t, properties, profile.Properties)
-		assert.Equal(t, dProfiles, profile.DataSpaceProfiles)
+		assert.Equal(t, dProfileIDs, profile.DataSpaceProfileIDs)
 
 		// Validate VPAs
 		assert.Len(t, profile.VPAs, 3)
@@ -267,6 +271,11 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			},
 		}
 
+		dProfileIDs := make([]string, len(dProfiles))
+		for i, profile := range dProfiles {
+			dProfileIDs[i] = profile.ID
+		}
+
 		profile, err := generator.Generate(
 			"multi-profile-test",
 			"123",
@@ -277,8 +286,8 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, profile)
-		assert.Len(t, profile.DataSpaceProfiles, 3)
-		assert.Equal(t, dProfiles, profile.DataSpaceProfiles)
+		assert.Len(t, profile.DataSpaceProfileIDs, 3)
+		assert.Equal(t, dProfileIDs, profile.DataSpaceProfileIDs)
 	})
 
 }

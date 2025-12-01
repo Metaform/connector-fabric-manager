@@ -33,6 +33,11 @@ func (g participantGenerator) Generate(
 	cells []api.Cell,
 	dProfiles []api.DataspaceProfile) (*api.ParticipantProfile, error) {
 
+	dProfileIDs := make([]string, len(dProfiles))
+	for i, profile := range dProfiles {
+		dProfileIDs[i] = profile.ID
+	}
+
 	cell, err := g.CellSelector(model.VPADeployType, cells, dProfiles)
 	if err != nil {
 		return nil, err
@@ -48,11 +53,11 @@ func (g participantGenerator) Generate(
 			ID:      uuid.New().String(),
 			Version: 0,
 		},
-		Identifier:        identifier,
-		TenantID:          tenantID,
-		DataSpaceProfiles: dProfiles,
-		VPAs:              vpas,
-		Properties:        properties,
+		Identifier:          identifier,
+		TenantID:            tenantID,
+		DataSpaceProfileIDs: dProfileIDs,
+		VPAs:                vpas,
+		Properties:          properties,
 	}
 	return pProfile, nil
 }

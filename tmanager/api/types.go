@@ -59,13 +59,13 @@ type Tenant struct {
 // (e.g., department).
 type ParticipantProfile struct {
 	Entity
-	Identifier        string                    `json:"identifier"`
-	TenantID          string                    `json:"tenantId"`
-	DataSpaceProfiles []DataspaceProfile        `json:"dataSpaceProfiles"`
-	VPAs              []VirtualParticipantAgent `json:"vpas"`
-	Properties        Properties                `json:"properties"`
-	Error             bool                      `json:"error"`
-	ErrorDetail       string                    `json:"errorDetail"`
+	Identifier          string                    `json:"identifier"`
+	TenantID            string                    `json:"tenantId"`
+	DataSpaceProfileIDs []string                  `json:"dataspaceProfileIds"`
+	VPAs                []VirtualParticipantAgent `json:"vpas"`
+	Properties          Properties                `json:"properties"`
+	Error               bool                      `json:"error"`
+	ErrorDetail         string                    `json:"errorDetail"`
 }
 
 // DataspaceProfile represents a specific dataspace, protocol, and policies tuple. For example, The Foo Dataspace that
@@ -156,9 +156,14 @@ func (c *DeploymentState) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if s == "" {
+		*c = ""
+		return nil
+	}
+
 	state := DeploymentState(s)
 	if !state.IsValid() {
-		return fmt.Errorf("invalid cell state: %s", s)
+		return fmt.Errorf("invalid deployment state: %s", s)
 	}
 
 	*c = state

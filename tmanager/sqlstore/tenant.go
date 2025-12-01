@@ -44,13 +44,13 @@ func recordToTenantEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Ten
 	if id, ok := record.Values["id"].(string); ok {
 		profile.ID = id
 	} else {
-		return nil, fmt.Errorf("invalid dataspace profile id reading record")
+		return nil, fmt.Errorf("invalid tenant id reading record")
 	}
 
 	if version, ok := record.Values["version"].(int64); ok {
 		profile.Version = version
 	} else {
-		return nil, fmt.Errorf("invalid dataspace profile version reading record")
+		return nil, fmt.Errorf("invalid tenant version reading record")
 	}
 
 	if bytes, ok := record.Values["properties"].([]byte); ok && bytes != nil {

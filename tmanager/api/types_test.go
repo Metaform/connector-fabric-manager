@@ -115,7 +115,7 @@ func TestDeploymentState_UnmarshalJSON(t *testing.T) {
 		{"Error unmarshals correctly", `"error"`, DeploymentStateError, false},
 		{"Locked unmarshals correctly", `"locked"`, DeploymentStateLocked, false},
 		{"Invalid state returns error", `"invalid"`, DeploymentState(""), true},
-		{"Empty string returns error", `""`, DeploymentState(""), true},
+		{"Empty string returns zero", `""`, DeploymentState(""), false},
 		{"Uppercase returns error", `"ACTIVE"`, DeploymentState(""), true},
 		{"Mixed case returns error", `"Active"`, DeploymentState(""), true},
 		{"Whitespace returns error", `" active "`, DeploymentState(""), true},
@@ -124,7 +124,7 @@ func TestDeploymentState_UnmarshalJSON(t *testing.T) {
 		{"Boolean returns error", `true`, DeploymentState(""), true},
 		{"Object returns error", `{"state":"active"}`, DeploymentState(""), true},
 		{"Array returns error", `["active"]`, DeploymentState(""), true},
-		{"Null returns error", `null`, DeploymentState(""), true},
+		{"Null returns zero", `null`, DeploymentState(""), false},
 	}
 
 	for _, tt := range tests {
@@ -135,7 +135,7 @@ func TestDeploymentState_UnmarshalJSON(t *testing.T) {
 				require.Error(t, err)
 				if tt.json == `"invalid"` || tt.json == `""` || tt.json == `"ACTIVE"` ||
 					tt.json == `"Active"` || tt.json == `" active "` {
-					assert.Contains(t, err.Error(), "invalid cell state")
+					assert.Contains(t, err.Error(), "invalid deployment state")
 				}
 			} else {
 				require.NoError(t, err)
