@@ -371,16 +371,6 @@ func TestNewDataspaceProfileStore_SearchByDeploymentsPredicate(t *testing.T) {
 
 	predicate := query.Eq("deployments.cellId", "cell-prod-1")
 
-	// Debug: Create a builder to see the generated SQL
-	builder := sqlstore.NewPostgresJSONBBuilder().WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
-		"artifacts":   sqlstore.JSONBFieldTypeArrayOfScalars,
-		"deployments": sqlstore.JSONBFieldTypeArrayOfObjects,
-		"properties":  sqlstore.JSONBFieldTypeScalar,
-	})
-	generatedSql, args := builder.BuildSQL(predicate)
-	t.Logf("Generated SQL: %s", generatedSql)
-	t.Logf("Generated Args: %v", args)
-
 	count := 0
 	for profile, err := range estore.FindByPredicatePaginated(txCtx, predicate, store.PaginationOptions{}) {
 		require.NoError(t, err)
