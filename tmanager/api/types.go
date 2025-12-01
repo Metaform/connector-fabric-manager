@@ -24,8 +24,8 @@ import (
 
 // Entity is the base type for all entities.
 type Entity struct {
-	ID      string
-	Version int64
+	ID      string `json:"id"`
+	Version int64  `json:"version"`
 }
 
 func (e *Entity) GetID() string {
@@ -44,14 +44,14 @@ func (e *Entity) IncrementVersion() {
 // It extends Entity with state tracking capabilities for managing deployment phases.
 type DeployableEntity struct {
 	Entity
-	State          DeploymentState
-	StateTimestamp time.Time
+	State          DeploymentState `json:"state"`
+	StateTimestamp time.Time       `json:"stateTimestamp"`
 }
 
 // Tenant represents an organization. A tenant may have multiple organizational units (e.g., departments), or ParticipantProfiles.
 type Tenant struct {
 	Entity
-	Properties Properties
+	Properties Properties `json:"properties"`
 }
 
 // ParticipantProfile represents a participant in a dataspace. A participant can be an entire organization, in which case
@@ -59,44 +59,44 @@ type Tenant struct {
 // (e.g., department).
 type ParticipantProfile struct {
 	Entity
-	Identifier        string
-	TenantID          string
-	DataSpaceProfiles []DataspaceProfile
-	VPAs              []VirtualParticipantAgent
-	Properties        Properties
-	Error             bool
-	ErrorDetail       string
+	Identifier        string                    `json:"identifier"`
+	TenantID          string                    `json:"tenantId"`
+	DataSpaceProfiles []DataspaceProfile        `json:"dataSpaceProfiles"`
+	VPAs              []VirtualParticipantAgent `json:"vpas"`
+	Properties        Properties                `json:"properties"`
+	Error             bool                      `json:"error"`
+	ErrorDetail       string                    `json:"errorDetail"`
 }
 
 // DataspaceProfile represents a specific dataspace, protocol, and policies tuple. For example, The Foo Dataspace that
 // runs version 2025-1 with version 2 of its policies schema.
 type DataspaceProfile struct {
 	Entity
-	Artifacts   []string
-	Deployments []DataspaceDeployment
-	Properties  Properties
+	Artifacts   []string              `json:"artifacts"`
+	Deployments []DataspaceDeployment `json:"deployments"`
+	Properties  Properties            `json:"properties"`
 }
 
 // VirtualParticipantAgent is a runtime context deployed when a participant profile is provisioned to a cell. A runtime
 // context could be a connector, credential service, or another component.
 type VirtualParticipantAgent struct {
 	DeployableEntity
-	Type       model.VPAType
-	Cell       Cell
-	Properties Properties
+	Type       model.VPAType `json:"type"`
+	Cell       Cell          `json:"cell"`
+	Properties Properties    `json:"properties"`
 }
 
 // DataspaceDeployment is runtime capabilities and configuration deployed when a dataspace profile to a cell.
 type DataspaceDeployment struct {
 	DeployableEntity
-	CellID       string
-	Properties Properties
+	CellID     string     `json:"cellId,omitempty"`
+	Properties Properties `json:"properties,omitempty"`
 }
 
 // Cell is a homogenous deployment zone. A cell could be a Kubernetes cluster or some other infrastructure.
 type Cell struct {
 	DeployableEntity
-	Properties Properties
+	Properties Properties `json:"properties"`
 }
 
 // DeploymentState represents the current state of a deployable entity
@@ -291,4 +291,3 @@ func ToProperties(props map[string]any) Properties {
 	}
 	return converted
 }
-

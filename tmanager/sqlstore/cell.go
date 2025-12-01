@@ -15,6 +15,7 @@ package sqlstore
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/sqlstore"
@@ -43,20 +44,30 @@ func recordToCellEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Cell,
 	cell := &api.Cell{}
 	if id, ok := record.Values["id"].(string); ok {
 		cell.ID = id
+	} else {
+		return nil, fmt.Errorf("invalid cell id reading record")
 	}
 
 	if version, ok := record.Values["version"].(int64); ok {
 		cell.Version = version
+	} else {
+		return nil, fmt.Errorf("invalid cell version reading record")
 	}
 
 	if state, ok := record.Values["state"].(string); ok {
 		cell.State = api.DeploymentState(state)
+	} else {
+		return nil, fmt.Errorf("invalid cell state reading record")
 	}
+
 	if timestamp, ok := record.Values["state_timestamp"].(time.Time); ok {
 		cell.StateTimestamp = timestamp
+	} else {
+		return nil, fmt.Errorf("invalid cell state timestamp reading record")
 	}
-	if metadataBytes, ok := record.Values["properties"].([]byte); ok && metadataBytes != nil {
-		if err := json.Unmarshal(metadataBytes, &cell.Properties); err != nil {
+
+	if bytes, ok := record.Values["properties"].([]byte); ok && bytes != nil {
+		if err := json.Unmarshal(bytes, &cell.Properties); err != nil {
 			return nil, err
 		}
 	}

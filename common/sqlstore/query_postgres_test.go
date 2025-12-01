@@ -142,7 +142,7 @@ func TestPostgresJSONB_QueryVPAsSimpleEquality(t *testing.T) {
 
 	// Build query for VPA Type = "connector"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
-	predicate := query.Eq("VPAs.Type", "connector")
+	predicate := query.Eq("vpas.type", "connector")
 	sqlStatement, args := builder.BuildSQL(predicate)
 
 	// Execute query
@@ -182,7 +182,7 @@ func TestPostgresJSONB_QueryNestedCellID(t *testing.T) {
 
 	// Query for VPAs with Cell.ID = "cell-prod"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
-	predicate := query.Eq("VPAs.Cell.ID", "cell-prod")
+	predicate := query.Eq("vpas.cell.id", "cell-prod")
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
@@ -221,8 +221,8 @@ func TestPostgresJSONB_QueryCompoundAND(t *testing.T) {
 	// Query: Type = "connector" AND Cell.ID = "cell1"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 	compound := query.And(
-		query.Eq("VPAs.Type", "connector"),
-		query.Eq("VPAs.Cell.ID", "cell1"),
+		query.Eq("vpas.type", "connector"),
+		query.Eq("vpas.cell.id", "cell1"),
 	)
 	sqlStr, args := builder.BuildSQL(compound)
 
@@ -262,8 +262,8 @@ func TestPostgresJSONB_QueryCompoundOR(t *testing.T) {
 	// Query: Type = "connector" OR Type = "credential-service"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 	compound := query.Or(
-		query.Eq("VPAs.Type", "connector"),
-		query.Eq("VPAs.Type", "credential-service"),
+		query.Eq("vpas.type", "connector"),
+		query.Eq("vpas.type", "credential-service"),
 	)
 	sqlStr, args := builder.BuildSQL(compound)
 
@@ -308,7 +308,7 @@ func TestPostgresJSONB_QueryInOperator(t *testing.T) {
 
 	// Query: Type IN ("connector", "credential-service")
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
-	predicate := query.In("VPAs.Type", "connector", "credential-service")
+	predicate := query.In("vpas.type", "connector", "credential-service")
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
@@ -375,7 +375,7 @@ func TestPostgresJSONB_QueryNotInOperator(t *testing.T) {
 
 	// Query: State NOT IN ("disposed", "deleted")
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
-	predicate := query.NotIn("VPAs.State", "disposed", "deleted")
+	predicate := query.NotIn("vpas.state", "disposed", "deleted")
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
@@ -411,7 +411,7 @@ func TestPostgresJSONB_QueryNotEqual(t *testing.T) {
 
 	// Query: State != "disposed"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
-	predicate := query.Neq("VPAs.State", "disposed")
+	predicate := query.Neq("vpas.state", "disposed")
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
@@ -550,7 +550,7 @@ func TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells(t *testing.T) {
 
 	// Query: Cell.ID = "cell-a"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
-	predicate := query.Eq("VPAs.Cell.ID", "cell-a")
+	predicate := query.Eq("vpas.cell.id", "cell-a")
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
@@ -590,8 +590,8 @@ func TestPostgresJSONB_QueryCombinedANDOR(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 	compound := query.Or(
 		query.And(
-			query.Eq("VPAs.Type", "connector"),
-			query.Eq("VPAs.State", "active"),
+			query.Eq("vpas.type", "connector"),
+			query.Eq("vpas.state", "active"),
 		),
 		query.Eq("VPAs.Type", "credential-service"),
 	)
@@ -622,8 +622,8 @@ func TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields(t *testing.T) {
 	// Query: tenantid = "tenant8" AND VPAs.Type = "connector"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 	compound := query.And(
-		query.Eq("TenantID", "tenant8"),
-		query.Eq("VPAs.Type", "connector"),
+		query.Eq("tenantid", "tenant8"),
+		query.Eq("vpas.type", "connector"),
 	)
 	sqlStr, args := builder.BuildSQL(compound)
 
@@ -676,7 +676,7 @@ func TestPostgresJSONB_QueryCaseInsensitiveField(t *testing.T) {
 
 	// Register field as uppercase, query with lowercase
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
-	predicate := query.Eq("vpas.Type", "connector")
+	predicate := query.Eq("vpas.type", "connector")
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int
@@ -703,7 +703,7 @@ func TestPostgresJSONB_QuerySelectSpecificColumns(t *testing.T) {
 
 	// Query and retrieve specific fields
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
-	predicate := query.Eq("VPAs.Type", "connector")
+	predicate := query.Eq("vpas.type", "connector")
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var id, identifier string
@@ -740,7 +740,7 @@ func TestPostgresJSONB_QueryGreaterThanComparison(t *testing.T) {
 
 	// Query: priority > 5
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("data")
-	predicate := query.Gt("data.Priority", 5)
+	predicate := query.Gt("data.priority", 5)
 	sqlStr, args := builder.BuildSQL(predicate)
 
 	var count int

@@ -66,7 +66,7 @@ func TestPostgreSQLJSONBBuilder_SimpleEqualityPath_ArrayOfObjects(t *testing.T) 
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Type",
+		Field:    "vpas.type",
 		Operator: query.OpEqual,
 		Value:    "connector",
 	}
@@ -84,7 +84,7 @@ func TestPostgreSQLJSONBBuilder_SimpleEqualityPath_Scalar(t *testing.T) {
 	})
 
 	predicate := &query.AtomicPredicate{
-		Field:    "Config.Debug",
+		Field:    "config.debug",
 		Operator: query.OpEqual,
 		Value:    true,
 	}
@@ -109,7 +109,7 @@ func TestPostgreSQLJSONBBuilder_SimpleEqualityPath_ArrayOfScalars(t *testing.T) 
 
 	sql, args := builder.BuildSQL(predicate)
 
-	assert.Equal(t, "EXISTS (SELECT 1 FROM jsonb_array_elements(tags) elem WHERE elem::text = $1)", sql)
+	assert.Equal(t, "EXISTS (SELECT 1 FROM jsonb_array_elements(tags) elem WHERE elem = to_jsonb($1::text))", sql)
 	require.Len(t, args, 1)
 	assert.Equal(t, "important", args[0])
 }
@@ -118,7 +118,7 @@ func TestPostgreSQLJSONBBuilder_NestedPath(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Cell.ID",
+		Field:    "vpas.cell.id",
 		Operator: query.OpEqual,
 		Value:    "cell1",
 	}
@@ -135,7 +135,7 @@ func TestPostgreSQLJSONBBuilder_IsNull(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Type",
+		Field:    "vpas.type",
 		Operator: query.OpIsNull,
 	}
 
@@ -151,7 +151,7 @@ func TestPostgreSQLJSONBBuilder_IsNull_Scalar(t *testing.T) {
 	})
 
 	predicate := &query.AtomicPredicate{
-		Field:    "Config.Value",
+		Field:    "config.value",
 		Operator: query.OpIsNull,
 	}
 
@@ -165,7 +165,7 @@ func TestPostgreSQLJSONBBuilder_IsNotNull(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Type",
+		Field:    "vpas.type",
 		Operator: query.OpIsNotNull,
 	}
 
@@ -179,7 +179,7 @@ func TestPostgreSQLJSONBBuilder_NotEqual(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Type",
+		Field:    "vpas.type",
 		Operator: query.OpNotEqual,
 		Value:    "old-connector",
 	}
@@ -197,7 +197,7 @@ func TestPostgreSQLJSONBBuilder_NotEqual_Scalar(t *testing.T) {
 	})
 
 	predicate := &query.AtomicPredicate{
-		Field:    "Config.Status",
+		Field:    "config.status",
 		Operator: query.OpNotEqual,
 		Value:    "disabled",
 	}
@@ -213,7 +213,7 @@ func TestPostgreSQLJSONBBuilder_InOperator(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Type",
+		Field:    "vpas.type",
 		Operator: query.OpIn,
 		Value:    []any{"connector", "credential-service"},
 	}
@@ -249,7 +249,7 @@ func TestPostgreSQLJSONBBuilder_GreaterThan(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Version",
+		Field:    "vpas.version",
 		Operator: query.OpGreater,
 		Value:    1,
 	}
@@ -267,7 +267,7 @@ func TestPostgreSQLJSONBBuilder_GreaterThan_Scalar(t *testing.T) {
 	})
 
 	predicate := &query.AtomicPredicate{
-		Field:    "Metrics.Count",
+		Field:    "metrics.count",
 		Operator: query.OpGreater,
 		Value:    100,
 	}
@@ -283,7 +283,7 @@ func TestPostgreSQLJSONBBuilder_LessThan(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Priority",
+		Field:    "vpas.priority",
 		Operator: query.OpLess,
 		Value:    10,
 	}
@@ -299,7 +299,7 @@ func TestPostgreSQLJSONBBuilder_GreaterEqual(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Count",
+		Field:    "vpas.count",
 		Operator: query.OpGreaterEqual,
 		Value:    5,
 	}
@@ -314,14 +314,14 @@ func TestPostgreSQLJSONBBuilder_LessEqual(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.MaxCount",
+		Field:    "vpas.maxCount",
 		Operator: query.OpLessEqual,
 		Value:    100,
 	}
 
 	sql, args := builder.BuildSQL(predicate)
 
-	assert.Equal(t, "EXISTS (SELECT 1 FROM jsonb_array_elements(vpas) elem WHERE (elem->'maxcount')::numeric <= $1::numeric)", sql)
+	assert.Equal(t, "EXISTS (SELECT 1 FROM jsonb_array_elements(vpas) elem WHERE (elem->'maxCount')::numeric <= $1::numeric)", sql)
 	require.Len(t, args, 1)
 }
 
@@ -329,7 +329,7 @@ func TestPostgreSQLJSONBBuilder_NotEqual_NestedPath(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Cell.State",
+		Field:    "vpas.cell.state",
 		Operator: query.OpNotEqual,
 		Value:    "inactive",
 	}
@@ -365,12 +365,12 @@ func TestPostgreSQLJSONBBuilder_CompoundAND(t *testing.T) {
 		Operator: "AND",
 		Predicates: []query.Predicate{
 			&query.AtomicPredicate{
-				Field:    "VPAs.Type",
+				Field:    "vpas.type",
 				Operator: query.OpEqual,
 				Value:    "connector",
 			},
 			&query.AtomicPredicate{
-				Field:    "VPAs.Cell.ID",
+				Field:    "vpas.cell.id",
 				Operator: query.OpEqual,
 				Value:    "cell1",
 			},
@@ -393,12 +393,12 @@ func TestPostgreSQLJSONBBuilder_CompoundOR(t *testing.T) {
 		Operator: "OR",
 		Predicates: []query.Predicate{
 			&query.AtomicPredicate{
-				Field:    "VPAs.Type",
+				Field:    "vpas.type",
 				Operator: query.OpEqual,
 				Value:    "connector",
 			},
 			&query.AtomicPredicate{
-				Field:    "VPAs.Type",
+				Field:    "vpas.type",
 				Operator: query.OpEqual,
 				Value:    "credential-service",
 			},
@@ -426,13 +426,13 @@ func TestPostgreSQLJSONBBuilder_BuildJSONBPath(t *testing.T) {
 		{
 			name:     "single level",
 			field:    "vpas",
-			path:     []string{"Type"},
+			path:     []string{"type"},
 			expected: "vpas->'type'",
 		},
 		{
 			name:     "two levels",
 			field:    "vpas",
-			path:     []string{"Cell", "ID"},
+			path:     []string{"cell", "id"},
 			expected: "vpas->'cell'->'id'",
 		},
 		{
@@ -462,30 +462,37 @@ func TestPostgreSQLJSONBBuilder_BuildJSONBAccessor(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "single level with text cast",
+			name:     "single level preserves case",
 			field:    "vpas",
 			path:     []string{"Type"},
+			textCast: true,
+			expected: "vpas->>'Type'",
+		},
+		{
+			name:     "single level with text cast",
+			field:    "vpas",
+			path:     []string{"type"},
 			textCast: true,
 			expected: "vpas->>'type'",
 		},
 		{
 			name:     "single level without text cast",
 			field:    "vpas",
-			path:     []string{"Type"},
+			path:     []string{"type"},
 			textCast: false,
 			expected: "vpas->'type'",
 		},
 		{
 			name:     "two levels with text cast",
 			field:    "vpas",
-			path:     []string{"Cell", "ID"},
+			path:     []string{"cell", "id"},
 			textCast: true,
 			expected: "vpas->'cell'->>'id'",
 		},
 		{
 			name:     "two levels without text cast",
 			field:    "vpas",
-			path:     []string{"Cell", "ID"},
+			path:     []string{"cell", "id"},
 			textCast: false,
 			expected: "vpas->'cell'->'id'",
 		},
@@ -529,19 +536,19 @@ func TestPostgreSQLJSONBBuilder_BuildArrayElementAccessor(t *testing.T) {
 		},
 		{
 			name:     "single level with text cast",
-			path:     []string{"Type"},
+			path:     []string{"type"},
 			textCast: true,
 			expected: "elem->>'type'",
 		},
 		{
 			name:     "two levels with text cast",
-			path:     []string{"Cell", "ID"},
+			path:     []string{"cell", "id"},
 			textCast: true,
 			expected: "elem->'cell'->>'id'",
 		},
 		{
 			name:     "two levels without text cast",
-			path:     []string{"Cell", "ID"},
+			path:     []string{"cell", "id"},
 			textCast: false,
 			expected: "elem->'cell'->'id'",
 		},
@@ -570,7 +577,7 @@ func TestPostgreSQLJSONBBuilder_BuildJSONBArraySearch(t *testing.T) {
 		{
 			name:      "single level",
 			field:     "vpas",
-			path:      []string{"Type"},
+			path:      []string{"type"},
 			operator:  "=",
 			paramNum:  1,
 			fieldType: JSONBFieldTypeArrayOfObjects,
@@ -579,7 +586,7 @@ func TestPostgreSQLJSONBBuilder_BuildJSONBArraySearch(t *testing.T) {
 		{
 			name:      "two levels",
 			field:     "vpas",
-			path:      []string{"Cell", "ID"},
+			path:      []string{"cell", "id"},
 			operator:  "=",
 			paramNum:  1,
 			fieldType: JSONBFieldTypeArrayOfObjects,
@@ -588,7 +595,7 @@ func TestPostgreSQLJSONBBuilder_BuildJSONBArraySearch(t *testing.T) {
 		{
 			name:      "not equal operator",
 			field:     "vpas",
-			path:      []string{"State"},
+			path:      []string{"state"},
 			operator:  "!=",
 			paramNum:  1,
 			fieldType: JSONBFieldTypeArrayOfObjects,
@@ -610,7 +617,7 @@ func TestPostgreSQLJSONBBuilder_BuildJSONBArraySearch(t *testing.T) {
 			operator:  "=",
 			paramNum:  1,
 			fieldType: JSONBFieldTypeArrayOfScalars,
-			expected:  "EXISTS (SELECT 1 FROM jsonb_array_elements(tags) elem WHERE elem::text = $1)",
+			expected:  "EXISTS (SELECT 1 FROM jsonb_array_elements(tags) elem WHERE elem = to_jsonb($1::text))",
 		},
 	}
 
@@ -626,7 +633,7 @@ func TestPostgreSQLJSONBBuilder_CaseInsensitiveFields(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs", "Properties")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "vpas.Type",
+		Field:    "vpas.type",
 		Operator: query.OpEqual,
 		Value:    "connector",
 	}
@@ -642,7 +649,7 @@ func TestPostgreSQLJSONBBuilder_EdgeCaseEmptyString(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Type",
+		Field:    "vpas.type",
 		Operator: query.OpEqual,
 		Value:    "",
 	}
@@ -658,7 +665,7 @@ func TestPostgreSQLJSONBBuilder_EdgeCaseNilValue(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Type",
+		Field:    "vpas.type",
 		Operator: query.OpEqual,
 		Value:    nil,
 	}
@@ -674,7 +681,7 @@ func TestPostgreSQLJSONBBuilder_EdgeCaseNumeric(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Version",
+		Field:    "vpas.version",
 		Operator: query.OpEqual,
 		Value:    42,
 	}
@@ -690,7 +697,7 @@ func TestPostgreSQLJSONBBuilder_RealWorldScenario_VPAInCell(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs", "Properties")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Cell.ID",
+		Field:    "vpas.cell.id",
 		Operator: query.OpEqual,
 		Value:    "cell1",
 	}
@@ -710,12 +717,12 @@ func TestPostgreSQLJSONBBuilder_RealWorldScenario_TypeAndCell(t *testing.T) {
 		Operator: "AND",
 		Predicates: []query.Predicate{
 			&query.AtomicPredicate{
-				Field:    "VPAs.Type",
+				Field:    "vpas.type",
 				Operator: query.OpEqual,
 				Value:    "connector",
 			},
 			&query.AtomicPredicate{
-				Field:    "VPAs.Cell.ID",
+				Field:    "vpas.cell.id",
 				Operator: query.OpEqual,
 				Value:    "cell1",
 			},
@@ -752,7 +759,7 @@ func TestPostgreSQLJSONBBuilder_SinglePredicateCompound(t *testing.T) {
 		Operator: "AND",
 		Predicates: []query.Predicate{
 			&query.AtomicPredicate{
-				Field:    "VPAs.Type",
+				Field:    "vpas.type",
 				Operator: query.OpEqual,
 				Value:    "connector",
 			},
@@ -805,7 +812,7 @@ func TestPostgreSQLJSONBBuilder_NotIn(t *testing.T) {
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 
 	predicate := &query.AtomicPredicate{
-		Field:    "VPAs.Status",
+		Field:    "vpas.status",
 		Operator: query.OpNotIn,
 		Value:    []any{"deleted", "archived"},
 	}
@@ -848,7 +855,7 @@ func TestPostgreSQLJSONBBuilder_DeepNestedPath(t *testing.T) {
 
 	sql, args := builder.BuildSQL(predicate)
 
-	expected := "EXISTS (SELECT 1 FROM jsonb_array_elements(config) elem WHERE elem->'database'->'connection'->>'host' = $1)"
+	expected := "EXISTS (SELECT 1 FROM jsonb_array_elements(config) elem WHERE elem->'Database'->'Connection'->>'Host' = $1)"
 	assert.Equal(t, expected, sql)
 	require.Len(t, args, 1)
 	assert.Equal(t, "localhost", args[0])
@@ -885,7 +892,7 @@ func TestPostgreSQLJSONBBuilder_ArrayOfScalars_DirectAccess(t *testing.T) {
 
 	sql, args := builder.BuildSQL(predicate)
 
-	assert.Equal(t, "EXISTS (SELECT 1 FROM jsonb_array_elements(categories) elem WHERE elem::text = $1)", sql)
+	assert.Equal(t, "EXISTS (SELECT 1 FROM jsonb_array_elements(categories) elem WHERE elem = to_jsonb($1::text))", sql)
 	require.Len(t, args, 1)
 	assert.Equal(t, "finance", args[0])
 }

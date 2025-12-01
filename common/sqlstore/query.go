@@ -242,7 +242,7 @@ func (b *PostgresJSONBBuilder) tryBuildJSONBSQL(predicate *query.AtomicPredicate
 		return sql, args, true
 	}
 
-	// Build the JSONB path: parts[1:] contains the nested path
+	// Build the JSONB path: parts[1:] contains the nested path (preserve original casing)
 	path := parts[1:]
 	sql, args := b.buildJSONBCondition(rootField, path, fieldType, predicate, paramCounter)
 	return sql, args, true
@@ -504,7 +504,7 @@ func (b *PostgresJSONBBuilder) buildJSONBContains(field string, path []string, f
 
 // buildJSONBPath builds the Postgres JSONB path for a nested field
 // Example: field->'nested'->'path'
-// Lowercases all path segments to match JSON marshaling conventions
+// Preserves original casing of path segments to match JSON field names
 func (b *PostgresJSONBBuilder) buildJSONBPath(field string, path []string) string {
 	if len(path) == 0 {
 		return field
@@ -512,14 +512,14 @@ func (b *PostgresJSONBBuilder) buildJSONBPath(field string, path []string) strin
 
 	result := field
 	for _, p := range path {
-		result = fmt.Sprintf("%s->'%s'", result, strings.ToLower(p))
+		result = fmt.Sprintf("%s->'%s'", result, p)
 	}
 	return result
 }
 
 // buildJSONBAccessor builds the JSONB accessor with optional text cast
 // textCast=true uses ->> (returns text), textCast=false uses -> (returns JSON)
-// Lowercases all path segments to match JSON marshaling conventions
+// Preserves original casing of path segments to match JSON field names
 func (b *PostgresJSONBBuilder) buildJSONBAccessor(field string, path []string, textCast bool) string {
 	if len(path) == 0 {
 		return field
@@ -530,14 +530,14 @@ func (b *PostgresJSONBBuilder) buildJSONBAccessor(field string, path []string, t
 
 	// Use -> for intermediate paths
 	for i := 0; i < lastIdx; i++ {
-		result = fmt.Sprintf("%s->'%s'", result, strings.ToLower(path[i]))
+		result = fmt.Sprintf("%s->'%s'", result, path[i])
 	}
 
 	// Use ->> for final path if textCast is true
 	if textCast {
-		result = fmt.Sprintf("%s->>'%s'", result, strings.ToLower(path[lastIdx]))
+		result = fmt.Sprintf("%s->>'%s'", result, path[lastIdx])
 	} else {
-		result = fmt.Sprintf("%s->'%s'", result, strings.ToLower(path[lastIdx]))
+		result = fmt.Sprintf("%s->'%s'", result, path[lastIdx])
 	}
 
 	return result
@@ -545,7 +545,7 @@ func (b *PostgresJSONBBuilder) buildJSONBAccessor(field string, path []string, t
 
 // buildArrayElementAccessor builds the accessor for array elements
 // Used within jsonb_array_elements context
-// Lowercases all path segments to match JSON marshaling conventions
+// Preserves original casing of path segments to match JSON field names
 func (b *PostgresJSONBBuilder) buildArrayElementAccessor(path []string, textCast bool) string {
 	if len(path) == 0 {
 		if textCast {
@@ -559,21 +559,21 @@ func (b *PostgresJSONBBuilder) buildArrayElementAccessor(path []string, textCast
 
 	// Use -> for intermediate paths
 	for i := 0; i < lastIdx; i++ {
-		result = fmt.Sprintf("%s->'%s'", result, strings.ToLower(path[i]))
+		result = fmt.Sprintf("%s->'%s'", result, path[i])
 	}
 
 	// Use ->> for final path if textCast is true
 	if textCast {
-		result = fmt.Sprintf("%s->>'%s'", result, strings.ToLower(path[lastIdx]))
+		result = fmt.Sprintf("%s->>'%s'", result, path[lastIdx])
 	} else {
-		result = fmt.Sprintf("%s->'%s'", result, strings.ToLower(path[lastIdx]))
+		result = fmt.Sprintf("%s->'%s'", result, path[lastIdx])
 	}
 
 	return result
 }
 
 // buildJSONBArraySearch constructs a query to search within arrays
-// For example: VPAs contains an element where Cell.ID = 'cell1'
+// For example: VPAs contains an element where cell.id = 'cell1'
 func (b *PostgresJSONBBuilder) buildJSONBArraySearch(
 	field string,
 	path []string,
@@ -581,6 +581,15 @@ func (b *PostgresJSONBBuilder) buildJSONBArraySearch(
 	paramNum int,
 	fieldType JSONBFieldType,
 ) string {
+	// For scalar array elements with no path, compare as JSONB
+	if len(path) == 0 && fieldType == JSONBFieldTypeArrayOfScalars {
+		return fmt.Sprintf(
+			"EXISTS (SELECT 1 FROM jsonb_array_elements(%s) elem WHERE elem = to_jsonb($%d::text))",
+			field,
+			paramNum,
+		)
+	}
+
 	accessor := b.buildArrayElementAccessor(path, true)
 
 	return fmt.Sprintf(
