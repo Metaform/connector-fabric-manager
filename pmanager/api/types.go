@@ -41,7 +41,7 @@ type Orchestration struct {
 	CorrelationID     string                  `json:"correlationId"`
 	State             OrchestrationState      `json:"state"`
 	StateTimestamp    time.Time               `json:"stateTimestamp"`
-	CreatedTimestamp   time.Time               `json:"createdTimestamp"`
+	CreatedTimestamp  time.Time               `json:"createdTimestamp"`
 	OrchestrationType model.OrchestrationType `json:"orchestrationType"`
 	Steps             []OrchestrationStep     `json:"steps"`
 	ProcessingData    map[string]any          `json:"processingData"`
@@ -49,7 +49,7 @@ type Orchestration struct {
 	Completed         map[string]struct{}     `json:"completed"`
 }
 
-func (o *Orchestration) SetState(state OrchestrationState)  {
+func (o *Orchestration) SetState(state OrchestrationState) {
 	o.State = state
 	o.StateTimestamp = time.Now()
 }
@@ -160,18 +160,44 @@ func (m *MappingEntry) UnmarshalJSON(data []byte) error {
 
 type OrchestrationDefinition struct {
 	Type        model.OrchestrationType `json:"type"`
+	Version     int64                   `json:"version"`
 	Description string                  `json:"description"`
 	Active      bool                    `json:"active"`
 	Schema      map[string]any          `json:"schema"`
 	Activities  []Activity              `json:"activities"`
 }
 
+func (o *OrchestrationDefinition) GetID() string {
+	return o.Type.String()
+}
+
+func (o *OrchestrationDefinition) GetVersion() int64 {
+	return o.Version
+}
+
+func (o *OrchestrationDefinition) IncrementVersion() {
+	o.Version++
+}
+
 // ActivityDefinition represents a single activity in the orchestration
 type ActivityDefinition struct {
 	Type         ActivityType   `json:"type"`
+	Version      int64          `json:"version"`
 	Description  string         `json:"description"`
 	InputSchema  map[string]any `json:"inputSchema"`
 	OutputSchema map[string]any `json:"outputSchema"`
+}
+
+func (o *ActivityDefinition) GetID() string {
+	return o.Type.String()
+}
+
+func (o *ActivityDefinition) GetVersion() int64 {
+	return o.Version
+}
+
+func (o *ActivityDefinition) IncrementVersion() {
+	o.Version++
 }
 
 // InstantiateOrchestration creates and returns an initialized Orchestration based on the provided definition and inputs.
