@@ -214,7 +214,7 @@ The query language can be used to query CFM entities:
 
 ### JSONB Support
 
-JSONB query types enable querying of JSON-structured data stored in PostgreSQL JSONB columns. The system supports two
+JSONB query types enable querying of JSON-structured data stored in Postgres JSONB columns. The system supports two
 primary JSONB field type categories with different query semantics. 
 
 ### JSONB Field Types 
@@ -399,7 +399,7 @@ Querying tenant properties:
 - Metadata matching: `properties.region = 'us-east'`
 - Nested config: `properties.config.environment = 'prod'`
 
-##### Provision Managemer (pmanager/sqlstore)
+##### Provision Manager (pmanager/sqlstore)
 
 Querying orchestration definitions:
 
