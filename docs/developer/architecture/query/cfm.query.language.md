@@ -2,8 +2,8 @@
 
 ## Overview
 
-The CFM query language in is a predicate-based system designed to work with both in-memory storage and Postgres
-databases. It uses ANTLR (ANother Tool for Language Recognition) for parsing human-readable query syntax into
+The CFM query language is a predicate-based system designed to work with both in-memory storage and Postgres
+databases. It uses [ANTLR](https://www.antlr.org/) for parsing human-readable query syntax into
 structured predicate objects that can be evaluated against any data source.
 
 ## Architecture
@@ -77,7 +77,7 @@ Combine multiple conditions using logical operators:
 
 Simple equality:
 
-`correlationID = '12345'`
+`correlationId = '12345'`
 
 Nested object field access:
 
@@ -97,7 +97,7 @@ String operations:
 
 All predicates implement the Predicate interface with two methods:
 
-```
+``` go
 type Predicate interface {
     // Matches evaluates the predicate against an object
     Matches(obj any, matcher FieldMatcher) bool
@@ -115,7 +115,7 @@ Single condition predicates consisting of:
 - **Operator** - The comparison operation
 - **Value** - The comparison value
 
-```
+``` go
 predicate := &AtomicPredicate{
     Field:    "state",
     Operator: "=",
@@ -127,7 +127,7 @@ predicate := &AtomicPredicate{
 
 Logical combinations of multiple predicates:
 
-```
+``` go
 query.And(
     query.Or(
         query.Eq("state", "RUNNING"),
@@ -156,7 +156,7 @@ Postgres: Field extraction from JSON/JSONB columns Other DBs: Adapter-specific i
 
 ### Query Processing Flow
 
-```go
+``` 
 1. Query String (e.g., "status = 'active' AND count > 10")
 ↓
 2. ANTLR Parser → Predicate Object
@@ -192,16 +192,16 @@ Predicate Object → SQL WHERE Clause → Postgres Query
 
 Predicate:
 
-```
+``` go
 query.And(
-    query.Eq("state", "ACTIVE"),
+    query.Eq("state", "active"),
     query.Gt("priority", 5),
 )
 ```
 
 SQL WHERE Clause:
 
-`WHERE state = 'ACTIVE' AND priority > 5`
+`WHERE state = 'active' AND priority > 5`
 
 ## CFM Entities
 
@@ -210,5 +210,199 @@ The query language can be used to query CFM entities:
 - **Tenants and participant profiles**: Query tenant properties, profiles, and configurations
 - **Orchestrations**:Filter by state, type, correlation ID, timestamps
 - **Definitions**: Search orchestration and activity definitions
-- **VPA Metadata**: Find virtual participant agents by type, state, cell assignment 
+- **VPA Metadata**: Find virtual participant agents by type, state, cell assignment
 
+### JSONB Support
+
+JSONB query types enable querying of JSON-structured data stored in PostgreSQL JSONB columns. The system supports two
+primary JSONB field type categories with different query semantics. 
+
+### JSONB Field Types 
+
+The `JSONBFieldType` enum defines how JSONB fields should be handled during query construction:
+
+#### JSONBFieldTypeScalar
+
+- **Purpose**: Direct accessor for scalar JSONB values or nested objects
+- **Use Case**: Simple properties, nested configuration objects, metadata fields
+- **SQL Translation**: Uses direct path accessors (`->>` for text, `->` for JSON)
+- **Example**: `metadata.environment`, `config.database.host`
+- **Query Pattern**: Direct comparison without array traversal
+
+``` go
+builder.WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
+   "metadata": sqlstore.JSONBFieldTypeScalar,
+})
+```
+
+#### JSONBFieldTypeArrayOfObjects
+
+- **Purpose**: Query arrays containing object elements
+- **Use Case**: Arrays of complex entities like VPAs, activities, profiles
+- **SQL Translation**: Uses `jsonb_array_elements()` for element iteration
+- **Example**: `vpas.type`, `vpas.cell.id`, `activities.name`
+- **Query Pattern**: Searches across array elements using EXISTS conditions
+
+``` go
+builder.WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
+   "vpas": sqlstore.JSONBFieldTypeArrayOfObjects,
+   "activities": sqlstore.JSONBFieldTypeArrayOfObjects,
+})
+
+```
+
+#### JSONBFieldTypeArrayOfScalars
+
+- **Purpose**: Query arrays containing scalar values (strings, numbers)
+- **Use Case**: Tag lists, state arrays, simple value collections
+- **SQL Translation**: Uses `jsonb_array_elements()` with scalar comparisons
+- **Example**: Array of strings or numbers
+
+``` go
+builder.WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
+   "tags": sqlstore.JSONBFieldTypeArrayOfScalars,
+})
+
+```
+
+### Configuration
+
+#### Setting Up JSONB Fields
+
+Create a and configure field types: `PostgresJSONBBuilder
+
+``` go 
+builder := sqlstore.NewPostgresJSONBBuilder().WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
+   "metadata":    sqlstore.JSONBFieldTypeScalar,
+   "vpas":        sqlstore.JSONBFieldTypeArrayOfObjects,
+   "activities":  sqlstore.JSONBFieldTypeArrayOfObjects,
+   "tags":        sqlstore.JSONBFieldTypeArrayOfScalars,
+})
+```
+
+Or using WithJSONBFields() with default (ArrayOfObjects):
+
+``` go
+builder := sqlstore.NewPostgresJSONBBuilder().WithJSONBFields("vpas", "activities")
+```
+
+### Supported Query Operators
+
+#### Comparison Operators
+
+| Operator            | JSONB SQL Pattern                 | Field Type Support | Use Case                    |
+|---------------------|-----------------------------------|--------------------|-----------------------------|
+| `=` (Equal)         | Direct comparison or array EXISTS | All types          | Exact value match           |
+| `!=` (NotEqual)     | Direct comparison or array EXISTS | All types          | Exclude specific values     |
+| `>` (Greater)       | Numeric cast comparison           | Scalar, Array      | Numeric thresholds          |
+| `<` (Less)          | Numeric cast comparison           | Scalar, Array      | Numeric thresholds          |
+| `>=` (GreaterEqual) | Numeric cast comparison           | Scalar, Array      | Numeric ranges              |
+| `<=` (LessEqual)    | Numeric cast comparison           | Scalar, Array      | Numeric ranges              |
+| `IN`                | Array of values                   | All types          | Multiple value matching     |
+| `NOT IN`            | Array of values                   | All types          | Exclude multiple values     |
+| `IS NULL`           | NULL check                        | All types          | Missing field detection     |
+| `IS NOT NULL`       | NOT NULL check                    | All types          | Field presence check        |
+| `@>` (Contains)     | JSONB contains operator           | Scalar             | Document/object containment |
+
+### Query Examples
+
+#### Scalar JSONB Field Queries
+
+Query nested object properties:
+
+``` go
+// metadata.environment = 'prod'
+predicate := query.Eq("metadata.environment", "prod")
+
+// metadata.config.database.host = 'localhost'
+predicate := query.Eq("metadata.config.database.host", "localhost")
+
+// metadata.score > 75
+predicate := query.Gt("metadata.score", 75)
+```
+
+#### Array of Objects Queries
+
+Query properties of array elements:
+
+``` go
+// VPA array: vpas.type = 'connector'
+predicate := query.Eq("vpas.type", "connector")
+
+// Nested object in array: vpas.cell.id = 'cell-prod'
+predicate := query.Eq("vpas.cell.id", "cell-prod")
+
+// Multiple conditions on array: vpas.type = 'connector' AND vpas.state = 'active'
+predicate := query.And(
+    query.Eq("vpas.type", "connector"),
+    query.Eq("vpas.state", "active"),
+)
+```
+
+#### Numeric Comparisons
+
+``` go
+// metadata.priority > 5
+predicate := query.Gt("metadata.priority", 5)
+
+// metadata.priority <= 10
+predicate := query.Lte("metadata.priority", 10)
+
+// metadata.score IN (70, 80, 90)
+predicate := query.In("metadata.score", 70, 80, 90)
+```
+
+#### NULL Checks
+
+``` go
+// metadata.status IS NULL
+predicate := query.IsNull("metadata.status")
+
+// vpas.cell IS NOT NULL
+predicate := query.IsNotNull("vpas.cell")
+```
+
+#### Complex Compound Queries
+
+``` go
+// (type = "connector" AND state = "active") OR (type = "credential-service")
+predicate := query.Or(
+    query.And(
+        query.Eq("vpas.type", "connector"),
+        query.Eq("vpas.state", "active"),
+    ),
+    query.Eq("vpas.type", "credential-service"),
+)
+
+// metadata.environment = "prod" AND metadata.region = "us-east"
+predicate := query.And(
+    query.Eq("metadata.environment", "prod"),
+    query.Eq("metadata.region", "us-east"),
+)
+
+// metadata.status IN ("active", "pending")
+predicate := query.In("metadata.status", "active", "pending")
+```
+
+#### Real-World Usage Examples
+
+##### Tenant Manager (tmanager/sqlstore)
+
+Querying participant profiles with VPAs:
+
+- Filter by VPA type: `vpas.type = 'connector'`
+- Filter by VPA cell: `vpas.cell.id = 'prod-cell-1'`
+- Complex: `vpas.type = 'connector' AND vpas.state != 'disposed'`
+
+Querying tenant properties:
+
+- Metadata matching: `properties.region = 'us-east'`
+- Nested config: `properties.config.environment = 'prod'`
+
+##### Provision Managemer (pmanager/sqlstore)
+
+Querying orchestration definitions:
+
+- Array of objects: `activities.type = 'ProcessTask'`
+- Nested array search: `schema.properties.name = 'processId'`
+- Multiple activities: `activities.type IN ('ProcessTask', 'ServiceTask')`
