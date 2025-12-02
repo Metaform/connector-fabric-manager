@@ -280,7 +280,7 @@ builder := sqlstore.NewPostgresJSONBBuilder().WithJSONBFieldTypes(map[string]sql
 })
 ```
 
-Or using WithJSONBFields() with default (ArrayOfObjects):
+Or using `WithJSONBFields()` with default (ArrayOfObjects):
 
 ``` go
 builder := sqlstore.NewPostgresJSONBBuilder().WithJSONBFields("vpas", "activities")
