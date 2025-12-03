@@ -19,6 +19,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
+	"github.com/metaform/connector-fabric-manager/common/sqlstore"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	papi "github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
@@ -39,7 +40,11 @@ func Test_VerifyE2E(t *testing.T) {
 	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 	defer cleanup()
 
-	client := launchPlatform(t, nt)
+	pg, dsn, err := sqlstore.SetupTestContainer(t)
+	require.NoError(t, err)
+	defer pg.Terminate(context.Background())
+
+	client := launchPlatform(t, nt.URI, dsn)
 
 	waitPManager(t, client)
 

@@ -34,17 +34,7 @@ type provisionManager struct {
 }
 
 func (p provisionManager) Start(ctx context.Context, manifest *model.OrchestrationManifest) (*api.Orchestration, error) {
-
 	manifestID := manifest.ID
-
-	definition, err := p.store.FindOrchestrationDefinition(ctx, manifest.OrchestrationType)
-	if err != nil {
-		if errors.Is(err, types.ErrNotFound) {
-			// Not found is a client error
-			return nil, types.NewClientError("orchestration type '%s' not found", manifest.OrchestrationType)
-		}
-		return nil, types.NewFatalWrappedError(err, "unable to find orchestration definition for manifest %s", manifestID)
-	}
 
 	// Validate required fields
 	if manifest.ID == "" {
@@ -55,25 +45,43 @@ func (p provisionManager) Start(ctx context.Context, manifest *model.Orchestrati
 		return nil, types.NewClientError("Missing required field: orchestrationType")
 	}
 
-	// perform de-duplication
-	orchestration, err := p.orchestrator.GetOrchestration(ctx, manifestID)
-	if err != nil {
-		return nil, types.NewFatalWrappedError(err, "error performing de-duplication for %s", manifestID)
-	}
+	var orchestration *api.Orchestration
+	err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
+		definition, err := p.store.FindOrchestrationDefinition(ctx, manifest.OrchestrationType)
+		if err != nil {
+			if errors.Is(err, types.ErrNotFound) {
+				// Not found is a client error
+				return types.NewClientError("orchestration type '%s' not found", manifest.OrchestrationType)
+			}
+			return types.NewFatalWrappedError(err, "unable to find orchestration definition for manifest %s", manifestID)
+		}
 
-	if orchestration != nil {
-		// Already exists, return its representation
-		return orchestration, nil
-	}
+		// perform de-duplication
+		orch, err := p.orchestrator.GetOrchestration(ctx, manifestID)
+		if err != nil {
+			return types.NewFatalWrappedError(err, "error performing de-duplication for %s", manifestID)
+		}
 
-	// Does not exist, create the orchestration
-	orchestration, err = api.InstantiateOrchestration(manifest.ID, manifest.CorrelationID, manifest.OrchestrationType, definition.Activities, manifest.Payload)
+		if orch != nil {
+			// Already exists, return its representation
+			orchestration = orch
+			return nil
+		}
+
+		// Does not exist, create the orchestration
+		orch, err = api.InstantiateOrchestration(manifest.ID, manifest.CorrelationID, manifest.OrchestrationType, definition.Activities, manifest.Payload)
+		if err != nil {
+			return types.NewFatalWrappedError(err, "error instantiating orchestration for %s", manifestID)
+		}
+		err = p.orchestrator.Execute(ctx, orch)
+		if err != nil {
+			return types.NewFatalWrappedError(err, "error executing orchestration %s for %s", orch.ID, manifestID)
+		}
+		orchestration = orch
+		return nil
+	})
 	if err != nil {
-		return nil, types.NewFatalWrappedError(err, "error instantiating orchestration for %s", manifestID)
-	}
-	err = p.orchestrator.Execute(ctx, orchestration)
-	if err != nil {
-		return nil, types.NewFatalWrappedError(err, "error executing orchestration %s for %s", orchestration.ID, manifestID)
+		return nil, err
 	}
 	return orchestration, nil
 }

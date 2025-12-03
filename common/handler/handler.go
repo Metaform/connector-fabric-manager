@@ -212,77 +212,82 @@ func QueryEntities[T any](
 	path string,
 	countFn func(context.Context, query.Predicate) (int64, error),
 	queryFn func(context.Context, query.Predicate, store.PaginationOptions) iter.Seq2[T, error],
-	transformFn func(T) any) {
+	transformFn func(T) any,
+	txContext store.TransactionContext) {
 
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return
 	}
-	var queryMessage model.Query
-	if !h.ReadPayload(w, req, &queryMessage) {
-		return
-	}
-	offset := queryMessage.Offset
-	limit := queryMessage.Limit
-	if limit == 0 || limit > 10000 {
-		limit = 10000
-	}
 
-	predicate, err := query.ParsePredicate(queryMessage.Predicate)
-	if err != nil {
-		h.WriteError(w, fmt.Sprintf("Client error: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	totalCount, err := countFn(req.Context(), predicate)
-	if err != nil {
-		h.HandleError(w, err)
-		return
-	}
-
-	h.WriteLinkHeaders(w, path, offset, limit, totalCount)
-
-	h.OK(w)
-	_, err = w.Write([]byte("["))
-	if err != nil {
-		h.Monitor.Infow("Error writing response: %v", err)
-		return
-	}
-	first := true
-
-	for entity, err := range queryFn(req.Context(), predicate, store.PaginationOptions{
-		Offset: offset,
-		Limit:  limit,
-	}) {
-		if err != nil {
-			h.Monitor.Infow("Error streaming results: %v", err)
-			break
+	txContext.Execute(req.Context(), func(ctx context.Context) error {
+		var queryMessage model.Query
+		if !h.ReadPayload(w, req, &queryMessage) {
+			return nil
+		}
+		offset := queryMessage.Offset
+		limit := queryMessage.Limit
+		if limit == 0 || limit > 10000 {
+			limit = 10000
 		}
 
-		if !first {
-			_, err = w.Write([]byte(","))
+		predicate, err := query.ParsePredicate(queryMessage.Predicate)
+		if err != nil {
+			h.WriteError(w, fmt.Sprintf("Client error: %v", err), http.StatusBadRequest)
+			return nil
+		}
+
+		totalCount, err := countFn(ctx, predicate)
+		if err != nil {
+			h.HandleError(w, err)
+			return nil
+		}
+
+		h.WriteLinkHeaders(w, path, offset, limit, totalCount)
+
+		h.OK(w)
+		_, err = w.Write([]byte("["))
+		if err != nil {
+			h.Monitor.Infow("Error writing response: %v", err)
+			return nil
+		}
+		first := true
+
+		for entity, err := range queryFn(ctx, predicate, store.PaginationOptions{
+			Offset: offset,
+			Limit:  limit,
+		}) {
 			if err != nil {
-				h.Monitor.Infow("Error writing response: %v", err)
-				return
+				h.Monitor.Infow("Error streaming results: %v", err)
+				break
+			}
+
+			if !first {
+				_, err = w.Write([]byte(","))
+				if err != nil {
+					h.Monitor.Infow("Error writing response: %v", err)
+					return nil
+				}
+			}
+			first = false
+
+			response := transformFn(entity)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				h.Monitor.Infow("Error encoding response: %v", err)
+				break
+			}
+
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
 			}
 		}
-		first = false
 
-		response := transformFn(entity)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			h.Monitor.Infow("Error encoding response: %v", err)
-			break
+		_, err = w.Write([]byte("]"))
+		if err != nil {
+			h.Monitor.Infow("Error writing response: %v", err)
+			return nil
 		}
-
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
-		}
-	}
-
-	_, err = w.Write([]byte("]"))
-	if err != nil {
-		h.Monitor.Infow("Error writing response: %v", err)
-		return
-	}
+		return nil
+	})
 }
 
 func ListEntities[T any](
@@ -292,76 +297,81 @@ func ListEntities[T any](
 	path string,
 	countFn func(context.Context) (int64, error),
 	listFn func(context.Context, store.PaginationOptions) iter.Seq2[T, error],
-	transformFn func(T) any) {
+	transformFn func(T) any,
+	txContext store.TransactionContext) {
 
 	if h.InvalidMethod(w, req, http.MethodGet) {
 		return
 	}
 
-	totalCount, err := countFn(req.Context())
-	if err != nil {
-		h.HandleError(w, err)
-		return
-	}
-	offset := req.URL.Query().Get("offset")
-	limit := req.URL.Query().Get("limit")
-	options := store.PaginationOptions{}
-	if offset != "" {
-		offsetVal, err := strconv.Atoi(offset) // Safe conversion as prevision will not be lost
+	txContext.Execute(req.Context(), func(ctx context.Context) error {
+
+		totalCount, err := countFn(ctx)
 		if err != nil {
-			h.WriteError(w, fmt.Sprintf("Invalid offset: %s", err), http.StatusBadRequest)
-			return
+			h.HandleError(w, err)
+			return nil
 		}
-		options.Offset = int64(offsetVal) // Safe conversion as prevision will not be lost
-	}
-	if limit != "" {
-		limitVal, err := strconv.Atoi(limit)
-		if err != nil {
-			h.WriteError(w, fmt.Sprintf("Invalid limit: %s", err), http.StatusBadRequest)
-			return
-		}
-		options.Limit = int64(limitVal)
-	}
-
-	h.WriteLinkHeaders(w, path, options.Offset, options.Limit, totalCount)
-
-	h.OK(w)
-	_, err = w.Write([]byte("["))
-	if err != nil {
-		h.Monitor.Infow("Error writing response: %v", err)
-		return
-	}
-	first := true
-
-	for entity, err := range listFn(req.Context(), options) {
-		if err != nil {
-			h.Monitor.Infow("Error streaming results: %v", err)
-			break
-		}
-
-		if !first {
-			_, err = w.Write([]byte(","))
+		offset := req.URL.Query().Get("offset")
+		limit := req.URL.Query().Get("limit")
+		options := store.PaginationOptions{}
+		if offset != "" {
+			offsetVal, err := strconv.Atoi(offset) // Safe conversion as prevision will not be lost
 			if err != nil {
-				h.Monitor.Infow("Error writing response: %v", err)
-				return
+				h.WriteError(w, fmt.Sprintf("Invalid offset: %s", err), http.StatusBadRequest)
+				return nil
+			}
+			options.Offset = int64(offsetVal) // Safe conversion as prevision will not be lost
+		}
+		if limit != "" {
+			limitVal, err := strconv.Atoi(limit)
+			if err != nil {
+				h.WriteError(w, fmt.Sprintf("Invalid limit: %s", err), http.StatusBadRequest)
+				return nil
+			}
+			options.Limit = int64(limitVal)
+		}
+
+		h.WriteLinkHeaders(w, path, options.Offset, options.Limit, totalCount)
+
+		h.OK(w)
+		_, err = w.Write([]byte("["))
+		if err != nil {
+			h.Monitor.Infow("Error writing response: %v", err)
+			return nil
+		}
+		first := true
+
+		for entity, err := range listFn(ctx, options) {
+			if err != nil {
+				h.Monitor.Infow("Error streaming results: %v", err)
+				break
+			}
+
+			if !first {
+				_, err = w.Write([]byte(","))
+				if err != nil {
+					h.Monitor.Infow("Error writing response: %v", err)
+					return nil
+				}
+			}
+			first = false
+
+			response := transformFn(entity)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				h.Monitor.Infow("Error encoding response: %v", err)
+				break
+			}
+
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
 			}
 		}
-		first = false
 
-		response := transformFn(entity)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			h.Monitor.Infow("Error encoding response: %v", err)
-			break
+		_, err = w.Write([]byte("]"))
+		if err != nil {
+			h.Monitor.Infow("Error writing response: %v", err)
+			return nil
 		}
-
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
-		}
-	}
-
-	_, err = w.Write([]byte("]"))
-	if err != nil {
-		h.Monitor.Infow("Error writing response: %v", err)
-		return
-	}
+		return nil
+	})
 }

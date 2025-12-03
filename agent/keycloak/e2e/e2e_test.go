@@ -58,7 +58,7 @@ func Test_Launch(t *testing.T) {
 	_ = os.Setenv("KCAGENT_VAULT_ROLEID", setupResult.RoleID)
 	_ = os.Setenv("KCAGENT_VAULT_SECRETID", setupResult.SecretID)
 
-	_ = os.Setenv("KCAGENT_URI", nt.Uri)
+	_ = os.Setenv("KCAGENT_URI", nt.URI)
 	_ = os.Setenv("KCAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("KCAGENT_STREAM", streamName)
 	_ = os.Setenv("KCAGENT_KEYCLOAK_URL", keycloakURL)

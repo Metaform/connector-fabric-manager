@@ -17,6 +17,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/handler"
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/model/v1alpha1"
@@ -26,15 +27,21 @@ type PMHandler struct {
 	handler.HttpHandler
 	provisionManager  api.ProvisionManager
 	definitionManager api.DefinitionManager
+	txContext         store.TransactionContext
 }
 
-func NewHandler(provisionManager api.ProvisionManager, definitionManager api.DefinitionManager, monitor system.LogMonitor) *PMHandler {
+func NewHandler(
+	provisionManager api.ProvisionManager,
+	definitionManager api.DefinitionManager,
+	txContext store.TransactionContext,
+	monitor system.LogMonitor) *PMHandler {
 	return &PMHandler{
 		HttpHandler: handler.HttpHandler{
 			Monitor: monitor,
 		},
 		provisionManager:  provisionManager,
 		definitionManager: definitionManager,
+		txContext:         txContext,
 	}
 }
 
@@ -137,7 +144,8 @@ func (h *PMHandler) queryOrchestrations(w http.ResponseWriter, req *http.Request
 		h.provisionManager.QueryOrchestrations,
 		func(entry *api.OrchestrationEntry) any {
 			return v1alpha1.ToOrchestrationEntry(entry)
-		})
+		},
+		h.txContext)
 }
 
 func (h *PMHandler) getOrchestration(w http.ResponseWriter, req *http.Request, id string) {

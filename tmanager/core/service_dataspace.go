@@ -47,7 +47,7 @@ func (d dataspaceProfileService) CreateProfile(ctx context.Context, artifacts []
 }
 
 func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID string, cellID string) error {
-	return d.trxContext.Execute(ctx, func(_ context.Context) error {
+	return d.trxContext.Execute(ctx, func(ctx context.Context) error {
 		profile, err := d.profileStore.FindByID(ctx, profileID)
 		if err != nil {
 			return err
@@ -68,7 +68,7 @@ func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID st
 				State:          api.DeploymentStateActive,
 				StateTimestamp: time.Time{}.UTC(),
 			},
-			CellID:       cell.ID,
+			CellID:     cell.ID,
 			Properties: make(map[string]any),
 		})
 		err = d.profileStore.Update(ctx, profile)

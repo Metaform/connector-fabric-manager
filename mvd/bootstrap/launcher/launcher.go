@@ -48,23 +48,23 @@ func LaunchMVD() {
 	}
 	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 
-	_ = os.Setenv("DNSAGENT_URI", nt.Uri)
+	_ = os.Setenv("DNSAGENT_URI", nt.URI)
 	_ = os.Setenv("DNSAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("DNSAGENT_STREAM", streamName)
 
-	_ = os.Setenv("CAGENT_URI", nt.Uri)
+	_ = os.Setenv("CAGENT_URI", nt.URI)
 	_ = os.Setenv("CAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("CAGENT_STREAM", streamName)
 
-	_ = os.Setenv("OBAGENT_URI", nt.Uri)
+	_ = os.Setenv("OBAGENT_URI", nt.URI)
 	_ = os.Setenv("OBAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("OBAGENT_STREAM", streamName)
 
-	_ = os.Setenv("TM_URI", nt.Uri)
+	_ = os.Setenv("TM_URI", nt.URI)
 	_ = os.Setenv("TM_BUCKET", cfmBucket)
 	_ = os.Setenv("TM_STREAM", streamName)
 
-	_ = os.Setenv("PM_URI", nt.Uri)
+	_ = os.Setenv("PM_URI", nt.URI)
 	_ = os.Setenv("PM_BUCKET", cfmBucket)
 	_ = os.Setenv("PM_STREAM", streamName)
 

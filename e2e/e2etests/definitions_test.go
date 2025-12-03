@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
+	"github.com/metaform/connector-fabric-manager/common/sqlstore"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	"github.com/metaform/connector-fabric-manager/pmanager/model/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -31,10 +32,14 @@ func Test_VerifyDefinitionOperations(t *testing.T) {
 	nt, err := natsfixtures.SetupNatsContainer(ctx, cfmBucket)
 	require.NoError(t, err)
 
+	pg, dsn, err := sqlstore.SetupTestContainer(t)
+	require.NoError(t, err)
+	defer pg.Terminate(context.Background())
+
 	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 	defer cleanup()
 
-	client := launchPlatform(t, nt)
+	client := launchPlatform(t, nt.URI, dsn)
 
 	waitTManager(t, client)
 	waitPManager(t, client)

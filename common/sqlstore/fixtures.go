@@ -15,11 +15,14 @@ package sqlstore
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+const pgDb = "cfm"
 
 // SetupTestContainer creates a PostgreSQL test container
 // If t is nil, it's being called from TestMain and should panic on errors
@@ -32,7 +35,7 @@ func SetupTestContainer(t *testing.T) (testcontainers.Container, string, error) 
 		Env: map[string]string{
 			"POSTGRES_USER":     "test",
 			"POSTGRES_PASSWORD": "test",
-			"POSTGRES_DB":       "testdb",
+			"POSTGRES_DB":       pgDb,
 		},
 		WaitingFor: wait.ForListeningPort("5432/tcp"),
 	}
@@ -64,7 +67,7 @@ func SetupTestContainer(t *testing.T) (testcontainers.Container, string, error) 
 		panic(err)
 	}
 
-	dsn := "postgres://test:test@" + host + ":" + port.Port() + "/testdb?sslmode=disable"
+	dsn := fmt.Sprintf("postgres://test:test@%s:%s/%s?sslmode=disable", host, port.Port(),pgDb)
 	return container, dsn, nil
 }
 

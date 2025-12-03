@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
@@ -54,8 +55,9 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 	participantService := context.Registry.Resolve(api.ParticipantProfileServiceKey).(api.ParticipantProfileService)
 	cellService := context.Registry.Resolve(api.CellServiceKey).(api.CellService)
 	dataspaceService := context.Registry.Resolve(api.DataspaceProfileServiceKey).(api.DataspaceProfileService)
+	txContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
 
-	handler := NewHandler(tenantService, participantService, cellService, dataspaceService, context.LogMonitor)
+	handler := NewHandler(tenantService, participantService, cellService, dataspaceService, txContext, context.LogMonitor)
 
 	router.Route("/api/v1alpha1", func(r chi.Router) {
 		h.registerV1Alpha1(r, handler)

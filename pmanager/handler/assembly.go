@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/metaform/connector-fabric-manager/assembly/routing"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
@@ -44,7 +45,8 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 
 	provisionManager := context.Registry.Resolve(api.ProvisionManagerKey).(api.ProvisionManager)
 	definitionManager := context.Registry.Resolve(api.DefinitionManagerKey).(api.DefinitionManager)
-	handler := NewHandler(provisionManager, definitionManager, context.LogMonitor)
+	txContext := context.Registry.Resolve(store.TransactionContextKey).(store.TransactionContext)
+	handler := NewHandler(provisionManager, definitionManager, txContext, context.LogMonitor)
 
 	router.Route("/api/v1alpha1", func(r chi.Router) {
 		h.registerV1Alpha1(r, handler)

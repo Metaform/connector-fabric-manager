@@ -43,7 +43,7 @@ func TestTestAgent_Integration(t *testing.T) {
 	natsfixtures.SetupTestStream(t, ctx, nt.Client, streamName)
 
 	// Required agent config
-	_ = os.Setenv("PM_URI", nt.Uri)
+	_ = os.Setenv("PM_URI", nt.URI)
 	_ = os.Setenv("PM_BUCKET", "cfm-bucket")
 	_ = os.Setenv("PM_STREAM", streamName)
 	_ = os.Setenv("PM_HTTPPORT", strconv.Itoa(fixtures.GetRandomPort(t)))

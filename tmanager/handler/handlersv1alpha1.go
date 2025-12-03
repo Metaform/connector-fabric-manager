@@ -16,6 +16,7 @@ import (
 	"net/http"
 
 	"github.com/metaform/connector-fabric-manager/common/handler"
+	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
@@ -27,6 +28,7 @@ type TMHandler struct {
 	participantService api.ParticipantProfileService
 	cellService        api.CellService
 	dataspaceService   api.DataspaceProfileService
+	txContext          store.TransactionContext
 }
 
 func NewHandler(
@@ -34,6 +36,7 @@ func NewHandler(
 	participantService api.ParticipantProfileService,
 	cellService api.CellService,
 	dataspaceService api.DataspaceProfileService,
+	txContext store.TransactionContext,
 	monitor system.LogMonitor) *TMHandler {
 	return &TMHandler{
 		HttpHandler: handler.HttpHandler{
@@ -43,6 +46,7 @@ func NewHandler(
 		participantService: participantService,
 		cellService:        cellService,
 		dataspaceService:   dataspaceService,
+		txContext:          txContext,
 	}
 }
 
@@ -179,7 +183,8 @@ func (h *TMHandler) getTenants(w http.ResponseWriter, req *http.Request, path st
 		h.tenantService.GetTenants,
 		func(tenant *api.Tenant) any {
 			return v1alpha1.ToTenant(tenant)
-		})
+		},
+		h.txContext)
 }
 
 func (h *TMHandler) queryTenants(w http.ResponseWriter, req *http.Request, path string) {
@@ -192,7 +197,8 @@ func (h *TMHandler) queryTenants(w http.ResponseWriter, req *http.Request, path 
 		h.tenantService.QueryTenants,
 		func(tenant *api.Tenant) any {
 			return v1alpha1.ToTenant(tenant)
-		})
+		},
+		h.txContext)
 }
 
 func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {

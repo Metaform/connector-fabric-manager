@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/metaform/connector-fabric-manager/common/fixtures"
-	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	alauncher "github.com/metaform/connector-fabric-manager/e2e/testagent/launcher"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -35,16 +34,20 @@ const (
 	cfmBucket   = "cfm-bucket"
 )
 
-func launchPlatform(t *testing.T, nt *natsfixtures.NatsTestContainer) *e2efixtures.ApiClient {
-	_ = os.Setenv("TM_URI", nt.Uri)
+func launchPlatform(t *testing.T, natsURI string, pgDsn string) *e2efixtures.ApiClient {
+	_ = os.Setenv("TM_POSTGRES", "true")
+	_ = os.Setenv("TM_DSN", pgDsn)
+	_ = os.Setenv("TM_URI", natsURI)
 	_ = os.Setenv("TM_BUCKET", cfmBucket)
 	_ = os.Setenv("TM_STREAM", streamName)
 
-	_ = os.Setenv("PM_URI", nt.Uri)
+	_ = os.Setenv("PM_POSTGRES", "true")
+	_ = os.Setenv("PM_DSN", pgDsn)
+	_ = os.Setenv("PM_URI", natsURI)
 	_ = os.Setenv("PM_BUCKET", cfmBucket)
 	_ = os.Setenv("PM_STREAM", streamName)
 
-	_ = os.Setenv("TESTAGENT_URI", nt.Uri)
+	_ = os.Setenv("TESTAGENT_URI", natsURI)
 	_ = os.Setenv("TESTAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("TESTAGENT_STREAM", streamName)
 

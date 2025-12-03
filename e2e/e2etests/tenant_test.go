@@ -19,6 +19,7 @@ import (
 
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
+	"github.com/metaform/connector-fabric-manager/common/sqlstore"
 	"github.com/metaform/connector-fabric-manager/e2e/e2efixtures"
 	"github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,11 @@ func Test_VerifyTenantOperations(t *testing.T) {
 	defer natsfixtures.TeardownNatsContainer(ctx, nt)
 	defer cleanup()
 
-	client := launchPlatform(t, nt)
+	pg, dsn, err := sqlstore.SetupTestContainer(t)
+	require.NoError(t, err)
+	defer pg.Terminate(context.Background())
+
+	client := launchPlatform(t, nt.URI, dsn)
 
 	waitTManager(t, client)
 
@@ -116,7 +121,6 @@ func verifyPatch(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	require.NoError(t, err)
 
 	result = nil
-	//var result []v1alpha1.Tenant
 	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "properties.customer = 'gold'"}, &result)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(result))

@@ -23,6 +23,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/tmanager/handler"
 	"github.com/metaform/connector-fabric-manager/tmanager/memorystore"
 	"github.com/metaform/connector-fabric-manager/tmanager/natsprovision"
+	"github.com/metaform/connector-fabric-manager/tmanager/sqlstore"
 )
 
 const (
@@ -31,7 +32,9 @@ const (
 	configPrefix = "tm"
 	key          = "httpPort"
 
-	uriKey    = "uri"
+	postgresKey = "postgres"
+
+	uriKey      = "uri"
 	bucketKey = "bucket"
 	streamKey = "stream"
 )
@@ -66,8 +69,16 @@ func Launch(shutdown <-chan struct{}) {
 	assembler.Register(&routing.RouterServiceAssembly{})
 	assembler.Register(&handler.HandlerServiceAssembly{})
 	assembler.Register(&core.TMCoreServiceAssembly{})
-	assembler.Register(&store.NoOpTrxAssembly{})
-	assembler.Register(&memorystore.InMemoryServiceAssembly{})
+
+
+	if vConfig.IsSet(postgresKey) {
+		assembler.Register(&sqlstore.PostgresServiceAssembly{})
+	} else {
+		assembler.Register(&store.NoOpTrxAssembly{})
+		assembler.Register(&memorystore.InMemoryServiceAssembly{})
+	}
+
+
 	assembler.Register(natsprovision.NewNatsOrchestrationServiceAssembly(uri, bucketValue, streamValue))
 
 	runtime.AssembleAndLaunch(assembler, "Tenant Manager", logMonitor, shutdown)

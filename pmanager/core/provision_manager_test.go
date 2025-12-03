@@ -183,6 +183,7 @@ func TestProvisionManager_Start(t *testing.T) {
 				orchestrator: mockOrch,
 				store:        definitionStore,
 				monitor:      &system.NoopMonitor{},
+				trxContext:   store.NoOpTransactionContext{},
 			}
 
 			// Execute test
@@ -228,6 +229,7 @@ func TestProvisionManager_Start_OrchestrationInstantiation(t *testing.T) {
 		orchestrator: mockOrch,
 		store:        definitionStore,
 		monitor:      &system.NoopMonitor{},
+		trxContext:   store.NoOpTransactionContext{},
 	}
 
 	// Create test manifest

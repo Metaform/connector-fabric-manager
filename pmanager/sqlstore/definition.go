@@ -36,7 +36,7 @@ type PostgresDefinitionStore struct {
 }
 
 // NewPostgresDefinitionStore creates a new PostgresDefinitionStore instance
-func newPostgresDefinitionStore() *PostgresDefinitionStore {
+func newPostgresDefinitionStore() api.DefinitionStore {
 	return &PostgresDefinitionStore{
 		orchestrationStore: newOrchestrationStore(),
 		activityStore:      newActivityStore(),

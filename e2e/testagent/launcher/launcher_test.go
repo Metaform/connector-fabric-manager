@@ -65,7 +65,7 @@ func TestTestAgent_Integration(t *testing.T) {
 	}
 
 	// Required agent config
-	_ = os.Setenv("TESTAGENT_URI", nt.Uri)
+	_ = os.Setenv("TESTAGENT_URI", nt.URI)
 	_ = os.Setenv("TESTAGENT_BUCKET", "cfm-bucket")
 	_ = os.Setenv("TESTAGENT_STREAM", streamName)
 

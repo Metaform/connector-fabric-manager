@@ -25,6 +25,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsorchestration"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsprovision"
+	"github.com/metaform/connector-fabric-manager/pmanager/sqlstore"
 )
 
 const (
@@ -32,7 +33,7 @@ const (
 	defaultPort  = 8181
 	configPrefix = "pm"
 	httpKey      = "httpPort"
-	storeKey     = "sql"
+	postgresKey = "postgres"
 	uriKey       = "uri"
 	bucketKey    = "bucket"
 	streamKey    = "stream"
@@ -70,9 +71,8 @@ func Launch(shutdown <-chan struct{}) {
 	assembler.Register(&routing.RouterServiceAssembly{})
 	assembler.Register(&handler.HandlerServiceAssembly{})
 
-	if vConfig.IsSet(storeKey) {
-		// TODO add SQL assembly
-		panic("SQL storage not yet implemented")
+	if vConfig.IsSet(postgresKey) {
+		assembler.Register(&sqlstore.PostgresServiceAssembly{})
 	} else {
 		assembler.Register(&store.NoOpTrxAssembly{})
 		assembler.Register(&memorystore.MemoryStoreServiceAssembly{})
@@ -84,3 +84,4 @@ func Launch(shutdown <-chan struct{}) {
 
 	runtime.AssembleAndLaunch(assembler, "Provision Manager", logMonitor, shutdown)
 }
+

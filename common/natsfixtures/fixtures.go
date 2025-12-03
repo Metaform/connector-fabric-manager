@@ -31,7 +31,7 @@ const natsImage = "nats:2.10-alpine"
 
 type NatsTestContainer struct {
 	Container testcontainers.Container
-	Uri       string
+	URI       string
 	Client    *natsclient.NatsClient
 }
 
@@ -110,7 +110,7 @@ trace: true
 
 	return &NatsTestContainer{
 		Container: container,
-		Uri:       uri,
+		URI:       uri,
 		Client:    natsClient,
 	}, nil
 }
