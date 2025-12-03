@@ -51,7 +51,7 @@ func newOrchestrationStore() store.EntityStore[*api.OrchestrationDefinition] {
 	})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.OrchestrationDefinition](
-		"orchestration_definitions",
+		cfmOrchestrationDefinitionsTable,
 		columnNames,
 		recordToOrchestrationEntity,
 		orchestrationEntityToRecord,
@@ -72,7 +72,7 @@ func newActivityStore() store.EntityStore[*api.ActivityDefinition] {
 	})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.ActivityDefinition](
-		"activity_definitions",
+		cfmActivityDefinitionsTable,
 		columnNames,
 		recordToActivityEntity,
 		activityEntityToRecord,

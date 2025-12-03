@@ -42,7 +42,7 @@ func newParticipantProfileStore() store.EntityStore[*api.ParticipantProfile] {
 	})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.ParticipantProfile](
-		"participant_profiles",
+		cfmParticipantProfilesTable,
 		columnNames,
 		recordToPProfileEntity,
 		pProfileEntityToRecord,
