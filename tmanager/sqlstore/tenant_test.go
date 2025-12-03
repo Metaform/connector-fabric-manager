@@ -17,6 +17,7 @@ package sqlstore
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -532,19 +533,12 @@ func TestNewTenantStore_SearchByIDPredicate(t *testing.T) {
 
 // cleanupTenantTestData removes test data from the tenants table
 func cleanupTenantTestData(t *testing.T, db *sql.DB) {
-	_, err := db.Exec("DELETE FROM tenants")
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", cfmTenantsTable))
 	require.NoError(t, err)
 }
 
 // setupTenantTable creates the tenants table for testing
 func setupTenantTable(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
-		DROP TABLE IF EXISTS tenants CASCADE;
-		CREATE TABLE tenants (
-			id TEXT PRIMARY KEY,
-			version INT DEFAULT 1,
-			properties JSONB
-		);
-	`)
+	err := createTenantsTable(db)
 	require.NoError(t, err)
 }

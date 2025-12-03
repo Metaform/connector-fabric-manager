@@ -1163,16 +1163,7 @@ func TestPostgresDefinitionStore_DeleteActivityDefinition_Multiple(t *testing.T)
 }
 
 func setupActivityDefinitionTable(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS activity_definitions (
-		    id VARCHAR(255) PRIMARY KEY,
-			TYPE VARCHAR(255),
-			version BIGINT NOT NULL,
-			description TEXT,
-			inputSchema JSONB,
-			outputSchema JSONB
-		)
-	`)
+	err := createActivityDefinitionsTable(db)
 	require.NoError(t, err)
 }
 
@@ -1640,17 +1631,7 @@ func cleanupActivityDefinitionTestData(t *testing.T, db *sql.DB) {
 }
 
 func setupOrchestrationDefinitionTable(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS orchestration_definitions (
-		    id VARCHAR(255) PRIMARY KEY,
-			TYPE VARCHAR(255),
-			version BIGINT NOT NULL,
-			description TEXT,
-			active BOOLEAN DEFAULT FALSE,
-			SCHEMA JSONB,
-			activities JSONB
-		)
-	`)
+	err := createOrchestrationDefinitionsTable(db)
 	require.NoError(t, err)
 }
 

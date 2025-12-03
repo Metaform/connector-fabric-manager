@@ -62,7 +62,6 @@ func setupEntityTable(t *testing.T) {
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			metadata JSONB
 		);
-		CREATE INDEX idx_test_entities_created ON test_entities(created_at);
 	`)
 	require.NoError(t, err)
 }

@@ -40,7 +40,7 @@ func newCellStore() store.EntityStore[*api.Cell] {
 	return estore
 }
 
-func recordToCellEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Cell, error) {
+func recordToCellEntity(_ *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Cell, error) {
 	cell := &api.Cell{}
 	if id, ok := record.Values["id"].(string); ok {
 		cell.ID = id

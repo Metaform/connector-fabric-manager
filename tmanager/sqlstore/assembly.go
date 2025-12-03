@@ -81,58 +81,22 @@ func (a *PostgresServiceAssembly) Finalize() error {
 }
 
 func createTables(db *sql.DB) error {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS cells (
-			id TEXT PRIMARY KEY,
-			version INT DEFAULT 1,
-			STATE TEXT NOT NULL,
-			state_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			properties JSONB
-		)
-	`)
+	err := createCellsTable(db)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS dataspace_profiles (
-			id TEXT PRIMARY KEY,
-			version INT DEFAULT 1,
-			artifacts JSONB,
-			deployments JSONB,
-			properties JSONB
-		)
-	`)
-
+	err = createDataspaceProfilesTable(db)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`
-			CREATE TABLE IF NOT EXISTS participant_profiles (
-				id VARCHAR(255) PRIMARY KEY,
-				version BIGINT NOT NULL,
-				identifier VARCHAR(255),
-				tenantId VARCHAR(255),
-				dataspaceProfileIds JSONB,
-				vpas JSONB,
-				error BOOLEAN,
-				errorDetail TEXT,
-				properties JSONB
-			)
-	`)
-
+	err = createParticipantProfilesTable(db)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS tenants (
-			id TEXT PRIMARY KEY,
-			version INT DEFAULT 1,
-			properties JSONB
-		)
-	`)
+	err = createTenantsTable(db)
 
 	if err != nil {
 		return err
@@ -140,3 +104,4 @@ func createTables(db *sql.DB) error {
 
 	return nil
 }
+

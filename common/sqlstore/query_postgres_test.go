@@ -73,9 +73,6 @@ func setupTestTable(t *testing.T) {
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			version INT DEFAULT 1
 		);
-		CREATE INDEX idx_participant_tenant ON participant_profiles(tenantid);
-		CREATE INDEX idx_vpas_gin ON participant_profiles USING GIN(vpas);
-		CREATE INDEX idx_properties_gin ON participant_profiles USING GIN(properties);
 	`)
 	require.NoError(t, err)
 }

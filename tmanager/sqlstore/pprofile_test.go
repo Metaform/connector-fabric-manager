@@ -838,19 +838,7 @@ func TestNewParticipantProfileStore_SearchByCombinedPredicates(t *testing.T) {
 // Helper functions
 
 func setupParticipantProfileTable(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS participant_profiles (
-			id VARCHAR(255) PRIMARY KEY,
-			version BIGINT NOT NULL,
-			identifier VARCHAR(255),
-			tenantId VARCHAR(255),
-			dataspaceProfileIds JSONB,
-			vpas JSONB,
-			error BOOLEAN,
-			errorDetail TEXT,
-			properties JSONB
-		)
-	`)
+	err := createParticipantProfilesTable(db)
 	require.NoError(t, err)
 }
 

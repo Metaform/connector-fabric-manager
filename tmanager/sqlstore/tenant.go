@@ -39,7 +39,7 @@ func newTenantStore() store.EntityStore[*api.Tenant] {
 	return estore
 }
 
-func recordToTenantEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Tenant, error) {
+func recordToTenantEntity(_ *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Tenant, error) {
 	profile := &api.Tenant{}
 	if id, ok := record.Values["id"].(string); ok {
 		profile.ID = id

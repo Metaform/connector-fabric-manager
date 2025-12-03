@@ -15,6 +15,7 @@ package sqlstore
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -557,21 +558,12 @@ func TestNewDataspaceProfileStore_SearchByDeploymentStatePredicate(t *testing.T)
 
 // cleanupProfileTestData removes test data from the dataspace_profiles table
 func cleanupProfileTestData(t *testing.T, db *sql.DB) {
-	_, err := db.Exec("DELETE FROM dataspace_profiles")
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", cfmDataspaceProfilesTable))
 	require.NoError(t, err)
 }
 
 // setupProfileTable creates the dataspace_profiles table for testing
 func setupProfileTable(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
-		DROP TABLE IF EXISTS dataspace_profiles CASCADE;
-		CREATE TABLE dataspace_profiles (
-			id TEXT PRIMARY KEY,
-			version INT DEFAULT 1,
-			artifacts JSONB,
-			deployments JSONB,
-			properties JSONB
-		);
-	`)
+	err := createDataspaceProfilesTable(db)
 	require.NoError(t, err)
 }

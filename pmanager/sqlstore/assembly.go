@@ -72,47 +72,18 @@ func (a *PostgresServiceAssembly) Finalize() error {
 }
 
 func createTables(db *sql.DB) error {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS activity_definitions (
-		    id VARCHAR(255) PRIMARY KEY,
-			TYPE VARCHAR(255),
-			version BIGINT NOT NULL,
-			description TEXT,
-			inputSchema JSONB,
-			outputSchema JSONB
-		)
-	`)
+	err := createActivityDefinitionsTable(db)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS orchestration_definitions (
-		    id VARCHAR(255) PRIMARY KEY,
-			TYPE VARCHAR(255),
-			version BIGINT NOT NULL,
-			description TEXT,
-			active BOOLEAN DEFAULT FALSE,
-			SCHEMA JSONB,
-			activities JSONB
-		)
-	`)
+	err = createOrchestrationDefinitionsTable(db)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS orchestration_entries (
-			id VARCHAR(255) PRIMARY KEY,
-			version BIGINT NOT NULL,
-			correlationId VARCHAR(255),
-			STATE INTEGER,
-			stateTimestamp TIMESTAMP,
-			createdTimestamp TIMESTAMP,
-			orchestrationType VARCHAR(255)
-		)
-	`)
+	err = createOrchestrationEntriesTable(db)
 
 	if err != nil {
 		return err
@@ -120,3 +91,4 @@ func createTables(db *sql.DB) error {
 
 	return nil
 }
+

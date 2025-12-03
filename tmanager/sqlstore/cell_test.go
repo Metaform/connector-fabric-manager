@@ -15,6 +15,7 @@ package sqlstore
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -646,22 +647,12 @@ func TestNewCellStore_SearchByPropertiesPredicate(t *testing.T) {
 
 // cleanupTestData removes test data from the cells table
 func cleanupTestData(t *testing.T, db *sql.DB) {
-	_, err := db.Exec("DELETE FROM cells")
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s", cfmCellsTable))
 	require.NoError(t, err)
 }
 
-
 // setupCellTable creates the cells table for testing
 func setupCellTable(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
-		DROP TABLE IF EXISTS cells CASCADE;
-		CREATE TABLE cells (
-			id TEXT PRIMARY KEY,
-			version INT DEFAULT 1,
-			state TEXT NOT NULL,
-			state_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			properties JSONB
-		);
-	`)
+	err := createCellsTable(db)
 	require.NoError(t, err)
 }

@@ -50,7 +50,7 @@ func newParticipantProfileStore() store.EntityStore[*api.ParticipantProfile] {
 	return estore
 }
 
-func recordToPProfileEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.ParticipantProfile, error) {
+func recordToPProfileEntity(_ *sql.Tx, record *sqlstore.DatabaseRecord) (*api.ParticipantProfile, error) {
 	profile := &api.ParticipantProfile{}
 
 	if id, ok := record.Values["id"].(string); ok {

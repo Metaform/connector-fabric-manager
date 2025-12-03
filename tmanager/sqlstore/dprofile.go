@@ -41,7 +41,7 @@ func newDataspaceProfileStore() store.EntityStore[*api.DataspaceProfile] {
 	return estore
 }
 
-func recordToDProfileEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.DataspaceProfile, error) {
+func recordToDProfileEntity(_ *sql.Tx, record *sqlstore.DatabaseRecord) (*api.DataspaceProfile, error) {
 	profile := &api.DataspaceProfile{}
 	if id, ok := record.Values["id"].(string); ok {
 		profile.ID = id

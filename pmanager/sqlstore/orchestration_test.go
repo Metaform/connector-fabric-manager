@@ -1,4 +1,3 @@
-
 //  Copyright (c) 2025 Metaform Systems, Inc
 //
 //  This program and the accompanying materials are made available under the
@@ -380,20 +379,8 @@ func TestNewOrchestrationEntryStore_SearchByStateAndCorrelationIDPredicate(t *te
 	assert.Equal(t, 1, count)
 }
 
-// Helper functions
-
 func setupOrchestrationEntryTable(t *testing.T, db *sql.DB) {
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS orchestration_entries (
-			id VARCHAR(255) PRIMARY KEY,
-			version BIGINT NOT NULL,
-			correlationId VARCHAR(255),
-			state INTEGER,
-			stateTimestamp TIMESTAMP,
-			createdTimestamp TIMESTAMP,
-			orchestrationType VARCHAR(255)
-		)
-	`)
+	err := createOrchestrationEntriesTable(db)
 	require.NoError(t, err)
 }
 
