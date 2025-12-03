@@ -23,15 +23,17 @@ const (
 	cfmActivityDefinitionsTable      = "activity_definitions"
 )
 
+// Note fields are quoted to avoid some IDEs (Goland) reformatting them to uppercase
+
 func createOrchestrationEntriesTable(db *sql.DB) error {
 	_, err := db.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id VARCHAR(255) PRIMARY KEY,
 			version BIGINT NOT NULL,
-			correlationId VARCHAR(255),
-			STATE INTEGER,
-			stateTimestamp TIMESTAMP,
-			createdTimestamp TIMESTAMP,
+			correlationId VARCHAR(255) NOT NULL ,
+			"state" INTEGER,
+			stateTimestamp TIMESTAMP NOT NULL ,
+			createdTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			orchestrationType VARCHAR(255)
 		)
 	`, cfmOrchestrationEntriesTable))
@@ -42,11 +44,11 @@ func createOrchestrationDefinitionsTable(db *sql.DB) error {
 	_, err := db.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 		    id VARCHAR(255) PRIMARY KEY,
-			TYPE VARCHAR(255),
+			"type" VARCHAR(255),
 			version BIGINT NOT NULL,
 			description TEXT,
 			active BOOLEAN DEFAULT FALSE,
-			SCHEMA JSONB,
+			"schema" JSONB,
 			activities JSONB
 		);
 		CREATE INDEX IF NOT EXISTS idx_orchestration_type ON orchestration_definitions(TYPE)
@@ -58,7 +60,7 @@ func createActivityDefinitionsTable(db *sql.DB) error {
 	_, err := db.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 		    id VARCHAR(255) PRIMARY KEY,
-			TYPE VARCHAR(255),
+			"type" VARCHAR(255),
 			version BIGINT NOT NULL,
 			description TEXT,
 			inputSchema JSONB,

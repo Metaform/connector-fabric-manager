@@ -24,6 +24,8 @@ const (
 	cfmDataspaceProfilesTable   = "dataspace_profiles"
 )
 
+// Note fields are quoted to avoid some IDEs (Goland) reformatting them to uppercase
+
 func createTenantsTable(db *sql.DB) error {
 	_, err := db.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
@@ -71,8 +73,8 @@ func createCellsTable(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS %s (
 			id TEXT PRIMARY KEY,
 			version INT DEFAULT 1,
-			STATE TEXT NOT NULL,
-			state_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			"state" TEXT NOT NULL,
+			stateTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			properties JSONB
 		)
 	`, cfmCellsTable))
