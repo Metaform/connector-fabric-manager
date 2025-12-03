@@ -62,10 +62,13 @@ func newOrchestrationStore() store.EntityStore[*api.OrchestrationDefinition] {
 }
 
 func newActivityStore() store.EntityStore[*api.ActivityDefinition] {
-	columnNames := []string{"id", "type", "version", "description", "inputSchema", "outputSchema"}
+	columnNames := []string{"id", "type", "version", "description", "input_schema", "output_schema"}
 	builder := sqlstore.NewPostgresJSONBBuilder().WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
 		"inputSchema":  sqlstore.JSONBFieldTypeArrayOfObjects,
 		"outputSchema": sqlstore.JSONBFieldTypeArrayOfObjects,
+	}).WithFieldMappings(map[string]string{
+		"inputSchema":  "input_schema",
+		"outputSchema": "output_schema",
 	})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.ActivityDefinition](
@@ -354,7 +357,7 @@ func activityEntityToRecord(definition *api.ActivityDefinition) (*sqlstore.Datab
 		if err != nil {
 			return record, err
 		}
-		record.Values["inputSchema"] = bytes
+		record.Values["input_schema"] = bytes
 	}
 
 	if definition.OutputSchema != nil {
@@ -362,7 +365,7 @@ func activityEntityToRecord(definition *api.ActivityDefinition) (*sqlstore.Datab
 		if err != nil {
 			return record, err
 		}
-		record.Values["outputSchema"] = bytes
+		record.Values["output_schema"] = bytes
 	}
 
 	return record, nil
@@ -388,13 +391,13 @@ func recordToActivityEntity(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*api.A
 		return nil, fmt.Errorf("invalid activity definition description reading record")
 	}
 
-	if bytes, ok := record.Values["inputSchema"].([]byte); ok && bytes != nil {
+	if bytes, ok := record.Values["input_schema"].([]byte); ok && bytes != nil {
 		if err := json.Unmarshal(bytes, &definition.InputSchema); err != nil {
 			return nil, err
 		}
 	}
 
-	if bytes, ok := record.Values["outputSchema"].([]byte); ok && bytes != nil {
+	if bytes, ok := record.Values["output_schema"].([]byte); ok && bytes != nil {
 		if err := json.Unmarshal(bytes, &definition.OutputSchema); err != nil {
 			return nil, err
 		}

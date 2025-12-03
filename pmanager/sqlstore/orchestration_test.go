@@ -53,7 +53,7 @@ func TestNewOrchestrationEntryStore_FindByID_Success(t *testing.T) {
 	}
 
 	_, err := testDB.Exec(
-		"INSERT INTO orchestration_entries (id, version, correlation_id, state, state_timestamp, created_timestamp, orchestrationType) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		"INSERT INTO orchestration_entries (id, version, correlation_id, state, state_timestamp, created_timestamp, orchestration_type) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 		entry.ID,
 		entry.Version,
 		entry.CorrelationID,
@@ -178,7 +178,7 @@ func TestNewOrchestrationEntryStore_SearchByStatePredicate(t *testing.T) {
 
 	for _, entry := range entries {
 		_, err := testDB.Exec(
-			"INSERT INTO orchestration_entries (id, version, correlation_id, state, state_timestamp, created_timestamp, orchestrationType) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+			"INSERT INTO orchestration_entries (id, version, correlation_id, state, state_timestamp, created_timestamp, orchestration_type) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 			entry.ID,
 			entry.Version,
 			entry.CorrelationID,
@@ -259,7 +259,7 @@ func TestNewOrchestrationEntryStore_SearchByCorrelationIDPredicate(t *testing.T)
 
 	for _, entry := range entries {
 		_, err := testDB.Exec(
-			"INSERT INTO orchestration_entries (id, version, correlation_id, state, state_timestamp, created_timestamp, orchestrationType) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+			"INSERT INTO orchestration_entries (id, version, correlation_id, state, state_timestamp, created_timestamp, orchestration_type) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 			entry.ID,
 			entry.Version,
 			entry.CorrelationID,
@@ -340,7 +340,7 @@ func TestNewOrchestrationEntryStore_SearchByStateAndCorrelationIDPredicate(t *te
 
 	for _, entry := range entries {
 		_, err := testDB.Exec(
-			"INSERT INTO orchestration_entries (id, version, correlation_id, state, created_timestamp, state_timestamp, orchestrationType) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+			"INSERT INTO orchestration_entries (id, version, correlation_id, state, created_timestamp, state_timestamp, orchestration_type) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 			entry.ID,
 			entry.Version,
 			entry.CorrelationID,

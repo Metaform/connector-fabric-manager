@@ -34,7 +34,7 @@ func createOrchestrationEntriesTable(db *sql.DB) error {
 			"state" INTEGER,
 			state_timestamp TIMESTAMP NOT NULL ,
 			created_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			orchestrationType VARCHAR(255)
+			orchestration_type VARCHAR(255)
 		)
 	`, cfmOrchestrationEntriesTable))
 	return err
@@ -63,8 +63,8 @@ func createActivityDefinitionsTable(db *sql.DB) error {
 			"type" VARCHAR(255),
 			version BIGINT NOT NULL,
 			description TEXT,
-			inputSchema JSONB,
-			outputSchema JSONB
+			input_schema JSONB,
+			output_schema JSONB
 		)
 	`, cfmActivityDefinitionsTable))
 	return err

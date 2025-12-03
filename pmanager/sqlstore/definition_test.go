@@ -560,7 +560,7 @@ func TestPostgresDefinitionStore_FindActivityDefinition(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(
-		"INSERT INTO activity_definitions (id, type, version, description, inputSchema, outputSchema) VALUES ($1, $2, $3, $4, $5, $6)",
+		"INSERT INTO activity_definitions (id, type, version, description, input_schema, output_schema) VALUES ($1, $2, $3, $4, $5, $6)",
 		definition.Type,
 		definition.Type,
 		definition.Version,

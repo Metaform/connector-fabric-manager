@@ -24,9 +24,12 @@ import (
 )
 
 func newOrchestrationEntryStore() store.EntityStore[*api.OrchestrationEntry] {
-	columnNames := []string{"id", "version", "correlation_id", "state", "state_timestamp", "created_timestamp", "orchestrationType"}
+	columnNames := []string{"id", "version", "correlation_id", "state", "state_timestamp", "created_timestamp", "orchestration_type"}
 	builder := sqlstore.NewPostgresJSONBBuilder().
-		WithFieldMappings(map[string]string{"correlationId": "correlation_id", "stateTimestamp": "state_timestamp", "createdTimestamp": "created_timestamp"})
+		WithFieldMappings(map[string]string{"correlationId": "correlation_id",
+			"stateTimestamp":    "state_timestamp",
+			"createdTimestamp":  "created_timestamp",
+			"orchestrationType": "orchestration_type"})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.OrchestrationEntry](
 		cfmOrchestrationEntriesTable,
@@ -77,7 +80,7 @@ func recordToOrchestrationEntry(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*a
 		return nil, fmt.Errorf("invalid orchestration entry created_timestamp reading record")
 	}
 
-	if otype, ok := record.Values["orchestrationType"].(string); ok {
+	if otype, ok := record.Values["orchestration_type"].(string); ok {
 		profile.OrchestrationType = model.OrchestrationType(otype)
 	} else {
 		return nil, fmt.Errorf("invalid orchestration entry type reading record")
@@ -98,7 +101,7 @@ func orchestrationEntryToRecord(profile *api.OrchestrationEntry) (*sqlstore.Data
 	record.Values["state"] = profile.State
 	record.Values["state_timestamp"] = profile.StateTimestamp
 	record.Values["created_timestamp"] = profile.CreatedTimestamp
-	record.Values["orchestrationType"] = profile.OrchestrationType
+	record.Values["orchestration_type"] = profile.OrchestrationType
 
 	return record, nil
 }
