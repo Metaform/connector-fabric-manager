@@ -24,11 +24,12 @@ import (
 )
 
 func newOrchestrationEntryStore() store.EntityStore[*api.OrchestrationEntry] {
-	columnNames := []string{"id", "version", "correlationId", "state", "stateTimestamp", "createdTimestamp", "orchestrationType"}
-	builder := sqlstore.NewPostgresJSONBBuilder()
+	columnNames := []string{"id", "version", "correlation_id", "state", "state_timestamp", "created_timestamp", "orchestrationType"}
+	builder := sqlstore.NewPostgresJSONBBuilder().
+		WithFieldMappings(map[string]string{"correlationId": "correlation_id", "stateTimestamp": "state_timestamp", "createdTimestamp": "created_timestamp"})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.OrchestrationEntry](
-		"orchestration_entries",
+		cfmOrchestrationEntriesTable,
 		columnNames,
 		recordToOrchestrationEntry,
 		orchestrationEntryToRecord,
@@ -52,10 +53,10 @@ func recordToOrchestrationEntry(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*a
 		return nil, fmt.Errorf("invalid orchestration entry version reading record")
 	}
 
-	if version, ok := record.Values["correlationId"].(string); ok {
+	if version, ok := record.Values["correlation_id"].(string); ok {
 		profile.CorrelationID = version
 	} else {
-		return nil, fmt.Errorf("invalid orchestration entry correlationId reading record")
+		return nil, fmt.Errorf("invalid orchestration entry correlation_id reading record")
 	}
 
 	if state, ok := record.Values["state"].(int64); ok {
@@ -64,16 +65,16 @@ func recordToOrchestrationEntry(tx *sql.Tx, record *sqlstore.DatabaseRecord) (*a
 		return nil, fmt.Errorf("invalid orchestration entry state reading record")
 	}
 
-	if timestamp, ok := record.Values["stateTimestamp"].(time.Time); ok {
+	if timestamp, ok := record.Values["state_timestamp"].(time.Time); ok {
 		profile.StateTimestamp = timestamp
 	} else {
-		return nil, fmt.Errorf("invalid orchestration entry stateTimestamp reading record")
+		return nil, fmt.Errorf("invalid orchestration entry state_timestamp reading record")
 	}
 
-	if timestamp, ok := record.Values["createdTimestamp"].(time.Time); ok {
+	if timestamp, ok := record.Values["created_timestamp"].(time.Time); ok {
 		profile.CreatedTimestamp = timestamp
 	} else {
-		return nil, fmt.Errorf("invalid orchestration entry createdTimestamp reading record")
+		return nil, fmt.Errorf("invalid orchestration entry created_timestamp reading record")
 	}
 
 	if otype, ok := record.Values["orchestrationType"].(string); ok {
@@ -93,10 +94,10 @@ func orchestrationEntryToRecord(profile *api.OrchestrationEntry) (*sqlstore.Data
 
 	record.Values["id"] = profile.ID
 	record.Values["version"] = profile.Version
-	record.Values["correlationId"] = profile.CorrelationID
+	record.Values["correlation_id"] = profile.CorrelationID
 	record.Values["state"] = profile.State
-	record.Values["stateTimestamp"] = profile.StateTimestamp
-	record.Values["createdTimestamp"] = profile.CreatedTimestamp
+	record.Values["state_timestamp"] = profile.StateTimestamp
+	record.Values["created_timestamp"] = profile.CreatedTimestamp
 	record.Values["orchestrationType"] = profile.OrchestrationType
 
 	return record, nil

@@ -30,10 +30,10 @@ func createOrchestrationEntriesTable(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS %s (
 			id VARCHAR(255) PRIMARY KEY,
 			version BIGINT NOT NULL,
-			correlationId VARCHAR(255) NOT NULL ,
+			correlation_id VARCHAR(255) NOT NULL ,
 			"state" INTEGER,
-			stateTimestamp TIMESTAMP NOT NULL ,
-			createdTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			state_timestamp TIMESTAMP NOT NULL ,
+			created_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			orchestrationType VARCHAR(255)
 		)
 	`, cfmOrchestrationEntriesTable))

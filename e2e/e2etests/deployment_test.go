@@ -112,7 +112,7 @@ func Test_VerifyE2E(t *testing.T) {
 	require.Contains(t, connectorVPA.Properties, "connectorkey", "Connector VPA should contain 'connectorkey' property")
 
 	var orchestrations []papi.OrchestrationEntry
-	err = client.PostToPManagerWithResponse("orchestrations/query", model.Query{Predicate: fmt.Sprintf("correlationID = '%s'", statusProfile.ID)}, &orchestrations)
+	err = client.PostToPManagerWithResponse("orchestrations/query", model.Query{Predicate: fmt.Sprintf("correlationId = '%s'", statusProfile.ID)}, &orchestrations)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(orchestrations), "Expected 1 orchestration to be created")
 	assert.Equal(t, papi.OrchestrationStateCompleted, papi.OrchestrationState(orchestrations[0].State))

@@ -31,7 +31,7 @@ func newDataspaceProfileStore() store.EntityStore[*api.DataspaceProfile] {
 	})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.DataspaceProfile](
-		"dataspace_profiles",
+		cfmDataspaceProfilesTable,
 		columnNames,
 		recordToDProfileEntity,
 		dProfileEntityToRecord,

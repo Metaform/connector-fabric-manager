@@ -66,11 +66,11 @@ func TestNewCellStore_FindByID_Success(t *testing.T) {
 	}
 
 	_, err = testDB.Exec(
-		"INSERT INTO cells (id, version, state, stateTimestamp, properties) VALUES ($1, $2, $3, $4, $5)",
+		"INSERT INTO cells (id, version, state, state_timestamp, properties) VALUES ($1, $2, $3, $4, $5)",
 		record.Values["id"],
 		record.Values["version"],
 		record.Values["state"],
-		record.Values["stateTimestamp"],
+		record.Values["state_timestamp"],
 		propertiesVal,
 	)
 	require.NoError(t, err)
@@ -132,11 +132,11 @@ func TestNewCellStore_Exists(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(
-		"INSERT INTO cells (id, version, state, stateTimestamp) VALUES ($1, $2, $3, $4)",
+		"INSERT INTO cells (id, version, state, state_timestamp) VALUES ($1, $2, $3, $4)",
 		record.Values["id"],
 		record.Values["version"],
 		record.Values["state"],
-		record.Values["stateTimestamp"],
+		record.Values["state_timestamp"],
 	)
 	require.NoError(t, err)
 
@@ -213,11 +213,11 @@ func TestNewCellStore_Update(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(
-		"INSERT INTO cells (id, version, state, stateTimestamp) VALUES ($1, $2, $3, $4)",
+		"INSERT INTO cells (id, version, state, state_timestamp) VALUES ($1, $2, $3, $4)",
 		record.Values["id"],
 		record.Values["version"],
 		record.Values["state"],
-		record.Values["stateTimestamp"],
+		record.Values["state_timestamp"],
 	)
 	require.NoError(t, err)
 
@@ -263,11 +263,11 @@ func TestNewCellStore_Delete(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(
-		"INSERT INTO cells (id, version, state, stateTimestamp) VALUES ($1, $2, $3, $4)",
+		"INSERT INTO cells (id, version, state, state_timestamp) VALUES ($1, $2, $3, $4)",
 		record.Values["id"],
 		record.Values["version"],
 		record.Values["state"],
-		record.Values["stateTimestamp"],
+		record.Values["state_timestamp"],
 	)
 	require.NoError(t, err)
 
@@ -315,11 +315,11 @@ func TestNewCellStore_GetAll(t *testing.T) {
 		record, err := cellEntityToRecord(cell)
 		require.NoError(t, err)
 		_, err = testDB.Exec(
-			"INSERT INTO cells (id, version, state, stateTimestamp) VALUES ($1, $2, $3, $4)",
+			"INSERT INTO cells (id, version, state, state_timestamp) VALUES ($1, $2, $3, $4)",
 			record.Values["id"],
 			record.Values["version"],
 			record.Values["state"],
-			record.Values["stateTimestamp"],
+			record.Values["state_timestamp"],
 		)
 		require.NoError(t, err)
 	}
@@ -363,11 +363,11 @@ func TestNewCellStore_GetAllCount(t *testing.T) {
 		record, err := cellEntityToRecord(cell)
 		require.NoError(t, err)
 		_, err = testDB.Exec(
-			"INSERT INTO cells (id, version, state, statetimestamp) VALUES ($1, $2, $3, $4)",
+			"INSERT INTO cells (id, version, state, state_timestamp) VALUES ($1, $2, $3, $4)",
 			record.Values["id"],
 			record.Values["version"],
 			record.Values["state"],
-			record.Values["stateTimestamp"],
+			record.Values["state_timestamp"],
 		)
 		require.NoError(t, err)
 	}
@@ -407,11 +407,11 @@ func TestNewCellStore_GetAllPaginated(t *testing.T) {
 		record, err := cellEntityToRecord(cell)
 		require.NoError(t, err)
 		_, err = testDB.Exec(
-			"INSERT INTO cells (id, version, state, stateTimestamp) VALUES ($1, $2, $3, $4)",
+			"INSERT INTO cells (id, version, state, state_timestamp) VALUES ($1, $2, $3, $4)",
 			record.Values["id"],
 			record.Values["version"],
 			record.Values["state"],
-			record.Values["stateTimestamp"],
+			record.Values["state_timestamp"],
 		)
 		require.NoError(t, err)
 	}
@@ -463,11 +463,11 @@ func TestNewCellStore_WithProperties(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(
-		"INSERT INTO cells (id, version, state, stateTimestamp, properties) VALUES ($1, $2, $3, $4, $5)",
+		"INSERT INTO cells (id, version, state, state_timestamp, properties) VALUES ($1, $2, $3, $4, $5)",
 		record.Values["id"],
 		record.Values["version"],
 		record.Values["state"],
-		record.Values["stateTimestamp"],
+		record.Values["state_timestamp"],
 		record.Values["properties"],
 	)
 	require.NoError(t, err)
@@ -510,11 +510,11 @@ func TestNewCellStore_StateTransitions(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(
-		"INSERT INTO cells (id, version, state, statetimestamp) VALUES ($1, $2, $3, $4)",
+		"INSERT INTO cells (id, version, state, state_timestamp) VALUES ($1, $2, $3, $4)",
 		record.Values["id"],
 		record.Values["version"],
 		record.Values["state"],
-		record.Values["stateTimestamp"],
+		record.Values["state_timestamp"],
 	)
 	require.NoError(t, err)
 
@@ -609,11 +609,11 @@ func TestNewCellStore_SearchByPropertiesPredicate(t *testing.T) {
 		}
 
 		_, err = testDB.Exec(
-			"INSERT INTO cells (id, version, state, stateTimestamp, properties) VALUES ($1, $2, $3, $4, $5)",
+			"INSERT INTO cells (id, version, state, state_timestamp, properties) VALUES ($1, $2, $3, $4, $5)",
 			record.Values["id"],
 			record.Values["version"],
 			record.Values["state"],
-			record.Values["stateTimestamp"],
+			record.Values["state_timestamp"],
 			propertiesVal,
 		)
 		require.NoError(t, err)

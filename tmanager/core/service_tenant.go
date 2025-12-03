@@ -75,10 +75,13 @@ func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error 
 		}
 
 		count, err := t.participantStore.CountByPredicate(ctx, &query.AtomicPredicate{
-			Field:    "TenantID",
+			Field:    "tenantId",
 			Operator: query.OpEqual,
 			Value:    tenant.ID,
 		})
+		if err != nil {
+			return err
+		}
 
 		if count > 0 {
 			return types.NewClientError("cannot delete tenant with participants")
@@ -87,7 +90,6 @@ func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error 
 		err = t.tenantStore.Delete(ctx, tenant.ID)
 		return nil
 	})
-
 }
 
 func (t tenantService) QueryTenants(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.Tenant, error] {

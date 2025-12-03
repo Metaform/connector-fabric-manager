@@ -29,7 +29,7 @@ func newTenantStore() store.EntityStore[*api.Tenant] {
 	})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.Tenant](
-		"tenants",
+		cfmTenantsTable,
 		columnNames,
 		recordToTenantEntity,
 		tenantEntityToRecord,

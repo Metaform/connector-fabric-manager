@@ -630,6 +630,37 @@ func TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields(t *testing.T) {
 	assert.Equal(t, 1, count)
 }
 
+// TestPostgresJSONB_QueryNonJSONBFieldsWithJSONBFields tests field name mappings
+func TestPostgresJSONB_QueryFieldMapping(t *testing.T) {
+	setupTestTable(t)
+	defer CleanupTestData(t, testDB)
+
+	testData := TestModel{
+		ID:         "pp17",
+		Identifier: "org-q",
+		TenantID:   "tenant8",
+		VPAs: []VPA{
+			{ID: "vpa1", Type: "connector", State: "active"},
+		},
+		CreatedAt: time.Now(),
+	}
+	insertTestData(t, testData)
+
+	// Query: tenant_id = "tenant8" AND VPAs.Type = "connector"
+	// the tenant_id field is mapped to the tenantId column by the JSONB type is not mnapped
+	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs").WithFieldMappings(map[string]string{"tenant_id": "tenantId", "Type": "no_rename_jsonb"})
+	compound := query.And(
+		query.Eq("tenant_id", "tenant8"),
+		query.Eq("vpas.type", "connector"),
+	)
+	sqlStr, args := builder.BuildSQL(compound)
+
+	var count int
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
+	require.NoError(t, err)
+	assert.Equal(t, 1, count)
+}
+
 // TestPostgresJSONB_QueryEmptyVPAsArray tests records with empty VPA arrays
 func TestPostgresJSONB_QueryEmptyVPAsArray(t *testing.T) {
 	setupTestTable(t)

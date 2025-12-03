@@ -43,14 +43,14 @@ func createParticipantProfilesTable(db *sql.DB) error {
 				id VARCHAR(255) PRIMARY KEY,
 				version BIGINT NOT NULL,
 				identifier VARCHAR(255),
-				tenantId VARCHAR(255),
-				dataspaceProfileIds JSONB,
+				tenant_id VARCHAR(255),
+				dataspace_profile_ids JSONB,
 				vpas JSONB,
 				error BOOLEAN,
-				errorDetail TEXT,
+				error_detail TEXT,
 				properties JSONB
 			);
-			CREATE INDEX IF NOT EXISTS idx_participant_tenant ON %s(tenantid)
+			CREATE INDEX IF NOT EXISTS idx_participant_tenant ON %s(tenant_id)
 	`, cfmParticipantProfilesTable, cfmParticipantProfilesTable))
 	return err
 }
@@ -74,7 +74,7 @@ func createCellsTable(db *sql.DB) error {
 			id TEXT PRIMARY KEY,
 			version INT DEFAULT 1,
 			"state" TEXT NOT NULL,
-			stateTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			state_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			properties JSONB
 		)
 	`, cfmCellsTable))

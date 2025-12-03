@@ -82,7 +82,7 @@ func TestNewParticipantProfileStore_FindByID_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(
-		"INSERT INTO participant_profiles (id, version, identifier, tenantId, dataspaceProfileIds, vpas, error, errorDetail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+		"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 		profile.ID,
 		profile.Version,
 		profile.Identifier,
@@ -219,7 +219,7 @@ func TestNewParticipantProfileStore_SearchByDataSpaceProfileIDsPredicate(t *test
 		require.NoError(t, err)
 
 		_, err = testDB.Exec(
-			"INSERT INTO participant_profiles (id, version, identifier, tenantId, dataspaceProfileIds, vpas, error, errorDetail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+			"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 			profile.ID,
 			profile.Version,
 			profile.Identifier,
@@ -340,7 +340,7 @@ func TestNewParticipantProfileStore_SearchByVPAsPredicate(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = testDB.Exec(
-			"INSERT INTO participant_profiles (id, version, identifier, tenantId, dataspaceProfileIds, vpas, error, errorDetail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+			"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 			profile.ID,
 			profile.Version,
 			profile.Identifier,
@@ -445,7 +445,7 @@ func TestNewParticipantProfileStore_SearchByPropertiesPredicate(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = testDB.Exec(
-			"INSERT INTO participant_profiles (id, version, identifier, tenantId, dataspaceProfileIds, vpas, error, errorDetail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+			"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 			profile.ID,
 			profile.Version,
 			profile.Identifier,
@@ -533,7 +533,7 @@ func TestNewParticipantProfileStore_SearchByErrorPredicate(t *testing.T) {
 
 	for _, profile := range profiles {
 		_, err := testDB.Exec(
-			"INSERT INTO participant_profiles (id, version, identifier, tenantId, dataspaceProfileIds, vpas, error, errorDetail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+			"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 			profile.ID,
 			profile.Version,
 			profile.Identifier,
@@ -616,7 +616,7 @@ func TestNewParticipantProfileStore_SearchByIdentifierPredicate(t *testing.T) {
 
 	for _, profile := range profiles {
 		_, err := testDB.Exec(
-			"INSERT INTO participant_profiles (id, version, identifier, tenantId, dataspaceProfileIds, vpas, error, errorDetail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+			"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 			profile.ID,
 			profile.Version,
 			profile.Identifier,
@@ -699,7 +699,7 @@ func TestNewParticipantProfileStore_SearchByTenantIDPredicate(t *testing.T) {
 
 	for _, profile := range profiles {
 		_, err := testDB.Exec(
-			"INSERT INTO participant_profiles (id, version, identifier, tenantId, dataspaceProfileIds, vpas, error, errorDetail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+			"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 			profile.ID,
 			profile.Version,
 			profile.Identifier,
@@ -793,7 +793,7 @@ func TestNewParticipantProfileStore_SearchByCombinedPredicates(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = testDB.Exec(
-			"INSERT INTO participant_profiles (id, version, identifier, tenantId, dataspaceProfileIds, vpas, error, errorDetail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+			"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 			profile.ID,
 			profile.Version,
 			profile.Identifier,

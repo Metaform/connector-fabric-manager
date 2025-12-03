@@ -106,6 +106,9 @@ type JSONBSQLBuilder interface {
 	// WithJSONBFieldTypes configures JSONB field types
 	WithJSONBFieldTypes(fieldTypes map[string]JSONBFieldType) JSONBSQLBuilder
 
+	// WithFieldMappings configures field name to column name mappings
+	WithFieldMappings(mappings map[string]string) JSONBSQLBuilder
+
 	// BuildSQL converts a predicate to SQL WHERE clause and arguments
 	BuildSQL(predicate query.Predicate) (string, []any)
 }
@@ -115,6 +118,7 @@ type JSONBSQLBuilder interface {
 type PostgresJSONBBuilder struct {
 	jsonbFields     map[string]bool
 	jsonbFieldTypes map[string]JSONBFieldType
+	fieldMappings   map[string]string
 }
 
 // NewPostgresJSONBBuilder creates a new JSONB-aware SQL builder
@@ -122,6 +126,7 @@ func NewPostgresJSONBBuilder() *PostgresJSONBBuilder {
 	return &PostgresJSONBBuilder{
 		jsonbFields:     make(map[string]bool),
 		jsonbFieldTypes: make(map[string]JSONBFieldType),
+		fieldMappings:   make(map[string]string),
 	}
 }
 
@@ -144,6 +149,13 @@ func (b *PostgresJSONBBuilder) WithJSONBFieldTypes(fieldTypes map[string]JSONBFi
 		lowerField := strings.ToLower(field)
 		b.jsonbFieldTypes[lowerField] = fieldType
 		b.jsonbFields[lowerField] = true
+	}
+	return b
+}
+
+func (b *PostgresJSONBBuilder) WithFieldMappings(mappings map[string]string) JSONBSQLBuilder {
+	for k, v := range mappings {
+		b.fieldMappings[k] = v
 	}
 	return b
 }
@@ -199,11 +211,16 @@ func (b *PostgresJSONBBuilder) buildCompoundPredicateSQL(predicate *query.Compou
 
 // buildStandardPredicateSQL builds SQL for non-JSONB fields using Postgres placeholders
 func (b *PostgresJSONBBuilder) buildStandardPredicateSQL(predicate *query.AtomicPredicate, paramCounter *int) (string, []any, int) {
+	field := string(predicate.Field)
+	mappedName, found := b.fieldMappings[field]
+	if found {
+		field = mappedName
+	}
 	switch predicate.Operator {
 	case query.OpIsNull:
-		return fmt.Sprintf("%s IS NULL", predicate.Field), nil, *paramCounter
+		return fmt.Sprintf("%s IS NULL", field), nil, *paramCounter
 	case query.OpIsNotNull:
-		return fmt.Sprintf("%s IS NOT NULL", predicate.Field), nil, *paramCounter
+		return fmt.Sprintf("%s IS NOT NULL", field), nil, *paramCounter
 	case query.OpIn, query.OpNotIn:
 		values := predicate.Value.([]any)
 		placeholders := make([]string, len(values))
@@ -211,11 +228,11 @@ func (b *PostgresJSONBBuilder) buildStandardPredicateSQL(predicate *query.Atomic
 			*paramCounter++
 			placeholders[i] = fmt.Sprintf("$%d", *paramCounter)
 		}
-		sql := fmt.Sprintf("%s %s (%s)", predicate.Field, predicate.Operator, strings.Join(placeholders, ","))
+		sql := fmt.Sprintf("%s %s (%s)", field, predicate.Operator, strings.Join(placeholders, ","))
 		return sql, values, *paramCounter
 	default:
 		*paramCounter++
-		return fmt.Sprintf("%s %s $%d", predicate.Field, predicate.Operator, *paramCounter), []any{predicate.Value}, *paramCounter
+		return fmt.Sprintf("%s %s $%d", field, predicate.Operator, *paramCounter), []any{predicate.Value}, *paramCounter
 	}
 }
 
@@ -238,7 +255,13 @@ func (b *PostgresJSONBBuilder) tryBuildJSONBSQL(predicate *query.AtomicPredicate
 
 	// If it's just a root field with no nested path
 	if len(parts) == 1 {
-		sql, args := b.buildJSONBCondition(rootField, []string{}, fieldType, predicate, paramCounter)
+		mappedField := parts[0]
+		if mappedName, found := b.fieldMappings[mappedField]; found {
+			mappedField = mappedName
+		} else {
+			mappedField = rootField
+		}
+		sql, args := b.buildJSONBCondition(mappedField, []string{}, fieldType, predicate, paramCounter)
 		return sql, args, true
 	}
 
