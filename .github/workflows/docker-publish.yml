@@ -1,0 +1,77 @@
+name: Build and Publish Docker Images
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-publish:
+    name: Build ${{ matrix.image.name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        image:
+          #          - name: edcvagent
+          #            dockerfile: docker/Dockerfile.edcvagent.dockerfile
+          #            context: .
+          - name: kcagent
+            dockerfile: docker/Dockerfile.kcagent.dockerfile
+            context: .
+          - name: pmanager
+            dockerfile: docker/Dockerfile.pmanager.dockerfile
+            context: .
+          #          - name: testagent
+          #            dockerfile: docker/Dockerfile.testagent.dockerfile
+          #            context: .
+          - name: tmanager
+            dockerfile: docker/Dockerfile.tmanager.dockerfile
+            context: .
+    
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Log in to GitHub Container Registry"
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Create workspace"
+        run: |
+          go work init ./assembly ./common ./pmanager ./tmanager ./e2e ./mvd ./agent/edcv ./agent/keycloak
+
+      - name: "Extract metadata"
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{github.repository}}/${{ matrix.image.name }}
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: "Build and push Docker image"
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: ${{ matrix.image.context }}
+          file: ${{ matrix.image.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

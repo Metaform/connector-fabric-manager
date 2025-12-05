@@ -28,7 +28,7 @@ import (
 )
 
 // FindByID returns error - verify Nak is called exactly once
-func TestOnMessage_FindByIdError_NakCalledOnce(t *testing.T) {
+func TestOnMessage_FindByIDError_NakCalledOnce(t *testing.T) {
 	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
@@ -36,7 +36,7 @@ func TestOnMessage_FindByIdError_NakCalledOnce(t *testing.T) {
 	expectedErr := errors.New("database connection failed")
 
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(nil, expectedErr).
 		Once()
 
@@ -60,7 +60,7 @@ func TestOnMessage_CreateError_NakCalledNotAck(t *testing.T) {
 	expectedErr := errors.New("failed to write to database")
 
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(nil, types.ErrNotFound).
 		Once()
 
@@ -100,7 +100,7 @@ func TestOnMessage_UpdateError_NakCalledNotAck(t *testing.T) {
 	expectedErr := errors.New("update failed - constraint violation")
 
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(existingEntry, nil).
 		Once()
 
@@ -123,7 +123,7 @@ func TestOnMessage_UpdateError_NakCalledNotAck(t *testing.T) {
 }
 
 // FindByID unexpected error - verify Nak is called, no further operations
-func TestOnMessage_FindByIdUnexpectedError_NakCalledImmediately(t *testing.T) {
+func TestOnMessage_FindByIDUnexpectedError_NakCalledImmediately(t *testing.T) {
 	mockStore := mocks.NewMockEntityStore[*api.OrchestrationEntry](t)
 	trxContext := &store.NoOpTransactionContext{}
 	watcher := createTestWatcher(mockStore, trxContext)
@@ -131,7 +131,7 @@ func TestOnMessage_FindByIdUnexpectedError_NakCalledImmediately(t *testing.T) {
 	unexpectedErr := errors.New("data corruption detected")
 
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(nil, unexpectedErr).
 		Once()
 
@@ -156,7 +156,7 @@ func TestOnMessage_SequentialErrors_EachNakOnce(t *testing.T) {
 
 	// First message - FindByID fails
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(nil, dbError).
 		Once()
 
@@ -170,7 +170,7 @@ func TestOnMessage_SequentialErrors_EachNakOnce(t *testing.T) {
 
 	// Second message - Create fails
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-2").
+		FindByID(mock.Anything, "orch-2").
 		Return(nil, types.ErrNotFound).
 		Once()
 
@@ -201,7 +201,7 @@ func TestOnMessage_CreateTransientError_NakForRetry(t *testing.T) {
 	transientErr := errors.New("temporary lock timeout")
 
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(nil, types.ErrNotFound).
 		Once()
 
@@ -241,7 +241,7 @@ func TestOnMessage_UpdateStateConflict_NakForRetry(t *testing.T) {
 	stateConflictErr := errors.New("version mismatch")
 
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(existingEntry, nil).
 		Once()
 
@@ -270,7 +270,7 @@ func TestOnMessage_SuccessfulCreate_AckCalledNotNak(t *testing.T) {
 	watcher := createTestWatcher(mockStore, trxContext)
 
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(nil, types.ErrNotFound).
 		Once()
 
@@ -308,7 +308,7 @@ func TestOnMessage_SuccessfulUpdate_AckCalledNotNak(t *testing.T) {
 	}
 
 	mockStore.EXPECT().
-		FindById(mock.Anything, "orch-1").
+		FindByID(mock.Anything, "orch-1").
 		Return(existingEntry, nil).
 		Once()
 
