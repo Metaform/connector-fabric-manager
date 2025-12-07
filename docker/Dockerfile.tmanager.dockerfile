@@ -10,13 +10,15 @@
 #       Metaform Systems, Inc. - initial API and implementation
 #
 
-FROM golang:1.24-alpine AS builder
-
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+ARG TARGETOS
+ARG TARGETARCH
 WORKDIR /app
 COPY .. .
 
 # Build the server binary
-RUN CGO_ENABLED=0 go build -o bin/tmanager ./tmanager/cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -ldflags="-s -w" -o bin/tmanager ./tmanager/cmd/server/main.go
 
 # Production stage
 FROM gcr.io/distroless/static-debian12:nonroot
