@@ -263,15 +263,6 @@ func (p *PostgresDefinitionStore) ListActivityDefinitions(
 	return collection.CollectAllDeref(p.activityStore.GetAll(ctx))
 }
 
-// containsActivityReference checks if an orchestration references an activity definition
-func (p *PostgresDefinitionStore) containsActivityReference(
-	orchestration *api.OrchestrationDefinition,
-	activityDefinition *api.ActivityDefinition,
-) bool {
-
-	panic("not yet implemented")
-}
-
 func orchestrationEntityToRecord(definition *api.OrchestrationDefinition) (*sqlstore.DatabaseRecord, error) {
 	record := &sqlstore.DatabaseRecord{
 		Values: make(map[string]any),

@@ -112,7 +112,7 @@ func (t tenantService) QueryTenantsCount(ctx context.Context, predicate query.Pr
 	var count int64
 	err := t.trxContext.Execute(ctx, func(ctx context.Context) error {
 		c, err := t.tenantStore.CountByPredicate(ctx, predicate)
-		count = int64(c)
+		count = c
 		return err
 	})
 	return count, err

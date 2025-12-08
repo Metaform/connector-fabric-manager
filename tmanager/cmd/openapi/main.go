@@ -35,6 +35,7 @@ func main() {
 
 	generateTenantEndpoints(r)
 	generateParticipantEndpoints(r)
+	generateParticipantQueryEndpoint(r)
 	generateCellEndpoints(r)
 	generateDataspaceEndpoints(r)
 
@@ -47,6 +48,15 @@ func main() {
 	if err := r.WriteSchemaTo(filepath.Join("docs", "openapi.json")); err != nil {
 		panic(err)
 	}
+}
+
+func generateParticipantQueryEndpoint(r spec.Generator) {
+	participants := r.Group("/api/v1alpha1/participants")
+	participants.Post("query",
+		option.Summary("Perform a Participant Profile query"),
+		option.Description("Perform a Participant Profile query"),
+		option.Request(model.Query{}),
+		option.Response(http.StatusOK, []v1alpha1.ParticipantProfile{}))
 }
 
 func generateTenantEndpoints(r spec.Generator) {

@@ -162,6 +162,36 @@
         }
       }
     },
+    "/api/v1alpha1/participants/query": {
+      "post": {
+        "summary": "Perform a Participant Profile query",
+        "description": "Perform a Participant Profile query",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/V1Alpha1ParticipantProfile"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1alpha1/tenants": {
       "get": {
         "summary": "List Tenants",

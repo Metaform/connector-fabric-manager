@@ -14,12 +14,15 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"iter"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/collection"
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
@@ -36,9 +39,9 @@ type participantService struct {
 	monitor              system.LogMonitor
 }
 
-func (d participantService) GetProfile(ctx context.Context, tenantID string, participantID string) (*api.ParticipantProfile, error) {
-	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
-		profile, err := d.participantStore.FindByID(ctx, participantID)
+func (p participantService) GetProfile(ctx context.Context, tenantID string, participantID string) (*api.ParticipantProfile, error) {
+	return store.Trx[api.ParticipantProfile](p.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
+		profile, err := p.participantStore.FindByID(ctx, participantID)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +52,23 @@ func (d participantService) GetProfile(ctx context.Context, tenantID string, par
 	})
 }
 
-func (d participantService) DeployProfile(
+func (p participantService) QueryProfilesCount(ctx context.Context, predicate query.Predicate) (int64, error) {
+	var count int64
+	err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
+		c, err := p.participantStore.CountByPredicate(ctx, predicate)
+		count = c
+		return err
+	})
+	return count, err
+}
+
+func (p participantService) QueryProfiles(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*api.ParticipantProfile, error] {
+	return p.executeStoreIterator(ctx, func(ctx context.Context) iter.Seq2[*api.ParticipantProfile, error] {
+		return p.participantStore.FindByPredicatePaginated(ctx, predicate, options)
+	})
+}
+
+func (p participantService) DeployProfile(
 	ctx context.Context,
 	tenantID string,
 	identifier string,
@@ -57,18 +76,18 @@ func (d participantService) DeployProfile(
 	properties map[string]any) (*api.ParticipantProfile, error) {
 
 	// TODO perform property validation against a custom schema
-	return store.Trx[api.ParticipantProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
-		cells, err := collection.CollectAllDeref(d.cellStore.GetAll(ctx))
+	return store.Trx[api.ParticipantProfile](p.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
+		cells, err := collection.CollectAllDeref(p.cellStore.GetAll(ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		dProfiles, err := collection.CollectAllDeref(d.dataspaceStore.GetAll(ctx))
+		dProfiles, err := collection.CollectAllDeref(p.dataspaceStore.GetAll(ctx))
 		if err != nil {
 			return nil, err
 		}
 
-		participantProfile, err := d.participantGenerator.Generate(
+		participantProfile, err := p.participantGenerator.Generate(
 			identifier,
 			tenantID,
 			vpaProperties,
@@ -100,14 +119,14 @@ func (d participantService) DeployProfile(
 		}
 
 		oManifest.Payload[model.VPAData] = vpaManifests
-		result, err := d.participantStore.Create(ctx, participantProfile)
+		result, err := p.participantStore.Create(ctx, participantProfile)
 		if err != nil {
 			return nil, fmt.Errorf("error creating participant %s: %w", identifier, err)
 		}
 
 		// Only send the orchestration message if the storage operation succeeded. If the send fails, the transaction
 		// will be rolled back.
-		err = d.provisionClient.Send(ctx, oManifest)
+		err = p.provisionClient.Send(ctx, oManifest)
 		if err != nil {
 			return nil, fmt.Errorf("error deploying participant %s: %w", identifier, err)
 		}
@@ -116,9 +135,9 @@ func (d participantService) DeployProfile(
 	})
 }
 
-func (d participantService) DisposeProfile(ctx context.Context, tenantID string, participantID string) error {
-	return d.trxContext.Execute(ctx, func(c context.Context) error {
-		profile, err := d.participantStore.FindByID(c, participantID)
+func (p participantService) DisposeProfile(ctx context.Context, tenantID string, participantID string) error {
+	return p.trxContext.Execute(ctx, func(c context.Context) error {
+		profile, err := p.participantStore.FindByID(c, participantID)
 		if err != nil {
 			return err
 		}
@@ -165,20 +184,37 @@ func (d participantService) DisposeProfile(ctx context.Context, tenantID string,
 
 		oManifest.Payload[model.VPAData] = vpaManifests
 
-		err = d.participantStore.Update(c, profile)
+		err = p.participantStore.Update(c, profile)
 		if err != nil {
 			return fmt.Errorf("error disposing participant %s: %w", participantID, err)
 		}
 
 		// Only send the orchestration message if the storage operation succeeded. If the send fails, the transaction
 		// will be rolled back.
-		err = d.provisionClient.Send(ctx, oManifest)
+		err = p.provisionClient.Send(ctx, oManifest)
 		if err != nil {
 			return fmt.Errorf("error disposing participant %s: %w", participantID, err)
 		}
 
 		return nil
 	})
+}
+
+// executeStoreIterator wraps store iterator operations in a transaction context
+func (p participantService) executeStoreIterator(ctx context.Context, storeOp func(context.Context) iter.Seq2[*api.ParticipantProfile, error]) iter.Seq2[*api.ParticipantProfile, error] {
+	return func(yield func(*api.ParticipantProfile, error) bool) {
+		err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
+			for profile, err := range storeOp(ctx) {
+				if !yield(profile, err) {
+					return context.Canceled
+				}
+			}
+			return nil
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			yield(&api.ParticipantProfile{}, err)
+		}
+	}
 }
 
 type vpaCallbackHandler struct {
@@ -244,3 +280,5 @@ func (h vpaCallbackHandler) handle(
 		return nil
 	})
 }
+
+

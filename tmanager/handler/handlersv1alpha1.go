@@ -122,6 +122,20 @@ func (h *TMHandler) disposeParticipantProfile(
 	h.Accepted(w)
 }
 
+func (h *TMHandler) queryParticipantProfiles(w http.ResponseWriter, req *http.Request, path string) {
+	handler.QueryEntities[*api.ParticipantProfile](
+		&h.HttpHandler,
+		w,
+		req,
+		path,
+		h.participantService.QueryProfilesCount,
+		h.participantService.QueryProfiles,
+		func(profile *api.ParticipantProfile) any {
+			return v1alpha1.ToParticipantProfile(profile)
+		},
+		h.txContext)
+}
+
 func (h *TMHandler) createTenant(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {
 		return

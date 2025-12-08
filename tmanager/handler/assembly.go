@@ -108,7 +108,11 @@ func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler
 			})
 			h.registerParticipantRoutes(r, handler)
 		})
-		h.registerParticipantRoutes(r, handler)
+	})
+	router.Route("/participants", func(r chi.Router) {
+		r.Post("/query", func(w http.ResponseWriter, req *http.Request) {
+			handler.queryParticipantProfiles(w, req, "/participants/query")
+		})
 	})
 }
 

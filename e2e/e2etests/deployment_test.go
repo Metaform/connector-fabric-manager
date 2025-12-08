@@ -96,6 +96,11 @@ func Test_VerifyE2E(t *testing.T) {
 	}
 	require.Equal(t, 3, deployCount, "Expected 3 deployments to be active")
 
+	var profiles []api.ParticipantProfile
+	err = client.PostToTManagerWithResponse("participants/query", model.Query{Predicate: "vpas.type='cfm.connector' AND vpas.properties.connectorkey='connectorvalue'"}, &profiles)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(profiles), "Expected 1 profile to be found")
+
 	// Verify round-tripping of VPA properties - these are supplied during profile creation and are added to the VPA
 	//
 	// Check for VPA that contains a key with "cfm.connector" value and verify it has "connectorkey"
