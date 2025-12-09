@@ -55,7 +55,7 @@ type OrchestrationResponse struct {
 	OrchestrationType OrchestrationType `json:"orchestrationType" validate:"required"`
 	Success           bool              `json:"success"`
 	ErrorDetail       string            `json:"errorDetail,omitempty"`
-	Properties        map[string]any    `json:"properties omitempty"`
+	Properties        map[string]any    `json:"properties,omitempty"`
 }
 
 // VPAManifest represents the configuration details for a VPA deployment.
@@ -63,7 +63,7 @@ type VPAManifest struct {
 	ID         string         `json:"id" validate:"required"`
 	VPAType    VPAType        `json:"vpaType" validate:"required"`
 	Cell       string         `json:"cell" validate:"required"`
-	Properties map[string]any `json:"properties omitempty"`
+	Properties map[string]any `json:"properties,omitempty"`
 }
 
 type OrchestrationType string
@@ -80,8 +80,8 @@ func (dt VPAType) String() string {
 
 type Query struct {
 	Predicate string `json:"predicate" required:"true"`
-	Offset    int64    `json:"offset"`
-	Limit     int64    `json:"limit"`
+	Offset    int64  `json:"offset"`
+	Limit     int64  `json:"limit"`
 }
 
 func initValidator() *validator.Validate {
