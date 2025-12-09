@@ -51,7 +51,7 @@ func main() {
 }
 
 func generateParticipantQueryEndpoint(r spec.Generator) {
-	participants := r.Group("/api/v1alpha1/participants")
+	participants := r.Group("/api/v1alpha1/participant-profiles")
 	participants.Post("query",
 		option.Summary("Perform a Participant Profile query"),
 		option.Description("Perform a Participant Profile query"),
@@ -104,7 +104,7 @@ func generateTenantEndpoints(r spec.Generator) {
 }
 
 func generateParticipantEndpoints(r spec.Generator) {
-	participants := r.Group("/api/v1alpha1/tenants/{id}/participants")
+	participants := r.Group("/api/v1alpha1/tenants/{id}/participant-profiles")
 
 	participants.Get("",
 		option.Summary("List Participant Profiles"),

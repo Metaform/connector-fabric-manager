@@ -75,7 +75,7 @@ func Test_VerifyE2E(t *testing.T) {
 		VPAProperties: map[string]map[string]any{string(model.ConnectorType): {"connectorkey": "connectorvalue"}},
 	}
 	var participantProfile v1alpha1.ParticipantProfile
-	err = client.PostToTManagerWithResponse(fmt.Sprintf("tenants/%s/participants", tenant.ID), newProfile, &participantProfile)
+	err = client.PostToTManagerWithResponse(fmt.Sprintf("tenants/%s/participant-profiles", tenant.ID), newProfile, &participantProfile)
 	require.NoError(t, err)
 
 	var statusProfile v1alpha1.ParticipantProfile
@@ -83,7 +83,7 @@ func Test_VerifyE2E(t *testing.T) {
 	// Verify all VPAs are active
 	deployCount := 0
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		err = client.GetTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID), &statusProfile)
+		err = client.GetTManager(fmt.Sprintf("tenants/%s/participant-profiles/%s", tenant.ID, participantProfile.ID), &statusProfile)
 		require.NoError(t, err)
 		for _, vpa := range statusProfile.VPAs {
 			if vpa.State == api.DeploymentStateActive.String() {
@@ -97,7 +97,7 @@ func Test_VerifyE2E(t *testing.T) {
 	require.Equal(t, 3, deployCount, "Expected 3 deployments to be active")
 
 	var profiles []api.ParticipantProfile
-	err = client.PostToTManagerWithResponse("participants/query", model.Query{Predicate: "vpas.type='cfm.connector' AND vpas.properties.connectorkey='connectorvalue'"}, &profiles)
+	err = client.PostToTManagerWithResponse("participant-profiles/query", model.Query{Predicate: "vpas.type='cfm.connector' AND vpas.properties.connectorkey='connectorvalue'"}, &profiles)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(profiles), "Expected 1 profile to be found")
 
@@ -123,12 +123,12 @@ func Test_VerifyE2E(t *testing.T) {
 	assert.Equal(t, papi.OrchestrationStateCompleted, papi.OrchestrationState(orchestrations[0].State))
 
 	// Dispose VPAs
-	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID))
+	err = client.DeleteToTManager(fmt.Sprintf("tenants/%s/participant-profiles/%s", tenant.ID, participantProfile.ID))
 	require.NoError(t, err)
 
 	disposeCount := 0
 	for start := time.Now(); time.Since(start) < 5*time.Second; {
-		err = client.GetTManager(fmt.Sprintf("tenants/%s/participants/%s", tenant.ID, participantProfile.ID), &statusProfile)
+		err = client.GetTManager(fmt.Sprintf("tenants/%s/participant-profiles/%s", tenant.ID, participantProfile.ID), &statusProfile)
 		require.NoError(t, err)
 		for _, vpa := range statusProfile.VPAs {
 			if vpa.State == api.DeploymentStateDisposed.String() {

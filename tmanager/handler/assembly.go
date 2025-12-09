@@ -109,15 +109,15 @@ func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler
 			h.registerParticipantRoutes(r, handler)
 		})
 	})
-	router.Route("/participants", func(r chi.Router) {
+	router.Route("/participant-profiles", func(r chi.Router) {
 		r.Post("/query", func(w http.ResponseWriter, req *http.Request) {
-			handler.queryParticipantProfiles(w, req, "/participants/query")
+			handler.queryParticipantProfiles(w, req, "/participant-profiles/query")
 		})
 	})
 }
 
 func (h *HandlerServiceAssembly) registerParticipantRoutes(r chi.Router, handler *TMHandler) chi.Router {
-	return r.Route("/participants", func(r chi.Router) {
+	return r.Route("/participant-profiles", func(r chi.Router) {
 		r.Post("/", func(w http.ResponseWriter, req *http.Request) {
 			tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
 			if !found {

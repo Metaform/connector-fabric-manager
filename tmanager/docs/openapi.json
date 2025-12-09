@@ -162,7 +162,7 @@
         }
       }
     },
-    "/api/v1alpha1/participants/query": {
+    "/api/v1alpha1/participant-profiles/query": {
       "post": {
         "summary": "Perform a Participant Profile query",
         "description": "Perform a Participant Profile query",
@@ -357,7 +357,7 @@
         }
       }
     },
-    "/api/v1alpha1/tenants/{id}/participants": {
+    "/api/v1alpha1/tenants/{id}/participant-profiles": {
       "get": {
         "summary": "List Participant Profiles",
         "description": "Retrieve all Participant Profiles",
@@ -423,7 +423,7 @@
         }
       }
     },
-    "/api/v1alpha1/tenants/{id}/participants/{participantID}": {
+    "/api/v1alpha1/tenants/{id}/participant-profiles/{participantID}": {
       "delete": {
         "summary": "Dispose Participant Profiles",
         "description": "Dispose a Participant Profile",
