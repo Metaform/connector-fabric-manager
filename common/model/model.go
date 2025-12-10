@@ -55,7 +55,7 @@ type OrchestrationResponse struct {
 	OrchestrationType OrchestrationType `json:"orchestrationType" validate:"required"`
 	Success           bool              `json:"success"`
 	ErrorDetail       string            `json:"errorDetail,omitempty"`
-	Properties        map[string]any    `json:"properties,omitempty"`
+	Properties        map[string]any    `json:"properties"`
 }
 
 // VPAManifest represents the configuration details for a VPA deployment.
