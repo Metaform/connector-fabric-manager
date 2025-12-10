@@ -126,13 +126,13 @@ func (h HttpHandler) HandleError(w http.ResponseWriter, err error) {
 }
 
 func (h HttpHandler) Created(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h HttpHandler) Accepted(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusAccepted)
 	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (h HttpHandler) ResponseAccepted(w http.ResponseWriter, response any) {
@@ -141,8 +141,8 @@ func (h HttpHandler) ResponseAccepted(w http.ResponseWriter, response any) {
 }
 
 func (h HttpHandler) OK(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h HttpHandler) ResponseOK(w http.ResponseWriter, response any) {
