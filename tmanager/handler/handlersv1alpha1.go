@@ -225,7 +225,7 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cell := v1alpha1.NewAPICell(newCell)
+	cell := v1alpha1.NewAPICell(&newCell)
 
 	recordedCell, err := h.cellService.RecordExternalDeployment(req.Context(), cell)
 	if err != nil {
@@ -233,8 +233,26 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	response := v1alpha1.ToCell(*recordedCell)
+	response := v1alpha1.ToCell(recordedCell)
 	h.ResponseCreated(w, response)
+}
+
+func (h *TMHandler) getCells(w http.ResponseWriter, req *http.Request) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+
+	cells, err := h.cellService.ListCells(req.Context())
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	converted := make([]v1alpha1.Cell, len(cells))
+	for i, cell := range cells {
+		converted[i] = *v1alpha1.ToCell(&cell)
+	}
+	h.ResponseOK(w, converted)
 }
 
 func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Request) {
@@ -256,6 +274,39 @@ func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Requ
 	response := v1alpha1.ToDataspaceProfile(profile)
 	h.ResponseCreated(w, response)
 }
+
+func (h *TMHandler) getDataspaceProfiles(w http.ResponseWriter, req *http.Request) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+
+	profiles, err := h.dataspaceService.ListProfiles(req.Context())
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	converted := make([]v1alpha1.DataspaceProfile, len(profiles))
+	for i, profile := range profiles {
+		converted[i] = *v1alpha1.ToDataspaceProfile(&profile)
+	}
+	h.ResponseOK(w, converted)
+}
+
+
+func (h *TMHandler) getDataspaceProfile(w http.ResponseWriter, req *http.Request, id string) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+
+	profile, err := h.dataspaceService.GetProfile(req.Context(), id)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+	h.ResponseOK(w, v1alpha1.ToDataspaceProfile(profile))
+}
+
 
 func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {

@@ -14,9 +14,6 @@
   "paths": {
     "/api/v1alpha1/cells": {
       "get": {
-        "tags": [
-          "Not implemented yet"
-        ],
         "summary": "List Cells",
         "description": "Retrieve all Cells",
         "responses": {
@@ -63,9 +60,6 @@
     },
     "/api/v1alpha1/dataspace-profiles": {
       "get": {
-        "tags": [
-          "Not implemented yet"
-        ],
         "summary": "List Dataspace Profiles",
         "description": "Retrieve all dataspace profiles",
         "responses": {
@@ -112,9 +106,6 @@
     },
     "/api/v1alpha1/dataspace-profiles/{id}": {
       "get": {
-        "tags": [
-          "Not implemented yet"
-        ],
         "summary": "Get Dataspace Profile",
         "description": "Retrieve a Dataspace Profile by ID",
         "parameters": [
@@ -425,8 +416,42 @@
     },
     "/api/v1alpha1/tenants/{id}/participant-profiles/{participantID}": {
       "delete": {
-        "summary": "Dispose Participant Profiles",
+        "summary": "Dispose Participant Profile",
         "description": "Dispose a Participant Profile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "participantID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1Alpha1ParticipantProfile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Participant Profile",
+        "description": "Get a Participant Profile",
         "parameters": [
           {
             "name": "id",

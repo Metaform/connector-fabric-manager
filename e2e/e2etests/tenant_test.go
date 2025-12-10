@@ -93,6 +93,12 @@ func verifyQueries(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(result))
 
+	result = nil
+	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "true"}, &result)
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(result))
+
+	result = nil
 	err = client.PostToTManagerWithResponse("tenants/query", model.Query{Predicate: "properties.group = 'suppliers' OR properties.group = 'manufacturers'"}, &result)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(result))

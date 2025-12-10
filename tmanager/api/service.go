@@ -54,9 +54,11 @@ type DataspaceProfileService interface {
 	GetProfile(ctx context.Context, profileID string) (*DataspaceProfile, error)
 	CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*DataspaceProfile, error)
 	DeployProfile(ctx context.Context, profileID string, cellID string) error
+	ListProfiles(ctx context.Context) ([]DataspaceProfile, error)
 }
 
 // CellService performs cell operations.
 type CellService interface {
 	RecordExternalDeployment(ctx context.Context, cell *Cell) (*Cell, error)
+	ListCells(ctx context.Context) ([]Cell, error)
 }

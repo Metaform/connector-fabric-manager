@@ -56,12 +56,12 @@ func ToParticipantProfile(input *api.ParticipantProfile) *ParticipantProfile {
 func ToVPACollection(input *api.ParticipantProfile) []VirtualParticipantAgent {
 	vpas := make([]VirtualParticipantAgent, len(input.VPAs))
 	for i, vpa := range input.VPAs {
-		vpas[i] = *ToVPA(vpa)
+		vpas[i] = *ToVPA(&vpa)
 	}
 	return vpas
 }
 
-func ToVPA(input api.VirtualParticipantAgent) *VirtualParticipantAgent {
+func ToVPA(input *api.VirtualParticipantAgent) *VirtualParticipantAgent {
 	return &VirtualParticipantAgent{
 		DeployableEntity: DeployableEntity{
 			Entity: Entity{
@@ -72,12 +72,12 @@ func ToVPA(input api.VirtualParticipantAgent) *VirtualParticipantAgent {
 			StateTimestamp: input.StateTimestamp,
 		},
 		Type:       input.Type,
-		Cell:       *ToCell(input.Cell),
+		Cell:       *ToCell(&input.Cell),
 		Properties: input.Properties,
 	}
 }
 
-func ToCell(input api.Cell) *Cell {
+func ToCell(input *api.Cell) *Cell {
 	return &Cell{
 		Entity: Entity{
 			ID:      input.ID,
@@ -108,12 +108,12 @@ func ToAPIParticipantProfile(input *ParticipantProfile) *api.ParticipantProfile 
 func ToAPIVPACollection(vpas []VirtualParticipantAgent) []api.VirtualParticipantAgent {
 	apiVPAs := make([]api.VirtualParticipantAgent, len(vpas))
 	for i, vpa := range vpas {
-		apiVPAs[i] = *ToAPIVPA(vpa)
+		apiVPAs[i] = *ToAPIVPA(&vpa)
 	}
 	return apiVPAs
 }
 
-func ToAPIVPA(input VirtualParticipantAgent) *api.VirtualParticipantAgent {
+func ToAPIVPA(input *VirtualParticipantAgent) *api.VirtualParticipantAgent {
 	state, _ := api.ToDeploymentState(input.State)
 	return &api.VirtualParticipantAgent{
 		DeployableEntity: api.DeployableEntity{
@@ -125,12 +125,12 @@ func ToAPIVPA(input VirtualParticipantAgent) *api.VirtualParticipantAgent {
 			StateTimestamp: input.StateTimestamp.UTC(), // Force UTC
 		},
 		Type:       input.Type,
-		Cell:       *ToAPICell(input.Cell),
+		Cell:       *ToAPICell(&input.Cell),
 		Properties: api.ToProperties(input.Properties),
 	}
 }
 
-func ToAPICell(input Cell) *api.Cell {
+func ToAPICell(input *Cell) *api.Cell {
 	state, _ := api.ToDeploymentState(input.State)
 	return &api.Cell{
 		DeployableEntity: api.DeployableEntity{
@@ -145,7 +145,7 @@ func ToAPICell(input Cell) *api.Cell {
 	}
 }
 
-func NewAPICell(input NewCell) *api.Cell {
+func NewAPICell(input *NewCell) *api.Cell {
 	state, _ := api.ToDeploymentState(input.State)
 	return &api.Cell{
 		DeployableEntity: api.DeployableEntity{

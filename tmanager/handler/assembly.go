@@ -69,12 +69,29 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 func (h *HandlerServiceAssembly) registerV1Alpha1(router chi.Router, handler *TMHandler) {
 	h.registerTenantRoutes(router, handler)
 
-	// Cell routes
-	router.Post("/cells", handler.createCell)
+	h.registerCellRoutes(router, handler)
 
-	// Dataspace profile routes
-	router.Route("/dataspace-profiles", func(r chi.Router) {
+	h.registerDataspaceProfileRoutes(router, handler)
+}
+
+func (h *HandlerServiceAssembly) registerCellRoutes(router chi.Router, handler *TMHandler) chi.Router {
+	return router.Route("/cells", func(r chi.Router) {
+		r.Get("/", handler.getCells)
+		r.Post("/", handler.createCell)
+	})
+}
+
+func (h *HandlerServiceAssembly) registerDataspaceProfileRoutes(router chi.Router, handler *TMHandler) chi.Router {
+	return router.Route("/dataspace-profiles", func(r chi.Router) {
+		r.Get("/", handler.getDataspaceProfiles)
 		r.Post("/", handler.createDataspaceProfile)
+		r.Get("/{id}", func(w http.ResponseWriter, req *http.Request) {
+			id, found := handler.ExtractPathVariable(w, req, "id")
+			if !found {
+				return
+			}
+			handler.getDataspaceProfile(w, req, id)
+		})
 		r.Route("/{id}/deployments", func(r chi.Router) {
 			r.Post("/", handler.deployDataspaceProfile)
 		})

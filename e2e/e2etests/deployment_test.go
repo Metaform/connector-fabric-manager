@@ -57,8 +57,18 @@ func Test_VerifyE2E(t *testing.T) {
 	cell, err := e2efixtures.CreateCell(client)
 	require.NoError(t, err)
 
+	var cells []api.Cell
+	err = client.GetTManager("cells", &cells)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(cells))
+
 	dProfile, err := e2efixtures.CreateDataspaceProfile(client)
 	require.NoError(t, err)
+
+	var dprofiles []api.DataspaceProfile
+	err = client.GetTManager("dataspace-profiles", &dprofiles)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(dprofiles))
 
 	deployment := v1alpha1.NewDataspaceProfileDeployment{
 		ProfileID: dProfile.ID,
@@ -66,6 +76,11 @@ func Test_VerifyE2E(t *testing.T) {
 	}
 	err = e2efixtures.DeployDataspaceProfile(deployment, client)
 	require.NoError(t, err)
+
+	var dprofile api.DataspaceProfile
+	err = client.GetTManager(fmt.Sprintf("dataspace-profiles/%s", dprofiles[0].ID), &dprofile)
+	require.NoError(t, err)
+	require.NotNil(t, dprofile)
 
 	tenant, err := e2efixtures.CreateTenant(client, map[string]any{})
 	require.NoError(t, err)

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/collection"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
@@ -28,7 +29,9 @@ type dataspaceProfileService struct {
 }
 
 func (d dataspaceProfileService) GetProfile(ctx context.Context, profileID string) (*api.DataspaceProfile, error) {
-	return d.profileStore.FindByID(ctx, profileID)
+	return store.Trx[api.DataspaceProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.DataspaceProfile, error) {
+		return d.profileStore.FindByID(ctx, profileID)
+	})
 }
 
 func (d dataspaceProfileService) CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*api.DataspaceProfile, error) {
@@ -78,5 +81,14 @@ func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID st
 		return nil
 
 	})
+}
 
+func (d dataspaceProfileService) ListProfiles(ctx context.Context) ([]api.DataspaceProfile, error) {
+	result := []api.DataspaceProfile{}
+	err := d.trxContext.Execute(ctx, func(ctx context.Context) error {
+		var err error
+		result, err = collection.CollectAllDeref(d.profileStore.GetAll(ctx))
+		return err
+	})
+	return result, err
 }

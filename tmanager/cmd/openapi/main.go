@@ -121,8 +121,15 @@ func generateParticipantEndpoints(r spec.Generator) {
 		option.Response(http.StatusCreated, v1alpha1.ParticipantProfile{}),
 	)
 
+	participants.Get("/{participantID}",
+		option.Summary("Get Participant Profile"),
+		option.Description("Get a Participant Profile"),
+		option.Request(new(IDParam)),
+		option.Request(new(ParticipantIDParam)),
+		option.Response(http.StatusOK, v1alpha1.ParticipantProfile{}),
+	)
 	participants.Delete("/{participantID}",
-		option.Summary("Dispose Participant Profiles"),
+		option.Summary("Dispose Participant Profile"),
 		option.Description("Dispose a Participant Profile"),
 		option.Request(new(IDParam)),
 		option.Request(new(ParticipantIDParam)),
@@ -138,7 +145,6 @@ func generateCellEndpoints(r spec.Generator) {
 		option.Summary("List Cells"),
 		option.Description("Retrieve all Cells"),
 		option.Response(http.StatusOK, []v1alpha1.Cell{}),
-		option.Tags("Not implemented yet"),
 	)
 
 	cells.Post("",
@@ -156,7 +162,6 @@ func generateDataspaceEndpoints(r spec.Generator) {
 		option.Summary("List Dataspace Profiles"),
 		option.Description("Retrieve all dataspace profiles"),
 		option.Response(http.StatusOK, []v1alpha1.DataspaceProfile{}),
-		option.Tags("Not implemented yet"),
 	)
 
 	dataspaces.Post("",
@@ -171,7 +176,6 @@ func generateDataspaceEndpoints(r spec.Generator) {
 		option.Description("Retrieve a Dataspace Profile by ID"),
 		option.Request(new(IDParam)),
 		option.Response(http.StatusOK, v1alpha1.DataspaceProfile{}),
-		option.Tags("Not implemented yet"),
 	)
 
 	dataspaces.Post("/{id}/deployments",

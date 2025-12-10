@@ -61,6 +61,13 @@ func Test_VerifyDefinitionOperations(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(orchestrationDefinitions))
 
+	for _, definition := range activityDefinitions {
+		// Verify delete returns error when definition is referenced by an orchestration definition
+		err = client.DeleteToPManager(fmt.Sprintf("activity-definitions/%s", definition.Type))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "referenced by an orchestration definition")
+	}
+
 	for _, definition := range orchestrationDefinitions {
 		err = client.DeleteToPManager(fmt.Sprintf("orchestration-definitions/%s", definition.Type))
 		require.NoError(t, err)
@@ -71,6 +78,8 @@ func Test_VerifyDefinitionOperations(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, len(orchestrationDefinitions))
 
+	// Cleanup previously created activity definitions which must be done after orchestration definitions are removed
+	//to avoid reference errors
 	for _, definition := range activityDefinitions {
 		err = client.DeleteToPManager(fmt.Sprintf("activity-definitions/%s", definition.Type))
 		require.NoError(t, err)

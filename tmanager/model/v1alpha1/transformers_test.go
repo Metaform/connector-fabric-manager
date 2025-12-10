@@ -178,7 +178,7 @@ func TestToVPA(t *testing.T) {
 		Properties: api.Properties{"vpa-prop": "vpa-val"},
 	}
 
-	result := ToVPA(input)
+	result := ToVPA(&input)
 
 	require.NotNil(t, result)
 	assert.Equal(t, "vpa-456", result.ID)
@@ -210,7 +210,7 @@ func TestToCell(t *testing.T) {
 		},
 	}
 
-	result := ToCell(input)
+	result := ToCell(&input)
 
 	require.NotNil(t, result)
 	assert.Equal(t, "cell-789", result.ID)
@@ -375,7 +375,7 @@ func TestToAPIVPA(t *testing.T) {
 		Properties: map[string]any{"vpa-env": "staging"},
 	}
 
-	result := ToAPIVPA(input)
+	result := ToAPIVPA(&input)
 
 	require.NotNil(t, result)
 	assert.Equal(t, "api-vpa-456", result.ID)
@@ -409,7 +409,7 @@ func TestToAPICell(t *testing.T) {
 		},
 	}
 
-	result := ToAPICell(input)
+	result := ToAPICell(&input)
 
 	require.NotNil(t, result)
 	assert.Equal(t, "api-cell-789", result.ID)
@@ -437,7 +437,7 @@ func TestNewAPICell(t *testing.T) {
 		},
 	}
 
-	result := NewAPICell(input)
+	result := NewAPICell(&input)
 
 	require.NotNil(t, result)
 	assert.NotEmpty(t, result.ID)             // Should generate a new UUID
@@ -490,7 +490,7 @@ func TestTimestampUTCConversion(t *testing.T) {
 				Properties: map[string]any{},
 			}
 
-			vpaResult := ToAPIVPA(vpaInput)
+			vpaResult := ToAPIVPA(&vpaInput)
 			assert.Equal(t, time.UTC, vpaResult.StateTimestamp.Location())
 			assert.Equal(t, baseTime.UTC(), vpaResult.StateTimestamp)
 
@@ -504,7 +504,7 @@ func TestTimestampUTCConversion(t *testing.T) {
 				},
 			}
 
-			cellResult := ToAPICell(cellInput)
+			cellResult := ToAPICell(&cellInput)
 			assert.Equal(t, time.UTC, cellResult.StateTimestamp.Location())
 			assert.Equal(t, baseTime.UTC(), cellResult.StateTimestamp)
 
@@ -515,7 +515,7 @@ func TestTimestampUTCConversion(t *testing.T) {
 				Properties:     map[string]any{},
 			}
 
-			newCellResult := NewAPICell(newCellInput)
+			newCellResult := NewAPICell(&newCellInput)
 			assert.Equal(t, time.UTC, newCellResult.StateTimestamp.Location())
 			assert.Equal(t, baseTime.UTC(), newCellResult.StateTimestamp)
 		})

@@ -15,17 +15,28 @@ package core
 import (
 	"context"
 
+	"github.com/metaform/connector-fabric-manager/common/collection"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
 type cellService struct {
 	trxContext store.TransactionContext
-	cellStore      store.EntityStore[*api.Cell]
+	cellStore  store.EntityStore[*api.Cell]
 }
 
 func (d cellService) RecordExternalDeployment(ctx context.Context, cell *api.Cell) (*api.Cell, error) {
 	return store.Trx[api.Cell](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.Cell, error) {
 		return d.cellStore.Create(ctx, cell)
 	})
+}
+
+func (p cellService) ListCells(ctx context.Context) ([]api.Cell, error) {
+	result := []api.Cell{}
+	err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
+		var err error
+		result, err = collection.CollectAllDeref(p.cellStore.GetAll(ctx))
+		return err
+	})
+	return result, err
 }
