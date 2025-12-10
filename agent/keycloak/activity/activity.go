@@ -38,29 +38,41 @@ const (
 
 type Config struct {
 	KeycloakURL string
-	Token       string
 	Realm       string
 	Monitor     system.LogMonitor
 	VaultClient serviceapi.VaultClient
 	HTTPClient  *http.Client
+	ClientId    string
+	Username    string
+	Password    string
 }
 
 // KeyCloakActivityProcessor creates a confidential client in Keycloak and stores the client secret in Vault for use by
 // other processors. The client ID is returned as a value in the context.
 type KeyCloakActivityProcessor struct {
 	keycloakURL string
-	token       string
+	clientId    string
+	username    string
+	password    string
 	realm       string
 	monitor     system.LogMonitor
 	httpClient  *http.Client
 	vaultClient serviceapi.VaultClient
 }
 
+type tokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
+}
+
 // NewProcessor creates a new KeyCloakActivityProcessor instance
 func NewProcessor(config *Config) *KeyCloakActivityProcessor {
 	return &KeyCloakActivityProcessor{
 		keycloakURL: config.KeycloakURL,
-		token:       config.Token,
+		clientId:    config.ClientId,
+		username:    config.Username,
+		password:    config.Password,
 		realm:       config.Realm,
 		monitor:     config.Monitor,
 		httpClient:  config.HTTPClient,
@@ -71,9 +83,9 @@ func NewProcessor(config *Config) *KeyCloakActivityProcessor {
 func (p KeyCloakActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
 	if ctx.Discriminator() == api.DisposeDiscriminator {
 		panic("Not yet implemented")
-	} else {
-		return p.provisionConfidentialClient(ctx)
 	}
+
+	return p.provisionConfidentialClient(ctx)
 }
 
 // provisionConfidentialClient creates a confidential client in Keycloak and stores the client secret in Vault for use by
@@ -117,7 +129,11 @@ func (p KeyCloakActivityProcessor) createClient(clientID string, clientSecret st
 	}
 
 	req.Header.Set(contentTypeHeader, jsonContentType)
-	req.Header.Set(authHeader, fmt.Sprintf("Bearer %s", p.token))
+	token, err := p.getToken()
+	if err != nil {
+		return fmt.Errorf("error authenticating with Keycloak: %w", err)
+	}
+	req.Header.Set(authHeader, fmt.Sprintf("Bearer %s", token))
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("create client request failed: %w", err)
@@ -130,6 +146,38 @@ func (p KeyCloakActivityProcessor) createClient(clientID string, clientSecret st
 	}
 
 	return nil
+}
+
+func (p KeyCloakActivityProcessor) getToken() (string, error) {
+	tokenURL := fmt.Sprintf("%s/realms/master/protocol/openid-connect/token", p.keycloakURL)
+
+	formData := fmt.Sprintf("username=%s&password=%s&client_id=%s&grant_type=password",
+		p.username, p.password, p.clientId)
+
+	req, err := http.NewRequest(http.MethodPost, tokenURL, strings.NewReader(formData))
+	if err != nil {
+		return "", fmt.Errorf("error creating token request: %w", err)
+	}
+
+	req.Header.Set(contentTypeHeader, "application/x-www-form-urlencoded")
+
+	resp, err := p.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("token request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("token request failed: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResp tokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return "", fmt.Errorf("error decoding token response: %w", err)
+	}
+
+	return tokenResp.AccessToken, nil
 }
 
 // generateClientSecret generates a random secret using encoding.

@@ -55,11 +55,12 @@ type vaultClient struct {
 
 func newVaultClient(vaultURL string, roleID string, secretID string, monitor system.LogMonitor, opts ...VaultOptions) (*vaultClient, error) {
 	client := &vaultClient{
-		vaultURL: vaultURL,
-		roleID:   roleID,
-		secretID: secretID,
-		monitor:  monitor,
-		stopCh:   make(chan struct{}),
+		vaultURL:  vaultURL,
+		roleID:    roleID,
+		secretID:  secretID,
+		monitor:   monitor,
+		mountPath: "secret/", // the default secret engine that's always there
+		stopCh:    make(chan struct{}),
 	}
 	for _, opt := range opts {
 		opt.apply(client)

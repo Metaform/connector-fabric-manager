@@ -29,8 +29,10 @@ const (
 	ActivityType = "keycloak-activity"
 	AgentPrefix  = "kcagent"
 	urlKey       = "keycloak.url"
-	tokenKey     = "keycloak.token"
 	realmKey     = "keycloak.realm"
+	clientId     = "keycloak.clientid"
+	username     = "keycloak.username"
+	password     = "keycloak.password"
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
@@ -49,14 +51,18 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 			vaultClient := ctx.Registry.Resolve(serviceapi.VaultKey).(serviceapi.VaultClient)
 
 			url := ctx.Config.GetString(urlKey)
-			token := ctx.Config.GetString(tokenKey)
+			kcClientId := ctx.Config.GetString(clientId)
+			kcUsername := ctx.Config.GetString(username)
+			kcPassword := ctx.Config.GetString(password)
 			realm := ctx.Config.GetString(realmKey)
-			if err := runtime.CheckRequiredParams(urlKey, url, tokenKey, token, realmKey, realm); err != nil {
+			if err := runtime.CheckRequiredParams(urlKey, url, clientId, kcClientId, username, kcUsername, password, kcPassword, realmKey, realm); err != nil {
 				panic(err)
 			}
 			return activity.NewProcessor(&activity.Config{
 				KeycloakURL: url,
-				Token:       token,
+				ClientId:    kcClientId,
+				Username:    kcUsername,
+				Password:    kcPassword,
 				Realm:       realm,
 				VaultClient: vaultClient,
 				HTTPClient:  &httpClient,
