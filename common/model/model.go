@@ -44,7 +44,7 @@ type OrchestrationManifest struct {
 	ID                string            `json:"id" validate:"required"`
 	CorrelationID     string            `json:"correlationId" validate:"required"`
 	OrchestrationType OrchestrationType `json:"orchestrationType" validate:"required"`
-	Payload           map[string]any    `json:"payload omitempty"`
+	Payload           map[string]any    `json:"payload,omitempty"`
 }
 
 // OrchestrationResponse returned when a system deployment completes.

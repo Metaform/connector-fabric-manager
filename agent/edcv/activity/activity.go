@@ -41,6 +41,7 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error retrieving client secret for orchestration %s: %w", ctx.OID(), err)}
 	}
+	p.Monitor.Infof("EDCV activity for participant '%s' (client ID = %s) completed successfully", data.ParticipantID, data.ClientID)
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
