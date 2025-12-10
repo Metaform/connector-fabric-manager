@@ -15,17 +15,18 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/metaform/connector-fabric-manager/agent/keycloak/fixtures"
 	"github.com/metaform/connector-fabric-manager/agent/keycloak/launcher"
 	"github.com/metaform/connector-fabric-manager/assembly/vault"
 	"github.com/metaform/connector-fabric-manager/common/natsclient"
 	"github.com/metaform/connector-fabric-manager/common/natsfixtures"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/network"
 )
 
 const (
@@ -38,32 +39,40 @@ const (
 func Test_Launch(t *testing.T) {
 	ctx := context.Background()
 
-	keycloakURL, token, err := fixtures.SetupKeyCloakContainer(ctx)
+	net, err := network.New(ctx)
+	if err != nil {
+		t.Fatalf("failed to create network: %s", err)
+	}
+
+	keycloakContainerResult, err := vault.StartKeycloakContainer(ctx, net.Name)
 	require.NoError(t, err, "Failed to start Keycloak container")
 
 	nt, err := natsfixtures.SetupNatsContainer(ctx, cfmBucket)
 
 	require.NoError(t, err)
-
-	containerResult, err := vault.StartVaultContainer(ctx)
+	vaultContainerResult, err := vault.StartVaultContainer(ctx, net.Name)
 	require.NoError(t, err, "Failed to start Vault container")
-
-	setupResult, err := vault.SetupVault(containerResult.URL, containerResult.Token)
+	kcHost := fmt.Sprintf("http://%s:%d", keycloakContainerResult.ContainerName, 8080)
+	setupResult, err := vault.SetupVault(vaultContainerResult.URL, vaultContainerResult.Token, keycloakContainerResult.URL, kcHost)
 	if err != nil {
-		containerResult.Cleanup()
+		vaultContainerResult.Cleanup()
 		t.Fatalf("Failed to setup Vault: %v", err)
 	}
 
-	_ = os.Setenv("KCAGENT_VAULT_URL", containerResult.URL)
-	_ = os.Setenv("KCAGENT_VAULT_ROLEID", setupResult.RoleID)
-	_ = os.Setenv("KCAGENT_VAULT_SECRETID", setupResult.SecretID)
+	_ = os.Setenv("KCAGENT_VAULT_URL", vaultContainerResult.URL)
+	_ = os.Setenv("KCAGENT_VAULT_CLIENTID", setupResult.ClientID)
+	_ = os.Setenv("KCAGENT_VAULT_CLIENTSECRET", setupResult.ClientSecret)
+	_ = os.Setenv("KCAGENT_VAULT_TOKENURL", setupResult.TokenURL)
+	_ = os.Setenv("KCAGENT_VAULT_PATH", setupResult.VaultPath)
 
 	_ = os.Setenv("KCAGENT_URI", nt.URI)
 	_ = os.Setenv("KCAGENT_BUCKET", cfmBucket)
 	_ = os.Setenv("KCAGENT_STREAM", streamName)
-	_ = os.Setenv("KCAGENT_KEYCLOAK_URL", keycloakURL)
-	_ = os.Setenv("KCAGENT_KEYCLOAK_TOKEN", token)
-	_ = os.Setenv("KCAGENT_KEYCLOAK_REALM", "edcv")
+	_ = os.Setenv("KCAGENT_KEYCLOAK_URL", keycloakContainerResult.URL)
+	_ = os.Setenv("KCAGENT_KEYCLOAK_CLIENTID", "admin-cli")
+	_ = os.Setenv("KCAGENT_KEYCLOAK_USERNAME", "admin")
+	_ = os.Setenv("KCAGENT_KEYCLOAK_PASSWORD", "admin")
+	_ = os.Setenv("KCAGENT_KEYCLOAK_REALM", "master")
 
 	shutdownChannel := make(chan struct{})
 	go func() {
@@ -76,7 +85,7 @@ func Test_Launch(t *testing.T) {
 	err = publishActivityMessage(ctx, orchestrationID, nt.Client)
 	require.NoError(t, err)
 
-	vaultClient, err := vault.NewVaultClient(containerResult.URL, setupResult.RoleID, setupResult.SecretID)
+	vaultClient, err := vault.NewVaultClient(vaultContainerResult.URL, setupResult.ClientID, setupResult.ClientSecret, setupResult.TokenURL)
 	require.NoError(t, err)
 	defer vaultClient.Close()
 

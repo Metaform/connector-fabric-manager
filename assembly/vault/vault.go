@@ -14,7 +14,10 @@ package vault
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -42,25 +45,26 @@ func WithMountPath(path string) VaultOptions {
 
 // vaultClient implements a client to Hashicorp Vault supporting token renewal.
 type vaultClient struct {
-	vaultURL    string
-	roleID      string
-	secretID    string
-	mountPath   string
-	monitor     system.LogMonitor
-	client      *hvault.Client
-	stopCh      chan struct{}
-	lastCreated time.Time // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
-	lastRenew   time.Time // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
+	vaultURL     string
+	clientID     string
+	clientSecret string
+	tokenUrl     string
+	mountPath    string
+	monitor      system.LogMonitor
+	client       *hvault.Client
+	stopCh       chan struct{}
+	lastCreated  time.Time // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
+	lastRenew    time.Time // When the token was last renewed; will be the zero value if the token has never been renewed or there was an error.
 }
 
-func newVaultClient(vaultURL string, roleID string, secretID string, monitor system.LogMonitor, opts ...VaultOptions) (*vaultClient, error) {
+func newVaultClient(vaultURL string, clientID string, clientSecret string, tokenUrl string, monitor system.LogMonitor, opts ...VaultOptions) (*vaultClient, error) {
 	client := &vaultClient{
-		vaultURL:  vaultURL,
-		roleID:    roleID,
-		secretID:  secretID,
-		monitor:   monitor,
-		mountPath: "secret/", // the default secret engine that's always there
-		stopCh:    make(chan struct{}),
+		vaultURL:     vaultURL,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		tokenUrl:     tokenUrl,
+		monitor:      monitor,
+		stopCh:       make(chan struct{}),
 	}
 	for _, opt := range opts {
 		opt.apply(client)
@@ -70,7 +74,7 @@ func newVaultClient(vaultURL string, roleID string, secretID string, monitor sys
 
 func (v *vaultClient) ResolveSecret(ctx context.Context, path string) (string, error) {
 	secret, err := v.client.Secrets.KvV2Read(
-		context.Background(),
+		ctx,
 		path,
 		v.getOptions()...,
 	)
@@ -104,7 +108,7 @@ func (v *vaultClient) StoreSecret(ctx context.Context, path string, value string
 
 func (v *vaultClient) DeleteSecret(ctx context.Context, path string) error {
 	_, err := v.client.Secrets.KvV2Delete(
-		context.Background(),
+		ctx,
 		path,
 		v.getOptions()...,
 	)
@@ -134,21 +138,72 @@ func (v *vaultClient) init(ctx context.Context) error {
 }
 
 func (v *vaultClient) createToken(ctx context.Context) (*hvault.Response[map[string]any], error) {
-	appRoleResp, err := v.client.Auth.AppRoleLogin(
+	jwt, err := getVaultAccessToken(v.clientID, v.clientSecret, v.tokenUrl)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get Vault access token: %w", err)
+	}
+	loginResult, err := v.client.Auth.JwtLogin(
 		ctx,
-		schema.AppRoleLoginRequest{
-			RoleId:   v.roleID,
-			SecretId: v.secretID,
+		schema.JwtLoginRequest{
+			Jwt:  jwt,
+			Role: "provisioner",
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to authenticate with AppRole: %w", err)
+		return nil, fmt.Errorf("unable to authenticate with JWT: %w", err)
 	}
 
 	// Set the token obtained from AppRole login
-	err = v.client.SetToken(appRoleResp.Auth.ClientToken)
+	err = v.client.SetToken(loginResult.Auth.ClientToken)
 	v.lastCreated = time.Now()
-	return appRoleResp, err
+	return loginResult, err
+}
+
+func getVaultAccessToken(clientId string, secret string, tokenUrl string) (string, error) {
+
+	formData := strings.NewReader(fmt.Sprintf("client_id=%s&client_secret=%s&grant_type=client_credentials",
+		clientId, secret))
+
+	req, err := http.NewRequest("POST", tokenUrl, formData)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("token request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResponse struct {
+		AccessToken string `json:"access_token"`
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	err = json.Unmarshal(body, &tokenResponse)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal token response: %w", err)
+	}
+
+	if tokenResponse.AccessToken == "" {
+		return "", fmt.Errorf("access token not found in response")
+	}
+
+	return tokenResponse.AccessToken, nil
 }
 
 // leaseDuration specifies the token lease duration and supports any time.Duration unit (milliseconds, seconds, minutes, etc.)
