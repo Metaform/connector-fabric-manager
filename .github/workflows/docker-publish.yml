@@ -20,9 +20,9 @@ jobs:
     strategy:
       matrix:
         image:
-          #          - name: edcvagent
-          #            dockerfile: docker/Dockerfile.edcvagent.dockerfile
-          #            context: .
+          - name: edcvagent
+            dockerfile: docker/Dockerfile.edcvagent.dockerfile
+            context: .
           - name: kcagent
             dockerfile: docker/Dockerfile.kcagent.dockerfile
             context: .
