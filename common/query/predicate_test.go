@@ -1110,3 +1110,96 @@ func TestAtomicPredicate_StringAliasNormalization(t *testing.T) {
 		})
 	}
 }
+
+// TestMatchAllPredicate tests the MatchAllPredicate type
+func TestMatchAllPredicate(t *testing.T) {
+	pred := &MatchAllPredicate{}
+
+	tests := []struct {
+		name   string
+		object any
+	}{
+		{
+			name: "matches struct with fields",
+			object: struct {
+				Name  string
+				Age   int
+				Email string
+			}{Name: "Alice", Age: 30, Email: "alice@example.com"},
+		},
+		{
+			name:   "matches simple string",
+			object: "test string",
+		},
+		{
+			name:   "matches integer",
+			object: 42,
+		},
+		{
+			name:   "matches float",
+			object: 3.14159,
+		},
+		{
+			name:   "matches boolean",
+			object: true,
+		},
+		{
+			name:   "matches nil",
+			object: nil,
+		},
+		{
+			name:   "matches empty struct",
+			object: struct{}{},
+		},
+		{
+			name:   "matches slice",
+			object: []string{"a", "b", "c"},
+		},
+		{
+			name:   "matches map",
+			object: map[string]int{"x": 1, "y": 2},
+		},
+		{
+			name: "matches nested struct",
+			object: struct {
+				ID       string
+				Metadata struct {
+					Created string
+					Tags    []string
+				}
+			}{
+				ID: "123",
+				Metadata: struct {
+					Created string
+					Tags    []string
+				}{
+					Created: "2025-01-01",
+					Tags:    []string{"tag1", "tag2"},
+				},
+			},
+		},
+	}
+
+	matcher := &DefaultFieldMatcher{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := pred.Matches(tt.object, matcher)
+			if !result {
+				t.Errorf("MatchAllPredicate.Matches(%v) = %v, want true", tt.object, result)
+			}
+		})
+	}
+}
+
+// TestMatchAllPredicateWithNilMatcher tests MatchAllPredicate with nil matcher
+func TestMatchAllPredicateWithNilMatcher(t *testing.T) {
+	pred := &MatchAllPredicate{}
+	testObj := struct{ Value string }{Value: "test"}
+
+	// Should match even with nil matcher
+	result := pred.Matches(testObj, nil)
+	if !result {
+		t.Errorf("MatchAllPredicate.Matches() with nil matcher = %v, want true", result)
+	}
+}

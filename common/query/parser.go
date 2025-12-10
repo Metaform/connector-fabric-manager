@@ -88,6 +88,25 @@ func (pb *predicateBuilder) Pop() Predicate {
 	return pred
 }
 
+// ExitPredicate handles the top-level predicate rule, including the TRUE_KEYWORD case
+func (pb *predicateBuilder) ExitPredicate(ctx *PredicateContext) {
+	if pb.err != nil {
+		return
+	}
+
+	// Handle the TRUE_KEYWORD case (match all predicate)
+	if ctx.TRUE_KEYWORD() != nil {
+		// Push a special "match all" predicate onto the stack
+		pb.Push(createMatchAllPredicate())
+	}
+}
+
+// createMatchAllPredicate returns a predicate that matches all objects
+func createMatchAllPredicate() Predicate {
+	// Return a specialized MatchAllPredicate implementation
+	return &MatchAllPredicate{}
+}
+
 // ExitAtomicPredicate builds an AtomicPredicate from the context
 func (pb *predicateBuilder) ExitAtomicPredicate(ctx *AtomicPredicateContext) {
 	if pb.err != nil {

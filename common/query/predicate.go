@@ -335,12 +335,38 @@ func (p *CompoundPredicate) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MatchAllPredicate represents a predicate that matches all objects (equivalent to "true")
+type MatchAllPredicate struct{}
+
+// Matches always returns true for any object
+func (p *MatchAllPredicate) Matches(obj any, matcher FieldMatcher) bool {
+	return true
+}
+
+// String returns a readable representation
+func (p *MatchAllPredicate) String() string {
+	return "true"
+}
+
+// MarshalJSON serializes a MatchAllPredicate to JSON
+func (p *MatchAllPredicate) MarshalJSON() ([]byte, error) {
+	return []byte(`{"type":"matchAll"}`), nil
+}
+
 // UnmarshalPredicate unmarshals a Predicate from JSON bytes into the Predicate interface
 func UnmarshalPredicate(data []byte) (Predicate, error) {
 	// Parse JSON into a generic object to peek at structure
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal(data, &obj); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal predicate: %w", err)
+	}
+
+	// Check for MatchAllPredicate type
+	if _, hasType := obj["type"]; hasType {
+		var typeObj map[string]string
+		if err := json.Unmarshal(data, &typeObj); err == nil && typeObj["type"] == "matchAll" {
+			return &MatchAllPredicate{}, nil
+		}
 	}
 
 	// If predicates field exists, it's a compound predicate

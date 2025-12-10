@@ -452,6 +452,106 @@ func TestParse_EdgeCases(t *testing.T) {
 	}
 }
 
+// TestParseTrueKeyword tests parsing of the true keyword as a match-all predicate
+func TestParseTrueKeyword(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          string
+		expectError    bool
+		expectMatchAll bool
+	}{
+		{
+			name:           "true (lowercase)",
+			input:          "true",
+			expectError:    false,
+			expectMatchAll: true,
+		},
+		{
+			name:           "TRUE (uppercase)",
+			input:          "TRUE",
+			expectError:    false,
+			expectMatchAll: true,
+		},
+		{
+			name:           "true with whitespace",
+			input:          "  true  ",
+			expectError:    false,
+			expectMatchAll: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pred, err := ParsePredicate(tt.input)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
+			if pred == nil {
+				t.Errorf("expected predicate, got nil")
+				return
+			}
+
+			// Verify it's a MatchAllPredicate
+			matchAllPred, ok := pred.(*MatchAllPredicate)
+			if !ok {
+				t.Errorf("expected *MatchAllPredicate, got %T", pred)
+				return
+			}
+
+			// Verify it matches everything
+			testObj := struct {
+				Name  string
+				Value int
+			}{
+				Name:  "test",
+				Value: 42,
+			}
+
+			if !matchAllPred.Matches(testObj, &DefaultFieldMatcher{}) {
+				t.Errorf("expected MatchAllPredicate to match all objects")
+			}
+		})
+	}
+}
+
+// TestTrueKeywordMaturesAllObjects verifies the true keyword matches any object
+func TestTrueKeywordMattersAllObjects(t *testing.T) {
+	pred, err := ParsePredicate("true")
+	if err != nil {
+		t.Fatalf("failed to parse 'true': %v", err)
+	}
+
+	testCases := []any{
+		struct{ Name string }{Name: "test"},
+		struct{ Value int }{Value: 123},
+		struct {
+			Name  string
+			Value int
+			Tags  []string
+		}{Name: "complex", Value: 456, Tags: []string{"a", "b"}},
+		"simple string",
+		42,
+		nil,
+	}
+
+	matcher := &DefaultFieldMatcher{}
+	for i, obj := range testCases {
+		if !pred.Matches(obj, matcher) {
+			t.Errorf("test case %d: expected true predicate to match object %v", i, obj)
+		}
+	}
+}
+
 // BenchmarkParsePredicate benchmarks ANTLR parsing performance
 func BenchmarkParsePredicate(b *testing.B) {
 	input := "Name = 'John' AND Age > 30 OR Status IN ('active', 'pending')"

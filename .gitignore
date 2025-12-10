@@ -34,3 +34,7 @@ mocks/
 */terraform.tfstate.backup
 
 /scratch
+
+# ANTLR generated files
+*.interp
+*.tokens

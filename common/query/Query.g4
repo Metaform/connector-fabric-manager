@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2025 Metaform Systems, Inc
  *
@@ -19,6 +18,7 @@ grammar Query;
 predicate
     : compoundPredicate EOF
     | atomicPredicate EOF
+    | TRUE_KEYWORD EOF
     ;
 
 compoundPredicate

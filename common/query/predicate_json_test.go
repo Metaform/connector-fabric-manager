@@ -648,3 +648,60 @@ func TestAtomicPredicate_JSON_OperatorNormalization_WithMatching(t *testing.T) {
 		})
 	}
 }
+
+// TestMatchAllPredicateJSON tests JSON marshaling and unmarshaling of MatchAllPredicate
+func TestMatchAllPredicateJSON(t *testing.T) {
+	tests := []struct {
+		name            string
+		predicate       Predicate
+		expectedJSON    string
+		shouldUnmarshal bool
+	}{
+		{
+			name:            "MatchAllPredicate marshaling",
+			predicate:       &MatchAllPredicate{},
+			expectedJSON:    `{"type":"matchAll"}`,
+			shouldUnmarshal: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test marshaling
+			jsonBytes, err := json.Marshal(tt.predicate)
+			if err != nil {
+				t.Fatalf("failed to marshal predicate: %v", err)
+			}
+
+			jsonStr := string(jsonBytes)
+			if jsonStr != tt.expectedJSON {
+				t.Errorf("marshal result = %q, want %q", jsonStr, tt.expectedJSON)
+			}
+
+			// Test unmarshaling
+			if tt.shouldUnmarshal {
+				unmarshaled, err := UnmarshalPredicate(jsonBytes)
+				if err != nil {
+					t.Fatalf("failed to unmarshal predicate: %v", err)
+				}
+
+				// Verify it's a MatchAllPredicate
+				matchAll, ok := unmarshaled.(*MatchAllPredicate)
+				if !ok {
+					t.Errorf("unmarshaled predicate type = %T, want *MatchAllPredicate", unmarshaled)
+					return
+				}
+
+				// Verify it still matches everything
+				testEntity := struct {
+					Name string
+					Age  int
+				}{Name: "test", Age: 30}
+
+				if !matchAll.Matches(testEntity, &DefaultFieldMatcher{}) {
+					t.Errorf("expected MatchAllPredicate to match all objects after unmarshaling")
+				}
+			}
+		})
+	}
+}
