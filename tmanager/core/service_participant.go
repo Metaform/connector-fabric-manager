@@ -169,7 +169,7 @@ func (p participantService) DisposeProfile(ctx context.Context, tenantID string,
 		oManifest.Payload[model.VPAStateData] = stateData
 
 		vpaManifests := make([]model.VPAManifest, 0, len(profile.VPAs))
-		for _, vpa := range profile.VPAs {
+		for i, vpa := range profile.VPAs {
 			vpaManifest := model.VPAManifest{
 				ID:         vpa.ID,
 				VPAType:    vpa.Type,
@@ -178,8 +178,8 @@ func (p participantService) DisposeProfile(ctx context.Context, tenantID string,
 			}
 			vpaManifests = append(vpaManifests, vpaManifest)
 
-			// Set to disposing
-			vpa.State = api.DeploymentStateDisposing
+			// Set to disposing - updates the slice element
+			profile.VPAs[i].State = api.DeploymentStateDisposing
 		}
 
 		oManifest.Payload[model.VPAData] = vpaManifests
@@ -280,5 +280,3 @@ func (h vpaCallbackHandler) handle(
 		return nil
 	})
 }
-
-
