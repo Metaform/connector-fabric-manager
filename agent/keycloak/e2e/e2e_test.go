@@ -36,9 +36,95 @@ const (
 	orchestrationID = "1234"
 )
 
-func Test_Launch(t *testing.T) {
+func Test_SuccessfulDeployment(t *testing.T) {
 	ctx := context.Background()
 
+	err, natsContainer, vaultContainerResult, vaultSetupResult := setupEnvironment(t, ctx)
+
+	shutdownChannel := make(chan struct{})
+	go func() {
+		launcher.LaunchAndWaitSignal(shutdownChannel)
+	}()
+
+	err = createOrchestration(ctx, orchestrationID, natsContainer.Client)
+	require.NoError(t, err)
+
+	err = publishActivityMessage(ctx, orchestrationID, api.DeployDiscriminator, natsContainer.Client)
+	require.NoError(t, err)
+
+	vaultClient, err := vault.NewVaultClient(vaultContainerResult.URL, vaultSetupResult.ClientID, vaultSetupResult.ClientSecret, vaultSetupResult.TokenURL)
+	require.NoError(t, err)
+	defer vaultClient.Close()
+
+	var apiAccessClientID, vaultAccessClientId string
+	require.Eventually(t, func() bool {
+		oEntry, err := natsContainer.Client.KVStore.Get(ctx, "1234")
+		if err != nil {
+			return false
+		}
+		var orchestration api.Orchestration
+		err = json.Unmarshal(oEntry.Value(), &orchestration)
+		if err != nil {
+			return false
+		}
+		if orchestration.State == api.OrchestrationStateCompleted {
+			apiAccessClientID = orchestration.ProcessingData["clientID.apiAccess"].(string)
+			vaultAccessClientId = orchestration.ProcessingData["clientID.vaultAccess"].(string)
+			return true
+		}
+		return false
+	}, 10*time.Second, 10*time.Millisecond, "Orchestration did not complete in time")
+
+	require.NotEmpty(t, apiAccessClientID, "Expected clientID.apiAccess to be set")
+	require.NotEmpty(t, vaultAccessClientId, "Expected clientID.vaultAccess to be set")
+	apiAccessSecret, err := vaultClient.ResolveSecret(ctx, apiAccessClientID)
+	require.NoError(t, err, "Failed to resolve secret")
+	require.NotEmpty(t, apiAccessSecret, "Expected api access client secret to be set")
+	vaultAccessSecret, err := vaultClient.ResolveSecret(ctx, vaultAccessClientId)
+	require.NoError(t, err, "Failed to resolve secret")
+	require.NotEmpty(t, vaultAccessSecret, "Expected vault access client secret to be set")
+
+	shutdownChannel <- struct{}{}
+}
+
+func Test_UnsupportedDiscriminator(t *testing.T) {
+	ctx := context.Background()
+
+	err, natsContainer, _, _ := setupEnvironment(t, ctx)
+
+	shutdownChannel := make(chan struct{})
+	go func() {
+		launcher.LaunchAndWaitSignal(shutdownChannel)
+	}()
+
+	err = createOrchestration(ctx, orchestrationID, natsContainer.Client)
+	require.NoError(t, err)
+
+	err = publishActivityMessage(ctx, orchestrationID, "foobar", natsContainer.Client)
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		oEntry, err := natsContainer.Client.KVStore.Get(ctx, "1234")
+		if err != nil {
+			return false
+		}
+		var orchestration api.Orchestration
+		err = json.Unmarshal(oEntry.Value(), &orchestration)
+		if err != nil {
+			return false
+		}
+		if orchestration.State == api.OrchestrationStateErrored {
+			require.Nil(t, orchestration.ProcessingData["clientID.apiAccess"])
+			require.Nil(t, orchestration.ProcessingData["clientID.vaultAccess"])
+			return true
+		}
+		return false
+	}, 10*time.Second, 10*time.Millisecond, "Orchestration did not complete in time")
+
+	shutdownChannel <- struct{}{}
+}
+
+func setupEnvironment(t *testing.T, ctx context.Context) (error, *natsfixtures.NatsTestContainer, *vault.ContainerResult, *vault.SetupResult) {
 	net, err := network.New(ctx)
 	if err != nil {
 		t.Fatalf("failed to create network: %s", err)
@@ -73,46 +159,7 @@ func Test_Launch(t *testing.T) {
 	_ = os.Setenv("KCAGENT_KEYCLOAK_USERNAME", "admin")
 	_ = os.Setenv("KCAGENT_KEYCLOAK_PASSWORD", "admin")
 	_ = os.Setenv("KCAGENT_KEYCLOAK_REALM", "master")
-
-	shutdownChannel := make(chan struct{})
-	go func() {
-		launcher.LaunchAndWaitSignal(shutdownChannel)
-	}()
-
-	err = createOrchestration(ctx, orchestrationID, nt.Client)
-	require.NoError(t, err)
-
-	err = publishActivityMessage(ctx, orchestrationID, nt.Client)
-	require.NoError(t, err)
-
-	vaultClient, err := vault.NewVaultClient(vaultContainerResult.URL, setupResult.ClientID, setupResult.ClientSecret, setupResult.TokenURL)
-	require.NoError(t, err)
-	defer vaultClient.Close()
-
-	var clientID string
-	require.Eventually(t, func() bool {
-		oEntry, err := nt.Client.KVStore.Get(ctx, "1234")
-		if err != nil {
-			return false
-		}
-		var orchestration api.Orchestration
-		err = json.Unmarshal(oEntry.Value(), &orchestration)
-		if err != nil {
-			return false
-		}
-		if orchestration.State == api.OrchestrationStateCompleted {
-			clientID = orchestration.ProcessingData["clientID"].(string)
-			return true
-		}
-		return false
-	}, 10*time.Second, 10*time.Millisecond, "Orchestration did not complete in time")
-
-	require.NotEmpty(t, clientID, "Expected clientID to be set")
-	clientSecret, err := vaultClient.ResolveSecret(ctx, clientID)
-	require.NoError(t, err, "Failed to resolve secret")
-	require.NotEmpty(t, clientSecret, "Expected client secret to be set")
-
-	shutdownChannel <- struct{}{}
+	return err, nt, vaultContainerResult, setupResult
 }
 
 func createOrchestration(ctx context.Context, id string, client *natsclient.NatsClient) error {
@@ -140,13 +187,13 @@ func createOrchestration(ctx context.Context, id string, client *natsclient.Nats
 	return err
 }
 
-func publishActivityMessage(ctx context.Context, id string, client *natsclient.NatsClient) error {
+func publishActivityMessage(ctx context.Context, id string, d api.Discriminator, client *natsclient.NatsClient) error {
 	message := &api.ActivityMessage{
 		OrchestrationID: id,
 		Activity: api.Activity{
 			ID:            "test-activity",
 			Type:          launcher.ActivityType,
-			Discriminator: "",
+			Discriminator: d,
 			Inputs:        make([]api.MappingEntry, 0),
 			DependsOn:     make([]string, 0),
 		},

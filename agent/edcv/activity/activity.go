@@ -21,10 +21,6 @@ import (
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
-const (
-	clientIDKey = "clientID"
-)
-
 type EDCVActivityProcessor struct {
 	VaultClient serviceapi.VaultClient
 	HTTPClient  *http.Client
@@ -37,15 +33,16 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error processing EDC-V activity for orchestration %s: %w", ctx.OID(), err)}
 	}
-	_, err = p.VaultClient.ResolveSecret(ctx.Context(), data.ClientID)
+	_, err = p.VaultClient.ResolveSecret(ctx.Context(), data.VaultAccessClientID)
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error retrieving client secret for orchestration %s: %w", ctx.OID(), err)}
 	}
-	p.Monitor.Infof("EDCV activity for participant '%s' (client ID = %s) completed successfully", data.ParticipantID, data.ClientID)
+	p.Monitor.Infof("EDCV activity for participant '%s' (client ID = %s) completed successfully", data.ParticipantID, data.VaultAccessClientID)
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
 type EDCVData struct {
-	ParticipantID string `json:"cfm.participant.id" validate:"required"`
-	ClientID      string `json:"clientID" validate:"required"`
+	ParticipantID       string `json:"cfm.participant.id" validate:"required"`
+	VaultAccessClientID string `json:"clientID.vaultAccess" validate:"required"`
+	ApiAccessClientID   string `json:"clientID.apiAccess" validate:"required"`
 }

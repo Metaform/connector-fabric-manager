@@ -86,6 +86,7 @@ test:
 	# no tests yet in EDCV
 	#$(MAKE) -C $(EDCV_DIR) test
 	$(MAKE) -C $(E2E_DIR) test
+	$(MAKE) -C $(KEYCLOAK_DIR) test
 
 test-common:
 	@echo "Testing common..."
