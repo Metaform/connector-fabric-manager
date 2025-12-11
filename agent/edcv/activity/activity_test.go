@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/common/model"
+	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
@@ -28,6 +29,7 @@ func TestEDCVActivityProcessor_Process_WithValidData(t *testing.T) {
 	processor := EDCVActivityProcessor{
 		VaultClient: NewMockVaultClient("client-123", "123"),
 		HTTPClient:  &http.Client{},
+		Monitor:     system.NoopMonitor{},
 	}
 
 	ctx := context.Background()
@@ -192,6 +194,7 @@ func TestEDCVActivityProcessor_Process_MultipleUnknownFields(t *testing.T) {
 	processor := EDCVActivityProcessor{
 		VaultClient: NewMockVaultClient("client-123", "123"),
 		HTTPClient:  &http.Client{},
+		Monitor:     system.NoopMonitor{},
 	}
 
 	ctx := context.Background()
