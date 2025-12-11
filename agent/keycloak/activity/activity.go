@@ -29,11 +29,12 @@ import (
 )
 
 const (
-	jsonContentType   = "application/json"
-	contentTypeHeader = "Content-Type"
-	authHeader        = "Authorization"
-	clientUrl         = "%s/admin/realms/%s/clients"
-	clientIDKey       = "clientID"
+	jsonContentType        = "application/json"
+	contentTypeHeader      = "Content-Type"
+	authHeader             = "Authorization"
+	clientUrl              = "%s/admin/realms/%s/clients"
+	vaultAccessClientIDKey = "clientID.vaultAccess"
+	apiAccessClientIDKey   = "clientID.apiAccess"
 )
 
 type Config struct {
@@ -60,6 +61,121 @@ type KeyCloakActivityProcessor struct {
 	vaultClient serviceapi.VaultClient
 }
 
+type KeycloakClientData struct {
+	ClientId                  string           `json:"clientId"`
+	Name                      string           `json:"name"`
+	Description               string           `json:"description"`
+	Enabled                   bool             `json:"enabled"`
+	Secret                    string           `json:"secret"`
+	Protocol                  string           `json:"protocol"`
+	PublicClient              bool             `json:"publicClient"`
+	ServiceAccountsEnabled    bool             `json:"serviceAccountsEnabled"`
+	StandardFlowEnabled       bool             `json:"standardFlowEnabled"`
+	DirectAccessGrantsEnabled bool             `json:"directAccessGrantsEnabled"`
+	FullScopeAllowed          bool             `json:"fullScopeAllowed"`
+	ProtocolMappers           []map[string]any `json:"protocolMappers"`
+}
+
+type KeycloakClientDataOption func(*KeycloakClientData)
+
+func WithName(name string) KeycloakClientDataOption {
+	return func(c *KeycloakClientData) {
+		c.Name = name
+	}
+}
+
+func WithDescription(desc string) KeycloakClientDataOption {
+	return func(c *KeycloakClientData) {
+		c.Description = desc
+	}
+}
+
+func WithEnabled(enabled bool) KeycloakClientDataOption {
+	return func(c *KeycloakClientData) {
+		c.Enabled = enabled
+	}
+}
+
+func WithPublicClient(public bool) KeycloakClientDataOption {
+	return func(c *KeycloakClientData) {
+		c.PublicClient = public
+	}
+}
+
+func WithProtocolMappers(mappers []map[string]any) KeycloakClientDataOption {
+	return func(c *KeycloakClientData) {
+		c.ProtocolMappers = mappers
+	}
+}
+
+func WithClientID(clientID string) KeycloakClientDataOption {
+	return func(c *KeycloakClientData) {
+		c.ClientId = clientID
+	}
+}
+
+func WithClientSecret(secret string) KeycloakClientDataOption {
+	return func(c *KeycloakClientData) {
+		c.Secret = secret
+	}
+}
+
+func newKeycloakClientData(opts ...KeycloakClientDataOption) (*KeycloakClientData, error) {
+	clientID := generateClientID()
+	clientSecret, err := generateClientSecret()
+	if err != nil {
+		return nil, err
+	}
+	clientData := KeycloakClientData{
+		ClientId:                  clientID,
+		Secret:                    clientSecret,
+		Name:                      clientID + " Client",
+		Enabled:                   true,
+		Protocol:                  "openid-connect",
+		PublicClient:              false,
+		ServiceAccountsEnabled:    true,
+		StandardFlowEnabled:       false,
+		DirectAccessGrantsEnabled: false,
+		FullScopeAllowed:          true,
+		ProtocolMappers: []map[string]any{
+			{
+				"name":            "participantContextId",
+				"protocol":        "openid-connect",
+				"protocolMapper":  "oidc-hardcoded-claim-mapper",
+				"consentRequired": false,
+				"config": map[string]string{
+					"claim.name":           "participant_context_id",
+					"claim.value":          clientID,
+					"jsonType.label":       "String",
+					"access.token.claim":   "true",
+					"id.token.claim":       "true",
+					"userinfo.token.claim": "true",
+				},
+			},
+			{
+				"name":            "role",
+				"protocol":        "openid-connect",
+				"protocolMapper":  "oidc-hardcoded-claim-mapper",
+				"consentRequired": false,
+				"config": map[string]string{
+					"claim.name":           "role",
+					"claim.value":          "participant",
+					"jsonType.label":       "String",
+					"access.token.claim":   "true",
+					"id.token.claim":       "true",
+					"userinfo.token.claim": "true",
+				},
+			},
+		},
+	}
+
+	for _, opt := range opts {
+		opt(&clientData)
+	}
+
+	return &clientData, nil
+}
+
 type tokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
@@ -81,42 +197,53 @@ func NewProcessor(config *Config) *KeyCloakActivityProcessor {
 }
 
 func (p KeyCloakActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
-	if ctx.Discriminator() == api.DisposeDiscriminator {
-		panic("Not yet implemented")
-	}
+	if ctx.Discriminator() == api.DeployDiscriminator {
 
-	return p.provisionConfidentialClient(ctx)
+		// create a Vault access client in Keycloak
+		vaultAccessClient, err := newKeycloakClientData(WithName("Vault Access Client"), WithDescription("Client for Vault to access Keycloak"), WithEnabled(true))
+		if err != nil {
+			return api.ActivityResult{Result: api.ActivityResultFatalError, Error: err}
+		}
+		apiClientResult := p.provisionConfidentialClient(vaultAccessClient, ctx)
+		p.monitor.Debugf("created Vault Access client: %s", vaultAccessClient.ClientId)
+		ctx.SetValue(vaultAccessClientIDKey, vaultAccessClient.ClientId)
+
+		if apiClientResult.Result != api.ActivityResultComplete {
+			p.monitor.Warnw("Provisioning Vault Access client not complete. Result was %s, error: %s", apiClientResult.Result, apiClientResult.Error)
+			return apiClientResult
+		}
+
+		// create Keycloak client for API access
+		apiClient, err := newKeycloakClientData(WithName("API Access Client"), WithDescription("Client for accessing the VPA's Administration APIs"), WithEnabled(true))
+		if err != nil {
+			return api.ActivityResult{Result: api.ActivityResultFatalError, Error: err}
+		}
+		apiClientResult = p.provisionConfidentialClient(apiClient, ctx)
+		p.monitor.Debugf("created API Access client: %s", apiClient.ClientId)
+		ctx.SetValue(apiAccessClientIDKey, apiClient.ClientId)
+		return apiClientResult
+	}
+	return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("the '%s' discriminator is not supported", ctx.Discriminator())}
 }
 
 // provisionConfidentialClient creates a confidential client in Keycloak and stores the client secret in Vault for use by
 // other processors. The client ID is returned as a value in the context.
 // TODO support idempotent provisioning
-func (p KeyCloakActivityProcessor) provisionConfidentialClient(ctx api.ActivityContext) api.ActivityResult {
-	clientID := generateClientID()
-	clientSecret, err := generateClientSecret()
+func (p KeyCloakActivityProcessor) provisionConfidentialClient(client *KeycloakClientData, ctx api.ActivityContext) api.ActivityResult {
+	err := p.createClient(client)
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: err}
 	}
-	err = p.createClient(clientID, clientSecret)
+	err = p.vaultClient.StoreSecret(ctx.Context(), client.ClientId, client.Secret)
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: err}
 	}
-	err = p.vaultClient.StoreSecret(ctx.Context(), clientID, clientSecret)
-	if err != nil {
-		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: err}
-	}
-	ctx.SetValue(clientIDKey, clientID)
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
-// CreateClientWithSecret creates a confidential client with the specified secret
-func (p KeyCloakActivityProcessor) createClient(clientID string, clientSecret string) error {
+// createClient creates a confidential client with the specified secret
+func (p KeyCloakActivityProcessor) createClient(clientData *KeycloakClientData) error {
 	clientURL := fmt.Sprintf(clientUrl, p.keycloakURL, p.realm)
-
-	clientData := map[string]any{
-		"clientId": clientID,
-		"secret":   clientSecret,
-	}
 
 	jsonData, err := json.Marshal(clientData)
 	if err != nil {
