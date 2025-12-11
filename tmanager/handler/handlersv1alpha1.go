@@ -237,6 +237,20 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 	h.ResponseCreated(w, response)
 }
 
+func (h *TMHandler) deleteCell(w http.ResponseWriter, req *http.Request, cellID string) {
+	if h.InvalidMethod(w, req, http.MethodDelete) {
+		return
+	}
+
+	err := h.cellService.DeleteCell(req.Context(), cellID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.OK(w)
+}
+
 func (h *TMHandler) getCells(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodGet) {
 		return
@@ -293,7 +307,6 @@ func (h *TMHandler) getDataspaceProfiles(w http.ResponseWriter, req *http.Reques
 	h.ResponseOK(w, converted)
 }
 
-
 func (h *TMHandler) getDataspaceProfile(w http.ResponseWriter, req *http.Request, id string) {
 	if h.InvalidMethod(w, req, http.MethodGet) {
 		return
@@ -306,7 +319,6 @@ func (h *TMHandler) getDataspaceProfile(w http.ResponseWriter, req *http.Request
 	}
 	h.ResponseOK(w, v1alpha1.ToDataspaceProfile(profile))
 }
-
 
 func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodPost) {

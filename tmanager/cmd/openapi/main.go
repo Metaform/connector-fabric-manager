@@ -92,8 +92,9 @@ func generateTenantEndpoints(r spec.Generator) {
 		option.Summary("Delete Tenant"),
 		option.Description("Deletes a Tenant by ID"),
 		option.Request(new(IDParam)),
-		option.Response(http.StatusOK, v1alpha1.Tenant{}),
+		option.Response(http.StatusOK, nil),
 	)
+
 	tenants.Patch("/{id}",
 		option.Summary("Updates a Tenant"),
 		option.Description("Updates a Tenant by ID"),
@@ -148,11 +149,19 @@ func generateCellEndpoints(r spec.Generator) {
 	)
 
 	cells.Post("",
-		option.Summary("Create CellID"),
-		option.Description("Create a new CellID"),
+		option.Summary("Create Cell"),
+		option.Description("Create a new Cell"),
 		option.Request(v1alpha1.NewCell{}),
 		option.Response(http.StatusCreated, v1alpha1.Cell{}),
 	)
+
+	cells.Delete("/{id}",
+		option.Summary("Delete Cell"),
+		option.Description("Deletes a Cell by ID"),
+		option.Request(new(IDParam)),
+		option.Response(http.StatusOK, nil),
+	)
+
 }
 
 func generateDataspaceEndpoints(r spec.Generator) {

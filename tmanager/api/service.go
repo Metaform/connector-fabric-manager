@@ -60,5 +60,6 @@ type DataspaceProfileService interface {
 // CellService performs cell operations.
 type CellService interface {
 	RecordExternalDeployment(ctx context.Context, cell *Cell) (*Cell, error)
+	DeleteCell(ctx context.Context, cellID string) error
 	ListCells(ctx context.Context) ([]Cell, error)
 }

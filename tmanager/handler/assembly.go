@@ -78,6 +78,15 @@ func (h *HandlerServiceAssembly) registerCellRoutes(router chi.Router, handler *
 	return router.Route("/cells", func(r chi.Router) {
 		r.Get("/", handler.getCells)
 		r.Post("/", handler.createCell)
+		r.Route("/{cellID}", func(r chi.Router) {
+			r.Delete("/", func(w http.ResponseWriter, req *http.Request) {
+				cellID, found := handler.ExtractPathVariable(w, req, "cellID")
+				if !found {
+					return
+				}
+				handler.deleteCell(w, req, cellID)
+			})
+		})
 	})
 }
 

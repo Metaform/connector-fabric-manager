@@ -58,6 +58,27 @@
         }
       }
     },
+    "/api/v1alpha1/cells/{id}": {
+      "delete": {
+        "summary": "Delete Cell",
+        "description": "Deletes a Cell by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1alpha1/dataspace-profiles": {
       "get": {
         "summary": "List Dataspace Profiles",
@@ -275,14 +296,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/V1Alpha1Tenant"
-                }
-              }
-            }
+            "description": "OK"
           }
         }
       },
@@ -723,12 +737,12 @@
           "state",
           "stateTimestamp",
           "type",
-          "cell"
+          "cellId"
         ],
         "type": "object",
         "properties": {
-          "cell": {
-            "$ref": "#/components/schemas/V1Alpha1Cell"
+          "cellId": {
+            "type": "string"
           },
           "id": {
             "type": "string"

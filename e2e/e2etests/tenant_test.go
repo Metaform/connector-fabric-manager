@@ -44,13 +44,13 @@ func Test_VerifyTenantOperations(t *testing.T) {
 
 	waitTManager(t, client)
 
-	verifyGetAll(t, err, client)
-	verifyDelete(t, err, client)
-	verifyQueries(t, err, client)
-	verifyPatch(t, err, client)
+	verifyTenantGetAll(t, err, client)
+	verifyTenantDelete(t, err, client)
+	verifyTenantQueries(t, err, client)
+	verifyTenantPatch(t, err, client)
 }
 
-func verifyDelete(t *testing.T, err error, client *e2efixtures.ApiClient) {
+func verifyTenantDelete(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	tenant, err := e2efixtures.CreateTenant(client, map[string]any{"group": "delete"})
 	require.NoError(t, err)
 
@@ -68,7 +68,7 @@ func verifyDelete(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	assert.Equal(t, 0, len(result))
 }
 
-func verifyGetAll(t *testing.T, err error, client *e2efixtures.ApiClient) {
+func verifyTenantGetAll(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	tenant, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"})
 	require.NoError(t, err)
 	var result []v1alpha1.Tenant
@@ -82,7 +82,7 @@ func verifyGetAll(t *testing.T, err error, client *e2efixtures.ApiClient) {
 
 }
 
-func verifyQueries(t *testing.T, err error, client *e2efixtures.ApiClient) {
+func verifyTenantQueries(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	tenant1, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"})
 	require.NoError(t, err)
 	tenant2, err := e2efixtures.CreateTenant(client, map[string]any{"group": "manufacturers"})
@@ -110,7 +110,7 @@ func verifyQueries(t *testing.T, err error, client *e2efixtures.ApiClient) {
 
 }
 
-func verifyPatch(t *testing.T, err error, client *e2efixtures.ApiClient) {
+func verifyTenantPatch(t *testing.T, err error, client *e2efixtures.ApiClient) {
 	tenant1, err := e2efixtures.CreateTenant(client, map[string]any{"group": "suppliers"})
 	require.NoError(t, err)
 	tenant2, err := e2efixtures.CreateTenant(client, map[string]any{"group": "patch"})

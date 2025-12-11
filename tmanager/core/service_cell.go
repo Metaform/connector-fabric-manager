@@ -31,6 +31,12 @@ func (d cellService) RecordExternalDeployment(ctx context.Context, cell *api.Cel
 	})
 }
 
+func (t cellService) DeleteCell(ctx context.Context, cellID string) error {
+	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
+		return t.cellStore.Delete(ctx, cellID)
+	})
+}
+
 func (p cellService) ListCells(ctx context.Context) ([]api.Cell, error) {
 	result := []api.Cell{}
 	err := p.trxContext.Execute(ctx, func(ctx context.Context) error {
@@ -40,3 +46,4 @@ func (p cellService) ListCells(ctx context.Context) ([]api.Cell, error) {
 	})
 	return result, err
 }
+
