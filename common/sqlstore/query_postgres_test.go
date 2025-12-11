@@ -149,7 +149,7 @@ func TestPostgresJSONB_QueryVPAsSimpleEquality(t *testing.T) {
 	assert.Equal(t, 1, count)
 }
 
-// TestPostgresJSONB_QueryNestedCellID tests nested JSONB queries (VPAs.Cell.ID)
+// TestPostgresJSONB_QueryNestedCellID tests nested JSONB queries (VPAs.CellID.ID)
 func TestPostgresJSONB_QueryNestedCellID(t *testing.T) {
 	setupTestTable(t)
 	defer CleanupTestData(t, testDB)
@@ -177,7 +177,7 @@ func TestPostgresJSONB_QueryNestedCellID(t *testing.T) {
 	}
 	insertTestData(t, testData)
 
-	// Query for VPAs with Cell.ID = "cell-prod"
+	// Query for VPAs with CellID.ID = "cell-prod"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 	predicate := query.Eq("vpas.cell.id", "cell-prod")
 	sqlStr, args := builder.BuildSQL(predicate)
@@ -215,7 +215,7 @@ func TestPostgresJSONB_QueryCompoundAND(t *testing.T) {
 	}
 	insertTestData(t, testData)
 
-	// Query: Type = "connector" AND Cell.ID = "cell1"
+	// Query: Type = "connector" AND CellID.ID = "cell1"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 	compound := query.And(
 		query.Eq("vpas.type", "connector"),
@@ -545,7 +545,7 @@ func TestPostgresJSONB_QueryMultipleRecordsWithDifferentCells(t *testing.T) {
 		insertTestData(t, record)
 	}
 
-	// Query: Cell.ID = "cell-a"
+	// Query: CellID.ID = "cell-a"
 	builder := NewPostgresJSONBBuilder().WithJSONBFields("VPAs")
 	predicate := query.Eq("vpas.cell.id", "cell-a")
 	sqlStr, args := builder.BuildSQL(predicate)

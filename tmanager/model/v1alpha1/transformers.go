@@ -72,7 +72,7 @@ func ToVPA(input *api.VirtualParticipantAgent) *VirtualParticipantAgent {
 			StateTimestamp: input.StateTimestamp,
 		},
 		Type:       input.Type,
-		Cell:       *ToCell(&input.Cell),
+		CellID:     input.CellID,
 		Properties: input.Properties,
 	}
 }
@@ -125,7 +125,7 @@ func ToAPIVPA(input *VirtualParticipantAgent) *api.VirtualParticipantAgent {
 			StateTimestamp: input.StateTimestamp.UTC(), // Force UTC
 		},
 		Type:       input.Type,
-		Cell:       *ToAPICell(&input.Cell),
+		CellID:     input.CellID,
 		Properties: api.ToProperties(input.Properties),
 	}
 }

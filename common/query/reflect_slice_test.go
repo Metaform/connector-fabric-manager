@@ -63,7 +63,7 @@ func TestGetFieldValue_NestedSliceTraversal(t *testing.T) {
 			expected:  []string{"vpa-1", "vpa-2"},
 		},
 		{
-			name:      "Two level nested slice - VPAs.Cell.ID",
+			name:      "Two level nested slice - VPAs.CellID",
 			fieldPath: "VPAs.Cell.ID",
 			expected:  []string{"cell1", "cell2"},
 		},

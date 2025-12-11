@@ -78,7 +78,7 @@ func (g participantGenerator) generateVPA(
 			StateTimestamp: time.Now().UTC(),
 		},
 		Type:       vpaType,
-		Cell:       *cell,
+		CellID:     cell.ID,
 		Properties: make(api.Properties),
 	}
 

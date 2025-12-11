@@ -112,7 +112,7 @@ func (p participantService) DeployProfile(
 			vpaManifest := model.VPAManifest{
 				ID:         vpa.ID,
 				VPAType:    vpa.Type,
-				Cell:       vpa.Cell.ID,
+				Cell:       vpa.CellID,
 				Properties: vpa.Properties,
 			}
 			vpaManifests = append(vpaManifests, vpaManifest)
@@ -173,7 +173,7 @@ func (p participantService) DisposeProfile(ctx context.Context, tenantID string,
 			vpaManifest := model.VPAManifest{
 				ID:         vpa.ID,
 				VPAType:    vpa.Type,
-				Cell:       vpa.Cell.ID,
+				Cell:       vpa.CellID,
 				Properties: vpa.Properties,
 			}
 			vpaManifests = append(vpaManifests, vpaManifest)

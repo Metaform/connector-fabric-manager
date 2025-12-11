@@ -42,18 +42,8 @@ func TestToParticipantProfile(t *testing.T) {
 					State:          api.DeploymentStateActive,
 					StateTimestamp: testTime,
 				},
-				Type: model.ConnectorType,
-				Cell: api.Cell{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "cell-123",
-							Version: 1,
-						},
-						State:          api.DeploymentStateActive,
-						StateTimestamp: testTime,
-					},
-					Properties: api.Properties{"cell-key": "cell-value"},
-				},
+				Type:       model.ConnectorType,
+				CellID:     "cell-123",
 				Properties: api.Properties{"vpa-key": "vpa-value"},
 			},
 		},
@@ -88,18 +78,8 @@ func TestToVPACollection(t *testing.T) {
 					State:          api.DeploymentStateActive,
 					StateTimestamp: testTime,
 				},
-				Type: model.ConnectorType,
-				Cell: api.Cell{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "cell-1",
-							Version: 1,
-						},
-						State:          api.DeploymentStateActive,
-						StateTimestamp: testTime,
-					},
-					Properties: api.Properties{},
-				},
+				Type:       model.ConnectorType,
+				CellID:     "cell-1",
 				Properties: api.Properties{"key1": "value1"},
 			},
 			{
@@ -111,18 +91,8 @@ func TestToVPACollection(t *testing.T) {
 					State:          api.DeploymentStatePending,
 					StateTimestamp: testTime,
 				},
-				Type: model.CredentialServiceType,
-				Cell: api.Cell{
-					DeployableEntity: api.DeployableEntity{
-						Entity: api.Entity{
-							ID:      "cell-2",
-							Version: 1,
-						},
-						State:          api.DeploymentStatePending,
-						StateTimestamp: testTime,
-					},
-					Properties: api.Properties{},
-				},
+				Type:       model.CredentialServiceType,
+				CellID:     "cell-2",
 				Properties: api.Properties{"key2": "value2"},
 			},
 		},
@@ -138,7 +108,7 @@ func TestToVPACollection(t *testing.T) {
 	assert.Equal(t, "active", result[0].State)
 	assert.Equal(t, testTime, result[0].StateTimestamp)
 	assert.Equal(t, model.ConnectorType, result[0].Type)
-	assert.Equal(t, "cell-1", result[0].Cell.ID)
+	assert.Equal(t, "cell-1", result[0].CellID)
 	assert.Equal(t, map[string]any{"key1": "value1"}, result[0].Properties)
 
 	// Second VPA
@@ -147,7 +117,7 @@ func TestToVPACollection(t *testing.T) {
 	assert.Equal(t, "pending", result[1].State)
 	assert.Equal(t, testTime, result[1].StateTimestamp)
 	assert.Equal(t, model.CredentialServiceType, result[1].Type)
-	assert.Equal(t, "cell-2", result[1].Cell.ID)
+	assert.Equal(t, "cell-2", result[1].CellID)
 	assert.Equal(t, map[string]any{"key2": "value2"}, result[1].Properties)
 }
 
@@ -163,18 +133,8 @@ func TestToVPA(t *testing.T) {
 			State:          api.DeploymentStateError,
 			StateTimestamp: testTime,
 		},
-		Type: model.DataPlaneType,
-		Cell: api.Cell{
-			DeployableEntity: api.DeployableEntity{
-				Entity: api.Entity{
-					ID:      "cell-456",
-					Version: 2,
-				},
-				State:          api.DeploymentStateOffline,
-				StateTimestamp: testTime,
-			},
-			Properties: api.Properties{"cell-prop": "cell-val"},
-		},
+		Type:       model.DataPlaneType,
+		CellID:     "cell-456",
 		Properties: api.Properties{"vpa-prop": "vpa-val"},
 	}
 
@@ -186,8 +146,7 @@ func TestToVPA(t *testing.T) {
 	assert.Equal(t, "error", result.State)
 	assert.Equal(t, testTime, result.StateTimestamp)
 	assert.Equal(t, model.DataPlaneType, result.Type)
-	assert.Equal(t, "cell-456", result.Cell.ID)
-	assert.Equal(t, int64(2), result.Cell.Version)
+	assert.Equal(t, "cell-456", result.CellID)
 	assert.Equal(t, map[string]any{"vpa-prop": "vpa-val"}, result.Properties)
 }
 
@@ -243,18 +202,8 @@ func TestToAPIParticipantProfile(t *testing.T) {
 					State:          "active",
 					StateTimestamp: testTime,
 				},
-				Type: model.ConnectorType,
-				Cell: Cell{
-					Entity: Entity{
-						ID:      "api-cell-123",
-						Version: 1,
-					},
-					NewCell: NewCell{
-						State:          "active",
-						StateTimestamp: testTime,
-						Properties:     map[string]any{"cell-key": "cell-value"},
-					},
-				},
+				Type:       model.ConnectorType,
+				CellID:     "api-cell-123",
 				Properties: map[string]any{"vpa-key": "vpa-value"},
 			},
 		},
@@ -289,18 +238,8 @@ func TestToAPIVPACollection(t *testing.T) {
 				State:          "pending",
 				StateTimestamp: testTime,
 			},
-			Type: model.ConnectorType,
-			Cell: Cell{
-				Entity: Entity{
-					ID:      "cell-collection-1",
-					Version: 1,
-				},
-				NewCell: NewCell{
-					State:          "pending",
-					StateTimestamp: testTime,
-					Properties:     map[string]any{},
-				},
-			},
+			Type:       model.ConnectorType,
+			CellID:     "cell-collection-1",
 			Properties: map[string]any{"prop1": "val1"},
 		},
 		{
@@ -312,18 +251,8 @@ func TestToAPIVPACollection(t *testing.T) {
 				State:          "offline",
 				StateTimestamp: testTime,
 			},
-			Type: model.DataPlaneType,
-			Cell: Cell{
-				Entity: Entity{
-					ID:      "cell-collection-2",
-					Version: 1,
-				},
-				NewCell: NewCell{
-					State:          "offline",
-					StateTimestamp: testTime,
-					Properties:     map[string]any{},
-				},
-			},
+			Type:       model.DataPlaneType,
+			CellID:     "cell-collection-2",
 			Properties: map[string]any{"prop2": "val2"},
 		},
 	}
@@ -360,18 +289,8 @@ func TestToAPIVPA(t *testing.T) {
 			State:          "locked",
 			StateTimestamp: testTime,
 		},
-		Type: model.CredentialServiceType,
-		Cell: Cell{
-			Entity: Entity{
-				ID:      "api-cell-456",
-				Version: 3,
-			},
-			NewCell: NewCell{
-				State:          "locked",
-				StateTimestamp: testTime,
-				Properties:     map[string]any{"cell-env": "staging"},
-			},
-		},
+		Type:       model.CredentialServiceType,
+		CellID:     "api-cell-456",
 		Properties: map[string]any{"vpa-env": "staging"},
 	}
 
@@ -384,7 +303,7 @@ func TestToAPIVPA(t *testing.T) {
 	assert.Equal(t, testTime.UTC(), result.StateTimestamp)      // Should be converted to UTC
 	assert.Equal(t, time.UTC, result.StateTimestamp.Location()) // Verify timezone is UTC
 	assert.Equal(t, model.CredentialServiceType, result.Type)
-	assert.Equal(t, "api-cell-456", result.Cell.ID)
+	assert.Equal(t, "api-cell-456", result.CellID)
 	assert.Contains(t, result.Properties, "vpa-env")
 }
 
@@ -478,15 +397,8 @@ func TestTimestampUTCConversion(t *testing.T) {
 					State:          "active",
 					StateTimestamp: testTime,
 				},
-				Type: model.ConnectorType,
-				Cell: Cell{
-					Entity: Entity{ID: "cell", Version: 1},
-					NewCell: NewCell{
-						State:          "active",
-						StateTimestamp: testTime,
-						Properties:     map[string]any{},
-					},
-				},
+				Type:       model.ConnectorType,
+				CellID:     "cell",
 				Properties: map[string]any{},
 			}
 

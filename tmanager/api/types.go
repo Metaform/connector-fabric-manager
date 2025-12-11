@@ -82,7 +82,7 @@ type DataspaceProfile struct {
 type VirtualParticipantAgent struct {
 	DeployableEntity
 	Type       model.VPAType `json:"type"`
-	Cell       Cell          `json:"cell"`
+	CellID     string          `json:"cellId"`
 	Properties Properties    `json:"properties"`
 }
 

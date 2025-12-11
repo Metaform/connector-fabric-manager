@@ -279,7 +279,7 @@ func TestDeploymentState_DatabaseRoundTrip(t *testing.T) {
 }
 
 func TestDeploymentState_WithStruct(t *testing.T) {
-	t.Run("Cell struct with state", func(t *testing.T) {
+	t.Run("CellID struct with state", func(t *testing.T) {
 		cell := Cell{
 			DeployableEntity: DeployableEntity{
 				Entity: Entity{

@@ -119,7 +119,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			assert.NoError(t, err, "VPA ID should be a valid UUID")
 			assert.Equal(t, int64(0), vpa.Version)
 			assert.Equal(t, api.DeploymentStatePending, vpa.State)
-			assert.Equal(t, "cell-123", vpa.Cell.ID)
+			assert.Equal(t, "cell-123", vpa.CellID)
 			assert.NotNil(t, vpa.Properties)
 			assert.NotNil(t, vpa.StateTimestamp)
 		}
@@ -322,8 +322,7 @@ func TestParticipantProfileGenerator_generateConnector(t *testing.T) {
 
 		connector := generator.generateVPA(model.ConnectorType, make(api.VPAPropMap), inputCell)
 
-		assert.Equal(t, cellProperties, connector.Cell.Properties)
-		assert.NotSame(t, &cellProperties, &connector.Cell.Properties, "Properties should be a copy, not the same reference")
+		assert.Equal(t, inputCell.ID, connector.CellID)
 	})
 
 	t.Run("generates unique connector IDs", func(t *testing.T) {

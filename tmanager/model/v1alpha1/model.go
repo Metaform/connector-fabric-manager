@@ -84,7 +84,7 @@ type ParticipantProfile struct {
 type VirtualParticipantAgent struct {
 	DeployableEntity
 	Type       model.VPAType  `json:"type" required:"true"`
-	Cell       Cell           `json:"cell" required:"true"`
+	CellID     string           `json:"cellId" required:"true"`
 	Properties map[string]any `json:"properties,omitempty"`
 }
 

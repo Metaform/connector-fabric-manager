@@ -148,8 +148,8 @@ func generateCellEndpoints(r spec.Generator) {
 	)
 
 	cells.Post("",
-		option.Summary("Create Cell"),
-		option.Description("Create a new Cell"),
+		option.Summary("Create CellID"),
+		option.Description("Create a new CellID"),
 		option.Request(v1alpha1.NewCell{}),
 		option.Response(http.StatusCreated, v1alpha1.Cell{}),
 	)
