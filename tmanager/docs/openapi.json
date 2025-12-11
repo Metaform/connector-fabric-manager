@@ -126,6 +126,25 @@
       }
     },
     "/api/v1alpha1/dataspace-profiles/{id}": {
+      "delete": {
+        "summary": "Delete Dataspace Profile",
+        "description": "Deletes a Dataspace Profile by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
       "get": {
         "summary": "Get Dataspace Profile",
         "description": "Retrieve a Dataspace Profile by ID",

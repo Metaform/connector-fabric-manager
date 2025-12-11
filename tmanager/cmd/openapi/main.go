@@ -187,6 +187,13 @@ func generateDataspaceEndpoints(r spec.Generator) {
 		option.Response(http.StatusOK, v1alpha1.DataspaceProfile{}),
 	)
 
+	dataspaces.Delete("/{id}",
+		option.Summary("Delete Dataspace Profile"),
+		option.Description("Deletes a Dataspace Profile by ID"),
+		option.Request(new(IDParam)),
+		option.Response(http.StatusOK, nil),
+	)
+
 	dataspaces.Post("/{id}/deployments",
 		option.Summary("Deploy a Dataspace Profile"),
 		option.Description("Deploy a Dataspace Profile"),
