@@ -87,8 +87,7 @@ func (t tenantService) DeleteTenant(ctx context.Context, tenantID string) error 
 			return types.NewClientError("cannot delete tenant with participants")
 		}
 
-		err = t.tenantStore.Delete(ctx, tenant.ID)
-		return nil
+		return t.tenantStore.Delete(ctx, tenant.ID)
 	})
 }
 
