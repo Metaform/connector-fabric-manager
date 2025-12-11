@@ -14,7 +14,7 @@ KEYCLOAK_DIR=agent/keycloak
 E2E_DIR=e2e
 
 # Docker settings
-DOCKER_REGISTRY=
+DOCKER_REGISTRY=ghcr.io/metaform/connector-fabric-manager/
 DOCKER_TAG=latest
 
 #==============================================================================
@@ -144,27 +144,27 @@ generate-docs:
 # Docker Commands - Handled at Top Level
 #==============================================================================
 
-docker-build: docker-build-pmanager docker-build-tmanager docker-build-testagent
+docker-build: docker-build-pmanager docker-build-tmanager docker-build-testagent docker-build-edcvagent docker-build-kcagent
 
 docker-build-pmanager:
 	@echo "Building pmanager Docker image..."
-	docker build -f docker/Dockerfile.pmanager.dockerfile -t $(DOCKER_REGISTRY)pmanager:$(DOCKER_TAG) .
+	docker buildx build -f docker/Dockerfile.pmanager.dockerfile -t $(DOCKER_REGISTRY)pmanager:$(DOCKER_TAG) .
 
 docker-build-tmanager:
 	@echo "Building tmanager Docker image..."
-	docker build -f docker/Dockerfile.tmanager.dockerfile -t $(DOCKER_REGISTRY)tmanager:$(DOCKER_TAG) .
+	docker buildx build -f docker/Dockerfile.tmanager.dockerfile -t $(DOCKER_REGISTRY)tmanager:$(DOCKER_TAG) .
 
 docker-build-testagent:
 	@echo "Building test agent Docker image..."
-	docker build -f docker/Dockerfile.testagent.dockerfile -t $(DOCKER_REGISTRY)testagent:$(DOCKER_TAG) .
+	docker buildx build -f docker/Dockerfile.testagent.dockerfile -t $(DOCKER_REGISTRY)testagent:$(DOCKER_TAG) .
 
 docker-build-edcvagent:
 	@echo "Building EDC-V agent Docker image..."
-	docker build -f docker/Dockerfile.edcvagent.dockerfile -t $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) .
+	docker buildx build -f docker/Dockerfile.edcvagent.dockerfile -t $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) .
 
 docker-build-kcagent:
 	@echo "Building Keycloak agent Docker image..."
-	docker build -f docker/Dockerfile.kcagent.dockerfile -t $(DOCKER_REGISTRY)kcagent:$(DOCKER_TAG) .
+	docker buildx build -f docker/Dockerfile.kcagent.dockerfile -t $(DOCKER_REGISTRY)kcagent:$(DOCKER_TAG) .
 
 docker-clean: docker-clean-pmanager docker-clean-tmanager docker-clean-testagent
 

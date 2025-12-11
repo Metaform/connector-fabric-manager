@@ -2,12 +2,14 @@ package vault
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/network"
 )
 
 func TestVaultServiceAssembly_Init(t *testing.T) {
@@ -19,8 +21,10 @@ func TestVaultServiceAssembly_Init(t *testing.T) {
 
 	vConfig := viper.New()
 	vConfig.Set(urlKey, result.url)
-	vConfig.Set(roleIDKey, result.roleID)
-	vConfig.Set(secretIDKey, result.secretID)
+	vConfig.Set(clientIDKey, result.clientID)
+	vConfig.Set(clientSecretKey, result.clientSecret)
+	vConfig.Set(tokenURLKey, result.tokenURL)
+	vConfig.Set(vaultPathKey, vaultPath)
 
 	ictx := &system.InitContext{
 		StartContext: system.StartContext{
@@ -45,26 +49,38 @@ func TestVaultServiceAssembly_Init(t *testing.T) {
 }
 
 type TestSetupResult struct {
-	url      string
-	roleID   string
-	secretID string
-	cleanup  func()
+	url          string
+	clientID     string
+	clientSecret string
+	tokenURL     string
+	cleanup      func()
 }
 
 func setupTest(ctx context.Context, t *testing.T) TestSetupResult {
-	containerResult, err := StartVaultContainer(ctx)
+	net, err := network.New(ctx)
+	if err != nil {
+		t.Fatalf("failed to create network: %s", err)
+	}
+
+	// starting keycloak is necessary - Vault won't let us configure JWT if the JWKS endpoint is not reachable
+	keycloakContainerResult, err := StartKeycloakContainer(ctx, net.Name)
+	require.NoError(t, err, "Failed to start Keycloak container")
+
+	containerResult, err := StartVaultContainer(ctx, net.Name)
 	require.NoError(t, err, "Failed to start Vault container")
 
-	setupResult, err := SetupVault(containerResult.URL, containerResult.Token)
+	kcHost := fmt.Sprintf("http://%s:%d", keycloakContainerResult.ContainerName, 8080)
+	setupResult, err := SetupVault(containerResult.URL, containerResult.Token, keycloakContainerResult.URL, kcHost)
 	if err != nil {
 		containerResult.Cleanup()
 		t.Fatalf("Failed to setup Vault: %v", err)
 	}
 
 	return TestSetupResult{
-		url:      containerResult.URL,
-		roleID:   setupResult.RoleID,
-		secretID: setupResult.SecretID,
-		cleanup:  containerResult.Cleanup,
+		url:          containerResult.URL,
+		clientID:     setupResult.ClientID,
+		clientSecret: setupResult.ClientSecret,
+		tokenURL:     setupResult.TokenURL,
+		cleanup:      containerResult.Cleanup,
 	}
 }

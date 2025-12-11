@@ -22,9 +22,11 @@ import (
 )
 
 const (
-	urlKey      = "vault.url"
-	roleIDKey   = "vault.roleId"
-	secretIDKey = "vault.SecretId"
+	urlKey          = "vault.url"
+	clientIDKey     = "vault.clientId"
+	clientSecretKey = "vault.clientSecret"
+	tokenURLKey     = "vault.tokenUrl"
+	vaultPathKey    = "vault.path"
 )
 
 // VaultServiceAssembly defines an assembly that provides a client to Hashicorp Vault.
@@ -47,13 +49,20 @@ func (v VaultServiceAssembly) Requires() []system.ServiceType {
 
 func (v VaultServiceAssembly) Init(ctx *system.InitContext) error {
 	vaultURL := ctx.Config.GetString(urlKey)
-	roleID := ctx.Config.GetString(roleIDKey)
-	secretID := ctx.Config.GetString(secretIDKey)
-	if err := runtime.CheckRequiredParams(urlKey, vaultURL, roleIDKey, roleID, secretIDKey, secretID); err != nil {
+	clientID := ctx.Config.GetString(clientIDKey)
+	clientSecret := ctx.Config.GetString(clientSecretKey)
+	tokenUrl := ctx.Config.GetString(tokenURLKey)
+	vaultPath := ctx.Config.GetString(vaultPathKey)
+	if err := runtime.CheckRequiredParams(urlKey, vaultURL, clientIDKey, clientID, clientSecretKey, clientSecret, tokenURLKey, tokenUrl); err != nil {
 		return err
 	}
 	var err error
-	v.client, err = newVaultClient(vaultURL, roleID, secretID, ctx.LogMonitor)
+	var vaultOption []VaultOptions
+	if vaultPath != "" {
+		vaultPathOption := WithMountPath(vaultPath)
+		vaultOption = append(vaultOption, vaultPathOption)
+	}
+	v.client, err = newVaultClient(vaultURL, clientID, clientSecret, tokenUrl, ctx.LogMonitor, vaultOption...)
 	if err != nil {
 		return fmt.Errorf("failed to create Vault client: %w", err)
 	}
