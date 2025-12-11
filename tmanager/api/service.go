@@ -53,6 +53,7 @@ type ParticipantProfileService interface {
 type DataspaceProfileService interface {
 	GetProfile(ctx context.Context, profileID string) (*DataspaceProfile, error)
 	CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*DataspaceProfile, error)
+	DeleteProfile(ctx context.Context, profileID string) error
 	DeployProfile(ctx context.Context, profileID string, cellID string) error
 	ListProfiles(ctx context.Context) ([]DataspaceProfile, error)
 }

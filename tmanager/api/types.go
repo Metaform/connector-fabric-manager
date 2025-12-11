@@ -82,7 +82,7 @@ type DataspaceProfile struct {
 type VirtualParticipantAgent struct {
 	DeployableEntity
 	Type       model.VPAType `json:"type"`
-	CellID     string          `json:"cellId"`
+	CellID     string        `json:"cellId"`
 	Properties Properties    `json:"properties"`
 }
 
@@ -90,7 +90,7 @@ type VirtualParticipantAgent struct {
 type DataspaceDeployment struct {
 	DeployableEntity
 	CellID     string     `json:"cellId,omitempty"`
-	Properties Properties `json:"properties,omitempty"`
+	Properties Properties `json:"properties"`
 }
 
 // Cell is a homogenous deployment zone. A cell could be a Kubernetes cluster or some other infrastructure.

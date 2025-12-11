@@ -289,6 +289,20 @@ func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Requ
 	h.ResponseCreated(w, response)
 }
 
+func (h *TMHandler) deleteDataspaceProfile(w http.ResponseWriter, req *http.Request, profileID string) {
+	if h.InvalidMethod(w, req, http.MethodDelete) {
+		return
+	}
+
+	err := h.dataspaceService.DeleteProfile(req.Context(), profileID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	h.OK(w)
+}
+
 func (h *TMHandler) getDataspaceProfiles(w http.ResponseWriter, req *http.Request) {
 	if h.InvalidMethod(w, req, http.MethodGet) {
 		return

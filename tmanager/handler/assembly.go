@@ -101,6 +101,13 @@ func (h *HandlerServiceAssembly) registerDataspaceProfileRoutes(router chi.Route
 			}
 			handler.getDataspaceProfile(w, req, id)
 		})
+		r.Delete("/{profileID}", func(w http.ResponseWriter, req *http.Request) {
+			profileID, found := handler.ExtractPathVariable(w, req, "profileID")
+			if !found {
+				return
+			}
+			handler.deleteDataspaceProfile(w, req, profileID)
+		})
 		r.Route("/{id}/deployments", func(r chi.Router) {
 			r.Post("/", handler.deployDataspaceProfile)
 		})

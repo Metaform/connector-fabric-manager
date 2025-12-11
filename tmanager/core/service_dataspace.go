@@ -49,6 +49,13 @@ func (d dataspaceProfileService) CreateProfile(ctx context.Context, artifacts []
 	})
 }
 
+func (t dataspaceProfileService) DeleteProfile(ctx context.Context, profileID string) error {
+	return t.trxContext.Execute(ctx, func(ctx context.Context) error {
+		return t.profileStore.Delete(ctx, profileID)
+	})
+}
+
+
 func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID string, cellID string) error {
 	return d.trxContext.Execute(ctx, func(ctx context.Context) error {
 		profile, err := d.profileStore.FindByID(ctx, profileID)
