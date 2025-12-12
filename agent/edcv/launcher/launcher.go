@@ -19,13 +19,20 @@ import (
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/assembly/vault"
+	"github.com/metaform/connector-fabric-manager/common/oauth2"
+	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/metaform/connector-fabric-manager/pmanager/natsagent"
 )
 
 const (
-	ActivityType = "edcv-activity"
+	ActivityType       = "edcv-activity"
+	clientIDKey        = "keycloak.clientID"
+	clientSecretKey    = "keycloak.clientSecret"
+	tokenURLKey        = "keycloak.tokenurl"
+	identityHubURLKey  = "identityhub.url"
+	controlPlaneURLKey = "controlplane.url"
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
@@ -42,12 +49,30 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 		NewProcessor: func(ctx *natsagent.AgentContext) api.ActivityProcessor {
 			httpClient := ctx.Registry.Resolve(serviceapi.HttpClientKey).(http.Client)
 			vaultClient := ctx.Registry.Resolve(serviceapi.VaultKey).(serviceapi.VaultClient)
+			clientID := ctx.Config.GetString(clientIDKey)
+			clientSecret := ctx.Config.GetString(clientSecretKey)
+			tokenURL := ctx.Config.GetString(tokenURLKey)
+			ihURL := ctx.Config.GetString(identityHubURLKey)
+			cpURL := ctx.Config.GetString(controlPlaneURLKey)
 
-			return &activity.EDCVActivityProcessor{
-				HTTPClient:  &httpClient,
-				VaultClient: vaultClient,
-				Monitor:     ctx.Monitor,
+			if err := runtime.CheckRequiredParams(clientIDKey, clientID, clientSecretKey, clientSecret, tokenURLKey, tokenURL, identityHubURLKey, ihURL, controlPlaneURLKey, cpURL); err != nil {
+				panic(err)
 			}
+
+			return activity.NewProcessor(&activity.Config{
+				VaultClient: vaultClient,
+				HTTPClient:  &httpClient,
+				Monitor:     ctx.Monitor,
+				TokenProvider: oauth2.NewTokenProvider(
+					oauth2.Oauth2Params{
+						ClientID:     clientID,
+						ClientSecret: clientSecret,
+						TokenURL:     tokenURL,
+						GrantType:    oauth2.ClientCredentials,
+					}, &httpClient),
+				IdentityHubBaseURL:  ihURL,
+				ControlPlaneBaseURL: cpURL,
+			})
 		},
 	}
 	natsagent.LaunchAgent(shutdown, config)

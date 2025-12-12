@@ -14,28 +14,78 @@ package activity
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/metaform/connector-fabric-manager/common/mocks"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/token"
 	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestEDCVActivityProcessor_Process_WithValidData(t *testing.T) {
-	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient("client-123", "123"),
-		HTTPClient:  &http.Client{},
-		Monitor:     system.NoopMonitor{},
+type ConfigOptions func(*Config)
+
+func WithTokenProvider(provider token.TokenProvider) ConfigOptions {
+	return func(config *Config) {
+		config.TokenProvider = provider
 	}
+}
+
+func validConfig(opts ...ConfigOptions) *Config {
+	c := Config{
+		VaultClient:        NewMockVaultClient("client-123", "123"),
+		HTTPClient:         &http.Client{},
+		Monitor:            system.NoopMonitor{},
+		IdentityHubBaseURL: "http://identity.example.com:8765/foo/bar",
+	}
+	for _, opt := range opts {
+		opt(&c)
+	}
+	return &c
+}
+
+func TestEDCVActivityProcessor_Process_WithValidData(t *testing.T) {
+	tokenProvider := mocks.NewMockTokenProvider(t)
+	tokenProvider.On("GetToken").Return("someToken", nil)
+	processor := NewProcessor(validConfig(WithTokenProvider(tokenProvider)))
 
 	ctx := context.Background()
 	processingData := map[string]any{
 		model.ParticipantIdentifier: "participant-abc",
-		"clientID":                  "client-123",
+		"clientID.vaultAccess":      "client-123",
+		"clientID.apiAccess":        "client-456",
+	}
+	outputData := make(map[string]any)
+
+	activity := api.Activity{
+		ID:   "test-activity",
+		Type: "edcv",
+	}
+
+	activityContext := api.NewActivityContext(ctx, "orch-123", activity, processingData, outputData)
+
+	result := processor.Process(activityContext)
+
+	assert.Equal(t, api.ActivityResultType(api.ActivityResultComplete), result.Result)
+	assert.NoError(t, result.Error)
+}
+
+func TestEDCVActivityProcessor_Process_WithPublicURL(t *testing.T) {
+	tokenProvider := mocks.NewMockTokenProvider(t)
+	tokenProvider.On("GetToken").Return("someToken", nil)
+	processor := NewProcessor(validConfig(WithTokenProvider(tokenProvider)))
+
+	ctx := context.Background()
+	processingData := map[string]any{
+		model.ParticipantIdentifier: "participant-abc",
+		"clientID.vaultAccess":      "client-123",
+		"clientID.apiAccess":        "client-456",
+		"publicURL":                 "http://secure.example.com:1234/fizz/buzz",
 	}
 	outputData := make(map[string]any)
 
@@ -53,14 +103,12 @@ func TestEDCVActivityProcessor_Process_WithValidData(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_MissingParticipantID(t *testing.T) {
-	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient(),
-		HTTPClient:  &http.Client{},
-	}
 
+	processor := NewProcessor(validConfig(WithTokenProvider(mocks.NewMockTokenProvider(t))))
 	ctx := context.Background()
 	processingData := map[string]any{
-		"clientID": "client-456",
+		"clientID.vaultAccess": "client-123",
+		"clientID.apiAccess":   "client-456",
 		// Missing model.ParticipantIdentifier
 	}
 	outputData := make(map[string]any)
@@ -82,11 +130,7 @@ func TestEDCVActivityProcessor_Process_MissingParticipantID(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_MissingClientID(t *testing.T) {
-	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient(),
-		HTTPClient:  &http.Client{},
-	}
-
+	processor := NewProcessor(validConfig(WithTokenProvider(mocks.NewMockTokenProvider(t))))
 	ctx := context.Background()
 	processingData := map[string]any{
 		model.ParticipantIdentifier: "participant-123",
@@ -111,11 +155,7 @@ func TestEDCVActivityProcessor_Process_MissingClientID(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_EmptyProcessingData(t *testing.T) {
-	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient(),
-		HTTPClient:  &http.Client{},
-	}
-
+	processor := NewProcessor(validConfig(WithTokenProvider(mocks.NewMockTokenProvider(t))))
 	ctx := context.Background()
 	processingData := make(map[string]any)
 	outputData := make(map[string]any)
@@ -135,11 +175,7 @@ func TestEDCVActivityProcessor_Process_EmptyProcessingData(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_InvalidDataTypes(t *testing.T) {
-	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient(),
-		HTTPClient:  &http.Client{},
-	}
-
+	processor := NewProcessor(validConfig(WithTokenProvider(mocks.NewMockTokenProvider(t))))
 	ctx := context.Background()
 	processingData := map[string]any{
 		model.ParticipantIdentifier: 123, // Should be string
@@ -162,10 +198,7 @@ func TestEDCVActivityProcessor_Process_InvalidDataTypes(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_OrchestrationIDInError(t *testing.T) {
-	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient(),
-		HTTPClient:  &http.Client{},
-	}
+	processor := NewProcessor(validConfig(WithTokenProvider(mocks.NewMockTokenProvider(t))))
 
 	ctx := context.Background()
 	processingData := map[string]any{
@@ -191,16 +224,15 @@ func TestEDCVActivityProcessor_Process_OrchestrationIDInError(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_MultipleUnknownFields(t *testing.T) {
-	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient("client-123", "123"),
-		HTTPClient:  &http.Client{},
-		Monitor:     system.NoopMonitor{},
-	}
+	tokenProvider := mocks.NewMockTokenProvider(t)
+	tokenProvider.On("GetToken").Return("someToken", nil)
+	processor := NewProcessor(validConfig(WithTokenProvider(tokenProvider)))
 
 	ctx := context.Background()
 	processingData := map[string]any{
 		model.ParticipantIdentifier: "participant-multi",
-		"clientID":                  "client-123",
+		"clientID.vaultAccess":      "client-123",
+		"clientID.apiAccess":        "client-456",
 		"field1":                    "value1",
 		"field2":                    "value2",
 		"field3":                    "value3",
@@ -222,15 +254,19 @@ func TestEDCVActivityProcessor_Process_MultipleUnknownFields(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_MissingVaultEntry(t *testing.T) {
-	processor := EDCVActivityProcessor{
-		VaultClient: NewMockVaultClient(), // Do not populate the vault
-		HTTPClient:  &http.Client{},
-	}
+
+	tokenProvider := mocks.NewMockTokenProvider(t)
+	tokenProvider.On("GetToken").Return("someToken", nil)
+
+	invalidConfig := validConfig(WithTokenProvider(tokenProvider))
+	invalidConfig.VaultClient = NewMockVaultClient()
+	processor := NewProcessor(invalidConfig)
 
 	ctx := context.Background()
 	processingData := map[string]any{
 		model.ParticipantIdentifier: "participant-multi",
-		"clientID":                  "client-123",
+		"clientID.vaultAccess":      "client-123",
+		"clientID.apiAccess":        "client-456",
 	}
 	outputData := make(map[string]any)
 
@@ -245,6 +281,32 @@ func TestEDCVActivityProcessor_Process_MissingVaultEntry(t *testing.T) {
 
 	assert.NotNil(t, result.Error)
 	assert.Equal(t, api.ActivityResultType(api.ActivityResultFatalError), result.Result)
+}
+
+func TestEDCVActivityProcessor_Process_TokenFailure(t *testing.T) {
+	tokenProvider := mocks.NewMockTokenProvider(t)
+	tokenProvider.On("GetToken").Return("", fmt.Errorf("some error"))
+	processor := NewProcessor(validConfig(WithTokenProvider(tokenProvider)))
+
+	ctx := context.Background()
+	processingData := map[string]any{
+		model.ParticipantIdentifier: "participant-abc",
+		"clientID.vaultAccess":      "client-123",
+		"clientID.apiAccess":        "client-456",
+	}
+	outputData := make(map[string]any)
+
+	activity := api.Activity{
+		ID:   "test-activity",
+		Type: "edcv",
+	}
+
+	activityContext := api.NewActivityContext(ctx, "orch-123", activity, processingData, outputData)
+
+	result := processor.Process(activityContext)
+
+	assert.Equal(t, api.ActivityResultType(api.ActivityResultFatalError), result.Result)
+	assert.Error(t, result.Error, "some error")
 }
 
 type MockVaultClient struct {

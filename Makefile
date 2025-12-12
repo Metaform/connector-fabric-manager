@@ -137,6 +137,7 @@ generate-mocks:
 	$(MAKE) -C $(COMMON_DIR) generate-mocks
 	$(MAKE) -C $(PMANAGER_DIR) generate-mocks
 
+
 generate-docs:
 	$(MAKE) -C $(TMANAGER_DIR) generate-docs
 	$(MAKE) -C $(PMANAGER_DIR) generate-docs
