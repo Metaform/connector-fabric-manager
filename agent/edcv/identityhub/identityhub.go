@@ -28,18 +28,18 @@ const (
 	CreateParticipantURL = "/v1alpha/participants"
 )
 
-type ApiClient interface {
-	CreateParticipantContext(participantContextID string, did string) (string, error)
+type IdentityAPIClient interface {
+	CreateParticipantContext(manifest ParticipantManifest) error
 }
 
-type IdentityAPIClient struct {
-	baseURL       string
-	tokenProvider token.TokenProvider
-	httpClient    *http.Client
+type HttpIdentityAPIClient struct {
+	BaseURL       string
+	TokenProvider token.TokenProvider
+	HttpClient    *http.Client
 }
 
-func (a IdentityAPIClient) CreateParticipantContext(manifest ParticipantManifest) error {
-	accessToken, err := a.tokenProvider.GetToken()
+func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantManifest) error {
+	accessToken, err := a.TokenProvider.GetToken()
 	if err != nil {
 		return fmt.Errorf("failed to get API access token: %w", err)
 	}
@@ -90,7 +90,7 @@ func (a IdentityAPIClient) CreateParticipantContext(manifest ParticipantManifest
 		return err
 	}
 
-	url := a.baseURL + CreateParticipantURL
+	url := a.BaseURL + CreateParticipantURL
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (a IdentityAPIClient) CreateParticipantContext(manifest ParticipantManifest
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	resp, err := a.httpClient.Do(req)
+	resp, err := a.HttpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to create participant context on IdentityHub: %w", err)
 	}

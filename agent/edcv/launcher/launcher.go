@@ -16,6 +16,7 @@ import (
 	"net/http"
 
 	"github.com/metaform/connector-fabric-manager/agent/edcv/activity"
+	"github.com/metaform/connector-fabric-manager/agent/edcv/identityhub"
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/assembly/vault"
@@ -61,17 +62,19 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 
 			return activity.NewProcessor(&activity.Config{
 				VaultClient: vaultClient,
-				HTTPClient:  &httpClient,
-				Monitor:     ctx.Monitor,
-				TokenProvider: oauth2.NewTokenProvider(
-					oauth2.Oauth2Params{
-						ClientID:     clientID,
-						ClientSecret: clientSecret,
-						TokenURL:     tokenURL,
-						GrantType:    oauth2.ClientCredentials,
-					}, &httpClient),
-				IdentityHubBaseURL:  ihURL,
-				ControlPlaneBaseURL: cpURL,
+				Client:      &httpClient,
+				LogMonitor:  ctx.Monitor,
+				IdentityAPIClient: identityhub.HttpIdentityAPIClient{
+					BaseURL: ihURL,
+					TokenProvider: oauth2.NewTokenProvider(
+						oauth2.Oauth2Params{
+							ClientID:     clientID,
+							ClientSecret: clientSecret,
+							TokenURL:     tokenURL,
+							GrantType:    oauth2.ClientCredentials,
+						}, &httpClient),
+					HttpClient: &httpClient,
+				},
 			})
 		},
 	}

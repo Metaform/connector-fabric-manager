@@ -18,44 +18,47 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/agent/edcv/identityhub"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/token"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
-const (
-	jsonContentType   = "application/json"
-	contentTypeHeader = "Content-Type"
-)
-
 type EDCVActivityProcessor struct {
-	VaultClient     serviceapi.VaultClient
-	HTTPClient      *http.Client
-	Monitor         system.LogMonitor
-	identityHubURL  string
-	controlPlaneURL string
-	TokenProvider   token.TokenProvider
+	VaultClient       serviceapi.VaultClient
+	HTTPClient        *http.Client
+	Monitor           system.LogMonitor
+	TokenProvider     token.TokenProvider
+	IdentityAPIClient identityhub.IdentityAPIClient
+}
+
+type EDCVData struct {
+	ParticipantID       string `json:"cfm.participant.id" validate:"required"`
+	VaultAccessClientID string `json:"clientID.vaultAccess" validate:"required"`
+	ApiAccessClientID   string `json:"clientID.apiAccess" validate:"required"`
+	// PublicURL the public URL which is used for resolving Web DIDs. If not specified, must contain the IdentityHub's public endpoint.
+	PublicURL string `json:"publicURL" validate:"required"`
+	// CredentialServiceURL the URL of the credential service, i.e., the query and storage endpoints of IdentityHub
+	CredentialServiceURL string `json:"cfm.participant.credentialservice" validate:"required"`
+	// ProtocolServiceURL the URL of the protocol service, i.e., the DSP protocol endpoint of the control plane
+	ProtocolServiceURL string `json:"cfm.participant.protocolservice" validate:"required"`
 }
 
 func NewProcessor(config *Config) *EDCVActivityProcessor {
 	return &EDCVActivityProcessor{
-		VaultClient:     config.VaultClient,
-		HTTPClient:      config.HTTPClient,
-		Monitor:         config.Monitor,
-		TokenProvider:   config.TokenProvider,
-		identityHubURL:  config.IdentityHubBaseURL,
-		controlPlaneURL: config.ControlPlaneBaseURL,
+		VaultClient:       config.VaultClient,
+		HTTPClient:        config.Client,
+		Monitor:           config.LogMonitor,
+		IdentityAPIClient: config.IdentityAPIClient,
 	}
 }
 
 type Config struct {
-	VaultClient         serviceapi.VaultClient
-	HTTPClient          *http.Client
-	Monitor             system.LogMonitor
-	TokenProvider       token.TokenProvider
-	IdentityHubBaseURL  string
-	ControlPlaneBaseURL string
+	serviceapi.VaultClient
+	*http.Client
+	system.LogMonitor
+	identityhub.IdentityAPIClient
 }
 
 func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
@@ -66,13 +69,13 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	}
 
 	participantContextId := createParticipantContextID()
-	// create participant-context in IdentityHub
 
-	did, err := p.extractWebDid(data.PublicURL, participantContextId)
+	// create participant-context in IdentityHub
+	did, err := p.extractWebDid(data.PublicURL)
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot convert URL to did:web: %w", err)}
 	}
-	if err := p.createParticipantInIdentityHub(participantContextId, did); err != nil {
+	if err := p.createParticipantInIdentityHub(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL); err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant in identity hub: %w", err)}
 	}
 
@@ -84,22 +87,17 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
-func (p EDCVActivityProcessor) createParticipantInIdentityHub(participantContextId string, participantContextDID string) error {
-	jwt, err := p.TokenProvider.GetToken()
-	if err != nil {
-		return fmt.Errorf("error getting provisioner token for participant context '%s': %w", participantContextId, err)
+func (p EDCVActivityProcessor) createParticipantInIdentityHub(participantContextID string, did string, credentialServiceURL string, protocolURL string) error {
+
+	manifest := identityhub.NewParticipantManifest(participantContextID, did, credentialServiceURL, protocolURL)
+	if err := p.IdentityAPIClient.CreateParticipantContext(manifest); err != nil {
+		return fmt.Errorf("error creating participant context in identity hub: %w", err)
 	}
-	p.Monitor.Infof(jwt)
+
 	return nil
 }
 
-func (p EDCVActivityProcessor) extractWebDid(url string, participantContextId string) (string, error) {
-	if p.identityHubURL == "" {
-		return "", fmt.Errorf("IdentityHub base URL must not be empty")
-	}
-	if url == "" {
-		url = p.identityHubURL + "/" + participantContextId
-	}
+func (p EDCVActivityProcessor) extractWebDid(url string) (string, error) {
 
 	did := strings.Replace(url, "https", "http", -1)
 	did = strings.Replace(did, "http://", "", -1)
@@ -110,15 +108,7 @@ func (p EDCVActivityProcessor) extractWebDid(url string, participantContextId st
 	return did, nil
 }
 
-type EDCVData struct {
-	ParticipantID       string `json:"cfm.participant.id" validate:"required"`
-	VaultAccessClientID string `json:"clientID.vaultAccess" validate:"required"`
-	ApiAccessClientID   string `json:"clientID.apiAccess" validate:"required"`
-	// PublicURL the public URL which is used for resolving Web DIDs. Optional.
-	PublicURL string `json:"publicURL"`
-}
-
-func createParticipantInControlPlane() error {
+func (p EDCVActivityProcessor) createParticipantInControlPlane() error {
 	return nil
 }
 

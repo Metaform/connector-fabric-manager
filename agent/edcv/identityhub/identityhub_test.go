@@ -71,10 +71,10 @@ func TestIdentityAPIClient_CreateParticipantContext(t *testing.T) {
 
 	tp := mocks.NewMockTokenProvider(t)
 	tp.On("GetToken").Return("token", nil)
-	client := IdentityAPIClient{
-		baseURL:       server.URL,
-		tokenProvider: tp,
-		httpClient:    &http.Client{},
+	client := HttpIdentityAPIClient{
+		BaseURL:       server.URL,
+		TokenProvider: tp,
+		HttpClient:    &http.Client{},
 	}
 
 	manifest := NewParticipantManifest("test", "did:web:test", "https://example.com/credentials", "https://example.com/dsp",
@@ -94,10 +94,10 @@ func TestIdentityAPIClient_CreateParticipantContext(t *testing.T) {
 func TestIdentityAPIClient_AuthError(t *testing.T) {
 	tp := mocks.NewMockTokenProvider(t)
 	tp.On("GetToken").Return("", fmt.Errorf("test error"))
-	client := IdentityAPIClient{
-		baseURL:       "http://foo.bar",
-		tokenProvider: tp,
-		httpClient:    &http.Client{},
+	client := HttpIdentityAPIClient{
+		BaseURL:       "http://foo.bar",
+		TokenProvider: tp,
+		HttpClient:    &http.Client{},
 	}
 
 	manifest := NewParticipantManifest("test", "did:web:test", "https://example.com/credentials", "https://example.com/dsp",
@@ -122,10 +122,10 @@ func TestIdentityAPIClient_BadRequest(t *testing.T) {
 
 	tp := mocks.NewMockTokenProvider(t)
 	tp.On("GetToken").Return("token", nil)
-	client := IdentityAPIClient{
-		baseURL:       server.URL,
-		tokenProvider: tp,
-		httpClient:    &http.Client{},
+	client := HttpIdentityAPIClient{
+		BaseURL:       server.URL,
+		TokenProvider: tp,
+		HttpClient:    &http.Client{},
 	}
 
 	manifest := NewParticipantManifest("test", "did:web:test", "https://example.com/credentials", "https://example.com/dsp",
