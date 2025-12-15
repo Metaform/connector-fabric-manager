@@ -111,7 +111,7 @@ func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantMani
 
 	body, _ := io.ReadAll(resp.Body)
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("failed to create participant context on IdentityHub: received status code %d, body: %s", resp.StatusCode, string(body))
 	}
 

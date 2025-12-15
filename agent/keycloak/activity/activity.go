@@ -137,40 +137,41 @@ func newKeycloakClientData(opts ...KeycloakClientDataOption) (*KeycloakClientDat
 		StandardFlowEnabled:       false,
 		DirectAccessGrantsEnabled: false,
 		FullScopeAllowed:          true,
-		ProtocolMappers: []map[string]any{
-			{
-				"name":            "participantContextId",
-				"protocol":        "openid-connect",
-				"protocolMapper":  "oidc-hardcoded-claim-mapper",
-				"consentRequired": false,
-				"config": map[string]string{
-					"claim.name":           "participant_context_id",
-					"claim.value":          clientID,
-					"jsonType.label":       "String",
-					"access.token.claim":   "true",
-					"id.token.claim":       "true",
-					"userinfo.token.claim": "true",
-				},
-			},
-			{
-				"name":            "role",
-				"protocol":        "openid-connect",
-				"protocolMapper":  "oidc-hardcoded-claim-mapper",
-				"consentRequired": false,
-				"config": map[string]string{
-					"claim.name":           "role",
-					"claim.value":          "participant",
-					"jsonType.label":       "String",
-					"access.token.claim":   "true",
-					"id.token.claim":       "true",
-					"userinfo.token.claim": "true",
-				},
-			},
-		},
 	}
 
 	for _, opt := range opts {
 		opt(&clientData)
+	}
+
+	clientData.ProtocolMappers = []map[string]any{
+		{
+			"name":            "participantContextId",
+			"protocol":        "openid-connect",
+			"protocolMapper":  "oidc-hardcoded-claim-mapper",
+			"consentRequired": false,
+			"config": map[string]string{
+				"claim.name":           "participant_context_id",
+				"claim.value":          clientData.ClientId,
+				"jsonType.label":       "String",
+				"access.token.claim":   "true",
+				"id.token.claim":       "true",
+				"userinfo.token.claim": "true",
+			},
+		},
+		{
+			"name":            "role",
+			"protocol":        "openid-connect",
+			"protocolMapper":  "oidc-hardcoded-claim-mapper",
+			"consentRequired": false,
+			"config": map[string]string{
+				"claim.name":           "role",
+				"claim.value":          "participant",
+				"jsonType.label":       "String",
+				"access.token.claim":   "true",
+				"id.token.claim":       "true",
+				"userinfo.token.claim": "true",
+			},
+		},
 	}
 
 	return &clientData, nil
@@ -318,5 +319,6 @@ func generateClientSecret() (string, error) {
 
 // generateClientID generates a unique client ID that complies with Keycloak and typical Vault requirements
 func generateClientID() string {
+
 	return strings.ReplaceAll(uuid.New().String(), "-", "")
 }

@@ -16,6 +16,7 @@ import (
 	"net/http"
 
 	"github.com/metaform/connector-fabric-manager/agent/edcv/activity"
+	"github.com/metaform/connector-fabric-manager/agent/edcv/controlplane"
 	"github.com/metaform/connector-fabric-manager/agent/edcv/identityhub"
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
@@ -32,7 +33,7 @@ const (
 	ActivityType       = "edcv-activity"
 	clientIDKey        = "keycloak.clientID"
 	clientSecretKey    = "keycloak.clientSecret"
-	tokenURLKey        = "keycloak.tokenurl"
+	tokenURLKey        = "keycloak.tokenUrl"
 	identityHubURLKey  = "identityhub.url"
 	controlPlaneURLKey = "controlplane.url"
 )
@@ -62,23 +63,29 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 				panic(err)
 			}
 
+			provider := oauth2.NewTokenProvider(
+				oauth2.Oauth2Params{
+					ClientID:     clientID,
+					ClientSecret: clientSecret,
+					TokenURL:     tokenURL,
+					GrantType:    oauth2.ClientCredentials,
+				}, &httpClient)
 			return activity.NewProcessor(&activity.Config{
 				VaultClient: vaultClient,
 				Client:      &httpClient,
 				LogMonitor:  ctx.Monitor,
 				IdentityAPIClient: identityhub.HttpIdentityAPIClient{
-					BaseURL: ihURL,
-					TokenProvider: oauth2.NewTokenProvider(
-						oauth2.Oauth2Params{
-							ClientID:     clientID,
-							ClientSecret: clientSecret,
-							TokenURL:     tokenURL,
-							GrantType:    oauth2.ClientCredentials,
-						}, &httpClient),
-					HttpClient: &httpClient,
+					BaseURL:       ihURL,
+					TokenProvider: provider,
+					HttpClient:    &httpClient,
 				},
-				TokenURL: tokenURL,
+				TokenURL: "http://keycloak.edc-v.svc.cluster.local:8080/realms/edcv/protocol/openid-connect/token",
 				VaultURL: vaultURL,
+				ManagementAPIClient: controlplane.HttpManagementAPIClient{
+					BaseURL:       cpURL,
+					TokenProvider: provider,
+					HttpClient:    &httpClient,
+				},
 			})
 		},
 	}

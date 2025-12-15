@@ -25,7 +25,15 @@ import (
 	"github.com/metaform/connector-fabric-manager/common/token"
 )
 
-const CreateParticipantURL = "/v4alpha/participants"
+const (
+	CreateParticipantURL                                       = "/v4alpha/participants"
+	applicationJSON                                            = "application/json"
+	ParticipantContextStateCreated     ParticipantContextState = "CREATED"
+	ParticipantContextStateActivated   ParticipantContextState = "ACTIVATED"
+	ParticipantContextStateDeactivated ParticipantContextState = "DEACTIVATED"
+	contextConnector                                           = "https://w3id.org/edc/connector/management/v2"
+	contextConnectorVirtual                                    = "https://w3id.org/edc/virtual-connector/management/v2"
+)
 
 type ParticipantContextConfig struct {
 	ParticipantContextID string            `json:"participantContextId"`
@@ -63,13 +71,7 @@ func serialize(object any) string {
 	return string(res)
 }
 
-type ParticipantContextState int
-
-const (
-	ParticipantContextStateCreated     ParticipantContextState = 100
-	ParticipantContextStateActivated   ParticipantContextState = 200
-	ParticipantContextStateDeactivated ParticipantContextState = 300
-)
+type ParticipantContextState string
 
 type ParticipantContext struct {
 	ParticipantContextID string                  `json:"id"`
@@ -96,11 +98,8 @@ func (h HttpManagementAPIClient) CreateParticipantContext(manifest ParticipantCo
 	}
 
 	jsonLdData := map[string]any{
-		"context": []string{
-			"https://w3id.org/edc/connector/management/v2",
-			"https://w3id.org/edc/virtual-connector/management/v2",
-		},
-		"type":       "ParticipantContext",
+		"@context":   []string{contextConnector, contextConnectorVirtual},
+		"@type":      "ParticipantContext",
 		"@id":        manifest.ParticipantContextID,
 		"identity":   manifest.Identifier,
 		"properties": manifest.Properties,
@@ -117,22 +116,18 @@ func (h HttpManagementAPIClient) CreateParticipantContext(manifest ParticipantCo
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/ld+json")
+	req.Header.Set("Content-Type", applicationJSON)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	resp, err := h.HttpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to create participant context on control plane: %w", err)
 	}
-	defer func() {
-		// drain and close response body to avoid connection/resource leak
-		_, _ = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-	}()
+
+	h.closeResponse(resp)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to create participant context on IdentityHub: received status code %d, body: %s", resp.StatusCode, string(body))
-
 	}
 
 	return nil
@@ -145,11 +140,8 @@ func (h HttpManagementAPIClient) CreateConfig(participantContextID string, confi
 	}
 
 	configData := map[string]any{
-		"context": []string{
-			"https://w3id.org/edc/connector/management/v2",
-			"https://w3id.org/edc/virtual-connector/management/v2",
-		},
-		"type":           "ParticipantContextConfig",
+		"@context":       []string{contextConnector, contextConnectorVirtual},
+		"@type":          "ParticipantContextConfig",
 		"entries":        config.Entries,
 		"privateEntries": config.SecretEntries,
 		"identity":       config.ParticipantContextID,
@@ -160,23 +152,19 @@ func (h HttpManagementAPIClient) CreateConfig(participantContextID string, confi
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s/config", CreateParticipantURL, participantContextID)
-	req, err := http.NewRequest(http.MethodPost, h.BaseURL+url, bytes.NewBuffer(payload))
+	url := fmt.Sprintf("%s%s/%s/config", h.BaseURL, CreateParticipantURL, participantContextID)
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(payload))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/ld+json")
+	req.Header.Set("Content-Type", applicationJSON)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	resp, err := h.HttpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to create participant context config on control plane: %w", err)
 	}
 
-	defer func() {
-		// drain and close response body to avoid connection/resource leak
-		_, _ = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-	}()
+	defer h.closeResponse(resp)
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
 		body, _ := io.ReadAll(resp.Body)
@@ -184,4 +172,12 @@ func (h HttpManagementAPIClient) CreateConfig(participantContextID string, confi
 
 	}
 	return nil
+}
+
+func (h HttpManagementAPIClient) closeResponse(resp *http.Response) {
+	func() {
+		// drain and close response body to avoid connection/resource leak
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}()
 }
