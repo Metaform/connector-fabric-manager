@@ -40,6 +40,8 @@ func validConfig(opts ...ConfigOptions) *Config {
 		VaultClient: NewMockVaultClient("client-123", "123"),
 		Client:      &http.Client{},
 		LogMonitor:  system.NoopMonitor{},
+		TokenURL:    "http://auth.example.com/oauth2/token",
+		VaultURL:    "https://vault.example.com:8200",
 	}
 	for _, opt := range opts {
 		opt(&c)

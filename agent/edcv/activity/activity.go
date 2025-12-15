@@ -31,6 +31,8 @@ type EDCVActivityProcessor struct {
 	Monitor           system.LogMonitor
 	TokenProvider     token.TokenProvider
 	IdentityAPIClient identityhub.IdentityAPIClient
+	TokenURL          string
+	VaultURL          string
 }
 
 type EDCVData struct {
@@ -51,6 +53,8 @@ func NewProcessor(config *Config) *EDCVActivityProcessor {
 		HTTPClient:        config.Client,
 		Monitor:           config.LogMonitor,
 		IdentityAPIClient: config.IdentityAPIClient,
+		TokenURL:          config.TokenURL,
+		VaultURL:          config.VaultURL,
 	}
 }
 
@@ -59,6 +63,8 @@ type Config struct {
 	*http.Client
 	system.LogMonitor
 	identityhub.IdentityAPIClient
+	TokenURL string
+	VaultURL string
 }
 
 func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
@@ -69,27 +75,37 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	}
 
 	participantContextId := createParticipantContextID()
-
+	// resolve client secret for the new participant
+	clientSecret, err := p.VaultClient.ResolveSecret(ctx.Context(), data.VaultAccessClientID)
+	if err != nil {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error retrieving client secret for orchestration %s: %w", ctx.OID(), err)}
+	}
 	// create participant-context in IdentityHub
 	did, err := p.extractWebDid(data.PublicURL)
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot convert URL to did:web: %w", err)}
 	}
-	if err := p.createParticipantInIdentityHub(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL); err != nil {
+
+	manifest := identityhub.NewParticipantManifest(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL, func(m *identityhub.ParticipantManifest) {
+		m.VaultCredentials.ClientSecret = clientSecret
+		m.VaultCredentials.ClientID = data.VaultAccessClientID
+		m.VaultCredentials.TokenURL = p.TokenURL
+
+		m.VaultConfig.VaultURL = p.VaultURL
+		m.CredentialServiceURL = data.CredentialServiceURL
+		m.ProtocolServiceURL = data.ProtocolServiceURL
+	})
+
+	if err := p.createParticipantInIdentityHub(manifest); err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant in identity hub: %w", err)}
 	}
 
-	_, err = p.VaultClient.ResolveSecret(ctx.Context(), data.VaultAccessClientID)
-	if err != nil {
-		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error retrieving client secret for orchestration %s: %w", ctx.OID(), err)}
-	}
 	p.Monitor.Infof("EDCV activity for participant '%s' (client ID = %s) completed successfully", data.ParticipantID, data.VaultAccessClientID)
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
-func (p EDCVActivityProcessor) createParticipantInIdentityHub(participantContextID string, did string, credentialServiceURL string, protocolURL string) error {
+func (p EDCVActivityProcessor) createParticipantInIdentityHub(manifest identityhub.ParticipantManifest) error {
 
-	manifest := identityhub.NewParticipantManifest(participantContextID, did, credentialServiceURL, protocolURL)
 	if err := p.IdentityAPIClient.CreateParticipantContext(manifest); err != nil {
 		return fmt.Errorf("error creating participant context in identity hub: %w", err)
 	}

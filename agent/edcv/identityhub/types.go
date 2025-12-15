@@ -19,7 +19,9 @@ import (
 )
 
 const (
-	DefaultKeyID = "key1"
+	DefaultKeyID     = "key1"
+	DefaultAlgorithm = "EDDSA"
+	DefaultCurve     = "Ed25519"
 )
 
 type KeyGeneratorParameters struct {
@@ -99,6 +101,8 @@ func NewParticipantManifest(
 		KeyGeneratorParameters: KeyGeneratorParameters{
 			KeyID:           DefaultKeyID,
 			PrivateKeyAlias: DefaultKeyID,
+			KeyAlgorithm:    DefaultAlgorithm,
+			Curve:           DefaultCurve,
 		},
 		VaultConfig: VaultConfig{
 			SecretPath: "v1/participants",

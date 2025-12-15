@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	urlKey             = "vault.url" // duplicate of common/vault/assembly.go
 	ActivityType       = "edcv-activity"
 	clientIDKey        = "keycloak.clientID"
 	clientSecretKey    = "keycloak.clientSecret"
@@ -52,11 +53,12 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 			vaultClient := ctx.Registry.Resolve(serviceapi.VaultKey).(serviceapi.VaultClient)
 			clientID := ctx.Config.GetString(clientIDKey)
 			clientSecret := ctx.Config.GetString(clientSecretKey)
-			tokenURL := ctx.Config.GetString(tokenURLKey)
+			tokenURL := ctx.Config.GetString(tokenURLKey) // this may be nil or "" if the in-mem vault is used
 			ihURL := ctx.Config.GetString(identityHubURLKey)
 			cpURL := ctx.Config.GetString(controlPlaneURLKey)
+			vaultURL := ctx.Config.GetString(urlKey) // this may be nil or "" if the in-mem vault is used
 
-			if err := runtime.CheckRequiredParams(clientIDKey, clientID, clientSecretKey, clientSecret, tokenURLKey, tokenURL, identityHubURLKey, ihURL, controlPlaneURLKey, cpURL); err != nil {
+			if err := runtime.CheckRequiredParams(clientIDKey, clientID, clientSecretKey, clientSecret, identityHubURLKey, ihURL, controlPlaneURLKey, cpURL); err != nil {
 				panic(err)
 			}
 
@@ -75,6 +77,8 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 						}, &httpClient),
 					HttpClient: &httpClient,
 				},
+				TokenURL: tokenURL,
+				VaultURL: vaultURL,
 			})
 		},
 	}
