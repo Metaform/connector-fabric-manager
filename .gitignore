@@ -25,9 +25,6 @@ go.work.sum
 /coverage.html
 bin/
 
-# Mockery generated files
-mocks/
-
 .terraform/*
 */.terraform.lock.hcl
 */terraform.tfstate

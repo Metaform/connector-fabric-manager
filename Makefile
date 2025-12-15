@@ -134,6 +134,7 @@ install-tools:
 
 generate-mocks:
 	@echo "Generating mocks for all services..."
+	$(MAKE) -C $(COMMON_DIR) generate-mocks
 	$(MAKE) -C $(PMANAGER_DIR) generate-mocks
 
 generate-docs:
