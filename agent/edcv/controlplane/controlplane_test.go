@@ -102,7 +102,7 @@ func TestParticipantContext_SerDes(t *testing.T) {
 		t.Fatalf("unexpected identity: %v", m["identity"])
 	}
 
-	if st, ok := m["state"].(float64); !ok || int(st) != int(orig.State) {
+	if st, ok := m["state"].(string); !ok || st != string(orig.State) {
 		t.Fatalf("unexpected state: %#v", m["state"])
 	}
 
@@ -202,7 +202,7 @@ func TestCreateParticipant_BadRequest(t *testing.T) {
 		State:                ParticipantContextStateActivated,
 	}
 
-	require.ErrorContains(t, client.CreateParticipantContext(context), "foobar")
+	require.ErrorContains(t, client.CreateParticipantContext(context), "received status code 400")
 }
 
 func TestCreateParticipant_Conflict(t *testing.T) {
@@ -226,12 +226,12 @@ func TestCreateParticipant_Conflict(t *testing.T) {
 		State:                ParticipantContextStateActivated,
 	}
 
-	require.ErrorContains(t, client.CreateParticipantContext(context), "foobar")
+	require.ErrorContains(t, client.CreateParticipantContext(context), "received status code 409")
 }
 
 func TestCreateParticipantConfig(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == CreateParticipantURL+"/test-participant/config" && r.Method == http.MethodPost {
+		if r.URL.Path == CreateParticipantURL+"/test-participant/config" && r.Method == http.MethodPut {
 			body, err := io.ReadAll(r.Body)
 			require.NoError(t, err)
 			var data map[string]any

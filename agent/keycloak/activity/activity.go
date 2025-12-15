@@ -120,7 +120,7 @@ func WithClientSecret(secret string) KeycloakClientDataOption {
 	}
 }
 
-func newKeycloakClientData(opts ...KeycloakClientDataOption) (*KeycloakClientData, error) {
+func newKeycloakClientData(participantContextId string, opts ...KeycloakClientDataOption) (*KeycloakClientData, error) {
 	clientID := generateClientID()
 	clientSecret, err := generateClientSecret()
 	if err != nil {
@@ -151,7 +151,7 @@ func newKeycloakClientData(opts ...KeycloakClientDataOption) (*KeycloakClientDat
 			"consentRequired": false,
 			"config": map[string]string{
 				"claim.name":           "participant_context_id",
-				"claim.value":          clientData.ClientId,
+				"claim.value":          participantContextId,
 				"jsonType.label":       "String",
 				"access.token.claim":   "true",
 				"id.token.claim":       "true",
@@ -200,29 +200,37 @@ func NewProcessor(config *Config) *KeyCloakActivityProcessor {
 func (p KeyCloakActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
 	if ctx.Discriminator() == api.DeployDiscriminator {
 
-		// create a Vault access client in Keycloak
-		vaultAccessClient, err := newKeycloakClientData(WithName("Vault Access Client"), WithDescription("Client for Vault to access Keycloak"), WithEnabled(true))
+		clientIDSlug := generateClientID()
+
+		// create Keycloak client for API access
+		participantContextID := clientIDSlug + "-api"
+
+		apiClient, err := newKeycloakClientData(participantContextID, WithClientID(participantContextID), WithName("API Access Client"), WithDescription("Client for accessing the VPA's Administration APIs"), WithEnabled(true))
 		if err != nil {
 			return api.ActivityResult{Result: api.ActivityResultFatalError, Error: err}
 		}
-		apiClientResult := p.provisionConfidentialClient(vaultAccessClient, ctx)
-		p.monitor.Debugf("created Vault Access client: %s", vaultAccessClient.ClientId)
-		ctx.SetValue(vaultAccessClientIDKey, vaultAccessClient.ClientId)
-
+		apiClientResult := p.provisionConfidentialClient(apiClient, ctx)
+		p.monitor.Infof("created API Access client: %s", apiClient.ClientId)
+		ctx.SetValue(apiAccessClientIDKey, apiClient.ClientId)
 		if apiClientResult.Result != api.ActivityResultComplete {
-			p.monitor.Warnw("Provisioning Vault Access client not complete. Result was %s, error: %s", apiClientResult.Result, apiClientResult.Error)
+			p.monitor.Warnw("Provisioning API Access client not complete. Result was %s, error: %s", apiClientResult.Result, apiClientResult.Error)
 			return apiClientResult
 		}
 
-		// create Keycloak client for API access
-		apiClient, err := newKeycloakClientData(WithName("API Access Client"), WithDescription("Client for accessing the VPA's Administration APIs"), WithEnabled(true))
+		// create a Vault access client in Keycloak
+		vaultAccessClientID := clientIDSlug + "-vault"
+		vaultAccessClient, err := newKeycloakClientData(participantContextID, WithClientID(vaultAccessClientID), WithName("Vault Access Client"), WithDescription("Client for Vault to access Keycloak"), WithEnabled(true))
 		if err != nil {
 			return api.ActivityResult{Result: api.ActivityResultFatalError, Error: err}
 		}
-		apiClientResult = p.provisionConfidentialClient(apiClient, ctx)
-		p.monitor.Debugf("created API Access client: %s", apiClient.ClientId)
-		ctx.SetValue(apiAccessClientIDKey, apiClient.ClientId)
-		return apiClientResult
+		vaultClientResult := p.provisionConfidentialClient(vaultAccessClient, ctx)
+		p.monitor.Infof("created Vault Access client: %s", vaultAccessClient.ClientId)
+		ctx.SetValue(vaultAccessClientIDKey, vaultAccessClient.ClientId)
+
+		if vaultClientResult.Result != api.ActivityResultComplete {
+			p.monitor.Warnw("Provisioning Vault Access client not complete. Result was %s, error: %s", vaultClientResult.Result, vaultClientResult.Error)
+		}
+		return vaultClientResult
 	}
 	return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("the '%s' discriminator is not supported", ctx.Discriminator())}
 }

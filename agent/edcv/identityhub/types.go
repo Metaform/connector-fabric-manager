@@ -63,8 +63,8 @@ type ParticipantManifest struct {
 }
 
 type CreateParticipantContextResponse struct {
-	STSClientID          string `json:"clientId"`
-	STSClientSecretAlias string `json:"clientSecret"`
+	STSClientID     string `json:"clientId"`
+	STSClientSecret string `json:"clientSecret"`
 }
 type ParticipantManifestOptions func(*ParticipantManifest)
 

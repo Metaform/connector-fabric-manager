@@ -369,8 +369,8 @@ type MockIdentityHubClient struct {
 
 func (m MockIdentityHubClient) CreateParticipantContext(manifest identityhub.ParticipantManifest) (*identityhub.CreateParticipantContextResponse, error) {
 	return &identityhub.CreateParticipantContextResponse{
-		STSClientID:          "test-clientid",
-		STSClientSecretAlias: "test-secret-alias",
+		STSClientID:     "test-clientid",
+		STSClientSecret: "test-secret-alias",
 	}, m.expectedError
 }
 

@@ -17,20 +17,20 @@ package edcv
 // VaultConfig defines configuration for accessing a vault, including its URL, secret path, and folder path.
 type VaultConfig struct {
 	// VaultURL the base URL of the vault
-	VaultURL string
+	VaultURL string `json:"vaultUrl"`
 	// SecretPath the path of the mount point of the secret engine
-	SecretPath string
+	SecretPath string `json:"secretPath"`
 	// FolderPath the path of the folder within the secret engine where the participant's manifest will be stored. Note that this will be prefixed with the
 	// participant context ID
-	FolderPath string
+	FolderPath string `json:"folderPath"`
 }
 
 // VaultCredentials defines the credentials which are needed to get a JWT which is used to access a vault
 type VaultCredentials struct {
 	// ClientID client ID of the service account of the IdP which is configured in Vault
-	ClientID string
+	ClientID string `json:"clientId"`
 	// ClientSecret secret of the service account of the IdP, which is configured in Vault
-	ClientSecret string
+	ClientSecret string `json:"clientSecret"`
 	// TokenURL URL of the token endpoint of the IdP which is configured in Vault
-	TokenURL string
+	TokenURL string `json:"tokenUrl"`
 }
