@@ -27,10 +27,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	cmocks "github.com/metaform/connector-fabric-manager/common/mocks"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
-	"github.com/metaform/connector-fabric-manager/pmanager/api/mocks"
 	"github.com/metaform/connector-fabric-manager/pmanager/memorystore"
+	"github.com/metaform/connector-fabric-manager/pmanager/mocks"
+	cmocks "github.com/metaform/connector-fabric-manager/pmanager/mocks"
 )
 
 func TestProvisionManager_Start(t *testing.T) {

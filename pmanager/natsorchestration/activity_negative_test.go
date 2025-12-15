@@ -19,9 +19,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/metaform/connector-fabric-manager/common/mocks"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
+	"github.com/metaform/connector-fabric-manager/pmanager/mocks"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
