@@ -29,7 +29,7 @@ const (
 )
 
 type IdentityAPIClient interface {
-	CreateParticipantContext(manifest ParticipantManifest) error
+	CreateParticipantContext(manifest ParticipantManifest) (*CreateParticipantContextResponse, error)
 }
 
 type HttpIdentityAPIClient struct {
@@ -38,10 +38,10 @@ type HttpIdentityAPIClient struct {
 	HttpClient    *http.Client
 }
 
-func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantManifest) error {
+func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantManifest) (*CreateParticipantContextResponse, error) {
 	accessToken, err := a.TokenProvider.GetToken()
 	if err != nil {
-		return fmt.Errorf("failed to get API access token: %w", err)
+		return nil, fmt.Errorf("failed to get API access token: %w", err)
 	}
 
 	data := map[string]any{
@@ -87,13 +87,13 @@ func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantMani
 
 	payload, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	url := a.BaseURL + CreateParticipantURL
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -101,7 +101,7 @@ func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantMani
 
 	resp, err := a.HttpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to create participant context on IdentityHub: %w", err)
+		return nil, fmt.Errorf("failed to create participant context on IdentityHub: %w", err)
 	}
 	defer func() {
 		// drain and close response body to avoid connection/resource leak
@@ -109,11 +109,17 @@ func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantMani
 		_ = resp.Body.Close()
 	}()
 
+	body, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create participant context on IdentityHub: received status code %d, body: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("failed to create participant context on IdentityHub: received status code %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	return nil
+	createResponse := &CreateParticipantContextResponse{}
 
+	if err := json.Unmarshal(body, createResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal participant context creation response: %w", err)
+	}
+
+	return createResponse, nil
 }

@@ -22,6 +22,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/metaform/connector-fabric-manager/agent/edcv"
 	"github.com/metaform/connector-fabric-manager/common/mocks"
 	"github.com/stretchr/testify/require"
 )
@@ -63,6 +64,7 @@ func TestIdentityAPIClient_CreateParticipantContext(t *testing.T) {
 			config := vaultConfig["config"].(map[string]any)
 			require.Equal(t, "https://example.com/vault", config["vaultUrl"])
 			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"participantContextId":"test"}`))
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -79,14 +81,14 @@ func TestIdentityAPIClient_CreateParticipantContext(t *testing.T) {
 
 	manifest := NewParticipantManifest("test", "did:web:test", "https://example.com/credentials", "https://example.com/dsp",
 		func(manifest *ParticipantManifest) {
-			manifest.VaultConfig = VaultConfig{
+			manifest.VaultConfig = edcv.VaultConfig{
 				VaultURL: "https://example.com/vault",
 			}
 			manifest.VaultCredentials.ClientSecret = "secret"
 			manifest.VaultCredentials.ClientID = "client-id"
 			manifest.VaultCredentials.TokenURL = "https://example.com/idp/token"
 		})
-	err := client.CreateParticipantContext(manifest)
+	_, err := client.CreateParticipantContext(manifest)
 	require.NoError(t, err)
 
 }
@@ -102,21 +104,21 @@ func TestIdentityAPIClient_AuthError(t *testing.T) {
 
 	manifest := NewParticipantManifest("test", "did:web:test", "https://example.com/credentials", "https://example.com/dsp",
 		func(manifest *ParticipantManifest) {
-			manifest.VaultConfig = VaultConfig{
+			manifest.VaultConfig = edcv.VaultConfig{
 				VaultURL: "https://example.com/vault",
 			}
 			manifest.VaultCredentials.ClientSecret = "secret"
 			manifest.VaultCredentials.ClientID = "client-id"
 			manifest.VaultCredentials.TokenURL = "https://example.com/idp/token"
 		})
-	err := client.CreateParticipantContext(manifest)
+	_, err := client.CreateParticipantContext(manifest)
 	require.ErrorContains(t, err, "failed to get API access token: test error")
 }
 
 func TestIdentityAPIClient_BadRequest(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("foobar"))
 		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("foobar"))
 	}))
 	defer server.Close()
 
@@ -130,13 +132,13 @@ func TestIdentityAPIClient_BadRequest(t *testing.T) {
 
 	manifest := NewParticipantManifest("test", "did:web:test", "https://example.com/credentials", "https://example.com/dsp",
 		func(manifest *ParticipantManifest) {
-			manifest.VaultConfig = VaultConfig{
+			manifest.VaultConfig = edcv.VaultConfig{
 				VaultURL: "https://example.com/vault",
 			}
 			manifest.VaultCredentials.ClientSecret = "secret"
 			manifest.VaultCredentials.ClientID = "client-id"
 			manifest.VaultCredentials.TokenURL = "https://example.com/idp/token"
 		})
-	err := client.CreateParticipantContext(manifest)
+	_, err := client.CreateParticipantContext(manifest)
 	require.ErrorContains(t, err, "foobar")
 }

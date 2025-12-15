@@ -16,6 +16,8 @@ package identityhub
 
 import (
 	"strings"
+
+	"github.com/metaform/connector-fabric-manager/agent/edcv"
 )
 
 const (
@@ -34,27 +36,6 @@ type KeyGeneratorParameters struct {
 	KeyAlgorithm string
 	//Curve specifies the curve used to generate the key, for example, "P-256" or "Ed25519"
 	Curve string
-}
-
-// VaultConfig defines configuration for accessing a vault, including its URL, secret path, and folder path.
-type VaultConfig struct {
-	// VaultURL the base URL of the vault
-	VaultURL string
-	// SecretPath the path of the mount point of the secret engine
-	SecretPath string
-	// FolderPath the path of the folder within the secret engine where the participant's manifest will be stored. Note that this will be prefixed with the
-	// participant context ID
-	FolderPath string
-}
-
-// VaultCredentials defines the credentials which are needed to get a JWT which is used to access a vault
-type VaultCredentials struct {
-	// ClientID client ID of the service account of the IdP which is configured in Vault
-	ClientID string
-	// ClientSecret secret of the service account of the IdP, which is configured in Vault
-	ClientSecret string
-	// TokenURL URL of the token endpoint of the IdP which is configured in Vault
-	TokenURL string
 }
 
 // ParticipantManifest defines parameters and configuration values for creating a participant context in IdentityHub
@@ -76,11 +57,15 @@ type ParticipantManifest struct {
 	// KeyGeneratorParameters the parameters used to generate the cryptographic key for the participant. Supplying a pre-generated key is not supported yet.
 	KeyGeneratorParameters KeyGeneratorParameters
 	// VaultConfig configuration for accessing a vault
-	VaultConfig VaultConfig
+	VaultConfig edcv.VaultConfig
 	// VaultCredentials credentials which are needed to get a JWT which is used to access a vault
-	VaultCredentials VaultCredentials
+	VaultCredentials edcv.VaultCredentials
 }
 
+type CreateParticipantContextResponse struct {
+	STSClientID          string `json:"clientId"`
+	STSClientSecretAlias string `json:"clientSecret"`
+}
 type ParticipantManifestOptions func(*ParticipantManifest)
 
 func NewParticipantManifest(
@@ -104,7 +89,7 @@ func NewParticipantManifest(
 			KeyAlgorithm:    DefaultAlgorithm,
 			Curve:           DefaultCurve,
 		},
-		VaultConfig: VaultConfig{
+		VaultConfig: edcv.VaultConfig{
 			SecretPath: "v1/participants",
 			FolderPath: participantContextID + "/identityhub",
 		},

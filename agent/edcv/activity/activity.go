@@ -18,6 +18,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/agent/edcv"
+	"github.com/metaform/connector-fabric-manager/agent/edcv/controlplane"
 	"github.com/metaform/connector-fabric-manager/agent/edcv/identityhub"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -26,13 +28,14 @@ import (
 )
 
 type EDCVActivityProcessor struct {
-	VaultClient       serviceapi.VaultClient
-	HTTPClient        *http.Client
-	Monitor           system.LogMonitor
-	TokenProvider     token.TokenProvider
-	IdentityAPIClient identityhub.IdentityAPIClient
-	TokenURL          string
-	VaultURL          string
+	VaultClient         serviceapi.VaultClient
+	HTTPClient          *http.Client
+	Monitor             system.LogMonitor
+	TokenProvider       token.TokenProvider
+	IdentityAPIClient   identityhub.IdentityAPIClient
+	TokenURL            string
+	VaultURL            string
+	ManagementAPIClient controlplane.ManagementAPIClient
 }
 
 type EDCVData struct {
@@ -49,12 +52,13 @@ type EDCVData struct {
 
 func NewProcessor(config *Config) *EDCVActivityProcessor {
 	return &EDCVActivityProcessor{
-		VaultClient:       config.VaultClient,
-		HTTPClient:        config.Client,
-		Monitor:           config.LogMonitor,
-		IdentityAPIClient: config.IdentityAPIClient,
-		TokenURL:          config.TokenURL,
-		VaultURL:          config.VaultURL,
+		VaultClient:         config.VaultClient,
+		HTTPClient:          config.Client,
+		Monitor:             config.LogMonitor,
+		IdentityAPIClient:   config.IdentityAPIClient,
+		ManagementAPIClient: config.ManagementAPIClient,
+		TokenURL:            config.TokenURL,
+		VaultURL:            config.VaultURL,
 	}
 }
 
@@ -63,6 +67,7 @@ type Config struct {
 	*http.Client
 	system.LogMonitor
 	identityhub.IdentityAPIClient
+	controlplane.ManagementAPIClient
 	TokenURL string
 	VaultURL string
 }
@@ -86,31 +91,43 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot convert URL to did:web: %w", err)}
 	}
 
+	vaultCreds := edcv.VaultCredentials{
+		ClientID:     data.VaultAccessClientID,
+		ClientSecret: clientSecret,
+		TokenURL:     p.TokenURL,
+	}
 	manifest := identityhub.NewParticipantManifest(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL, func(m *identityhub.ParticipantManifest) {
-		m.VaultCredentials.ClientSecret = clientSecret
-		m.VaultCredentials.ClientID = data.VaultAccessClientID
-		m.VaultCredentials.TokenURL = p.TokenURL
-
+		m.VaultCredentials = vaultCreds
 		m.VaultConfig.VaultURL = p.VaultURL
 		m.CredentialServiceURL = data.CredentialServiceURL
 		m.ProtocolServiceURL = data.ProtocolServiceURL
 	})
-
-	if err := p.createParticipantInIdentityHub(manifest); err != nil {
+	createResponse, err := p.IdentityAPIClient.CreateParticipantContext(manifest)
+	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant in identity hub: %w", err)}
 	}
+	vaultConfig := manifest.VaultConfig
+
+	// create participant context in Control Plane
+	if err := p.ManagementAPIClient.CreateParticipantContext(controlplane.ParticipantContext{
+		ParticipantContextID: participantContextId,
+		Identifier:           did,
+		Properties:           make(map[string]any),
+		State:                controlplane.ParticipantContextStateActivated,
+	}); err != nil {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant context in control plane: %w", err)}
+	}
+
+	// create participant config in Control Plane
+	config := controlplane.NewParticipantContextConfig(participantContextId, createResponse.STSClientID, createResponse.STSClientSecretAlias, data.ParticipantID, vaultConfig, vaultCreds)
+	if err := p.ManagementAPIClient.CreateConfig(participantContextId, config); err != nil {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant config in control plane: %w", err)}
+	}
+
+	// store STS client secret in the vault
 
 	p.Monitor.Infof("EDCV activity for participant '%s' (client ID = %s) completed successfully", data.ParticipantID, data.VaultAccessClientID)
 	return api.ActivityResult{Result: api.ActivityResultComplete}
-}
-
-func (p EDCVActivityProcessor) createParticipantInIdentityHub(manifest identityhub.ParticipantManifest) error {
-
-	if err := p.IdentityAPIClient.CreateParticipantContext(manifest); err != nil {
-		return fmt.Errorf("error creating participant context in identity hub: %w", err)
-	}
-
-	return nil
 }
 
 func (p EDCVActivityProcessor) extractWebDid(url string) (string, error) {
@@ -122,10 +139,6 @@ func (p EDCVActivityProcessor) extractWebDid(url string) (string, error) {
 	did = "did:web:" + did
 
 	return did, nil
-}
-
-func (p EDCVActivityProcessor) createParticipantInControlPlane() error {
-	return nil
 }
 
 func createParticipantContextID() string {

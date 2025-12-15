@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/metaform/connector-fabric-manager/agent/edcv/controlplane"
 	"github.com/metaform/connector-fabric-manager/agent/edcv/identityhub"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
@@ -35,13 +36,21 @@ func WithIdentityHub(client identityhub.IdentityAPIClient) ConfigOptions {
 	}
 }
 
+func WithControlPlane(client controlplane.ManagementAPIClient) ConfigOptions {
+	return func(config *Config) {
+		config.ManagementAPIClient = client
+	}
+}
+
 func validConfig(opts ...ConfigOptions) *Config {
 	c := Config{
-		VaultClient: NewMockVaultClient("client-123", "123"),
-		Client:      &http.Client{},
-		LogMonitor:  system.NoopMonitor{},
-		TokenURL:    "http://auth.example.com/oauth2/token",
-		VaultURL:    "https://vault.example.com:8200",
+		VaultClient:         NewMockVaultClient("client-123", "123"),
+		ManagementAPIClient: MockManagementApiClient{},
+		IdentityAPIClient:   MockIdentityHubClient{},
+		Client:              &http.Client{},
+		LogMonitor:          system.NoopMonitor{},
+		TokenURL:            "http://auth.example.com/oauth2/token",
+		VaultURL:            "https://vault.example.com:8200",
 	}
 	for _, opt := range opts {
 		opt(&c)
@@ -80,7 +89,7 @@ func TestEDCVActivityProcessor_Process_WithValidData(t *testing.T) {
 
 func TestEDCVActivityProcessor_Process_MissingParticipantID(t *testing.T) {
 
-	processor := NewProcessor(validConfig(WithIdentityHub(MockIdentityHubClient{})))
+	processor := NewProcessor(validConfig())
 	ctx := context.Background()
 	pd := copyOf(processingData)
 	delete(pd, model.ParticipantIdentifier)
@@ -103,7 +112,7 @@ func TestEDCVActivityProcessor_Process_MissingParticipantID(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_MissingClientID(t *testing.T) {
-	processor := NewProcessor(validConfig(WithIdentityHub(MockIdentityHubClient{})))
+	processor := NewProcessor(validConfig())
 	ctx := context.Background()
 	processingData := copyOf(processingData)
 	delete(processingData, "clientID.vaultAccess")
@@ -126,7 +135,7 @@ func TestEDCVActivityProcessor_Process_MissingClientID(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_EmptyProcessingData(t *testing.T) {
-	processor := NewProcessor(validConfig(WithIdentityHub(MockIdentityHubClient{})))
+	processor := NewProcessor(validConfig())
 	ctx := context.Background()
 	processingData := make(map[string]any)
 	outputData := make(map[string]any)
@@ -146,7 +155,7 @@ func TestEDCVActivityProcessor_Process_EmptyProcessingData(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_InvalidDataTypes(t *testing.T) {
-	processor := NewProcessor(validConfig(WithIdentityHub(MockIdentityHubClient{})))
+	processor := NewProcessor(validConfig())
 	ctx := context.Background()
 	pd := copyOf(processingData)
 	pd["clientID.vaultAccess"] = 456      // Should be string
@@ -168,7 +177,7 @@ func TestEDCVActivityProcessor_Process_InvalidDataTypes(t *testing.T) {
 }
 
 func TestEDCVActivityProcessor_Process_OrchestrationIDInError(t *testing.T) {
-	processor := NewProcessor(validConfig(WithIdentityHub(MockIdentityHubClient{})))
+	processor := NewProcessor(validConfig())
 
 	ctx := context.Background()
 	pd := map[string]any{
@@ -267,6 +276,44 @@ func TestEDCVActivityProcessor_Process_IdentityHubFailure(t *testing.T) {
 	assert.Error(t, result.Error, "some error")
 }
 
+func TestEDCVActivityProcessor_Process_ManagementAPIFailure(t *testing.T) {
+	processor := NewProcessor(validConfig(WithControlPlane(MockManagementApiClient{expectedParticipantError: fmt.Errorf("some error")})))
+
+	ctx := context.Background()
+	outputData := make(map[string]any)
+
+	activity := api.Activity{
+		ID:   "test-activity",
+		Type: "edcv",
+	}
+
+	activityContext := api.NewActivityContext(ctx, "orch-123", activity, processingData, outputData)
+
+	result := processor.Process(activityContext)
+
+	assert.Equal(t, api.ActivityResultType(api.ActivityResultFatalError), result.Result)
+	assert.ErrorContains(t, result.Error, "some error")
+}
+
+func TestEDCVActivityProcessor_Process_ManagementAPIFailureConfig(t *testing.T) {
+	processor := NewProcessor(validConfig(WithControlPlane(MockManagementApiClient{expectedConfigError: fmt.Errorf("some error")})))
+
+	ctx := context.Background()
+	outputData := make(map[string]any)
+
+	activity := api.Activity{
+		ID:   "test-activity",
+		Type: "edcv",
+	}
+
+	activityContext := api.NewActivityContext(ctx, "orch-123", activity, processingData, outputData)
+
+	result := processor.Process(activityContext)
+
+	assert.Equal(t, api.ActivityResultType(api.ActivityResultFatalError), result.Result)
+	assert.ErrorContains(t, result.Error, "some error")
+}
+
 type MockVaultClient struct {
 	cache map[string]string
 }
@@ -320,6 +367,22 @@ type MockIdentityHubClient struct {
 	expectedError error
 }
 
-func (m MockIdentityHubClient) CreateParticipantContext(manifest identityhub.ParticipantManifest) error {
-	return m.expectedError
+func (m MockIdentityHubClient) CreateParticipantContext(manifest identityhub.ParticipantManifest) (*identityhub.CreateParticipantContextResponse, error) {
+	return &identityhub.CreateParticipantContextResponse{
+		STSClientID:          "test-clientid",
+		STSClientSecretAlias: "test-secret-alias",
+	}, m.expectedError
+}
+
+type MockManagementApiClient struct {
+	expectedParticipantError error
+	expectedConfigError      error
+}
+
+func (m MockManagementApiClient) CreateParticipantContext(manifest controlplane.ParticipantContext) error {
+	return m.expectedParticipantError
+}
+
+func (m MockManagementApiClient) CreateConfig(participantContextID string, config controlplane.ParticipantContextConfig) error {
+	return m.expectedConfigError
 }
