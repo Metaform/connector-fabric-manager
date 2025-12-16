@@ -26,6 +26,9 @@ jobs:
           - name: kcagent
             dockerfile: docker/Dockerfile.kcagent.dockerfile
             context: .
+          - name: regagent
+            dockerfile: docker/Dockerfile.regagent.dockerfile
+            context: .
           - name: pmanager
             dockerfile: docker/Dockerfile.pmanager.dockerfile
             context: .
@@ -52,7 +55,7 @@ jobs:
 
       - name: "Create workspace"
         run: |
-          go work init ./assembly ./common ./pmanager ./tmanager ./e2e ./mvd ./agent/edcv ./agent/keycloak
+          go work init ./assembly ./common ./pmanager ./tmanager ./e2e ./mvd ./agent/edcv ./agent/keycloak ./agent/registration
 
       - name: "Extract metadata"
         id: meta

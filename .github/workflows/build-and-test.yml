@@ -24,7 +24,7 @@ jobs:
           cache: true
 
       - name: "Create Workspace"
-        run: go work init ./assembly ./common ./pmanager ./tmanager ./e2e ./mvd ./agent/edcv ./agent/keycloak
+        run: go work init ./assembly ./common ./pmanager ./tmanager ./e2e ./mvd ./agent/edcv ./agent/keycloak ./agent/registration
 
       - name: "Generate Mocks"
         run: make generate-mocks
