@@ -2,6 +2,13 @@ module github.com/metaform/connector-fabric-manager
 
 go 1.24.1
 
+replace (
+	github.com/metaform/connector-fabric-manager/assembly => ./assembly
+	github.com/metaform/connector-fabric-manager/common => ./common
+	github.com/metaform/connector-fabric-manager/pmanager => ./pmanager
+	github.com/metaform/connector-fabric-manager/tmanager => ./tmanager
+)
+
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/go-chi/chi/v5 v5.2.3
