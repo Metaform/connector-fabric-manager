@@ -43,8 +43,6 @@ type EDCVData struct {
 	ParticipantID       string `json:"cfm.participant.id" validate:"required"`
 	VaultAccessClientID string `json:"clientID.vaultAccess" validate:"required"`
 	ApiAccessClientID   string `json:"clientID.apiAccess" validate:"required"`
-	// PublicURL the public URL which is used for resolving Web DIDs. If not specified must contain the IdentityHub's public endpoint.
-	PublicURL string `json:"publicURL"`
 	// CredentialServiceURL the URL of the credential service, i.e., the query and storage endpoints of IdentityHub
 	CredentialServiceURL string `json:"cfm.participant.credentialservice"`
 	// ProtocolServiceURL the URL of the protocol service, i.e., the DSP protocol endpoint of the control plane
@@ -108,7 +106,7 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	}
 	manifest := identityhub.NewParticipantManifest(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL, func(m *identityhub.ParticipantManifest) {
 		m.VaultCredentials = vaultCreds
-		m.VaultConfig.VaultURL = "http://vault.edc-v.svc.cluster.local:8200" // p.VaultURL
+		m.VaultConfig.VaultURL = p.VaultURL
 		m.VaultConfig.FolderPath = participantContextId + "/identityhub"
 		m.CredentialServiceURL = data.CredentialServiceURL
 		m.ProtocolServiceURL = data.ProtocolServiceURL
