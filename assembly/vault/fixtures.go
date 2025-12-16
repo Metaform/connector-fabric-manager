@@ -41,7 +41,7 @@ const (
 	vaultRequestTimeout  = 30 * time.Second
 	containerStartupTime = 15 * time.Second
 
-	keycloakImage         = "quay.io/keycloak/keycloak:latest"
+	keycloakImage         = "keycloak/keycloak:latest"
 	keycloakAdminUser     = "admin"
 	keycloakAdminPassword = "admin"
 	keycloakPort          = "8080"
@@ -120,8 +120,6 @@ func StartKeycloakContainer(ctx context.Context, networkName string) (*Container
 			"KEYCLOAK_ADMIN":              keycloakAdminUser,
 			"KC_BOOTSTRAP_ADMIN_USERNAME": keycloakAdminUser,
 			"KC_BOOTSTRAP_ADMIN_PASSWORD": keycloakAdminPassword,
-			"KC_HTTP_ENABLED":             "true",
-			"KC_HOSTNAME_STRICT":          "false",
 			"KC_HEALTH_ENABLED":           "true",
 		},
 		Cmd:        []string{"start-dev", "--health-enabled=true"},
@@ -136,6 +134,19 @@ func StartKeycloakContainer(ctx context.Context, networkName string) (*Container
 		return nil, fmt.Errorf("failed to create Vault container: %w", err)
 	}
 
+	// this is the only reliable way to disable SSL enforcement. not env-var or combinations thereof seem to work.
+	_, _, err = container.Exec(ctx, []string{
+		"/opt/keycloak/bin/kcadm.sh",
+		"update", "realms/master",
+		"-s", "sslRequired=NONE",
+		"--server", "http://localhost:" + keycloakPort,
+		"--realm", "master",
+		"--user", keycloakAdminUser,
+		"--password", keycloakAdminPassword,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to disable SSL enforcement in Keycloak: %w", err)
+	}
 	host, err := container.Host(ctx)
 	if err != nil {
 		_ = container.Terminate(ctx)
@@ -230,6 +241,9 @@ func createKeycloakUser(keycloakBaseUrl string, user string, password string) (s
 	httpClient := &http.Client{}
 	adminUrl := fmt.Sprintf("%s/realms/master/protocol/openid-connect/token", keycloakBaseUrl)
 	adminToken, err := getAdminToken(httpClient, adminUrl, user, password, "admin-cli")
+	if err != nil {
+		return "", "", fmt.Errorf("error creating admin token in Keycloak: %w", err)
+	}
 
 	clientURL := keycloakBaseUrl + "/admin/realms/master/clients"
 	clientID := "test-client"

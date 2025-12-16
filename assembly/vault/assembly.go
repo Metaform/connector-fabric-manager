@@ -22,11 +22,12 @@ import (
 )
 
 const (
-	urlKey          = "vault.url"
-	clientIDKey     = "vault.clientId"
-	clientSecretKey = "vault.clientSecret"
-	tokenURLKey     = "vault.tokenUrl"
-	vaultPathKey    = "vault.path"
+	urlKey             = "vault.url"
+	clientIDKey        = "vault.clientId"
+	clientSecretKey    = "vault.clientSecret"
+	tokenURLKey        = "vault.tokenUrl"
+	vaultPathKey       = "vault.path"
+	vaultSoftDeleteKey = "vault.softDelete"
 )
 
 // VaultServiceAssembly defines an assembly that provides a client to Hashicorp Vault.
@@ -53,6 +54,7 @@ func (v VaultServiceAssembly) Init(ctx *system.InitContext) error {
 	clientSecret := ctx.Config.GetString(clientSecretKey)
 	tokenUrl := ctx.Config.GetString(tokenURLKey)
 	vaultPath := ctx.Config.GetString(vaultPathKey)
+	softDelete := ctx.Config.GetBool(vaultSoftDeleteKey)
 	if err := runtime.CheckRequiredParams(urlKey, vaultURL, clientIDKey, clientID, clientSecretKey, clientSecret, tokenURLKey, tokenUrl); err != nil {
 		return err
 	}
@@ -62,6 +64,10 @@ func (v VaultServiceAssembly) Init(ctx *system.InitContext) error {
 		vaultPathOption := WithMountPath(vaultPath)
 		vaultOption = append(vaultOption, vaultPathOption)
 	}
+	// enable/disable soft delete
+	vaultOption = append(vaultOption, func(client *vaultClient) {
+		client.softDelete = softDelete
+	})
 	v.client, err = newVaultClient(vaultURL, clientID, clientSecret, tokenUrl, ctx.LogMonitor, vaultOption...)
 	if err != nil {
 		return fmt.Errorf("failed to create Vault client: %w", err)

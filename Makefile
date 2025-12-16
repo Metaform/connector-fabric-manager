@@ -84,7 +84,7 @@ test:
 	$(MAKE) -C $(PMANAGER_DIR) test
 	$(MAKE) -C $(TMANAGER_DIR) test
 	# no tests yet in EDCV
-	#$(MAKE) -C $(EDCV_DIR) test
+	$(MAKE) -C $(EDCV_DIR) test
 	$(MAKE) -C $(E2E_DIR) test
 	$(MAKE) -C $(KEYCLOAK_DIR) test
 
@@ -136,6 +136,7 @@ generate-mocks:
 	@echo "Generating mocks for all services..."
 	$(MAKE) -C $(COMMON_DIR) generate-mocks
 	$(MAKE) -C $(PMANAGER_DIR) generate-mocks
+
 
 generate-docs:
 	$(MAKE) -C $(TMANAGER_DIR) generate-docs

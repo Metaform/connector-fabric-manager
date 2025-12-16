@@ -50,6 +50,7 @@ type vaultClient struct {
 	clientSecret string
 	tokenUrl     string
 	mountPath    string
+	softDelete   bool
 	monitor      system.LogMonitor
 	client       *hvault.Client
 	stopCh       chan struct{}
@@ -107,11 +108,20 @@ func (v *vaultClient) StoreSecret(ctx context.Context, path string, value string
 }
 
 func (v *vaultClient) DeleteSecret(ctx context.Context, path string) error {
-	_, err := v.client.Secrets.KvV2Delete(
-		ctx,
-		path,
-		v.getOptions()...,
-	)
+	var err error
+	if v.softDelete {
+		_, err = v.client.Secrets.KvV2Delete(
+			ctx,
+			path,
+			v.getOptions()...,
+		)
+	} else {
+		_, err = v.client.Secrets.KvV2DeleteMetadataAndAllVersions(
+			ctx,
+			path,
+			v.getOptions()...,
+		)
+	}
 	if err != nil {
 		return fmt.Errorf("unable to delete secret at path %s: %w", path, err)
 	}

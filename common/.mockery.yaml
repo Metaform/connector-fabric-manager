@@ -17,3 +17,11 @@ packages:
           filename: store.go
           outpkg: mocks
           dir: ./mocks
+
+  github.com/metaform/connector-fabric-manager/common/token:
+    interfaces:
+      TokenProvider:
+        config:
+          filename: token_provider.go
+          outpkg: mocks
+          dir: ./mocks

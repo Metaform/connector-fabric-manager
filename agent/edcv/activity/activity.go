@@ -13,18 +13,64 @@
 package activity
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/agent/edcv"
+	"github.com/metaform/connector-fabric-manager/agent/edcv/controlplane"
+	"github.com/metaform/connector-fabric-manager/agent/edcv/identityhub"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
 	"github.com/metaform/connector-fabric-manager/common/system"
+	"github.com/metaform/connector-fabric-manager/common/token"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
 
 type EDCVActivityProcessor struct {
-	VaultClient serviceapi.VaultClient
-	HTTPClient  *http.Client
-	Monitor     system.LogMonitor
+	VaultClient         serviceapi.VaultClient
+	HTTPClient          *http.Client
+	Monitor             system.LogMonitor
+	TokenProvider       token.TokenProvider
+	IdentityAPIClient   identityhub.IdentityAPIClient
+	TokenURL            string
+	VaultURL            string
+	ManagementAPIClient controlplane.ManagementAPIClient
+}
+
+type EDCVData struct {
+	ParticipantID       string `json:"cfm.participant.id" validate:"required"`
+	VaultAccessClientID string `json:"clientID.vaultAccess" validate:"required"`
+	ApiAccessClientID   string `json:"clientID.apiAccess" validate:"required"`
+	// PublicURL the public URL which is used for resolving Web DIDs. If not specified must contain the IdentityHub's public endpoint.
+	PublicURL string `json:"publicURL"`
+	// CredentialServiceURL the URL of the credential service, i.e., the query and storage endpoints of IdentityHub
+	CredentialServiceURL string `json:"cfm.participant.credentialservice"`
+	// ProtocolServiceURL the URL of the protocol service, i.e., the DSP protocol endpoint of the control plane
+	ProtocolServiceURL string `json:"cfm.participant.protocolservice"`
+}
+
+func NewProcessor(config *Config) *EDCVActivityProcessor {
+	return &EDCVActivityProcessor{
+		VaultClient:         config.VaultClient,
+		HTTPClient:          config.Client,
+		Monitor:             config.LogMonitor,
+		IdentityAPIClient:   config.IdentityAPIClient,
+		ManagementAPIClient: config.ManagementAPIClient,
+		TokenURL:            config.TokenURL,
+		VaultURL:            config.VaultURL,
+	}
+}
+
+type Config struct {
+	serviceapi.VaultClient
+	*http.Client
+	system.LogMonitor
+	identityhub.IdentityAPIClient
+	controlplane.ManagementAPIClient
+	TokenURL string
+	VaultURL string
 }
 
 func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
@@ -33,16 +79,82 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error processing EDC-V activity for orchestration %s: %w", ctx.OID(), err)}
 	}
-	_, err = p.VaultClient.ResolveSecret(ctx.Context(), data.VaultAccessClientID)
+
+	participantContextId := data.ApiAccessClientID
+
+	//DEBUG
+	p.Monitor.Warnf("Using hardcoded debug values for PublicURL, CredentialServiceURL and ProtocolServiceURL. Make sure to move them over to proper config values before going live!")
+	data.CredentialServiceURL = "http://identityhub.edc-v.svc.cluster.local:7082/api/credentials/v1/participants/" + base64.RawURLEncoding.EncodeToString([]byte(participantContextId))
+	data.ProtocolServiceURL = fmt.Sprintf("http://controlplane.edc-v.svc.cluster.local:8082/api/dsp/%s/2025-1", participantContextId)
+	stsTokenURL := "http://identityhub.edc-v.svc.cluster.local:7084/api/sts/token"
+	/// DEBUG
+
+	// resolve vault client secret for the new participant
+	vaultAccessSecret, err := p.VaultClient.ResolveSecret(ctx.Context(), data.VaultAccessClientID)
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error retrieving client secret for orchestration %s: %w", ctx.OID(), err)}
 	}
+	// create participant-context in IdentityHub
+	did := data.ParticipantID
+
+	if !strings.HasPrefix(did, "did:web:") {
+		p.Monitor.Warnf("Participant identifiers are expected to be Web-DIDs, but this one was not: '%s'. Subsequent communication may be severely impacted!", did)
+	}
+
+	vaultCreds := edcv.VaultCredentials{
+		ClientID:     data.VaultAccessClientID,
+		ClientSecret: vaultAccessSecret,
+		TokenURL:     p.TokenURL,
+	}
+	manifest := identityhub.NewParticipantManifest(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL, func(m *identityhub.ParticipantManifest) {
+		m.VaultCredentials = vaultCreds
+		m.VaultConfig.VaultURL = "http://vault.edc-v.svc.cluster.local:8200" // p.VaultURL
+		m.VaultConfig.FolderPath = participantContextId + "/identityhub"
+		m.CredentialServiceURL = data.CredentialServiceURL
+		m.ProtocolServiceURL = data.ProtocolServiceURL
+	})
+	createResponse, err := p.IdentityAPIClient.CreateParticipantContext(manifest)
+	if err != nil {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant in identity hub: %w", err)}
+	}
+	vaultConfig := manifest.VaultConfig
+
+	// create participant context in Control Plane
+	if err := p.ManagementAPIClient.CreateParticipantContext(controlplane.ParticipantContext{
+		ParticipantContextID: participantContextId,
+		Identifier:           did,
+		Properties:           make(map[string]any),
+		State:                controlplane.ParticipantContextStateActivated,
+	}); err != nil {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant context in control plane: %w", err)}
+	}
+
+	// create participant config in Control Plane
+	alias := participantContextId + "-sts-client-secret"
+	config := controlplane.NewParticipantContextConfig(participantContextId, createResponse.STSClientID, alias, data.ParticipantID, vaultConfig, vaultCreds, stsTokenURL)
+	if err := p.ManagementAPIClient.CreateConfig(participantContextId, config); err != nil {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant config in control plane: %w", err)}
+	}
+
 	p.Monitor.Infof("EDCV activity for participant '%s' (client ID = %s) completed successfully", data.ParticipantID, data.VaultAccessClientID)
+	if err := p.VaultClient.DeleteSecret(ctx.Context(), data.VaultAccessClientID); err != nil {
+		p.Monitor.Warnf("failed to delete secret '%s': %v", data.VaultAccessClientID, err)
+	}
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
 
-type EDCVData struct {
-	ParticipantID       string `json:"cfm.participant.id" validate:"required"`
-	VaultAccessClientID string `json:"clientID.vaultAccess" validate:"required"`
-	ApiAccessClientID   string `json:"clientID.apiAccess" validate:"required"`
+// extractWebDid extracts a WebDID from a given URL. Currently not used, as the participant profile contains an "identifier" which is the DID.
+func (p EDCVActivityProcessor) extractWebDid(url string) (string, error) {
+
+	did := strings.Replace(url, "https", "http", -1)
+	did = strings.Replace(did, "http://", "", -1)
+	did = strings.Replace(did, ":", "%3A", 8)
+	did = strings.ReplaceAll(did, "/", ":")
+	did = "did:web:" + did
+
+	return did, nil
+}
+
+func createParticipantContextID() string {
+	return uuid.New().String()
 }
