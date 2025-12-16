@@ -142,7 +142,7 @@ install-tools: install-mockery
 	$(MAKE) -C $(PMANAGER_DIR) install-tools
 	$(MAKE) -C $(TMANAGER_DIR) install-tools
 
-generate-mocks:
+generate-mocks: install-mockery
 	@echo "Generating mocks for all services..."
 	$(MAKE) -C $(COMMON_DIR) generate-mocks
 	$(MAKE) -C $(PMANAGER_DIR) generate-mocks
