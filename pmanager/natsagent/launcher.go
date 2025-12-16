@@ -36,7 +36,7 @@ type LauncherConfig struct {
 }
 
 type AgentContext struct {
-	Monitor system.LogMonitor
+	Monitor  system.LogMonitor
 	Registry AgentRegistry
 	Config   *viper.Viper
 }
@@ -75,7 +75,7 @@ func LaunchAgent(shutdown <-chan struct{}, config LauncherConfig) {
 		}
 	}
 
-	agentAssembly := &AgentServiceAssembly{
+	agentAssembly := &agentServiceAssembly{
 		agentName:        config.AgentName,
 		activityType:     config.ActivityType,
 		uri:              cfg.URI,

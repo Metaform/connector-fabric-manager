@@ -27,8 +27,8 @@ const (
 	timeout = 10 * time.Second
 )
 
-// AgentServiceAssembly provides common functionality for NATS-based agents
-type AgentServiceAssembly struct {
+// agentServiceAssembly provides common functionality for NATS-based agents
+type agentServiceAssembly struct {
 	agentName        string
 	activityType     string
 	uri              string
@@ -43,15 +43,15 @@ type AgentServiceAssembly struct {
 	cancel     context.CancelFunc
 }
 
-func (a *AgentServiceAssembly) Name() string {
+func (a *agentServiceAssembly) Name() string {
 	return a.agentName
 }
 
-func (h *AgentServiceAssembly) Requires() []system.ServiceType {
+func (h *agentServiceAssembly) Requires() []system.ServiceType {
 	return h.requires
 }
 
-func (a *AgentServiceAssembly) Start(startCtx *system.StartContext) error {
+func (a *agentServiceAssembly) Start(startCtx *system.StartContext) error {
 	var err error
 	a.natsClient, err = natsclient.NewNatsClient(a.uri, a.bucket)
 	if err != nil {
@@ -82,7 +82,7 @@ func (a *AgentServiceAssembly) Start(startCtx *system.StartContext) error {
 	return executor.Execute(ctx)
 }
 
-func (a *AgentServiceAssembly) Shutdown() error {
+func (a *agentServiceAssembly) Shutdown() error {
 	if a.cancel != nil {
 		a.cancel()
 	}
@@ -93,7 +93,7 @@ func (a *AgentServiceAssembly) Shutdown() error {
 	return nil
 }
 
-func (a *AgentServiceAssembly) setupConsumer(natsClient *natsclient.NatsClient) error {
+func (a *agentServiceAssembly) setupConsumer(natsClient *natsclient.NatsClient) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
