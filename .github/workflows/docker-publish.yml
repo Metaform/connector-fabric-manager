@@ -53,10 +53,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Create workspace"
-        run: |
-          go work init ./assembly ./common ./pmanager ./tmanager ./e2e ./mvd ./agent/edcv ./agent/keycloak ./agent/registration
-
       - name: "Extract metadata"
         id: meta
         uses: docker/metadata-action@v5
