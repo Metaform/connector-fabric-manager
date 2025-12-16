@@ -13,10 +13,6 @@ The following are required to build and run the system:
 - Go
 - A Docker-compatible CLI
 
-## Setting up the Workspace
+## Building
 
 The CFM is a multimodule project and requires the creation of a workspace file:
-
-```bash
-go work init ./assembly ./common ./pmanager ./tmanager ./e2e ./mvd ./agent/edcv ./agent/keycloak ./agent/registration
-```

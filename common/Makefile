@@ -2,10 +2,7 @@
 
 MOCKERY_CMD=$(shell which mockery || echo $(GOPATH)/bin/mockery)
 
-install-mockery:
-	go install github.com/vektra/mockery/v2@latest
-
-generate-mocks: install-mockery
+generate-mocks:
 	$(MOCKERY_CMD)
 
 # This target only needs to be run if the query/Query.g4 grammar changes.

@@ -21,6 +21,9 @@ build: build-server
 build-server:
 	go build -o $(BUILD_DIR)/$(SERVER_BINARY) $(SERVER_PATH)
 
+# Install development tools
+install-tools:
+
 generate-docs:
 	go run $(OPENAPI_PATH)
 

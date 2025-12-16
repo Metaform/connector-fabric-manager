@@ -1,4 +1,4 @@
-.PHONY: help build test clean docker-build docker-clean install-tools generate-mocks
+.PHONY: help build test clean docker-build docker-clean install-tools generate-mocks install-mockery
 
 #==============================================================================
 # Multi-Service Orchestration - Delegates to Individual Makefiles
@@ -134,7 +134,10 @@ clean:
 # Tool Commands - Delegate to Service Makefiles
 #==============================================================================
 
-install-tools:
+install-mockery:
+	go install github.com/vektra/mockery/v2@latest
+
+install-tools: install-mockery
 	@echo "Installing tools for all services..."
 	$(MAKE) -C $(PMANAGER_DIR) install-tools
 	$(MAKE) -C $(TMANAGER_DIR) install-tools

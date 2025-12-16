@@ -11,17 +11,14 @@ OPENAPI_PATH=./cmd/openapi/main.go
 
 MOCKERY_CMD=$(shell which mockery || echo $(GOPATH)/bin/mockery)
 
-install-mockery:
-	go install github.com/vektra/mockery/v2@latest
-
-generate-mocks: install-mockery
+generate-mocks:
 	$(MOCKERY_CMD)
 
 # Environment variables
 export CGO_ENABLED=0
 
 # Install development tools
-install-tools: install-mockery
+install-tools:
 
 # Build the application
 build: build-server
