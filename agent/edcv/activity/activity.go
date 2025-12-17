@@ -21,8 +21,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/agent/edcv"
 	"github.com/metaform/connector-fabric-manager/agent/edcv/controlplane"
-	"github.com/metaform/connector-fabric-manager/agent/edcv/identityhub"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
+	identityhub2 "github.com/metaform/connector-fabric-manager/common/identityhub"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/token"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -33,7 +33,7 @@ type EDCVActivityProcessor struct {
 	HTTPClient          *http.Client
 	Monitor             system.LogMonitor
 	TokenProvider       token.TokenProvider
-	IdentityAPIClient   identityhub.IdentityAPIClient
+	IdentityAPIClient   identityhub2.IdentityAPIClient
 	TokenURL            string
 	VaultURL            string
 	ManagementAPIClient controlplane.ManagementAPIClient
@@ -65,7 +65,7 @@ type Config struct {
 	serviceapi.VaultClient
 	*http.Client
 	system.LogMonitor
-	identityhub.IdentityAPIClient
+	identityhub2.IdentityAPIClient
 	controlplane.ManagementAPIClient
 	TokenURL string
 	VaultURL string
@@ -81,7 +81,7 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	participantContextId := data.ApiAccessClientID
 
 	//DEBUG
-	p.Monitor.Warnf("Using hardcoded debug values for PublicURL, CredentialServiceURL and ProtocolServiceURL. Make sure to move them over to proper config values before going live!")
+	p.Monitor.Warnf("Using hardcoded debug values for CredentialServiceURL and ProtocolServiceURL. Make sure to move them over to proper config values before going live!")
 	data.CredentialServiceURL = "http://identityhub.edc-v.svc.cluster.local:7082/api/credentials/v1/participants/" + base64.RawURLEncoding.EncodeToString([]byte(participantContextId))
 	data.ProtocolServiceURL = fmt.Sprintf("http://controlplane.edc-v.svc.cluster.local:8082/api/dsp/%s/2025-1", participantContextId)
 	stsTokenURL := "http://identityhub.edc-v.svc.cluster.local:7084/api/sts/token"
@@ -104,7 +104,7 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 		ClientSecret: vaultAccessSecret,
 		TokenURL:     p.TokenURL,
 	}
-	manifest := identityhub.NewParticipantManifest(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL, func(m *identityhub.ParticipantManifest) {
+	manifest := identityhub2.NewParticipantManifest(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL, func(m *identityhub2.ParticipantManifest) {
 		m.VaultCredentials = vaultCreds
 		m.VaultConfig.VaultURL = p.VaultURL
 		m.VaultConfig.FolderPath = participantContextId + "/identityhub"
@@ -134,7 +134,7 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant config in control plane: %w", err)}
 	}
 
-	p.Monitor.Infof("EDCV activity for participant '%s' (client ID = %s) completed successfully", data.ParticipantID, data.VaultAccessClientID)
+	p.Monitor.Infof("EDCV activity for participant '%s' (client ID = %s) completed successfully", data.ParticipantID, data.ApiAccessClientID)
 	if err := p.VaultClient.DeleteSecret(ctx.Context(), data.VaultAccessClientID); err != nil {
 		p.Monitor.Warnf("failed to delete secret '%s': %v", data.VaultAccessClientID, err)
 	}
