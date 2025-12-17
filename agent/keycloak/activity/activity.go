@@ -29,12 +29,13 @@ import (
 )
 
 const (
-	jsonContentType        = "application/json"
-	contentTypeHeader      = "Content-Type"
-	authHeader             = "Authorization"
-	clientUrl              = "%s/admin/realms/%s/clients"
-	vaultAccessClientIDKey = "clientID.vaultAccess"
-	apiAccessClientIDKey   = "clientID.apiAccess"
+	jsonContentType         = "application/json"
+	contentTypeHeader       = "Content-Type"
+	authHeader              = "Authorization"
+	clientUrl               = "%s/admin/realms/%s/clients"
+	vaultAccessClientIDKey  = "clientID.vaultAccess"
+	apiAccessClientIDKey    = "clientID.apiAccess"
+	participantContextIDKey = "participantContextId"
 )
 
 type Config struct {
@@ -203,7 +204,7 @@ func (p KeyCloakActivityProcessor) Process(ctx api.ActivityContext) api.Activity
 		clientIDSlug := generateClientID()
 
 		// create Keycloak client for API access
-		participantContextID := clientIDSlug + "-api"
+		participantContextID := clientIDSlug
 
 		apiClient, err := newKeycloakClientData(participantContextID, WithClientID(participantContextID), WithName("API Access Client"), WithDescription("Client for accessing the VPA's Administration APIs"), WithEnabled(true))
 		if err != nil {
@@ -212,6 +213,7 @@ func (p KeyCloakActivityProcessor) Process(ctx api.ActivityContext) api.Activity
 		apiClientResult := p.provisionConfidentialClient(apiClient, ctx)
 		p.monitor.Infof("created API Access client: %s", apiClient.ClientId)
 		ctx.SetValue(apiAccessClientIDKey, apiClient.ClientId)
+		ctx.SetOutputValue(participantContextIDKey, participantContextID)
 		if apiClientResult.Result != api.ActivityResultComplete {
 			p.monitor.Warnw("Provisioning API Access client not complete. Result was %s, error: %s", apiClientResult.Result, apiClientResult.Error)
 			return apiClientResult

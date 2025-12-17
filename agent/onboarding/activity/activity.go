@@ -40,7 +40,7 @@ func (p OnboardingActivityProcessor) Process(ctx api.ActivityContext) api.Activi
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error processing Onboarding activity for orchestration %s: %w", ctx.OID(), err)}
 	}
 
-	// todo: have this come in through CFM REST API somehow
+	// todo: have this come in through CFM REST API -> dataspace profile
 	cr := identityhub.CredentialRequest{
 		IssuerDID: "did:web:issuerservice.edc-v.svc.cluster.local%3A10016:issuer",
 		HolderPID: uuid.New().String(),
