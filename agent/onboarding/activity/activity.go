@@ -16,8 +16,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/agent/common/identityhub"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
-	"github.com/metaform/connector-fabric-manager/common/identityhub"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )

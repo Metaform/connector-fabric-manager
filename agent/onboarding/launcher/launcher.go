@@ -15,10 +15,10 @@ package launcher
 import (
 	"net/http"
 
+	"github.com/metaform/connector-fabric-manager/agent/common/identityhub"
 	"github.com/metaform/connector-fabric-manager/agent/onboarding/activity"
 	"github.com/metaform/connector-fabric-manager/assembly/httpclient"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
-	"github.com/metaform/connector-fabric-manager/common/identityhub"
 	"github.com/metaform/connector-fabric-manager/common/oauth2"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"

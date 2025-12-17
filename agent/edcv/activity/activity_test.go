@@ -18,9 +18,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/metaform/connector-fabric-manager/agent/common/identityhub"
 	"github.com/metaform/connector-fabric-manager/agent/edcv/controlplane"
-	"github.com/metaform/connector-fabric-manager/common/identityhub"
-	identityhub2 "github.com/metaform/connector-fabric-manager/common/identityhub"
 	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/types"
@@ -31,7 +30,7 @@ import (
 
 type ConfigOptions func(*Config)
 
-func WithIdentityHub(client identityhub2.IdentityAPIClient) ConfigOptions {
+func WithIdentityHub(client identityhub.IdentityAPIClient) ConfigOptions {
 	return func(config *Config) {
 		config.IdentityAPIClient = client
 	}
@@ -373,8 +372,8 @@ func (m MockIdentityHubClient) RequestCredentials(participantContextID string, c
 	panic("implement me")
 }
 
-func (m MockIdentityHubClient) CreateParticipantContext(manifest identityhub2.ParticipantManifest) (*identityhub2.CreateParticipantContextResponse, error) {
-	return &identityhub2.CreateParticipantContextResponse{
+func (m MockIdentityHubClient) CreateParticipantContext(manifest identityhub.ParticipantManifest) (*identityhub.CreateParticipantContextResponse, error) {
+	return &identityhub.CreateParticipantContextResponse{
 		STSClientID:     "test-clientid",
 		STSClientSecret: "test-secret-alias",
 	}, m.expectedError
