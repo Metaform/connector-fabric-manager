@@ -110,3 +110,15 @@ func NewParticipantManifest(
 
 	return manifest
 }
+
+type CredentialType struct {
+	Format string `json:"format" validate:"required"`
+	Type   string `json:"type" validate:"required"`
+	ID     string `json:"id" validate:"required"`
+}
+
+type CredentialRequest struct {
+	IssuerDID   string           `json:"issuerDid" validate:"required"`
+	HolderPID   string           `json:"holderPid" validate:"required"`
+	Credentials []CredentialType `json:"credentials" validate:"required"`
+}

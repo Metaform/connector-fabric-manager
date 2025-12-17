@@ -14,9 +14,6 @@
   "paths": {
     "/api/v1alpha1/cells": {
       "get": {
-        "tags": [
-          "Not implemented yet"
-        ],
         "summary": "List Cells",
         "description": "Retrieve all Cells",
         "responses": {
@@ -61,11 +58,29 @@
         }
       }
     },
+    "/api/v1alpha1/cells/{id}": {
+      "delete": {
+        "summary": "Delete Cell",
+        "description": "Deletes a Cell by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1alpha1/dataspace-profiles": {
       "get": {
-        "tags": [
-          "Not implemented yet"
-        ],
         "summary": "List Dataspace Profiles",
         "description": "Retrieve all dataspace profiles",
         "responses": {
@@ -111,10 +126,26 @@
       }
     },
     "/api/v1alpha1/dataspace-profiles/{id}": {
-      "get": {
-        "tags": [
-          "Not implemented yet"
+      "delete": {
+        "summary": "Delete Dataspace Profile",
+        "description": "Deletes a Dataspace Profile by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
         "summary": "Get Dataspace Profile",
         "description": "Retrieve a Dataspace Profile by ID",
         "parameters": [
@@ -158,6 +189,36 @@
         "responses": {
           "202": {
             "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/api/v1alpha1/participant-profiles/query": {
+      "post": {
+        "summary": "Perform a Participant Profile query",
+        "description": "Perform a Participant Profile query",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/V1Alpha1ParticipantProfile"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -254,14 +315,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/V1Alpha1Tenant"
-                }
-              }
-            }
+            "description": "OK"
           }
         }
       },
@@ -327,7 +381,7 @@
         }
       }
     },
-    "/api/v1alpha1/tenants/{id}/participants": {
+    "/api/v1alpha1/tenants/{id}/participant-profiles": {
       "get": {
         "summary": "List Participant Profiles",
         "description": "Retrieve all Participant Profiles",
@@ -393,10 +447,44 @@
         }
       }
     },
-    "/api/v1alpha1/tenants/{id}/participants/{participantID}": {
+    "/api/v1alpha1/tenants/{id}/participant-profiles/{participantID}": {
       "delete": {
-        "summary": "Dispose Participant Profiles",
+        "summary": "Dispose Participant Profile",
         "description": "Dispose a Participant Profile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "participantID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V1Alpha1ParticipantProfile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Participant Profile",
+        "description": "Get a Participant Profile",
         "parameters": [
           {
             "name": "id",
@@ -668,12 +756,12 @@
           "state",
           "stateTimestamp",
           "type",
-          "cell"
+          "cellId"
         ],
         "type": "object",
         "properties": {
-          "cell": {
-            "$ref": "#/components/schemas/V1Alpha1Cell"
+          "cellId": {
+            "type": "string"
           },
           "id": {
             "type": "string"

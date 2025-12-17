@@ -29,6 +29,9 @@ jobs:
           - name: regagent
             dockerfile: docker/Dockerfile.regagent.dockerfile
             context: .
+          - name: obagent
+            dockerfile: docker/Dockerfile.obagent.dockerfile
+            context: .
           - name: pmanager
             dockerfile: docker/Dockerfile.pmanager.dockerfile
             context: .

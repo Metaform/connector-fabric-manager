@@ -98,6 +98,7 @@ func (h *TMHandler) deployParticipantProfile(
 
 	if err != nil {
 		h.HandleError(w, err)
+		return
 	}
 
 	response := v1alpha1.ToParticipantProfile(profile)

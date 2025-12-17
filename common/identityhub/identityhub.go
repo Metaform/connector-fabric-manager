@@ -16,6 +16,7 @@ package identityhub
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -30,12 +31,51 @@ const (
 
 type IdentityAPIClient interface {
 	CreateParticipantContext(manifest ParticipantManifest) (*CreateParticipantContextResponse, error)
+	RequestCredentials(participantContextID string, credentialRequest CredentialRequest) (string, error)
 }
 
 type HttpIdentityAPIClient struct {
 	BaseURL       string
 	TokenProvider token.TokenProvider
 	HttpClient    *http.Client
+}
+
+func (a HttpIdentityAPIClient) RequestCredentials(participantContextID string, credentialRequest CredentialRequest) (string, error) {
+	accessToken, err := a.TokenProvider.GetToken() // this should be the participant context's access token!
+	if err != nil {
+		return "", fmt.Errorf("failed to get API access token: %w", err)
+	}
+
+	payload, err := json.Marshal(credentialRequest)
+	if err != nil {
+		return "", err
+	}
+
+	b64 := base64.RawURLEncoding.EncodeToString([]byte(participantContextID))
+	url := fmt.Sprintf("%s/v1alpha/participants/%s/credentials/request", a.BaseURL, b64)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := a.HttpClient.Do(req)
+	defer a.closeResponse(resp)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to create credentials request for %s: %w", participantContextID, err)
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("failed to request credentials for participant context on IdentityHub: received status code %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	location := resp.Header.Get("Location")
+
+	return location, nil
 }
 
 func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantManifest) (*CreateParticipantContextResponse, error) {
@@ -103,11 +143,7 @@ func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantMani
 	if err != nil {
 		return nil, fmt.Errorf("failed to create participant context on IdentityHub: %w", err)
 	}
-	defer func() {
-		// drain and close response body to avoid connection/resource leak
-		_, _ = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-	}()
+	defer a.closeResponse(resp)
 
 	body, _ := io.ReadAll(resp.Body)
 
@@ -122,4 +158,12 @@ func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantMani
 	}
 
 	return createResponse, nil
+}
+
+func (a HttpIdentityAPIClient) closeResponse(resp *http.Response) {
+	func() {
+		// drain and close response body to avoid connection/resource leak
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}()
 }

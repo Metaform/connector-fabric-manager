@@ -11,6 +11,7 @@ TMANAGER_DIR=tmanager
 EDCV_DIR=agent/edcv
 KEYCLOAK_DIR=agent/keycloak
 REG_DIR=agent/registration
+ONBOARDING_DIR=agent/onboarding
 
 E2E_DIR=e2e
 
@@ -60,6 +61,7 @@ build:
 	$(MAKE) -C $(EDCV_DIR) build
 	$(MAKE) -C $(KEYCLOAK_DIR) build
 	$(MAKE) -C $(REG_DIR) build
+	$(MAKE) -C $(ONBOARDING_DIR) build
 
 build-pmanager:
 	@echo "Building pmanager..."
@@ -76,6 +78,7 @@ build-all:
 	$(MAKE) -C $(EDCV_DIR) build-all
 	$(MAKE) -C $(KEYCLOAK_DIR) build-all
 	$(MAKE) -C $(REG_DIR) build-all
+	$(MAKE) -C $(ONBOARDING_DIR) build-all
 
 #==============================================================================
 # Test Commands - Delegate to Service Makefiles
@@ -90,6 +93,7 @@ test:
 	$(MAKE) -C $(E2E_DIR) test
 	$(MAKE) -C $(KEYCLOAK_DIR) test
 	$(MAKE) -C $(REG_DIR) test
+	$(MAKE) -C $(ONBOARDING_DIR) test
 
 test-common:
 	@echo "Testing common..."
@@ -111,6 +115,10 @@ test-reg:
 	@echo "Testing Registration agent..."
 	$(MAKE) -C $(REG_DIR) test
 
+test-onboarding:
+	@echo "Testing Onboarding agent..."
+	$(MAKE) -C $(ONBOARDING_DIR) test
+
 #==============================================================================
 # Development Commands - Delegate to Service Makefiles
 #==============================================================================
@@ -129,6 +137,8 @@ clean:
 	$(MAKE) -C $(PMANAGER_DIR) clean
 	$(MAKE) -C $(TMANAGER_DIR) clean
 	$(MAKE) -C $(EDCV_DIR) clean
+	$(MAKE) -C $(REG_DIR) clean
+	$(MAKE) -C $(ONBOARDING_DIR) clean
 
 #==============================================================================
 # Tool Commands - Delegate to Service Makefiles
@@ -156,7 +166,7 @@ generate-docs:
 # Docker Commands - Handled at Top Level
 #==============================================================================
 
-docker-build: docker-build-pmanager docker-build-tmanager docker-build-testagent docker-build-edcvagent docker-build-kcagent
+docker-build: docker-build-pmanager docker-build-tmanager docker-build-testagent docker-build-edcvagent docker-build-kcagent docker-build-regagent docker-build-obagent
 
 docker-build-pmanager:
 	@echo "Building pmanager Docker image..."
@@ -182,7 +192,11 @@ docker-build-regagent:
 	@echo "Building Registration agent Docker image..."
 	docker buildx build -f docker/Dockerfile.regagent.dockerfile -t $(DOCKER_REGISTRY)regagent:$(DOCKER_TAG) .
 
-docker-clean: docker-clean-pmanager docker-clean-tmanager docker-clean-testagent docker-clean-regagent
+docker-build-obagent:
+	@echo "Building Onboarding agent Docker image..."
+	docker buildx build -f docker/Dockerfile.obagent.dockerfile -t $(DOCKER_REGISTRY)obagent:$(DOCKER_TAG) .
+
+docker-clean: docker-clean-pmanager docker-clean-tmanager docker-clean-testagent docker-clean-regagent docker-clean-obagent
 
 docker-clean-pmanager:
 	docker rmi $(DOCKER_REGISTRY)pmanager:$(DOCKER_TAG) || true
@@ -195,8 +209,12 @@ docker-clean-testagent:
 
 docker-clean-edcvagent:
 	docker rmi $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG) || true
+
 docker-clean-regagent:
 	docker rmi $(DOCKER_REGISTRY)regagent:$(DOCKER_TAG) || true
+
+docker-clean-obagent:
+	docker rmi $(DOCKER_REGISTRY)obagent:$(DOCKER_TAG) || true
 
 #==============================================================================
 # Combined Commands
