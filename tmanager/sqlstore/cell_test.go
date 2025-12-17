@@ -402,6 +402,83 @@ func TestNewCellStore_Create_ExternalID_Unique(t *testing.T) {
 	assert.Contains(t, err.Error(), "unique")
 }
 
+// TestNewCellStore_Create_ExternalID_Empty_Multiple tests that cells with empty externalID can be stored multiple times
+func TestNewCellStore_Create_ExternalID_Empty_Multiple(t *testing.T) {
+	setupCellTable(t, testDB)
+	defer cleanupTestData(t, testDB)
+
+	estore := newCellStore()
+	ctx := context.Background()
+
+	tx, err := testDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+
+	txCtx := context.WithValue(ctx, sqlstore.SQLTransactionKey, tx)
+
+	// Create first cell with empty externalID
+	firstCell := &api.Cell{
+		DeployableEntity: api.DeployableEntity{
+			Entity: api.Entity{
+				ID:      "cell-empty-ext-1",
+				Version: 1,
+			},
+			State:          api.DeploymentStateActive,
+			StateTimestamp: time.Now(),
+		},
+		ExternalID: "",
+		Properties: map[string]any{
+			"owner": "test",
+		},
+	}
+
+	created, err := estore.Create(txCtx, firstCell)
+	require.NoError(t, err)
+	assert.Equal(t, "cell-empty-ext-1", created.ID)
+	assert.Equal(t, "", created.ExternalID)
+
+	// Create second cell with empty externalID
+	secondCell := &api.Cell{
+		DeployableEntity: api.DeployableEntity{
+			Entity: api.Entity{
+				ID:      "cell-empty-ext-2",
+				Version: 1,
+			},
+			State:          api.DeploymentStateActive,
+			StateTimestamp: time.Now(),
+		},
+		ExternalID: "", // Empty externalID like the first cell
+		Properties: map[string]any{
+			"owner": "test",
+		},
+	}
+
+	// This should succeed - empty externalIDs should not violate unique constraint
+	created2, err := estore.Create(txCtx, secondCell)
+	require.NoError(t, err)
+	assert.Equal(t, "cell-empty-ext-2", created2.ID)
+	assert.Equal(t, "", created2.ExternalID)
+
+	// Create a third cell with empty externalID to further verify
+	thirdCell := &api.Cell{
+		DeployableEntity: api.DeployableEntity{
+			Entity: api.Entity{
+				ID:      "cell-empty-ext-3",
+				Version: 1,
+			},
+			State:          api.DeploymentStatePending,
+			StateTimestamp: time.Now(),
+		},
+		ExternalID: "",
+		Properties: nil,
+	}
+
+	created3, err := estore.Create(txCtx, thirdCell)
+	require.NoError(t, err)
+	assert.Equal(t, "cell-empty-ext-3", created3.ID)
+	assert.Equal(t, "", created3.ExternalID)
+}
+
 // TestNewCellStore_GetAllCount tests counting all cells
 func TestNewCellStore_GetAllCount(t *testing.T) {
 	setupCellTable(t, testDB)

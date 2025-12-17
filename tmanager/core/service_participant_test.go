@@ -162,6 +162,9 @@ func TestDeployProfile(t *testing.T) {
 
 		// Setup mock to accept any manifest
 		mockClient.On("Send", ctx, mock.MatchedBy(func(manifest model.OrchestrationManifest) bool {
+			vpaManifest := manifest.Payload[model.VPAData].([]model.VPAManifest)[0]
+			assert.Equal(t, "cell-1", vpaManifest.CellID)
+			assert.Equal(t, "external-id", vpaManifest.ExternalCellID)
 			return manifest.OrchestrationType == model.VPADeployType
 		})).Return(nil)
 
@@ -230,6 +233,9 @@ func TestDisposeProfile(t *testing.T) {
 
 		// Setup mock to accept dispose manifest
 		mockClient.On("Send", ctx, mock.MatchedBy(func(manifest model.OrchestrationManifest) bool {
+			vpaManifest := manifest.Payload[model.VPAData].([]model.VPAManifest)[0]
+			assert.Equal(t, "cell-1", vpaManifest.CellID)
+			assert.Equal(t, "external-id", vpaManifest.ExternalCellID)
 			return manifest.OrchestrationType == model.VPADisposeType
 		})).Return(nil)
 
@@ -489,8 +495,9 @@ func newTestParticipantProfile(tenantID string, participantID string) *api.Parti
 					State:          api.DeploymentStateInitial,
 					StateTimestamp: time.Now(),
 				},
-				Type:   model.ConnectorType,
-				CellID: "cell-1",
+				Type:           model.ConnectorType,
+				CellID:         "cell-1",
+				ExternalCellID: "external-id",
 				Properties: api.Properties{
 					"connectorType": "test-connector",
 				},

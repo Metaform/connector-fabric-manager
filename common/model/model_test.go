@@ -80,7 +80,7 @@ func TestVPAManifest_JSONRoundTrip(t *testing.T) {
 	originalManifest := VPAManifest{
 		ID:      "vpa-manifest-1",
 		VPAType: ConnectorType,
-		Cell:    "cell-west-1",
+		CellID:  "cell-west-1",
 		Properties: map[string]any{
 			"region":    "us-west-1",
 			"replicas":  3,
@@ -98,7 +98,7 @@ func TestVPAManifest_JSONRoundTrip(t *testing.T) {
 
 	assert.Equal(t, originalManifest.ID, unmarshaledManifest.ID)
 	assert.Equal(t, originalManifest.VPAType, unmarshaledManifest.VPAType)
-	assert.Equal(t, originalManifest.Cell, unmarshaledManifest.Cell)
+	assert.Equal(t, originalManifest.CellID, unmarshaledManifest.CellID)
 
 	// Handle properties comparison (JSON unmarshaling converts numbers to float64)
 	require.NotNil(t, unmarshaledManifest.Properties)

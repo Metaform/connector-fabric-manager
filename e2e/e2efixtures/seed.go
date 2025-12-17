@@ -76,8 +76,8 @@ func CreateCell(apiClient *ApiClient) (*tv1alpha1.Cell, error) {
 	return &cell, nil
 }
 
-func CreateTenant(apiClient *ApiClient, properties  map[string]any) (*tv1alpha1.Tenant, error) {
-	requestBody := tv1alpha1.NewTenant{Properties:properties}
+func CreateTenant(apiClient *ApiClient, properties map[string]any) (*tv1alpha1.Tenant, error) {
+	requestBody := tv1alpha1.NewTenant{Properties: properties}
 	var tenant tv1alpha1.Tenant
 	err := apiClient.PostToTManagerWithResponse("tenants", requestBody, &tenant)
 	if err != nil {

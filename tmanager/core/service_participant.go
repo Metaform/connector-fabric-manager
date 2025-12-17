@@ -110,10 +110,11 @@ func (p participantService) DeployProfile(
 		vpaManifests := make([]model.VPAManifest, 0, len(participantProfile.VPAs))
 		for _, vpa := range participantProfile.VPAs {
 			vpaManifest := model.VPAManifest{
-				ID:         vpa.ID,
-				VPAType:    vpa.Type,
-				Cell:       vpa.CellID,
-				Properties: vpa.Properties,
+				ID:             vpa.ID,
+				VPAType:        vpa.Type,
+				CellID:         vpa.CellID,
+				ExternalCellID: vpa.ExternalCellID,
+				Properties:     vpa.Properties,
 			}
 			vpaManifests = append(vpaManifests, vpaManifest)
 		}
@@ -171,10 +172,11 @@ func (p participantService) DisposeProfile(ctx context.Context, tenantID string,
 		vpaManifests := make([]model.VPAManifest, 0, len(profile.VPAs))
 		for i, vpa := range profile.VPAs {
 			vpaManifest := model.VPAManifest{
-				ID:         vpa.ID,
-				VPAType:    vpa.Type,
-				Cell:       vpa.CellID,
-				Properties: vpa.Properties,
+				ID:             vpa.ID,
+				VPAType:        vpa.Type,
+				CellID:         vpa.CellID,
+				ExternalCellID: vpa.ExternalCellID,
+				Properties:     vpa.Properties,
 			}
 			vpaManifests = append(vpaManifests, vpaManifest)
 

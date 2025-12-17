@@ -60,10 +60,11 @@ type OrchestrationResponse struct {
 
 // VPAManifest represents the configuration details for a VPA deployment.
 type VPAManifest struct {
-	ID         string         `json:"id" validate:"required"`
-	VPAType    VPAType        `json:"vpaType" validate:"required"`
-	Cell       string         `json:"cell" validate:"required"`
-	Properties map[string]any `json:"properties,omitempty"`
+	ID             string         `json:"id" validate:"required"`
+	VPAType        VPAType        `json:"vpaType" validate:"required"`
+	CellID         string         `json:"cellId" validate:"required"`
+	ExternalCellID string         `json:"externalCellId"`
+	Properties     map[string]any `json:"properties,omitempty"`
 }
 
 type OrchestrationType string

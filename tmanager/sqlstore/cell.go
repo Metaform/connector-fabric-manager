@@ -86,7 +86,12 @@ func cellEntityToRecord(cell *api.Cell) (*sqlstore.DatabaseRecord, error) {
 	}
 
 	record.Values["id"] = cell.ID
-	record.Values["external_id"] = cell.ExternalID
+
+	if cell.ExternalID != "" {
+		// Only record if specified to support unique column constraint.
+		// Non-specified "" will have a null value set for the column, which Postgres treats as unique
+		record.Values["external_id"] = cell.ExternalID
+	}
 	record.Values["version"] = cell.Version
 	record.Values["state"] = cell.State
 	record.Values["state_timestamp"] = cell.StateTimestamp
