@@ -22,7 +22,7 @@ import (
 	"github.com/metaform/connector-fabric-manager/agent/edcv"
 	"github.com/metaform/connector-fabric-manager/agent/edcv/controlplane"
 	"github.com/metaform/connector-fabric-manager/assembly/serviceapi"
-	identityhub2 "github.com/metaform/connector-fabric-manager/common/identityhub"
+	"github.com/metaform/connector-fabric-manager/common/identityhub"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/common/token"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -33,7 +33,7 @@ type EDCVActivityProcessor struct {
 	HTTPClient          *http.Client
 	Monitor             system.LogMonitor
 	TokenProvider       token.TokenProvider
-	IdentityAPIClient   identityhub2.IdentityAPIClient
+	IdentityAPIClient   identityhub.IdentityAPIClient
 	TokenURL            string
 	VaultURL            string
 	ManagementAPIClient controlplane.ManagementAPIClient
@@ -65,7 +65,7 @@ type Config struct {
 	serviceapi.VaultClient
 	*http.Client
 	system.LogMonitor
-	identityhub2.IdentityAPIClient
+	identityhub.IdentityAPIClient
 	controlplane.ManagementAPIClient
 	TokenURL string
 	VaultURL string
@@ -104,7 +104,7 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 		ClientSecret: vaultAccessSecret,
 		TokenURL:     p.TokenURL,
 	}
-	manifest := identityhub2.NewParticipantManifest(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL, func(m *identityhub2.ParticipantManifest) {
+	manifest := identityhub.NewParticipantManifest(participantContextId, did, data.CredentialServiceURL, data.ProtocolServiceURL, func(m *identityhub.ParticipantManifest) {
 		m.VaultCredentials = vaultCreds
 		m.VaultConfig.VaultURL = p.VaultURL
 		m.VaultConfig.FolderPath = participantContextId + "/identityhub"
