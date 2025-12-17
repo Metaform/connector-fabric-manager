@@ -548,6 +548,9 @@
         ],
         "type": "object",
         "properties": {
+          "externalId": {
+            "type": "string"
+          },
           "id": {
             "type": "string"
           },
@@ -578,6 +581,9 @@
         "type": "object",
         "properties": {
           "cellId": {
+            "type": "string"
+          },
+          "externalCellId": {
             "type": "string"
           },
           "id": {
@@ -639,6 +645,9 @@
         ],
         "type": "object",
         "properties": {
+          "externalId": {
+            "type": "string"
+          },
           "properties": {
             "type": "object",
             "additionalProperties": {}
