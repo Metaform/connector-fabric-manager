@@ -156,6 +156,7 @@ func NewAPICell(input *NewCell) *api.Cell {
 			State:          state,
 			StateTimestamp: input.StateTimestamp.UTC(), // Force UTC
 		},
+		ExternalID: input.ExternalID,
 		Properties: api.ToProperties(input.Properties),
 	}
 }
@@ -172,8 +173,9 @@ func ToDataspaceProfile(input *api.DataspaceProfile) *DataspaceProfile {
 				State:          deployment.State.String(),
 				StateTimestamp: deployment.StateTimestamp.UTC(), // Convert to UTC
 			},
-			CellID:     deployment.CellID,
-			Properties: deployment.Properties,
+			CellID:         deployment.CellID,
+			ExternalCellID: deployment.ExternalCellID,
+			Properties:     deployment.Properties,
 		}
 	}
 

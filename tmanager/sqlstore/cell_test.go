@@ -172,6 +172,7 @@ func TestNewCellStore_Create(t *testing.T) {
 			State:          api.DeploymentStatePending,
 			StateTimestamp: time.Now(),
 		},
+		ExternalID: "external-id",
 		Properties: map[string]any{
 			"metadata": map[string]any{"owner": "test"},
 		},
@@ -189,6 +190,7 @@ func TestNewCellStore_Create(t *testing.T) {
 	created, err := estore.Create(txCtx, cell)
 	require.NoError(t, err)
 	assert.Equal(t, "new-cell", created.ID)
+	assert.Equal(t, "external-id", created.ExternalID)
 	assert.Equal(t, api.DeploymentStatePending, created.State)
 }
 
@@ -340,6 +342,64 @@ func TestNewCellStore_GetAll(t *testing.T) {
 		count++
 	}
 	assert.Equal(t, 3, count)
+}
+
+// TestNewCellStore_Create_ExternalID_Unique tests that externalID uniqueness is enforced
+func TestNewCellStore_Create_ExternalID_Unique(t *testing.T) {
+	setupCellTable(t, testDB)
+	defer cleanupTestData(t, testDB)
+
+	// Create first cell with an externalID
+	firstCell := &api.Cell{
+		DeployableEntity: api.DeployableEntity{
+			Entity: api.Entity{
+				ID:      "cell-unique-1",
+				Version: 1,
+			},
+			State:          api.DeploymentStateActive,
+			StateTimestamp: time.Now(),
+		},
+		ExternalID: "unique-external-id",
+		Properties: map[string]any{
+			"owner": "test",
+		},
+	}
+
+	estore := newCellStore()
+	ctx := context.Background()
+
+	tx, err := testDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+
+	txCtx := context.WithValue(ctx, sqlstore.SQLTransactionKey, tx)
+
+	// Create the first cell successfully
+	created, err := estore.Create(txCtx, firstCell)
+	require.NoError(t, err)
+	assert.Equal(t, "cell-unique-1", created.ID)
+	assert.Equal(t, "unique-external-id", created.ExternalID)
+
+	// Attempt to create a second cell with the same externalID
+	secondCell := &api.Cell{
+		DeployableEntity: api.DeployableEntity{
+			Entity: api.Entity{
+				ID:      "cell-unique-2",
+				Version: 1,
+			},
+			State:          api.DeploymentStateActive,
+			StateTimestamp: time.Now(),
+		},
+		ExternalID: "unique-external-id", // Same externalID as first cell
+		Properties: map[string]any{
+			"owner": "test",
+		},
+	}
+
+	// This should fail due to unique constraint violation
+	_, err = estore.Create(txCtx, secondCell)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unique")
 }
 
 // TestNewCellStore_GetAllCount tests counting all cells

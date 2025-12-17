@@ -72,6 +72,7 @@ func createCellsTable(db *sql.DB) error {
 	_, err := db.Exec(fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id TEXT PRIMARY KEY,
+			external_id TEXT UNIQUE,
 			version INT DEFAULT 1,
 			"state" TEXT NOT NULL,
 			state_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

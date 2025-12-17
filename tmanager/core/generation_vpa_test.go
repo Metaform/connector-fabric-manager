@@ -317,12 +317,14 @@ func TestParticipantProfileGenerator_generateConnector(t *testing.T) {
 				State:          api.DeploymentStateActive,
 				StateTimestamp: now,
 			},
+			ExternalID: "test-cell-id",
 			Properties: cellProperties,
 		}
 
 		connector := generator.generateVPA(model.ConnectorType, make(api.VPAPropMap), inputCell)
 
 		assert.Equal(t, inputCell.ID, connector.CellID)
+		assert.Equal(t, inputCell.ExternalID, connector.ExternalCellID)
 	})
 
 	t.Run("generates unique connector IDs", func(t *testing.T) {

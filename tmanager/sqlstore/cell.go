@@ -24,12 +24,12 @@ import (
 )
 
 func newCellStore() store.EntityStore[*api.Cell] {
-	columnNames := []string{"id", "version", "state", "state_timestamp", "properties"}
+	columnNames := []string{"id", "external_id", "version", "state", "state_timestamp", "properties"}
 	builder := sqlstore.NewPostgresJSONBBuilder().
 		WithFieldMappings(map[string]string{"stateTimestamp": "state_timestamp"}).
 		WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
-		"properties": sqlstore.JSONBFieldTypeScalar,
-	})
+			"properties": sqlstore.JSONBFieldTypeScalar,
+		})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.Cell](
 		cfmCellsTable,
@@ -48,6 +48,10 @@ func recordToCellEntity(_ *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Cell, 
 		cell.ID = id
 	} else {
 		return nil, fmt.Errorf("invalid cell id reading record")
+	}
+
+	if externalID, ok := record.Values["external_id"].(string); ok {
+		cell.ExternalID = externalID
 	}
 
 	if version, ok := record.Values["version"].(int64); ok {
@@ -82,6 +86,7 @@ func cellEntityToRecord(cell *api.Cell) (*sqlstore.DatabaseRecord, error) {
 	}
 
 	record.Values["id"] = cell.ID
+	record.Values["external_id"] = cell.ExternalID
 	record.Values["version"] = cell.Version
 	record.Values["state"] = cell.State
 	record.Values["state_timestamp"] = cell.StateTimestamp

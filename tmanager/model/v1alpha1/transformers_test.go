@@ -349,6 +349,7 @@ func TestNewAPICell(t *testing.T) {
 	input := NewCell{
 		State:          "initial",
 		StateTimestamp: testTime,
+		ExternalID:     "externalId",
 		Properties: map[string]any{
 			"type":       "kubernetes",
 			"version":    "1.28",
@@ -364,6 +365,7 @@ func TestNewAPICell(t *testing.T) {
 	assert.Equal(t, api.DeploymentStateInitial, result.State)
 	assert.Equal(t, testTime.UTC(), result.StateTimestamp)      // Should be converted to UTC
 	assert.Equal(t, time.UTC, result.StateTimestamp.Location()) // Verify timezone is UTC
+	assert.Equal(t, "externalId", result.ExternalID)
 	assert.Contains(t, result.Properties, "type")
 	assert.Equal(t, "kubernetes", result.Properties["type"])
 	assert.Contains(t, result.Properties, "auto_scale")
@@ -493,7 +495,8 @@ func TestToDataspaceProfile(t *testing.T) {
 					State:          api.DeploymentStateActive,
 					StateTimestamp: testTime,
 				},
-				CellID: "cell-1",
+				CellID:         "cell-1",
+				ExternalCellID: "external-cell-1",
 				Properties: api.Properties{
 					"orchestration-env": "production",
 					"replicas":          3,
@@ -555,6 +558,7 @@ func TestToDataspaceProfile(t *testing.T) {
 	assert.Equal(t, testTime.UTC(), deployment1.StateTimestamp)
 	assert.Equal(t, time.UTC, deployment1.StateTimestamp.Location())
 	assert.Equal(t, "cell-1", deployment1.CellID)
+	assert.Equal(t, "external-cell-1", deployment1.ExternalCellID)
 	assert.Equal(t, map[string]any{
 		"orchestration-env": "production",
 		"replicas":          3,

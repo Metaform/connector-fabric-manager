@@ -55,7 +55,6 @@ func (t dataspaceProfileService) DeleteProfile(ctx context.Context, profileID st
 	})
 }
 
-
 func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID string, cellID string) error {
 	return d.trxContext.Execute(ctx, func(ctx context.Context) error {
 		profile, err := d.profileStore.FindByID(ctx, profileID)
@@ -78,8 +77,9 @@ func (d dataspaceProfileService) DeployProfile(ctx context.Context, profileID st
 				State:          api.DeploymentStateActive,
 				StateTimestamp: time.Time{}.UTC(),
 			},
-			CellID:     cell.ID,
-			Properties: make(map[string]any),
+			CellID:         cell.ID,
+			ExternalCellID: cell.ExternalID,
+			Properties:     make(map[string]any),
 		})
 		err = d.profileStore.Update(ctx, profile)
 		if err != nil {

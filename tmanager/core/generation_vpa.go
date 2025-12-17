@@ -77,9 +77,10 @@ func (g participantGenerator) generateVPA(
 			State:          api.DeploymentStatePending,
 			StateTimestamp: time.Now().UTC(),
 		},
-		Type:       vpaType,
-		CellID:     cell.ID,
-		Properties: make(api.Properties),
+		Type:           vpaType,
+		CellID:         cell.ID,
+		ExternalCellID: cell.ExternalID,
+		Properties:     make(api.Properties),
 	}
 
 	// Decompose the properties and add them to the VPA

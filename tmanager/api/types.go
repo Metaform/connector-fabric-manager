@@ -81,21 +81,24 @@ type DataspaceProfile struct {
 // context could be a connector, credential service, or another component.
 type VirtualParticipantAgent struct {
 	DeployableEntity
-	Type       model.VPAType `json:"type"`
-	CellID     string        `json:"cellId"`
-	Properties Properties    `json:"properties"`
+	Type           model.VPAType `json:"type"`
+	CellID         string        `json:"cellId"`
+	ExternalCellID string        `json:"externalCellId"`
+	Properties     Properties    `json:"properties"`
 }
 
 // DataspaceDeployment is runtime capabilities and configuration deployed when a dataspace profile to a cell.
 type DataspaceDeployment struct {
 	DeployableEntity
-	CellID     string     `json:"cellId,omitempty"`
-	Properties Properties `json:"properties"`
+	CellID         string     `json:"cellId,omitempty"`
+	ExternalCellID string     `json:"externalCellID"`
+	Properties     Properties `json:"properties"`
 }
 
 // Cell is a homogenous deployment zone. A cell could be a Kubernetes cluster or some other infrastructure.
 type Cell struct {
 	DeployableEntity
+	ExternalID string     `json:"externalId"`
 	Properties Properties `json:"properties"`
 }
 

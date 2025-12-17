@@ -178,6 +178,7 @@ func TestDeployDataspaceProfile(t *testing.T) {
 		require.NotNil(t, updated)
 		assert.Equal(t, 1, len(updated.Deployments))
 		assert.Equal(t, "cell-1", updated.Deployments[0].CellID)
+		assert.Equal(t, "external-id", updated.Deployments[0].ExternalCellID)
 		assert.Equal(t, api.DeploymentStateActive, updated.Deployments[0].State)
 	})
 

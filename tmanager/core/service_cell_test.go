@@ -116,6 +116,7 @@ func newTestCell(id string) *api.Cell {
 			State:          api.DeploymentStateInitial,
 			StateTimestamp: time.Now(),
 		},
+		ExternalID: "external-id",
 		Properties: api.Properties{
 			"name": "Test Cell " + id,
 		},

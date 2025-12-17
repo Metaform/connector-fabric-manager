@@ -33,6 +33,7 @@ type Tenant struct {
 }
 
 type NewCell struct {
+	ExternalID     string         `json:"externalId"`
 	State          string         `json:"state" required:"true"`
 	StateTimestamp time.Time      `json:"stateTimestamp" required:"true"`
 	Properties     map[string]any `json:"properties,omitempty"`
@@ -55,8 +56,9 @@ type NewDataspaceProfileDeployment struct {
 
 type DataspaceDeployment struct {
 	DeployableEntity
-	CellID     string         `json:"cellId,omitempty"`
-	Properties map[string]any `json:"properties,omitempty"`
+	CellID         string         `json:"cellId,omitempty"`
+	ExternalCellID string         `json:"externalCellId"`
+	Properties     map[string]any `json:"properties,omitempty"`
 }
 type DataspaceProfile struct {
 	Entity
@@ -84,7 +86,7 @@ type ParticipantProfile struct {
 type VirtualParticipantAgent struct {
 	DeployableEntity
 	Type       model.VPAType  `json:"type" required:"true"`
-	CellID     string           `json:"cellId" required:"true"`
+	CellID     string         `json:"cellId" required:"true"`
 	Properties map[string]any `json:"properties,omitempty"`
 }
 
