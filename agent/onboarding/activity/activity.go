@@ -41,9 +41,10 @@ func (p OnboardingActivityProcessor) Process(ctx api.ActivityContext) api.Activi
 	}
 
 	// todo: have this come in through CFM REST API -> dataspace profile
+	holderPid := uuid.New().String()
 	cr := identityhub.CredentialRequest{
 		IssuerDID: "did:web:issuerservice.edc-v.svc.cluster.local%3A10016:issuer",
-		HolderPID: uuid.New().String(),
+		HolderPID: holderPid,
 		Credentials: []identityhub.CredentialType{
 			{
 				Format: "VC1_0_JWT",
@@ -56,9 +57,10 @@ func (p OnboardingActivityProcessor) Process(ctx api.ActivityContext) api.Activi
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error requesting credentials: %w", err)}
 	}
-	p.Monitor.Infof("Credentials request for participant '%s' completed successfully, credential is at %s", credentialRequest.ParticipantContextID, location)
+	p.Monitor.Infof("Credentials request for participant '%s' submitted successfully, credential is at %s", credentialRequest.ParticipantContextID, location)
 
-	// initiate a credentials request on behalf of the newly created participant
+	ctx.SetOutputValue("holderPid", holderPid)
+	ctx.SetOutputValue("credentialRequest", location)
 
 	return api.ActivityResult{Result: api.ActivityResultComplete}
 }
