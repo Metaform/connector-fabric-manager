@@ -131,6 +131,11 @@ func Test_VerifyE2E(t *testing.T) {
 	require.NotNil(t, connectorVPA.Properties, "Connector VPA properties should not be nil")
 	require.Contains(t, connectorVPA.Properties, "connectorkey", "Connector VPA should contain 'connectorkey' property")
 
+	// verify return of agent state data
+	stateData := statusProfile.Properties[model.VPAStateData].(map[string]any)
+	assert.NotNil(t, 1, stateData)
+	assert.Equal(t, "test output", stateData["agent.test.output"])
+
 	var orchestrations []papi.OrchestrationEntry
 	err = client.PostToPManagerWithResponse("orchestrations/query", model.Query{Predicate: fmt.Sprintf("correlationId = '%s'", statusProfile.ID)}, &orchestrations)
 	require.NoError(t, err)
