@@ -367,12 +367,17 @@ type MockIdentityHubClient struct {
 	expectedError error
 }
 
-func (m MockIdentityHubClient) RequestCredentials(participantContextID string, credentialRequest identityhub.CredentialRequest) (string, error) {
+func (m MockIdentityHubClient) GetCredentialRequestState(string, string) (identityhub.CredentialIssuanceState, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m MockIdentityHubClient) CreateParticipantContext(manifest identityhub.ParticipantManifest) (*identityhub.CreateParticipantContextResponse, error) {
+func (m MockIdentityHubClient) RequestCredentials(string, identityhub.CredentialRequest) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockIdentityHubClient) CreateParticipantContext(identityhub.ParticipantManifest) (*identityhub.CreateParticipantContextResponse, error) {
 	return &identityhub.CreateParticipantContextResponse{
 		STSClientID:     "test-clientid",
 		STSClientSecret: "test-secret-alias",
@@ -384,10 +389,10 @@ type MockManagementApiClient struct {
 	expectedConfigError      error
 }
 
-func (m MockManagementApiClient) CreateParticipantContext(manifest controlplane.ParticipantContext) error {
+func (m MockManagementApiClient) CreateParticipantContext(controlplane.ParticipantContext) error {
 	return m.expectedParticipantError
 }
 
-func (m MockManagementApiClient) CreateConfig(participantContextID string, config controlplane.ParticipantContextConfig) error {
+func (m MockManagementApiClient) CreateConfig(string, controlplane.ParticipantContextConfig) error {
 	return m.expectedConfigError
 }
