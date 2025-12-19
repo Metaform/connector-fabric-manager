@@ -367,7 +367,7 @@ type MockIdentityHubClient struct {
 	expectedError error
 }
 
-func (m MockIdentityHubClient) GetCredentialRequestState(string, string) (identityhub.CredentialIssuanceState, error) {
+func (m MockIdentityHubClient) GetCredentialRequestState(string, string) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }

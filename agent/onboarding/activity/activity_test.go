@@ -86,7 +86,7 @@ func TestOnboardingActivityProcessor_Process_WhenNewRequestError(t *testing.T) {
 	assert.Empty(t, activityContext.OutputValues())
 }
 
-func TestOnboardingActivityProcessor_Process_WhenPendingRequestError(t *testing.T) {
+func TestOnboardingActivityProcessor_Process_WhenPendingRequestApiError(t *testing.T) {
 	ih := MockIdentityHubClient{
 		expectedError: fmt.Errorf("some error"),
 	}
@@ -223,6 +223,40 @@ func TestOnboardingActivityProcessor_Process_WhenPendingRequestRejected(t *testi
 	assert.Empty(t, activityContext.OutputValues())
 }
 
+func TestOnboardingActivityProcessor_Process_WhenPendingRequestError(t *testing.T) {
+	ih := MockIdentityHubClient{
+		expectedState: identityhub.CredentialRequestStateError,
+	}
+	processor := OnboardingActivityProcessor{
+		Monitor:           system.NoopMonitor{},
+		IdentityApiClient: ih,
+	}
+
+	var processingData = map[string]any{
+		"clientID.apiAccess":   "test-participant",
+		"participantContextId": "test-participant",
+		"holderPid":            "test-holder-pid",
+		"credentialRequest":    "https://example.com/credentialservice/request/123",
+	}
+
+	ctx := context.Background()
+	outputData := make(map[string]any)
+
+	activity := api.Activity{
+		ID:   "test-activity",
+		Type: "edcv",
+	}
+
+	activityContext := api.NewActivityContext(ctx, "orch-123", activity, processingData, outputData)
+
+	result := processor.Process(activityContext)
+
+	assert.Equal(t, api.ActivityResultType(api.ActivityResultFatalError), result.Result)
+	assert.ErrorContains(t, result.Error, "credential request for participant 'test-participant' failed")
+
+	assert.Empty(t, activityContext.OutputValues())
+}
+
 func TestOnboardingActivityProcessor_Process_WhenInvalidData(t *testing.T) {
 	ih := MockIdentityHubClient{}
 	processor := OnboardingActivityProcessor{
@@ -250,7 +284,7 @@ func TestOnboardingActivityProcessor_Process_WhenInvalidData(t *testing.T) {
 
 func TestOnboardingActivityProcessor_Process_WhenInvalidStateReceived(t *testing.T) {
 	ih := MockIdentityHubClient{
-		expectedState: identityhub.Unknown,
+		expectedState: "invalid state foobar",
 	}
 	processor := OnboardingActivityProcessor{
 		Monitor:           system.NoopMonitor{},
@@ -277,7 +311,7 @@ func TestOnboardingActivityProcessor_Process_WhenInvalidStateReceived(t *testing
 	result := processor.Process(activityContext)
 
 	assert.Equal(t, api.ActivityResultType(api.ActivityResultRetryError), result.Result)
-	assert.ErrorContains(t, result.Error, "unexpected credential request state '3'")
+	assert.ErrorContains(t, result.Error, "unexpected credential request state ")
 
 	assert.Equal(t, "test-participant", activityContext.Values()["participantContextId"])
 	assert.Contains(t, activityContext.Values(), "holderPid")
@@ -285,7 +319,7 @@ func TestOnboardingActivityProcessor_Process_WhenInvalidStateReceived(t *testing
 
 type MockIdentityHubClient struct {
 	expectedError error
-	expectedState identityhub.CredentialIssuanceState
+	expectedState string
 	expectedURL   string
 }
 
@@ -297,6 +331,6 @@ func (m MockIdentityHubClient) RequestCredentials(string, identityhub.Credential
 	return m.expectedURL, m.expectedError
 }
 
-func (m MockIdentityHubClient) GetCredentialRequestState(string, string) (identityhub.CredentialIssuanceState, error) {
+func (m MockIdentityHubClient) GetCredentialRequestState(string, string) (string, error) {
 	return m.expectedState, m.expectedError
 }

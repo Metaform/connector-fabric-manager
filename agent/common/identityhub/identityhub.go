@@ -29,19 +29,17 @@ const (
 	CreateParticipantURL = "/v1alpha/participants"
 )
 
-type CredentialIssuanceState int
-
 const (
-	CredentialRequestStateCreated CredentialIssuanceState = iota
-	CredentialRequestStateIssued
-	CredentialRequestStateRejected
-	Unknown
+	CredentialRequestStateCreated  = "CREATED"
+	CredentialRequestStateIssued   = "ISSUED"
+	CredentialRequestStateRejected = "REJECTED"
+	CredentialRequestStateError    = "ERROR"
 )
 
 type IdentityAPIClient interface {
 	CreateParticipantContext(manifest ParticipantManifest) (*CreateParticipantContextResponse, error)
 	RequestCredentials(participantContextID string, credentialRequest CredentialRequest) (string, error)
-	GetCredentialRequestState(participantContextID string, credentialRequestID string) (CredentialIssuanceState, error)
+	GetCredentialRequestState(participantContextID string, credentialRequestID string) (string, error)
 }
 
 type HttpIdentityAPIClient struct {
@@ -88,17 +86,17 @@ func (a HttpIdentityAPIClient) RequestCredentials(participantContextID string, c
 	return location, nil
 }
 
-func (a HttpIdentityAPIClient) GetCredentialRequestState(participantContextID string, credentialRequestID string) (CredentialIssuanceState, error) {
+func (a HttpIdentityAPIClient) GetCredentialRequestState(participantContextID string, credentialRequestID string) (string, error) {
 	accessToken, err := a.TokenProvider.GetToken()
 	if err != nil {
-		return Unknown, fmt.Errorf("failed to get API access token: %w", err)
+		return "", fmt.Errorf("failed to get API access token: %w", err)
 	}
 
 	b64 := base64.RawURLEncoding.EncodeToString([]byte(participantContextID))
 	url := fmt.Sprintf("%s/v1alpha/participants/%s/credentials/request/%s", a.BaseURL, b64, credentialRequestID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return Unknown, err
+		return "", err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+accessToken)
@@ -107,34 +105,25 @@ func (a HttpIdentityAPIClient) GetCredentialRequestState(participantContextID st
 	defer a.closeResponse(resp)
 
 	if err != nil {
-		return Unknown, fmt.Errorf("failed to get credential request state for %s: %w", participantContextID, err)
+		return "", fmt.Errorf("failed to get credential request state for %s: %w", participantContextID, err)
 	}
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return Unknown, fmt.Errorf("failed to get credential request state: received status code %d, body: %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("failed to get credential request state: received status code %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	var stateResponse map[string]interface{}
 	if err := json.Unmarshal(body, &stateResponse); err != nil {
-		return Unknown, fmt.Errorf("failed to unmarshal credential request state response: %w", err)
+		return "", fmt.Errorf("failed to unmarshal credential request state response: %w", err)
 	}
 
 	stateStr, ok := stateResponse["status"].(string)
 	if !ok {
-		return Unknown, fmt.Errorf("invalid status format in response")
+		return "", fmt.Errorf("invalid status format in response")
 	}
 
-	switch stateStr {
-	case "CREATED":
-		return CredentialRequestStateCreated, nil
-	case "ISSUED":
-		return CredentialRequestStateIssued, nil
-	case "REJECTED":
-		return CredentialRequestStateRejected, nil
-	default:
-		return Unknown, nil
-	}
+	return stateStr, nil
 }
 
 func (a HttpIdentityAPIClient) CreateParticipantContext(manifest ParticipantManifest) (*CreateParticipantContextResponse, error) {

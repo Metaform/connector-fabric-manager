@@ -55,7 +55,7 @@ func (p OnboardingActivityProcessor) processExistingRequest(ctx api.ActivityCont
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error getting credential request state: %w", err)}
 	}
-	p.Monitor.Infof("Credential request for participant '%s' is in state '%d'", credentialRequest.ParticipantContextID, state)
+	p.Monitor.Infof("Credential request for participant '%s' is in state '%s'", credentialRequest.ParticipantContextID, state)
 
 	switch state {
 
@@ -68,9 +68,10 @@ func (p OnboardingActivityProcessor) processExistingRequest(ctx api.ActivityCont
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	case identityhub.CredentialRequestStateRejected:
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("credential request for participant '%s' was rejected", credentialRequest.ParticipantContextID)}
-
+	case identityhub.CredentialRequestStateError:
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("credential request for participant '%s' failed", credentialRequest.ParticipantContextID)}
 	default:
-		return api.ActivityResult{Result: api.ActivityResultRetryError, Error: fmt.Errorf("unexpected credential request state '%d'", state)}
+		return api.ActivityResult{Result: api.ActivityResultRetryError, Error: fmt.Errorf("unexpected credential request state '%s'", state)}
 	}
 }
 
