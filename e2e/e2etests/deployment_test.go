@@ -57,18 +57,8 @@ func Test_VerifyE2E(t *testing.T) {
 	cell, err := e2efixtures.CreateCell(client)
 	require.NoError(t, err)
 
-	var cells []api.Cell
-	err = client.GetTManager("cells", &cells)
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(cells))
-
 	dProfile, err := e2efixtures.CreateDataspaceProfile(client)
 	require.NoError(t, err)
-
-	var dprofiles []api.DataspaceProfile
-	err = client.GetTManager("dataspace-profiles", &dprofiles)
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(dprofiles))
 
 	deployment := v1alpha1.NewDataspaceProfileDeployment{
 		ProfileID: dProfile.ID,
@@ -77,20 +67,17 @@ func Test_VerifyE2E(t *testing.T) {
 	err = e2efixtures.DeployDataspaceProfile(deployment, client)
 	require.NoError(t, err)
 
-	var dprofile api.DataspaceProfile
-	err = client.GetTManager(fmt.Sprintf("dataspace-profiles/%s", dprofiles[0].ID), &dprofile)
-	require.NoError(t, err)
-	require.NotNil(t, dprofile)
-
 	tenant, err := e2efixtures.CreateTenant(client, map[string]any{})
 	require.NoError(t, err)
 
-	newProfile := v1alpha1.NewParticipantProfileDeployment{
-		Identifier:    "did:web:foo.com",
-		VPAProperties: map[string]map[string]any{string(model.ConnectorType): {"connectorkey": "connectorvalue"}},
+	newParticipantProfile := v1alpha1.NewParticipantProfileDeployment{
+		Identifier:       "did:web:foo.com",
+		ParticipantRoles: map[string][]string{dProfile.ID: {e2efixtures.OEMRole}},
+		VPAProperties:    map[string]map[string]any{string(model.ConnectorType): {"connectorkey": "connectorvalue"}},
 	}
+
 	var participantProfile v1alpha1.ParticipantProfile
-	err = client.PostToTManagerWithResponse(fmt.Sprintf("tenants/%s/participant-profiles", tenant.ID), newProfile, &participantProfile)
+	err = client.PostToTManagerWithResponse(fmt.Sprintf("tenants/%s/participant-profiles", tenant.ID), newParticipantProfile, &participantProfile)
 	require.NoError(t, err)
 
 	var statusProfile v1alpha1.ParticipantProfile
@@ -111,10 +98,12 @@ func Test_VerifyE2E(t *testing.T) {
 	}
 	require.Equal(t, 3, deployCount, "Expected 3 deployments to be active")
 
-	var profiles []api.ParticipantProfile
-	err = client.PostToTManagerWithResponse("participant-profiles/query", model.Query{Predicate: "vpas.type='cfm.connector' AND vpas.properties.connectorkey='connectorvalue'"}, &profiles)
+	var participantProfiles []api.ParticipantProfile
+	err = client.PostToTManagerWithResponse(
+		"participant-profiles/query",
+		model.Query{Predicate: "vpas.type='cfm.connector' AND vpas.properties.connectorkey='connectorvalue'"}, &participantProfiles)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(profiles), "Expected 1 profile to be found")
+	assert.Equal(t, 1, len(participantProfiles), "Expected 1 profile to be found")
 
 	// Verify round-tripping of VPA properties - these are supplied during profile creation and are added to the VPA
 	//
@@ -126,7 +115,6 @@ func Test_VerifyE2E(t *testing.T) {
 			break
 		}
 	}
-
 	require.NotNil(t, connectorVPA, "Expected to find a VPA with cfm.connector type")
 	require.NotNil(t, connectorVPA.Properties, "Connector VPA properties should not be nil")
 	require.Contains(t, connectorVPA.Properties, "connectorkey", "Connector VPA should contain 'connectorkey' property")
@@ -135,9 +123,12 @@ func Test_VerifyE2E(t *testing.T) {
 	stateData := statusProfile.Properties[model.VPAStateData].(map[string]any)
 	assert.NotNil(t, 1, stateData)
 	assert.Equal(t, "test output", stateData["agent.test.output"])
+	assert.True(t, stateData["agent.test.credentials.received"].(bool))
 
 	var orchestrations []papi.OrchestrationEntry
-	err = client.PostToPManagerWithResponse("orchestrations/query", model.Query{Predicate: fmt.Sprintf("correlationId = '%s'", statusProfile.ID)}, &orchestrations)
+	err = client.PostToPManagerWithResponse(
+		"orchestrations/query",
+		model.Query{Predicate: fmt.Sprintf("correlationId = '%s'", statusProfile.ID)}, &orchestrations)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(orchestrations), "Expected 1 orchestration to be created")
 	assert.Equal(t, papi.OrchestrationStateCompleted, papi.OrchestrationState(orchestrations[0].State))

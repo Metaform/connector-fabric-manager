@@ -265,6 +265,15 @@ builder.WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
 
 ```
 
+#### JSONBFieldTypeMapOfArrays
+
+- **Purpose**: Query nested maps containing array values
+- **Use Case**: Dynamic configurations, indexed collections, multi-valued properties
+- **SQL Translation**: Uses `jsonb_each()` for map iteration combined with array element access
+- **Example**: `config.environments`, `settings.regions`, `features.flags`
+- **Query Pattern**: Searches across map entries and their array elements using EXISTS conditions
+
+
 ### Configuration
 
 #### Setting Up JSONB Fields

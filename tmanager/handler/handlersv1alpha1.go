@@ -84,17 +84,13 @@ func (h *TMHandler) deployParticipantProfile(
 		return
 	}
 
-	properties := newDeployment.Properties
-	if properties == nil {
-		properties = make(map[string]any)
-	}
+	converted := v1alpha1.ToAPINewParticipantProfileDeployment(&newDeployment)
+
 	// TODO support specific cell selection
 	profile, err := h.participantService.DeployProfile(
 		req.Context(),
 		tenantID,
-		newDeployment.Identifier,
-		*api.ToVPAMap(newDeployment.VPAProperties),
-		properties)
+		converted)
 
 	if err != nil {
 		h.HandleError(w, err)
@@ -234,8 +230,7 @@ func (h *TMHandler) createCell(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	response := v1alpha1.ToCell(recordedCell)
-	h.ResponseCreated(w, response)
+	h.ResponseCreated(w, v1alpha1.ToCell(recordedCell))
 }
 
 func (h *TMHandler) deleteCell(w http.ResponseWriter, req *http.Request, cellID string) {
@@ -280,13 +275,14 @@ func (h *TMHandler) createDataspaceProfile(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	profile, err := h.dataspaceService.CreateProfile(req.Context(), newProfile.Artifacts, newProfile.Properties)
+	dProfile := v1alpha1.NewAPIDataspaceProfile(&newProfile)
+	result, err := h.dataspaceService.CreateProfile(req.Context(), dProfile)
 	if err != nil {
 		h.HandleError(w, err)
 		return
 	}
 
-	response := v1alpha1.ToDataspaceProfile(profile)
+	response := v1alpha1.ToDataspaceProfile(result)
 	h.ResponseCreated(w, response)
 }
 
@@ -355,6 +351,5 @@ func (h *TMHandler) deployDataspaceProfile(w http.ResponseWriter, req *http.Requ
 }
 
 func (h *TMHandler) health(w http.ResponseWriter, _ *http.Request) {
-	response := response{Message: "OK"}
-	h.ResponseOK(w, response)
+	h.ResponseOK(w, response{Message: "OK"})
 }

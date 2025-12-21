@@ -23,11 +23,12 @@ import (
 )
 
 func newDataspaceProfileStore() store.EntityStore[*api.DataspaceProfile] {
-	columnNames := []string{"id", "version", "artifacts", "deployments", "properties"}
+	columnNames := []string{"id", "version", "dataspace_spec", "artifacts", "deployments", "properties"}
 	builder := sqlstore.NewPostgresJSONBBuilder().WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
-		"artifacts":   sqlstore.JSONBFieldTypeArrayOfScalars,
-		"deployments": sqlstore.JSONBFieldTypeArrayOfObjects,
-		"properties":  sqlstore.JSONBFieldTypeScalar,
+		"artifacts":     sqlstore.JSONBFieldTypeArrayOfScalars,
+		"deployments":   sqlstore.JSONBFieldTypeArrayOfObjects,
+		"dataspace_spec": sqlstore.JSONBFieldTypeScalar,
+		"properties":    sqlstore.JSONBFieldTypeScalar,
 	})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.DataspaceProfile](
@@ -53,6 +54,12 @@ func recordToDProfileEntity(_ *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Da
 		profile.Version = version
 	} else {
 		return nil, fmt.Errorf("invalid dataspace profile version reading record")
+	}
+
+	if bytes, ok := record.Values["dataspace_spec"].([]byte); ok && bytes != nil {
+		if err := json.Unmarshal(bytes, &profile.DataspaceSpec); err != nil {
+			return nil, err
+		}
 	}
 
 	if bytes, ok := record.Values["artifacts"].([]byte); ok && bytes != nil {
@@ -83,6 +90,12 @@ func dProfileEntityToRecord(profile *api.DataspaceProfile) (*sqlstore.DatabaseRe
 
 	record.Values["id"] = profile.ID
 	record.Values["version"] = profile.Version
+
+	bytes, err := json.Marshal(profile.DataspaceSpec)
+	if err != nil {
+		return record, err
+	}
+	record.Values["dataspace_spec"] = bytes
 
 	if profile.Artifacts != nil {
 		bytes, err := json.Marshal(profile.Artifacts)

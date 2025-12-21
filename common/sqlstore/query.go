@@ -28,6 +28,8 @@ const (
 	JSONBFieldTypeArrayOfObjects
 	// JSONBFieldTypeArrayOfScalars is for arrays of scalar values (needs array_elements)
 	JSONBFieldTypeArrayOfScalars
+	// JSONBFieldTypeMapOfArrays is for maps where values are arrays (e.g. map[string][]string)
+	JSONBFieldTypeMapOfArrays
 )
 
 // SQLBuilder converts predicates to SQL
@@ -267,7 +269,11 @@ func (b *PostgresJSONBBuilder) tryBuildJSONBSQL(predicate *query.AtomicPredicate
 
 	// Build the JSONB path: parts[1:] contains the nested path (preserve original casing)
 	path := parts[1:]
-	sql, args := b.buildJSONBCondition(rootField, path, fieldType, predicate, paramCounter)
+	mappedRoot := rootField
+	if mappedName, found := b.fieldMappings[parts[0]]; found {
+		mappedRoot = mappedName
+	}
+	sql, args := b.buildJSONBCondition(mappedRoot, path, fieldType, predicate, paramCounter)
 	return sql, args, true
 }
 
@@ -351,6 +357,12 @@ func (b *PostgresJSONBBuilder) buildJSONBEqual(field string, path []string, fiel
 	// For scalar fields with no nested path, use direct accessor
 	if fieldType == JSONBFieldTypeScalar && len(path) == 0 {
 		return fmt.Sprintf("%s = $%d", field, *paramCounter), []any{value}
+	}
+
+	if fieldType == JSONBFieldTypeMapOfArrays && len(path) > 0 {
+		// Use -> to get the array, then @> to check if it contains the scalar value wrapped as a JSON array
+		jsonPath := b.buildJSONBAccessor(field, path, false)
+		return fmt.Sprintf("%s @> jsonb_build_array($%d::text)", jsonPath, *paramCounter), []any{value}
 	}
 
 	// For scalar fields with path (shouldn't happen but handle gracefully)

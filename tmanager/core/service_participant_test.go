@@ -176,14 +176,21 @@ func TestDeployProfile(t *testing.T) {
 		_, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)
 
-		vpaProps := api.VPAPropMap{
-			model.ConnectorType: {"prop": "value"},
-		}
-		properties := map[string]any{
-			"name": "Test Participant",
+		ds1 := newTestDataspaceProfile("ds-1")
+		_, err = service.dataspaceStore.Create(ctx, ds1)
+		require.NoError(t, err)
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier: "participant-identifier",
+			VPAProperties: api.VPAPropMap{
+				model.ConnectorType: {"prop": "value"},
+			},
+			Properties: map[string]any{
+				"name": "Test Participant",
+			},
 		}
 
-		result, err := service.DeployProfile(ctx, "tenant-1", "participant-identifier", vpaProps, properties)
+		result, err := service.DeployProfile(ctx, "tenant-1", deployment)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -209,17 +216,73 @@ func TestDeployProfile(t *testing.T) {
 		_, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)
 
-		vpaProps := api.VPAPropMap{
-			model.ConnectorType: {"prop": "value"},
-		}
-		properties := map[string]any{
-			"name": "Test Participant",
+		ds1 := newTestDataspaceProfile("ds-1")
+		_, err = service.dataspaceStore.Create(ctx, ds1)
+		require.NoError(t, err)
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier: "participant-identifier",
+			VPAProperties: api.VPAPropMap{
+				model.ConnectorType: {"prop": "value"},
+			},
+			Properties: map[string]any{
+				"name": "Test Participant",
+			},
 		}
 
-		result, err := service.DeployProfile(ctx, "tenant-1", "participant-identifier", vpaProps, properties)
+		result, err := service.DeployProfile(ctx, "tenant-1", deployment)
 
 		require.Error(t, err)
 		require.Nil(t, result)
+		mockClient.AssertExpectations(t)
+	})
+
+	t.Run("deploy to specific dataspace profile when multiple exist", func(t *testing.T) {
+		service := newTestParticipantService()
+		mockClient := new(mockProvisionClient)
+
+		// Setup mock to accept manifest
+		mockClient.On("Send", ctx, mock.MatchedBy(func(manifest model.OrchestrationManifest) bool {
+			return manifest.OrchestrationType == model.VPADeployType
+		})).Return(nil)
+
+		service.provisionClient = mockClient
+
+		// Create test cell
+		cell := newTestCell("cell-1")
+		cell.State = api.DeploymentStateActive
+		_, err := service.cellStore.Create(ctx, cell)
+		require.NoError(t, err)
+
+		// Create two dataspace profiles
+		ds1 := newTestDataspaceProfile("ds-1")
+		ds2 := newTestDataspaceProfile("ds-2")
+		_, err = service.dataspaceStore.Create(ctx, ds1)
+		require.NoError(t, err)
+		_, err = service.dataspaceStore.Create(ctx, ds2)
+		require.NoError(t, err)
+
+		// Deploy specifying only ds-1
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier:          "participant-identifier",
+			DataspaceProfileIDs: []string{"ds-1"},
+			VPAProperties: api.VPAPropMap{
+				model.ConnectorType: {"prop": "value"},
+			},
+			Properties: map[string]any{
+				"name": "Test Participant",
+			},
+		}
+
+		result, err := service.DeployProfile(ctx, "tenant-1", deployment)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.NotEmpty(t, result.ID)
+		assert.Equal(t, "tenant-1", result.TenantID)
+		assert.Equal(t, "participant-identifier", result.Identifier)
+		assert.Len(t, result.DataspaceProfileIDs, 1)
+		assert.Equal(t, "ds-1", result.DataspaceProfileIDs[0])
 		mockClient.AssertExpectations(t)
 	})
 }
@@ -474,6 +537,146 @@ func TestVPACallbackHandlerNonExistentProfile(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestGetFilteredProfiles(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("returns all profiles when no profile IDs specified", func(t *testing.T) {
+		service := newTestParticipantService()
+
+		profile1 := newTestDataspaceProfile("ds-1")
+		profile2 := newTestDataspaceProfile("ds-2")
+		_, err := service.dataspaceStore.Create(ctx, profile1)
+		require.NoError(t, err)
+		_, err = service.dataspaceStore.Create(ctx, profile2)
+		require.NoError(t, err)
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier:          "participant-identifier",
+			DataspaceProfileIDs: []string{}, // Empty list
+		}
+
+		result, err := service.getFilteredProfiles(ctx, deployment)
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(result))
+		assert.Equal(t, "ds-1", result[0].ID)
+		assert.Equal(t, "ds-2", result[1].ID)
+	})
+
+	t.Run("filters profiles by specified IDs", func(t *testing.T) {
+		service := newTestParticipantService()
+
+		profile1 := newTestDataspaceProfile("ds-1")
+		profile2 := newTestDataspaceProfile("ds-2")
+		profile3 := newTestDataspaceProfile("ds-3")
+		_, err := service.dataspaceStore.Create(ctx, profile1)
+		require.NoError(t, err)
+		_, err = service.dataspaceStore.Create(ctx, profile2)
+		require.NoError(t, err)
+		_, err = service.dataspaceStore.Create(ctx, profile3)
+		require.NoError(t, err)
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier:          "participant-identifier",
+			DataspaceProfileIDs: []string{"ds-1", "ds-3"}, // Select specific profiles
+		}
+
+		result, err := service.getFilteredProfiles(ctx, deployment)
+
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(result))
+
+		ids := make(map[string]bool)
+		for _, profile := range result {
+			ids[profile.ID] = true
+		}
+		assert.True(t, ids["ds-1"])
+		assert.True(t, ids["ds-3"])
+		assert.False(t, ids["ds-2"])
+	})
+
+	t.Run("returns error when no profiles available", func(t *testing.T) {
+		service := newTestParticipantService()
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier:          "participant-identifier",
+			DataspaceProfileIDs: []string{},
+		}
+
+		result, err := service.getFilteredProfiles(ctx, deployment)
+
+		require.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "no dataspace profiles found")
+	})
+
+	t.Run("returns error when specified profiles do not exist", func(t *testing.T) {
+		service := newTestParticipantService()
+
+		// Create one profile
+		profile1 := newTestDataspaceProfile("ds-1")
+		_, err := service.dataspaceStore.Create(ctx, profile1)
+		require.NoError(t, err)
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier:          "participant-identifier",
+			DataspaceProfileIDs: []string{"non-existent-id"}, // Request non-existent profile
+		}
+
+		result, err := service.getFilteredProfiles(ctx, deployment)
+
+		require.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "no dataspace profiles found")
+	})
+
+	t.Run("handles partial match of specified profiles", func(t *testing.T) {
+		service := newTestParticipantService()
+
+		// Create test dataspace profiles
+		profile1 := newTestDataspaceProfile("ds-1")
+		profile2 := newTestDataspaceProfile("ds-2")
+		_, err := service.dataspaceStore.Create(ctx, profile1)
+		require.NoError(t, err)
+		_, err = service.dataspaceStore.Create(ctx, profile2)
+		require.NoError(t, err)
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier:          "participant-identifier",
+			DataspaceProfileIDs: []string{"ds-1", "ds-999"}, // One valid, one invalid
+		}
+
+		result, err := service.getFilteredProfiles(ctx, deployment)
+
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(result))
+		assert.Equal(t, "ds-1", result[0].ID)
+	})
+
+	t.Run("preserves profile data when filtering", func(t *testing.T) {
+		service := newTestParticipantService()
+
+		profile := newTestDataspaceProfile("ds-1")
+		profile.Properties = api.Properties{
+			"key": "value",
+		}
+		_, err := service.dataspaceStore.Create(ctx, profile)
+		require.NoError(t, err)
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier:          "participant-identifier",
+			DataspaceProfileIDs: []string{"ds-1"},
+		}
+
+		result, err := service.getFilteredProfiles(ctx, deployment)
+
+		require.NoError(t, err)
+		assert.Equal(t, 1, len(result))
+		assert.Equal(t, "ds-1", result[0].ID)
+		assert.Equal(t, "value", result[0].Properties["key"])
+	})
+}
+
 // Helper functions
 
 func newTestParticipantProfile(tenantID string, participantID string) *api.ParticipantProfile {
@@ -484,7 +687,7 @@ func newTestParticipantProfile(tenantID string, participantID string) *api.Parti
 		},
 		Identifier:          "test-" + participantID,
 		TenantID:            tenantID,
-		DataSpaceProfileIDs: []string{"dataspace-1"},
+		DataspaceProfileIDs: []string{"dataspace-1"},
 		VPAs: []api.VirtualParticipantAgent{
 			{
 				DeployableEntity: api.DeployableEntity{

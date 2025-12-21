@@ -13,6 +13,7 @@
 package launcher
 
 import (
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/runtime"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
@@ -52,6 +53,15 @@ func (t TestActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 		return api.ActivityResult{Result: api.ActivityResultComplete}
 	}
 	ctx.SetOutputValue("agent.test.output", "test output")
+
+	var data TestAgentData
+	ctx.ReadValues(&data)
+	ctx.SetOutputValue("agent.test.credentials.received", len(data.CredentialSpecs) > 0)
+
 	t.monitor.Infof("Processed deploy")
 	return api.ActivityResult{Result: api.ActivityResultComplete}
+}
+
+type TestAgentData struct {
+	CredentialSpecs []model.CredentialSpec `json:"cfm.vpa.credentials"`
 }

@@ -45,14 +45,14 @@ type ParticipantProfileService interface {
 	GetProfile(ctx context.Context, tenantID string, participantID string) (*ParticipantProfile, error)
 	QueryProfiles(ctx context.Context, predicate query.Predicate, options store.PaginationOptions) iter.Seq2[*ParticipantProfile, error]
 	QueryProfilesCount(ctx context.Context, predicate query.Predicate) (int64, error)
-	DeployProfile(ctx context.Context, tenantID string, identifier string, vpaProperties VPAPropMap, properties map[string]any) (*ParticipantProfile, error)
+	DeployProfile(ctx context.Context, tenantID string, deployment *NewParticipantProfileDeployment) (*ParticipantProfile, error)
 	DisposeProfile(ctx context.Context, tenantID string, participantID string) error
 }
 
 // DataspaceProfileService performs dataspace profile operations.
 type DataspaceProfileService interface {
 	GetProfile(ctx context.Context, profileID string) (*DataspaceProfile, error)
-	CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*DataspaceProfile, error)
+	CreateProfile(ctx context.Context, profile *DataspaceProfile) (*DataspaceProfile, error)
 	DeleteProfile(ctx context.Context, profileID string) error
 	DeployProfile(ctx context.Context, profileID string, cellID string) error
 	ListProfiles(ctx context.Context) ([]DataspaceProfile, error)

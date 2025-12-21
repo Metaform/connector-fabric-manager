@@ -21,6 +21,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/sqlstore"
 	"github.com/metaform/connector-fabric-manager/common/store"
@@ -48,6 +49,16 @@ func TestNewDataspaceProfileStore_FindByID_Success(t *testing.T) {
 			ID:      "profile-1",
 			Version: 1,
 		},
+		DataspaceSpec: api.DataspaceSpec{
+			ProtocolStack: []string{"dspace-2025-1"},
+			CredentialSpecs: []model.CredentialSpec{
+				{
+					Type:   "FooCredential",
+					Issuer: "did:web:bar.com",
+					Format: "VC1_0_JWT",
+				},
+			},
+		},
 		Artifacts: []string{"artifact-1", "artifact-2"},
 		Deployments: []api.DataspaceDeployment{
 			{
@@ -74,6 +85,10 @@ func TestNewDataspaceProfileStore_FindByID_Success(t *testing.T) {
 	record, err := dProfileEntityToRecord(profile)
 	require.NoError(t, err)
 
+	dspaceSpecVal := []byte("[]")
+	if dspaceBytes, ok := record.Values["dataspace_spec"].([]byte); ok && len(dspaceBytes) > 0 {
+		dspaceSpecVal = dspaceBytes
+	}
 	artifactsVal := []byte("[]")
 	if artifactsBytes, ok := record.Values["artifacts"].([]byte); ok && len(artifactsBytes) > 0 {
 		artifactsVal = artifactsBytes
@@ -88,9 +103,10 @@ func TestNewDataspaceProfileStore_FindByID_Success(t *testing.T) {
 	}
 
 	_, err = testDB.Exec(
-		"INSERT INTO dataspace_profiles (id, version, artifacts, deployments, properties) VALUES ($1, $2, $3, $4, $5)",
+		"INSERT INTO dataspace_profiles (id, version, dataspace_spec, artifacts, deployments, properties) VALUES ($1, $2, $3, $4, $5, $6)",
 		record.Values["id"],
 		record.Values["version"],
+		dspaceSpecVal,
 		artifactsVal,
 		deploymentsVal,
 		propertiesVal,
@@ -113,6 +129,10 @@ func TestNewDataspaceProfileStore_FindByID_Success(t *testing.T) {
 	assert.Equal(t, int64(1), retrieved.Version)
 	assert.Len(t, retrieved.Artifacts, 2)
 	assert.Len(t, retrieved.Deployments, 1)
+	assert.Len(t, retrieved.DataspaceSpec.CredentialSpecs, 1)
+	assert.Equal(t, retrieved.DataspaceSpec.CredentialSpecs[0].Type, "FooCredential")
+	assert.Len(t, retrieved.DataspaceSpec.ProtocolStack, 1)
+	assert.Equal(t, retrieved.DataspaceSpec.ProtocolStack[0], "dspace-2025-1")
 }
 
 // TestNewDataspaceProfileStore_FindByID_NotFound tests profile not found

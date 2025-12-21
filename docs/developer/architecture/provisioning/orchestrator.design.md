@@ -43,9 +43,9 @@ technologies such as [Kafka](https://kafka.apache.org/).
 
 The selection of a messaging design provides both spatial and temporal isolation between subsystems. For example, the
 orchestrator is decoupled from activities executed on worker nodes. Furthermore, activities are decoupled from one
-another. Security contexts can be isolated and worker nodes can be temporally offline (e.g. for maintenance) without
+another. Security contexts can be isolated and worker nodes can be temporally offline (e.g., for maintenance) without
 affecting the ability to receive orchestration requests. The orchestration system provides persistence so
-data can be passed between activities. For non-senstive data, persistence is provided using a distributed key/value
+data can be passed between activities. For non-sensitive data, persistence is provided using a distributed key/value
 store. For sensitive data, persistence is provided using a secure vault.
 
 ### Kubernetes Integration
@@ -154,7 +154,7 @@ An `ActivityProcessor` is an extensibility point for integrating technologies su
 code into the orchestration process. For example, a Terraform processor would gather input data associated with the
 orchestration and pass it to a Terraform script for execution. The `ActivityProcess` interface is defined as follows:
 
-```go
+```
 package api
 
 type ActivityProcessor interface {
@@ -186,10 +186,10 @@ The `ActivityResult` indicates the following actions to be taken:
 - **ActivityResultComplete** - The activity is marked as completed and the message is acknowledged.
 - **ActivityResultSchedule** - Schedules the message for redelivery as defined by `WaitMillis`. This can be used to
   implement a completion polling mechanism.
-- **ActivityResultRetryError** - A recoverable error was raised andtThe message is negatively acknowledged so that it
+- **ActivityResultRetryError** - A recoverable error was raised and the message is negatively acknowledged so that it
   can be redelivered.
 - **ActivityResultRetryError** - A fatal error was raised, the orchestration is put into the error state, and the
-  messsage is acknowledged so it will not be redelivered.
+  message is acknowledged so it will not be redelivered.
 
 ## Activity Agents
 
@@ -198,7 +198,7 @@ facilitate the creation of activity agents. The framework is built on the core m
 as the HTTP Client and Router to be used. An agent is instantiated by passing a configuration to the NATS agent
 launcher:
 
-```go
+```
 package launcher
 
 import (
@@ -222,7 +222,7 @@ to instantiate the `ActivityProcessor` implementation.
 
 The following is an example of an activity agent configuration:
 
-```go
+```
 package launcher
 
 import (
@@ -258,7 +258,6 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 	}
 	natsagent.LaunchAgent(shutdown, config)
 }
-
 ```
 
 The above example relies on the HTTP Client, Vault, and Monitor services, passing them to the activity processor in the
@@ -270,7 +269,7 @@ Activities model resource lifecycles. For example, a resource may be deployed an
 desirable to require separate agents for each resource lifecycle operation. Activity processors can use the
 `discriminator` property to distinguish between different resource lifecycle states:
 
-```go
+```
 package example
 
 import "github.com/metaform/connector-fabric-manager/pmanager/api"

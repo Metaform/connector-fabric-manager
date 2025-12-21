@@ -31,7 +31,7 @@ type TestModel struct {
 	VPAs              []VPA      `json:"vpas"`
 	Properties        Properties `json:"properties"`
 	CreatedAt         time.Time  `json:"createdAt"`
-	DataSpaceProfiles []Profile  `json:"dataSpaceProfiles"`
+	DataspaceProfiles []Profile  `json:"dataspaceProfiles"`
 }
 
 // VPA represents a Virtual Participant Agent with nested Cell info
@@ -70,6 +70,7 @@ func setupTestTable(t *testing.T) {
 			vpas JSONB NOT NULL DEFAULT '[]',
 			properties JSONB,
 			dataspace_profiles JSONB,
+			participant_roles JSONB NOT NULL DEFAULT '{}',
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			version INT DEFAULT 1
 		);
@@ -85,14 +86,17 @@ func insertTestData(t *testing.T, model TestModel) {
 	propsJSON, err := json.Marshal(model.Properties)
 	require.NoError(t, err)
 
-	profilesJSON, err := json.Marshal(model.DataSpaceProfiles)
+	profilesJSON, err := json.Marshal(model.DataspaceProfiles)
+	require.NoError(t, err)
+
+	participantRolesJSON, err := json.Marshal(map[string][]string{"dspace1": {"MembershipCredential", "RegistryRole"}})
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(`
 		INSERT INTO participant_profiles 
-		(id, identifier, tenantid, vpas, properties, dataspace_profiles, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`, model.ID, model.Identifier, model.TenantID, vpasJSON, propsJSON, profilesJSON, model.CreatedAt)
+		(id, identifier, tenantid, vpas, properties, dataspace_profiles, participant_roles, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, model.ID, model.Identifier, model.TenantID, vpasJSON, propsJSON, profilesJSON, participantRolesJSON, model.CreatedAt)
 	require.NoError(t, err)
 }
 
@@ -773,6 +777,41 @@ func TestPostgresJSONB_QueryGreaterThanComparison(t *testing.T) {
 
 	var count int
 	err = testDB.QueryRow("SELECT COUNT(*) FROM test_numeric WHERE "+sqlStr, args...).Scan(&count)
+	require.NoError(t, err)
+	assert.Equal(t, 1, count)
+}
+
+// TestPostgresJSONB_QueryMapOfArraysWithMapping tests querying a map of arrays using JSONBFieldTypeMapOfArrays
+func TestPostgresJSONB_QueryMapOfArraysWithMapping(t *testing.T) {
+	setupTestTable(t)
+	defer CleanupTestData(t, testDB)
+
+	testData := TestModel{
+		ID:         "pp-roles-1",
+		Identifier: "org-roles",
+		TenantID:   "tenant-roles",
+		CreatedAt:  time.Now(),
+	}
+	insertTestData(t, testData)
+
+	// Configure builder with field mapping from testValues to participant_roles
+	// and register testValues as JSONBFieldTypeMapOfArrays
+	builder := NewPostgresJSONBBuilder().
+		WithFieldMappings(map[string]string{"testValues": "participant_roles"}).
+		WithJSONBFieldTypes(map[string]JSONBFieldType{
+			"testValues": JSONBFieldTypeMapOfArrays,
+		})
+
+	// Query: testValues.dspace1 = "RegistryRole"
+	// Should generate: participant_roles->'dspace1' @> jsonb_build_array($1::text)
+	predicate := query.Eq("testValues.dspace1", "RegistryRole")
+	sqlStr, args := builder.BuildSQL(predicate)
+
+	assert.Contains(t, sqlStr, "participant_roles")
+	assert.Contains(t, sqlStr, "@>")
+
+	var count int
+	err := testDB.QueryRow("SELECT COUNT(*) FROM participant_profiles WHERE "+sqlStr, args...).Scan(&count)
 	require.NoError(t, err)
 	assert.Equal(t, 1, count)
 }

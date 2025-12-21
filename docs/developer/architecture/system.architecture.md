@@ -2,8 +2,8 @@
 
 ## Introduction
 
-This document defines the overall system architecture for the Connector Fabric Manager (CFM). The CFM is a platform that
-provides multitenancy capabilities to the following dataspace services:
+This document defines the overall system architecture for the Connector Fabric Manager (CFM). The CFM is a platform for
+deploying and managing dataspace-related (connector) resources in a multitenant environment. These resources include:  
 
 - A Control Plane, which manages data sharing operations (including catalog publication, contract
   negotiation, and transfer control)
@@ -251,8 +251,8 @@ dependencies are available when an assembly boots.
 
 #### Modular Architecture
 
-The system uses a structured module layout organized by concern and functionality. Shared functionality is centralized
-in the `/common` module, which provides cross-cutting utilities including:
+The system uses a structured directory layout organized by concern and functionality. Shared functionality is
+centralized in the `/common` directory, which provides cross-cutting utilities including:
 
 - Collection abstractions and data structure implementations
 - DAG (Directed Acyclic Graph) implementation used for topological dependency ordering
@@ -261,7 +261,7 @@ in the `/common` module, which provides cross-cutting utilities including:
 - Query and handler implementations
 - Type definitions and runtime models
 
-The `/assembly` module contains shared service assemblies that implement the core CFM functionality. These assemblies
+The `/assembly` directory contains shared service assemblies that implement the core CFM functionality. These assemblies
 are organized by subsystem and provide capabilities such as an HTTP client, HTTP request routing, and a Vault client.
 
 #### Service Type Registry

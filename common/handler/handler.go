@@ -78,7 +78,7 @@ func (h HttpHandler) InvalidMethod(w http.ResponseWriter, req *http.Request, exp
 	return false
 }
 
-func (h HttpHandler) ReadPayload(w http.ResponseWriter, req *http.Request, definition any) bool {
+func (h HttpHandler) ReadPayload(w http.ResponseWriter, req *http.Request, payload any) bool {
 	// Read the request body
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -88,13 +88,13 @@ func (h HttpHandler) ReadPayload(w http.ResponseWriter, req *http.Request, defin
 
 	defer req.Body.Close()
 
-	if err := json.Unmarshal(body, definition); err != nil {
+	if err := json.Unmarshal(body, payload); err != nil {
 		h.WriteError(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
 		return false
 	}
 
-	if err := model.Validator.Struct(definition); err != nil {
-		h.WriteError(w, "Invalid definition: "+err.Error(), http.StatusBadRequest)
+	if err := model.Validator.Struct(payload); err != nil {
+		h.WriteError(w, "Invalid payload: "+err.Error(), http.StatusBadRequest)
 		return false
 	}
 	return true

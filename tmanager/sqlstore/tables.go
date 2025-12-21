@@ -44,6 +44,7 @@ func createParticipantProfilesTable(db *sql.DB) error {
 				version BIGINT NOT NULL,
 				identifier VARCHAR(255),
 				tenant_id VARCHAR(255),
+			    participant_roles JSONB,
 				dataspace_profile_ids JSONB,
 				vpas JSONB,
 				error BOOLEAN,
@@ -60,6 +61,7 @@ func createDataspaceProfilesTable(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS %s (
 			id TEXT PRIMARY KEY,
 			version INT DEFAULT 1,
+			dataspace_spec JSONB,
 			artifacts JSONB,
 			deployments JSONB,
 			properties JSONB

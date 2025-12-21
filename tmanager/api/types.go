@@ -61,20 +61,36 @@ type ParticipantProfile struct {
 	Entity
 	Identifier          string                    `json:"identifier"`
 	TenantID            string                    `json:"tenantId"`
-	DataSpaceProfileIDs []string                  `json:"dataspaceProfileIds"`
+	DataspaceProfileIDs []string                  `json:"dataspaceProfileIds"`
+	ParticipantRoles    map[string][]string       `json:"participantRoles"`
 	VPAs                []VirtualParticipantAgent `json:"vpas"`
 	Properties          Properties                `json:"properties"`
 	Error               bool                      `json:"error"`
 	ErrorDetail         string                    `json:"errorDetail"`
 }
 
+type NewParticipantProfileDeployment struct {
+	Identifier          string              `json:"identifier" required:"true"`
+	CellID              string              `json:"cellId" required:"true"`
+	DataspaceProfileIDs []string            `json:"dataspaceProfileIds,omitempty"`
+	ParticipantRoles    map[string][]string `json:"participantRoles,omitempty"`
+	VPAProperties       VPAPropMap          `json:"vpaProperties,omitempty"`
+	Properties          map[string]any      `json:"properties,omitempty"`
+}
+
 // DataspaceProfile represents a specific dataspace, protocol, and policies tuple. For example, The Foo Dataspace that
 // runs version 2025-1 with version 2 of its policies schema.
 type DataspaceProfile struct {
 	Entity
-	Artifacts   []string              `json:"artifacts"`
-	Deployments []DataspaceDeployment `json:"deployments"`
-	Properties  Properties            `json:"properties"`
+	DataspaceSpec DataspaceSpec         `json:"dataspaceSpec"`
+	Artifacts     []string              `json:"artifacts"`
+	Deployments   []DataspaceDeployment `json:"deployments"`
+	Properties    Properties            `json:"properties"`
+}
+
+type DataspaceSpec struct {
+	ProtocolStack   []string               `json:"protocolStack"`
+	CredentialSpecs []model.CredentialSpec `json:"credentialSpecs"`
 }
 
 // VirtualParticipantAgent is a runtime context deployed when a participant profile is provisioned to a cell. A runtime

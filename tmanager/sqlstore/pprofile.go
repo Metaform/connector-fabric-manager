@@ -28,18 +28,25 @@ func newParticipantProfileStore() store.EntityStore[*api.ParticipantProfile] {
 		"identifier",
 		"tenant_id",
 		"dataspace_profile_ids",
+		"participant_roles",
 		"vpas",
 		"error",
 		"error_detail",
 		"properties"}
 
 	builder := sqlstore.NewPostgresJSONBBuilder().
-		WithFieldMappings(map[string]string{"tenantId": "tenant_id", "dataspaceProfileIds":"dataspace_profile_ids", "errorDetail": "error_detail"}).
+		WithFieldMappings(map[string]string{
+			"tenantId":            "tenant_id",
+			"dataspaceProfileIds": "dataspace_profile_ids",
+			"participantRoles":    "participant_roles",
+			"errorDetail":         "error_detail",
+		}).
 		WithJSONBFieldTypes(map[string]sqlstore.JSONBFieldType{
-		"dataspaceProfileIds": sqlstore.JSONBFieldTypeArrayOfScalars,
-		"vpas":                sqlstore.JSONBFieldTypeArrayOfObjects,
-		"properties":          sqlstore.JSONBFieldTypeScalar,
-	})
+			"dataspaceProfileIds": sqlstore.JSONBFieldTypeArrayOfScalars,
+			"vpas":                sqlstore.JSONBFieldTypeArrayOfObjects,
+			"participantRoles":    sqlstore.JSONBFieldTypeMapOfArrays,
+			"properties":          sqlstore.JSONBFieldTypeScalar,
+		})
 
 	estore := sqlstore.NewPostgresEntityStore[*api.ParticipantProfile](
 		cfmParticipantProfilesTable,
@@ -97,6 +104,12 @@ func recordToPProfileEntity(_ *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Pa
 		}
 	}
 
+	if bytes, ok := record.Values["participant_roles"].([]byte); ok && bytes != nil {
+		if err := json.Unmarshal(bytes, &profile.ParticipantRoles); err != nil {
+			return nil, err
+		}
+	}
+
 	if bytes, ok := record.Values["vpas"].([]byte); ok && bytes != nil {
 		if err := json.Unmarshal(bytes, &profile.VPAs); err != nil {
 			return nil, err
@@ -104,7 +117,7 @@ func recordToPProfileEntity(_ *sql.Tx, record *sqlstore.DatabaseRecord) (*api.Pa
 	}
 
 	if bytes, ok := record.Values["dataspace_profile_ids"].([]byte); ok && bytes != nil {
-		if err := json.Unmarshal(bytes, &profile.DataSpaceProfileIDs); err != nil {
+		if err := json.Unmarshal(bytes, &profile.DataspaceProfileIDs); err != nil {
 			return nil, err
 		}
 	}
@@ -124,8 +137,8 @@ func pProfileEntityToRecord(profile *api.ParticipantProfile) (*sqlstore.Database
 	record.Values["error"] = profile.Error
 	record.Values["error_detail"] = profile.ErrorDetail
 
-	if profile.DataSpaceProfileIDs != nil {
-		bytes, err := json.Marshal(profile.DataSpaceProfileIDs)
+	if profile.DataspaceProfileIDs != nil {
+		bytes, err := json.Marshal(profile.DataspaceProfileIDs)
 		if err != nil {
 			return record, err
 		}
@@ -146,6 +159,14 @@ func pProfileEntityToRecord(profile *api.ParticipantProfile) (*sqlstore.Database
 			return record, err
 		}
 		record.Values["properties"] = bytes
+	}
+
+	if profile.ParticipantRoles != nil {
+		bytes, err := json.Marshal(profile.ParticipantRoles)
+		if err != nil {
+			return record, err
+		}
+		record.Values["participant_roles"] = bytes
 	}
 
 	return record, nil

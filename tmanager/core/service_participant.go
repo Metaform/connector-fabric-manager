@@ -71,9 +71,7 @@ func (p participantService) QueryProfiles(ctx context.Context, predicate query.P
 func (p participantService) DeployProfile(
 	ctx context.Context,
 	tenantID string,
-	identifier string,
-	vpaProperties api.VPAPropMap,
-	properties map[string]any) (*api.ParticipantProfile, error) {
+	deployment *api.NewParticipantProfileDeployment) (*api.ParticipantProfile, error) {
 
 	// TODO perform property validation against a custom schema
 	return store.Trx[api.ParticipantProfile](p.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.ParticipantProfile, error) {
@@ -82,16 +80,17 @@ func (p participantService) DeployProfile(
 			return nil, err
 		}
 
-		dProfiles, err := collection.CollectAllDeref(p.dataspaceStore.GetAll(ctx))
+		dProfiles, err := p.getFilteredProfiles(ctx, deployment)
 		if err != nil {
 			return nil, err
 		}
 
 		participantProfile, err := p.participantGenerator.Generate(
-			identifier,
+			deployment.Identifier,
 			tenantID,
-			vpaProperties,
-			properties,
+			deployment.ParticipantRoles,
+			deployment.VPAProperties,
+			deployment.Properties,
 			cells,
 			dProfiles)
 		if err != nil {
@@ -118,22 +117,54 @@ func (p participantService) DeployProfile(
 			}
 			vpaManifests = append(vpaManifests, vpaManifest)
 		}
-
 		oManifest.Payload[model.VPAData] = vpaManifests
+
+		specs := generateCredentialSpecs(participantProfile.ParticipantRoles, dProfiles)
+		oManifest.Payload[model.CredentialData] = specs
+		
 		result, err := p.participantStore.Create(ctx, participantProfile)
 		if err != nil {
-			return nil, fmt.Errorf("error creating participant %s: %w", identifier, err)
+			return nil, fmt.Errorf("error creating participant %s: %w", deployment.Identifier, err)
 		}
 
 		// Only send the orchestration message if the storage operation succeeded. If the send fails, the transaction
 		// will be rolled back.
 		err = p.provisionClient.Send(ctx, oManifest)
 		if err != nil {
-			return nil, fmt.Errorf("error deploying participant %s: %w", identifier, err)
+			return nil, fmt.Errorf("error deploying participant %s: %w", deployment.Identifier, err)
 		}
 
 		return result, nil
 	})
+}
+
+// getFilteredProfiles filters dProfiles based on deployment.DataspaceProfileIDs
+func (p participantService) getFilteredProfiles(
+	ctx context.Context,
+	deployment *api.NewParticipantProfileDeployment) ([]api.DataspaceProfile, error) {
+
+	dProfiles, err := collection.CollectAllDeref(p.dataspaceStore.GetAll(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(deployment.DataspaceProfileIDs) > 0 {
+		profileIDMap := make(map[string]bool)
+		for _, id := range deployment.DataspaceProfileIDs {
+			profileIDMap[id] = true
+		}
+		filteredProfiles := make([]api.DataspaceProfile, 0)
+		for _, profile := range dProfiles {
+			if profileIDMap[profile.ID] {
+				filteredProfiles = append(filteredProfiles, profile)
+			}
+		}
+		dProfiles = filteredProfiles
+	}
+	if len(dProfiles) == 0 {
+		return nil, fmt.Errorf("no dataspace profiles found")
+	}
+	return dProfiles, nil
 }
 
 func (p participantService) DisposeProfile(ctx context.Context, tenantID string, participantID string) error {
@@ -217,6 +248,23 @@ func (p participantService) executeStoreIterator(ctx context.Context, storeOp fu
 			yield(&api.ParticipantProfile{}, err)
 		}
 	}
+}
+
+func generateCredentialSpecs(
+	participantRoles map[string][]string,
+	dProfiles []api.DataspaceProfile) []model.CredentialSpec {
+
+	credentials := make([]model.CredentialSpec, 0)
+	for _, profile := range dProfiles {
+		for _, spec := range profile.DataspaceSpec.CredentialSpecs {
+			if spec.ParticipantRole == "" {
+				credentials = append(credentials, spec)
+			} else if _, found := participantRoles[spec.ParticipantRole]; found {
+				credentials = append(credentials, spec)
+			}
+		}
+	}
+	return credentials
 }
 
 type vpaCallbackHandler struct {

@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/common/memorystore"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/types"
@@ -60,32 +61,50 @@ func TestCreateDataspaceProfile(t *testing.T) {
 
 	t.Run("create dataspace profile with artifacts and properties", func(t *testing.T) {
 		service := newTestDataspaceService()
-		artifacts := []string{"artifact-1", "artifact-2"}
-		properties := map[string]any{
-			"name":        "Test Dataspace",
-			"description": "A test dataspace profile",
+
+		dprofile := &api.DataspaceProfile{
+			Entity: api.Entity{
+				ID:      uuid.New().String(),
+				Version: 0,
+			},
+			DataspaceSpec: api.DataspaceSpec{},
+			Artifacts:     []string{"artifact-1", "artifact-2"},
+			Deployments:   nil,
+			Properties: map[string]any{
+				"name":        "Test Dataspace",
+				"description": "A test dataspace profile",
+			},
 		}
 
-		result, err := service.CreateProfile(ctx, artifacts, properties)
+		result, err := service.CreateProfile(ctx, dprofile)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.NotEmpty(t, result.ID)
 		assert.Equal(t, int64(0), result.Version)
-		assert.Equal(t, artifacts, result.Artifacts)
-		assert.Equal(t, len(properties), len(result.Properties))
+		assert.Equal(t, dprofile.Artifacts, result.Artifacts)
+		assert.Equal(t, len(dprofile.Properties), len(result.Properties))
 		assert.Equal(t, "Test Dataspace", result.Properties["name"])
 		assert.Equal(t, "A test dataspace profile", result.Properties["description"])
 	})
 
 	t.Run("create dataspace profile with empty artifacts", func(t *testing.T) {
 		service := newTestDataspaceService()
-		artifacts := []string{}
-		properties := map[string]any{
-			"name": "Empty Dataspace",
+
+		dprofile := &api.DataspaceProfile{
+			Entity: api.Entity{
+				ID:      uuid.New().String(),
+				Version: 0,
+			},
+			DataspaceSpec: api.DataspaceSpec{},
+			Artifacts:     []string{},
+			Deployments:   nil,
+			Properties: map[string]any{
+				"name": "Empty Dataspace",
+			},
 		}
 
-		result, err := service.CreateProfile(ctx, artifacts, properties)
+		result, err := service.CreateProfile(ctx, dprofile)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
@@ -95,27 +114,22 @@ func TestCreateDataspaceProfile(t *testing.T) {
 
 	t.Run("create dataspace profile with nil properties", func(t *testing.T) {
 		service := newTestDataspaceService()
-		artifacts := []string{"artifact-1"}
 
-		result, err := service.CreateProfile(ctx, artifacts, nil)
+		dprofile := &api.DataspaceProfile{
+			Entity: api.Entity{
+				ID:      uuid.New().String(),
+				Version: 0,
+			},
+			DataspaceSpec: api.DataspaceSpec{},
+			Artifacts:     []string{"artifact-1"},
+			Deployments:   nil,
+		}
+
+		result, err := service.CreateProfile(ctx, dprofile)
 
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.Equal(t, 1, len(result.Artifacts))
-	})
-
-	t.Run("create profile generates unique IDs", func(t *testing.T) {
-		service := newTestDataspaceService()
-		artifacts := []string{"artifact-1"}
-		properties := map[string]any{}
-
-		result1, err := service.CreateProfile(ctx, artifacts, properties)
-		require.NoError(t, err)
-
-		result2, err := service.CreateProfile(ctx, artifacts, properties)
-		require.NoError(t, err)
-
-		assert.NotEqual(t, result1.ID, result2.ID)
 	})
 }
 

@@ -47,9 +47,10 @@ func TestToParticipantProfile(t *testing.T) {
 				Properties: api.Properties{"vpa-key": "vpa-value"},
 			},
 		},
-		Properties:  api.Properties{"participant-key": "participant-value"},
-		Error:       true,
-		ErrorDetail: "error",
+		ParticipantRoles: map[string][]string{"foo": []string{"bar"}},
+		Properties:       api.Properties{"participant-key": "participant-value"},
+		Error:            true,
+		ErrorDetail:      "error",
 	}
 
 	result := ToParticipantProfile(input)
@@ -60,6 +61,7 @@ func TestToParticipantProfile(t *testing.T) {
 	assert.Equal(t, "test-participant", result.Identifier)
 	assert.True(t, result.Error)
 	assert.Equal(t, "error", result.ErrorDetail)
+	assert.Equal(t, "bar", result.ParticipantRoles["foo"][0])
 	assert.Len(t, result.VPAs, 1)
 	assert.Equal(t, map[string]any{"participant-key": "participant-value"}, result.Properties)
 }
@@ -207,9 +209,10 @@ func TestToAPIParticipantProfile(t *testing.T) {
 				Properties: map[string]any{"vpa-key": "vpa-value"},
 			},
 		},
-		Properties:  map[string]any{"participant-key": "participant-value"},
-		Error:       true,
-		ErrorDetail: "error",
+		ParticipantRoles: map[string][]string{"foo": []string{"bar"}},
+		Properties:       map[string]any{"participant-key": "participant-value"},
+		Error:            true,
+		ErrorDetail:      "error",
 	}
 
 	result := ToAPIParticipantProfile(input)
@@ -221,6 +224,7 @@ func TestToAPIParticipantProfile(t *testing.T) {
 	assert.Len(t, result.VPAs, 1)
 	assert.Contains(t, result.Properties, "participant-key")
 	assert.True(t, result.Error)
+	assert.Equal(t, "bar", result.ParticipantRoles["foo"][0])
 	assert.Equal(t, "error", result.ErrorDetail)
 	assert.Equal(t, "participant-value", result.Properties["participant-key"])
 }
@@ -518,6 +522,17 @@ func TestToDataspaceProfile(t *testing.T) {
 				},
 			},
 		},
+		DataspaceSpec: api.DataspaceSpec{
+			ProtocolStack: []string{"dsp-2025-1"},
+			CredentialSpecs: []model.CredentialSpec{
+				{
+					Type:            "FooCredential",
+					Issuer:          "did:web:bar.com",
+					Format:          "VC1_0_JWT",
+					ParticipantRole: "testrole",
+				},
+			},
+		},
 		Properties: api.Properties{
 			"dataspace-name":   "TestDataspace",
 			"protocol-version": "2025-1",
@@ -532,6 +547,16 @@ func TestToDataspaceProfile(t *testing.T) {
 	// Test Entity fields
 	assert.Equal(t, "dataspace-profile-123", result.ID)
 	assert.Equal(t, int64(5), result.Version)
+
+	// Test spec
+	assert.Len(t, result.DataspaceSpec.ProtocolStack, 1)
+	assert.Equal(t, "dsp-2025-1", result.DataspaceSpec.ProtocolStack[0])
+	assert.Len(t, result.DataspaceSpec.CredentialSpecs, 1)
+	cspec := result.DataspaceSpec.CredentialSpecs[0]
+	assert.Equal(t, "FooCredential", cspec.Type)
+	assert.Equal(t, "did:web:bar.com", cspec.Issuer)
+	assert.Equal(t, "VC1_0_JWT", cspec.Format)
+	assert.Equal(t, "testrole", cspec.ParticipantRole)
 
 	// Test Artifacts
 	assert.Len(t, result.Artifacts, 3)
@@ -961,4 +986,111 @@ func TestNewAPITenantNilProperties(t *testing.T) {
 	assert.NotEmpty(t, result.ID)
 	assert.Equal(t, int64(0), result.Version)
 	assert.NotNil(t, result.Properties)
+}
+
+func TestNewAPIDataspaceProfile(t *testing.T) {
+	input := &NewDataspaceProfile{
+		DataspaceSpec: DataspaceSpec{
+			ProtocolStack: []string{"dsp-2025-1"},
+			CredentialSpecs: []CredentialSpec{
+				{
+					Type:            "FooCredential",
+					Issuer:          "did:web:bar.com",
+					Format:          "VC1_0_JWT",
+					ParticipantRole: "testrole",
+				},
+			},
+		},
+		Artifacts: []string{"artifact-1", "artifact-2"},
+		Properties: map[string]any{
+			"key1": "value1",
+		},
+	}
+
+	result := NewAPIDataspaceProfile(input)
+
+	require.NotNil(t, result)
+	assert.NotEmpty(t, result.ID)
+	assert.Equal(t, int64(0), result.Version)
+
+	// Verify Spec
+	assert.Equal(t, input.DataspaceSpec.ProtocolStack, result.DataspaceSpec.ProtocolStack)
+	require.Len(t, result.DataspaceSpec.CredentialSpecs, 1)
+	assert.Equal(t, input.DataspaceSpec.CredentialSpecs[0].Type, result.DataspaceSpec.CredentialSpecs[0].Type)
+	assert.Equal(t, input.DataspaceSpec.CredentialSpecs[0].Issuer, result.DataspaceSpec.CredentialSpecs[0].Issuer)
+	assert.Equal(t, input.DataspaceSpec.CredentialSpecs[0].Format, result.DataspaceSpec.CredentialSpecs[0].Format)
+	assert.Equal(t, input.DataspaceSpec.CredentialSpecs[0].ParticipantRole, result.DataspaceSpec.CredentialSpecs[0].ParticipantRole)
+
+	// Verify Artifacts
+	assert.Equal(t, input.Artifacts, result.Artifacts)
+
+	// Verify Deployments (should be empty but not nil as per implementation)
+	assert.NotNil(t, result.Deployments)
+	assert.Len(t, result.Deployments, 0)
+
+	// Verify Properties
+	assert.Equal(t, "value1", result.Properties["key1"])
+}
+
+func TestToAPINewParticipantProfileDeployment(t *testing.T) {
+	input := &NewParticipantProfileDeployment{
+		Identifier:          "test-participant",
+		CellID:              "cell-123",
+		DataspaceProfileIDs: []string{"profile-1", "profile-2"},
+		ParticipantRoles: map[string][]string{
+			"role1": {"permission1", "permission2"},
+			"role2": {"permission3"},
+		},
+		VPAProperties: map[string]map[string]any{
+			"vpa-1": {"key1": "value1"},
+			"vpa-2": {"key2": "value2"},
+		},
+		Properties: map[string]any{
+			"custom-key": "custom-value",
+		},
+	}
+
+	result := ToAPINewParticipantProfileDeployment(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "test-participant", result.Identifier)
+	assert.Equal(t, "cell-123", result.CellID)
+	assert.Len(t, result.DataspaceProfileIDs, 2)
+	assert.Contains(t, result.DataspaceProfileIDs, "profile-1")
+	assert.Contains(t, result.DataspaceProfileIDs, "profile-2")
+	assert.Len(t, result.ParticipantRoles, 2)
+	assert.Equal(t, []string{"permission1", "permission2"}, result.ParticipantRoles["role1"])
+	assert.Len(t, result.VPAProperties, 2)
+	assert.Equal(t, "value1", result.VPAProperties["vpa-1"]["key1"])
+	assert.Equal(t, "custom-value", result.Properties["custom-key"])
+}
+
+func TestToAPINewParticipantProfileDeployment_NilValuesHandling(t *testing.T) {
+	input := &NewParticipantProfileDeployment{
+		Identifier:          "did:web:example.com",
+		CellID:              "cell-123",
+		DataspaceProfileIDs: nil, // nil slice
+		ParticipantRoles:    nil, // nil map
+		VPAProperties:       nil, // nil map
+		Properties:          nil, // nil map
+	}
+
+	result := ToAPINewParticipantProfileDeployment(input)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "did:web:example.com", result.Identifier)
+	assert.Equal(t, "cell-123", result.CellID)
+
+	// Verify nil values are converted to empty collections
+	assert.NotNil(t, result.DataspaceProfileIDs, "DataspaceProfileIDs should not be nil")
+	assert.Len(t, result.DataspaceProfileIDs, 0, "DataspaceProfileIDs should be empty slice")
+
+	assert.NotNil(t, result.ParticipantRoles, "ParticipantRoles should not be nil")
+	assert.Len(t, result.ParticipantRoles, 0, "ParticipantRoles should be empty map")
+
+	assert.NotNil(t, result.VPAProperties, "VPAProperties should not be nil")
+	assert.Len(t, result.VPAProperties, 0, "VPAProperties should be empty map")
+
+	assert.NotNil(t, result.Properties, "Properties should not be nil")
+	assert.Len(t, result.Properties, 0, "Properties should be empty map")
 }

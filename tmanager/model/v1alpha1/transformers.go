@@ -14,6 +14,7 @@ package v1alpha1
 
 import (
 	"github.com/google/uuid"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -39,17 +40,43 @@ func NewAPITenant(input *NewTenant) *api.Tenant {
 	}
 }
 
+func NewAPIDataspaceProfile(input *NewDataspaceProfile) *api.DataspaceProfile {
+	cspecs := make([]model.CredentialSpec, len(input.DataspaceSpec.CredentialSpecs))
+	for i, cspec := range input.DataspaceSpec.CredentialSpecs {
+		cspecs[i] = model.CredentialSpec{
+			Type:            cspec.Type,
+			Issuer:          cspec.Issuer,
+			Format:          cspec.Format,
+			ParticipantRole: cspec.ParticipantRole,
+		}
+	}
+	return &api.DataspaceProfile{
+		Entity: api.Entity{
+			ID:      uuid.New().String(),
+			Version: 0,
+		},
+		DataspaceSpec: api.DataspaceSpec{
+			ProtocolStack:   input.DataspaceSpec.ProtocolStack,
+			CredentialSpecs: cspecs,
+		},
+		Artifacts:   input.Artifacts,
+		Deployments: make([]api.DataspaceDeployment, 0),
+		Properties:  api.ToProperties(input.Properties),
+	}
+}
+
 func ToParticipantProfile(input *api.ParticipantProfile) *ParticipantProfile {
 	return &ParticipantProfile{
 		Entity: Entity{
 			ID:      input.ID,
 			Version: input.Version,
 		},
-		Identifier:  input.Identifier,
-		VPAs:        ToVPACollection(input),
-		Properties:  input.Properties,
-		Error:       input.Error,
-		ErrorDetail: input.ErrorDetail,
+		Identifier:       input.Identifier,
+		ParticipantRoles: input.ParticipantRoles,
+		VPAs:             ToVPACollection(input),
+		Properties:       input.Properties,
+		Error:            input.Error,
+		ErrorDetail:      input.ErrorDetail,
 	}
 }
 
@@ -97,11 +124,45 @@ func ToAPIParticipantProfile(input *ParticipantProfile) *api.ParticipantProfile 
 			ID:      input.ID,
 			Version: input.Version,
 		},
-		Identifier:  input.Identifier,
-		VPAs:        ToAPIVPACollection(input.VPAs),
-		Properties:  api.ToProperties(input.Properties),
-		Error:       input.Error,
-		ErrorDetail: input.ErrorDetail,
+		Identifier:       input.Identifier,
+		ParticipantRoles: input.ParticipantRoles,
+		VPAs:             ToAPIVPACollection(input.VPAs),
+		Properties:       api.ToProperties(input.Properties),
+		Error:            input.Error,
+		ErrorDetail:      input.ErrorDetail,
+	}
+}
+
+func ToAPINewParticipantProfileDeployment(input *NewParticipantProfileDeployment) *api.NewParticipantProfileDeployment {
+	dataSpaceProfileIDs := input.DataspaceProfileIDs
+	if dataSpaceProfileIDs == nil {
+		dataSpaceProfileIDs = make([]string, 0)
+	}
+
+	participantRoles := input.ParticipantRoles
+	if participantRoles == nil {
+		participantRoles = make(map[string][]string)
+	}
+
+	var vpaProperties api.VPAPropMap
+	if input.VPAProperties == nil {
+		vpaProperties = make(api.VPAPropMap)
+	} else {
+		vpaProperties = *api.ToVPAMap(input.VPAProperties)
+	}
+
+	properties := input.Properties
+	if properties == nil {
+		properties = make(map[string]any)
+	}
+
+	return &api.NewParticipantProfileDeployment{
+		Identifier:          input.Identifier,
+		CellID:              input.CellID,
+		DataspaceProfileIDs: dataSpaceProfileIDs,
+		ParticipantRoles:    participantRoles,
+		VPAProperties:       vpaProperties,
+		Properties:          properties,
 	}
 }
 
@@ -179,10 +240,24 @@ func ToDataspaceProfile(input *api.DataspaceProfile) *DataspaceProfile {
 		}
 	}
 
+	cspecs := make([]CredentialSpec, len(input.DataspaceSpec.CredentialSpecs))
+	for i, cspec := range input.DataspaceSpec.CredentialSpecs {
+		cspecs[i] = CredentialSpec{
+			Type:            cspec.Type,
+			Issuer:          cspec.Issuer,
+			Format:          cspec.Format,
+			ParticipantRole: cspec.ParticipantRole,
+		}
+	}
+
 	return &DataspaceProfile{
 		Entity: Entity{
 			ID:      input.ID,
 			Version: input.Version,
+		},
+		DataspaceSpec: DataspaceSpec{
+			ProtocolStack:   input.DataspaceSpec.ProtocolStack,
+			CredentialSpecs: cspecs,
 		},
 		Artifacts:   input.Artifacts,
 		Deployments: deployments,

@@ -22,6 +22,13 @@ import (
 	tv1alpha1 "github.com/metaform/connector-fabric-manager/tmanager/model/v1alpha1"
 )
 
+const (
+	MembershipCredential = "MembershipCredential"
+	GovernanceCredential = "GovernanceCredential"
+	OEMRole              = "oem"
+	IssuerDID            = "did:web:issuer.com"
+)
+
 func CreateTestActivityDefinition(apiClient *ApiClient) error {
 	requestBody := api.ActivityDefinition{
 		Type:        "test-activity",
@@ -90,6 +97,21 @@ func CreateDataspaceProfile(apiClient *ApiClient) (*tv1alpha1.DataspaceProfile, 
 	requestBody := tv1alpha1.NewDataspaceProfile{
 		Artifacts:  make([]string, 0),
 		Properties: make(map[string]any),
+		DataspaceSpec: tv1alpha1.DataspaceSpec{
+			ProtocolStack: []string{"dsp-2025-1", "dcp-2025-1"},
+			CredentialSpecs: []tv1alpha1.CredentialSpec{
+				{
+					Type:   MembershipCredential,
+					Issuer: IssuerDID,
+					Format: "VC1_0_JWT",
+				},
+				{
+					Type:            GovernanceCredential,
+					Issuer:          IssuerDID,
+					Format:          "VC1_0_JWT",
+					ParticipantRole: OEMRole,
+				}},
+		},
 	}
 	var profile tv1alpha1.DataspaceProfile
 	err := apiClient.PostToTManagerWithResponse("dataspace-profiles", requestBody, &profile)

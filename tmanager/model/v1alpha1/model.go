@@ -45,8 +45,9 @@ type Cell struct {
 }
 
 type NewDataspaceProfile struct {
-	Artifacts  []string       ` json:"artifacts,omitempty"`
-	Properties map[string]any `json:"properties,omitempty"`
+	DataspaceSpec DataspaceSpec  `json:"dataspaceSpec,omitempty"`
+	Artifacts     []string       ` json:"artifacts,omitempty"`
+	Properties    map[string]any `json:"properties,omitempty"`
 }
 
 type NewDataspaceProfileDeployment struct {
@@ -62,25 +63,41 @@ type DataspaceDeployment struct {
 }
 type DataspaceProfile struct {
 	Entity
-	Artifacts   []string              `json:"artifacts,omitempty"`
-	Deployments []DataspaceDeployment `json:"deployments,omitempty"`
-	Properties  map[string]any        `json:"properties,omitempty"`
+	DataspaceSpec DataspaceSpec         `json:"dataspaceSpec,omitempty"`
+	Artifacts     []string              `json:"artifacts,omitempty"`
+	Deployments   []DataspaceDeployment `json:"deployments,omitempty"`
+	Properties    map[string]any        `json:"properties,omitempty"`
+}
+
+type DataspaceSpec struct {
+	ProtocolStack   []string         `json:"protocolStack,omitempty"`
+	CredentialSpecs []CredentialSpec `json:"credentialSpecs,omitempty"`
+}
+
+type CredentialSpec struct {
+	Type            string `json:"type" required:"true"`
+	Issuer          string `json:"issuer" required:"true"`
+	Format          string `json:"format" required:"true"`
+	ParticipantRole string `json:"role,omitempty"`
 }
 
 type NewParticipantProfileDeployment struct {
-	Identifier    string                    `json:"identifier" required:"true"`
-	CellID        string                    `json:"cellId" required:"true"`
-	VPAProperties map[string]map[string]any `json:"vpaProperties,omitempty"`
-	Properties    map[string]any            `json:"properties,omitempty"`
+	Identifier          string                    `json:"identifier" required:"true"`
+	CellID              string                    `json:"cellId" required:"true"`
+	DataspaceProfileIDs []string                  `json:"dataspaceProfileIds,omitempty"`
+	ParticipantRoles    map[string][]string       `json:"participantRoles,omitempty"`
+	VPAProperties       map[string]map[string]any `json:"vpaProperties,omitempty"`
+	Properties          map[string]any            `json:"properties,omitempty"`
 }
 
 type ParticipantProfile struct {
 	Entity
-	Identifier  string                    `json:"identifier" required:"true"`
-	VPAs        []VirtualParticipantAgent `json:"vpas,omitempty"`
-	Properties  map[string]any            `json:"properties,omitempty"`
-	Error       bool                      `json:"error"`
-	ErrorDetail string                    `json:"errorDetail,omitempty"`
+	Identifier       string                    `json:"identifier" required:"true"`
+	ParticipantRoles map[string][]string       `json:"participantRoles"`
+	VPAs             []VirtualParticipantAgent `json:"vpas,omitempty"`
+	Properties       map[string]any            `json:"properties,omitempty"`
+	Error            bool                      `json:"error"`
+	ErrorDetail      string                    `json:"errorDetail,omitempty"`
 }
 
 type VirtualParticipantAgent struct {

@@ -49,7 +49,8 @@ func TestNewParticipantProfileStore_FindByID_Success(t *testing.T) {
 		},
 		Identifier:          "acme-corp",
 		TenantID:            "tenant-1",
-		DataSpaceProfileIDs: []string{"dprofile-1", "dprofile-2"},
+		DataspaceProfileIDs: []string{"dprofile-1", "dprofile-2"},
+		ParticipantRoles:    map[string][]string{"dspace1": []string{"MembershipCredential"}},
 		VPAs: []api.VirtualParticipantAgent{
 			{
 				DeployableEntity: api.DeployableEntity{
@@ -74,7 +75,9 @@ func TestNewParticipantProfileStore_FindByID_Success(t *testing.T) {
 		ErrorDetail: "",
 	}
 
-	dsProfileIdsJSON, err := json.Marshal(profile.DataSpaceProfileIDs)
+	rolesJSON, err := json.Marshal(profile.ParticipantRoles)
+	require.NoError(t, err)
+	dsProfileIdsJSON, err := json.Marshal(profile.DataspaceProfileIDs)
 	require.NoError(t, err)
 	vpasJSON, err := json.Marshal(profile.VPAs)
 	require.NoError(t, err)
@@ -82,11 +85,12 @@ func TestNewParticipantProfileStore_FindByID_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = testDB.Exec(
-		"INSERT INTO participant_profiles (id, version, identifier, tenant_id, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+		"INSERT INTO participant_profiles (id, version, identifier, tenant_id, participant_roles, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
 		profile.ID,
 		profile.Version,
 		profile.Identifier,
 		profile.TenantID,
+		rolesJSON,
 		dsProfileIdsJSON,
 		vpasJSON,
 		profile.Error,
@@ -111,7 +115,8 @@ func TestNewParticipantProfileStore_FindByID_Success(t *testing.T) {
 	assert.Equal(t, int64(1), retrieved.Version)
 	assert.Equal(t, "acme-corp", retrieved.Identifier)
 	assert.Equal(t, "tenant-1", retrieved.TenantID)
-	assert.Len(t, retrieved.DataSpaceProfileIDs, 2)
+	assert.Equal(t, "MembershipCredential", retrieved.ParticipantRoles["dspace1"][0])
+	assert.Len(t, retrieved.DataspaceProfileIDs, 2)
 }
 
 // TestNewParticipantProfileStore_FindByID_NotFound tests profile not found
@@ -145,7 +150,7 @@ func TestNewParticipantProfileStore_Create(t *testing.T) {
 		},
 		Identifier:          "new-corp",
 		TenantID:            "tenant-2",
-		DataSpaceProfileIDs: []string{"dprofile-3"},
+		DataspaceProfileIDs: []string{"dprofile-3"},
 		VPAs:                []api.VirtualParticipantAgent{},
 		Properties: map[string]any{
 			"environment": "production",
@@ -170,8 +175,8 @@ func TestNewParticipantProfileStore_Create(t *testing.T) {
 	assert.Equal(t, "new-corp", created.Identifier)
 }
 
-// TestNewParticipantProfileStore_SearchByDataSpaceProfileIDsPredicate tests filtering by dataspaceProfileIds
-func TestNewParticipantProfileStore_SearchByDataSpaceProfileIDsPredicate(t *testing.T) {
+// TestNewParticipantProfileStore_SearchByDataspaceProfileIDsPredicate tests filtering by dataspaceProfileIds
+func TestNewParticipantProfileStore_SearchByDataspaceProfileIDsPredicate(t *testing.T) {
 	setupParticipantProfileTable(t, testDB)
 	defer cleanupParticipantProfileTestData(t, testDB)
 
@@ -183,7 +188,7 @@ func TestNewParticipantProfileStore_SearchByDataSpaceProfileIDsPredicate(t *test
 			},
 			Identifier:          "corp-a",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{"dprofile-1", "dprofile-2"},
+			DataspaceProfileIDs: []string{"dprofile-1", "dprofile-2"},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -195,7 +200,7 @@ func TestNewParticipantProfileStore_SearchByDataSpaceProfileIDsPredicate(t *test
 			},
 			Identifier:          "corp-b",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{"dprofile-1", "dprofile-3"},
+			DataspaceProfileIDs: []string{"dprofile-1", "dprofile-3"},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -207,7 +212,7 @@ func TestNewParticipantProfileStore_SearchByDataSpaceProfileIDsPredicate(t *test
 			},
 			Identifier:          "corp-c",
 			TenantID:            "tenant-2",
-			DataSpaceProfileIDs: []string{"dprofile-4"},
+			DataspaceProfileIDs: []string{"dprofile-4"},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -215,7 +220,7 @@ func TestNewParticipantProfileStore_SearchByDataSpaceProfileIDsPredicate(t *test
 	}
 
 	for _, profile := range profiles {
-		dsProfileIdsJSON, err := json.Marshal(profile.DataSpaceProfileIDs)
+		dsProfileIdsJSON, err := json.Marshal(profile.DataspaceProfileIDs)
 		require.NoError(t, err)
 
 		_, err = testDB.Exec(
@@ -250,7 +255,7 @@ func TestNewParticipantProfileStore_SearchByDataSpaceProfileIDsPredicate(t *test
 		require.NotNil(t, profile)
 		count++
 
-		assert.Contains(t, profile.DataSpaceProfileIDs, "dprofile-1")
+		assert.Contains(t, profile.DataspaceProfileIDs, "dprofile-1")
 	}
 
 	assert.Equal(t, 2, count)
@@ -269,7 +274,7 @@ func TestNewParticipantProfileStore_SearchByVPAsPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-vpa-a",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs: []api.VirtualParticipantAgent{
 				{
 					DeployableEntity: api.DeployableEntity{
@@ -304,7 +309,7 @@ func TestNewParticipantProfileStore_SearchByVPAsPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-vpa-b",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs: []api.VirtualParticipantAgent{
 				{
 					DeployableEntity: api.DeployableEntity{
@@ -328,7 +333,7 @@ func TestNewParticipantProfileStore_SearchByVPAsPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-vpa-c",
 			TenantID:            "tenant-2",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -397,7 +402,7 @@ func TestNewParticipantProfileStore_SearchByPropertiesPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-prop-a",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties: map[string]any{
 				"region": "us-east-1",
@@ -413,7 +418,7 @@ func TestNewParticipantProfileStore_SearchByPropertiesPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-prop-b",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties: map[string]any{
 				"region": "eu-west-1",
@@ -429,7 +434,7 @@ func TestNewParticipantProfileStore_SearchByPropertiesPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-prop-c",
 			TenantID:            "tenant-2",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties: map[string]any{
 				"region": "ap-south-1",
@@ -497,7 +502,7 @@ func TestNewParticipantProfileStore_SearchByErrorPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-err-a",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               true,
@@ -510,7 +515,7 @@ func TestNewParticipantProfileStore_SearchByErrorPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-err-b",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -523,7 +528,7 @@ func TestNewParticipantProfileStore_SearchByErrorPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-err-c",
 			TenantID:            "tenant-2",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               true,
@@ -583,7 +588,7 @@ func TestNewParticipantProfileStore_SearchByIdentifierPredicate(t *testing.T) {
 			},
 			Identifier:          "acme-corp-us",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -595,7 +600,7 @@ func TestNewParticipantProfileStore_SearchByIdentifierPredicate(t *testing.T) {
 			},
 			Identifier:          "acme-corp-eu",
 			TenantID:            "tenant-1",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -607,7 +612,7 @@ func TestNewParticipantProfileStore_SearchByIdentifierPredicate(t *testing.T) {
 			},
 			Identifier:          "globex-corp",
 			TenantID:            "tenant-2",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -666,7 +671,7 @@ func TestNewParticipantProfileStore_SearchByTenantIDPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-tenant-a",
 			TenantID:            "tenant-123",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -678,7 +683,7 @@ func TestNewParticipantProfileStore_SearchByTenantIDPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-tenant-b",
 			TenantID:            "tenant-123",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -690,7 +695,7 @@ func TestNewParticipantProfileStore_SearchByTenantIDPredicate(t *testing.T) {
 			},
 			Identifier:          "corp-tenant-c",
 			TenantID:            "tenant-456",
-			DataSpaceProfileIDs: []string{},
+			DataspaceProfileIDs: []string{},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties:          map[string]any{},
 			Error:               false,
@@ -749,7 +754,7 @@ func TestNewParticipantProfileStore_SearchByCombinedPredicates(t *testing.T) {
 			},
 			Identifier:          "corp-comb-a",
 			TenantID:            "tenant-combined",
-			DataSpaceProfileIDs: []string{"dprofile-x"},
+			DataspaceProfileIDs: []string{"dprofile-x"},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties: map[string]any{
 				"status": "active",
@@ -763,7 +768,7 @@ func TestNewParticipantProfileStore_SearchByCombinedPredicates(t *testing.T) {
 			},
 			Identifier:          "corp-comb-b",
 			TenantID:            "tenant-combined",
-			DataSpaceProfileIDs: []string{"dprofile-x"},
+			DataspaceProfileIDs: []string{"dprofile-x"},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties: map[string]any{
 				"status": "inactive",
@@ -777,7 +782,7 @@ func TestNewParticipantProfileStore_SearchByCombinedPredicates(t *testing.T) {
 			},
 			Identifier:          "corp-comb-c",
 			TenantID:            "tenant-other",
-			DataSpaceProfileIDs: []string{"dprofile-x"},
+			DataspaceProfileIDs: []string{"dprofile-x"},
 			VPAs:                []api.VirtualParticipantAgent{},
 			Properties: map[string]any{
 				"status": "active",
@@ -787,7 +792,7 @@ func TestNewParticipantProfileStore_SearchByCombinedPredicates(t *testing.T) {
 	}
 
 	for _, profile := range profiles {
-		dsProfileIdsJSON, err := json.Marshal(profile.DataSpaceProfileIDs)
+		dsProfileIdsJSON, err := json.Marshal(profile.DataspaceProfileIDs)
 		require.NoError(t, err)
 		propsJSON, err := json.Marshal(profile.Properties)
 		require.NoError(t, err)
@@ -835,7 +840,89 @@ func TestNewParticipantProfileStore_SearchByCombinedPredicates(t *testing.T) {
 	assert.Equal(t, 1, count)
 }
 
-// Helper functions
+// TestNewParticipantProfileStore_SearchByParticipantRolesPredicate tests filtering by participantRoles
+func TestNewParticipantProfileStore_SearchByParticipantRolesPredicate(t *testing.T) {
+	setupParticipantProfileTable(t, testDB)
+	defer cleanupParticipantProfileTestData(t, testDB)
+
+	profiles := []*api.ParticipantProfile{
+		{
+			Entity: api.Entity{
+				ID:      "pprofile-role-1",
+				Version: 1,
+			},
+			Identifier:       "corp-role-a",
+			TenantID:         "tenant-1",
+			ParticipantRoles: map[string][]string{"dspace1": {"MembershipCredential", "RegistryRole"}},
+			Properties:       map[string]any{},
+		},
+		{
+			Entity: api.Entity{
+				ID:      "pprofile-role-2",
+				Version: 1,
+			},
+			Identifier:       "corp-role-b",
+			TenantID:         "tenant-1",
+			ParticipantRoles: map[string][]string{"dspace1": {"MembershipCredential"}},
+			Properties:       map[string]any{},
+		},
+		{
+			Entity: api.Entity{
+				ID:      "pprofile-role-3",
+				Version: 1,
+			},
+			Identifier:       "corp-role-c",
+			TenantID:         "tenant-2",
+			ParticipantRoles: map[string][]string{"dspace2": {"MembershipCredential"}},
+			Properties:       map[string]any{},
+		},
+	}
+
+	for _, profile := range profiles {
+		rolesJSON, err := json.Marshal(profile.ParticipantRoles)
+		require.NoError(t, err)
+
+		_, err = testDB.Exec(
+			"INSERT INTO participant_profiles (id, version, identifier, tenant_id, participant_roles, dataspace_profile_ids, vpas, error, error_detail, properties) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+			profile.ID,
+			profile.Version,
+			profile.Identifier,
+			profile.TenantID,
+			rolesJSON,
+			[]byte("[]"),
+			[]byte("[]"),
+			false,
+			"",
+			[]byte("{}"),
+		)
+		require.NoError(t, err)
+	}
+
+	estore := newParticipantProfileStore()
+	ctx := context.Background()
+
+	tx, err := testDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+
+	txCtx := context.WithValue(ctx, sqlstore.SQLTransactionKey, tx)
+
+	// Search for profiles having "RegistryRole" in "dspace1"
+	predicate := query.Eq("participantRoles.dspace1", "RegistryRole")
+
+	count := 0
+	for profile, err := range estore.FindByPredicatePaginated(txCtx, predicate, store.PaginationOptions{}) {
+		require.NoError(t, err)
+		require.NotNil(t, profile)
+		count++
+
+		roles, exists := profile.ParticipantRoles["dspace1"]
+		assert.True(t, exists)
+		assert.Contains(t, roles, "RegistryRole")
+	}
+
+	assert.Equal(t, 1, count)
+}
 
 func setupParticipantProfileTable(t *testing.T, db *sql.DB) {
 	err := createParticipantProfilesTable(db)

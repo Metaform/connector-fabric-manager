@@ -83,7 +83,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 			dProfileIDs[i] = profile.ID
 		}
 
-		profile, err := generator.Generate(identifier, "123", vpaProperties, properties, cells, dProfiles)
+		profile, err := generator.Generate(identifier, "123", map[string][]string{}, vpaProperties, properties, cells, dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, profile)
@@ -95,7 +95,7 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		assert.Equal(t, int64(0), profile.Version)
 		assert.Equal(t, identifier, profile.Identifier)
 		assert.Equal(t, properties, profile.Properties)
-		assert.Equal(t, dProfileIDs, profile.DataSpaceProfileIDs)
+		assert.Equal(t, dProfileIDs, profile.DataspaceProfileIDs)
 
 		// Validate VPAs
 		assert.Len(t, profile.VPAs, 3)
@@ -138,8 +138,9 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		profile, err := generator.Generate(
 			"test-participant",
 			"123",
+			map[string][]string{},
 			make(api.VPAPropMap),
-			make(map[string]any),
+			map[string]any{},
 			[]api.Cell{},
 			[]api.DataspaceProfile{})
 
@@ -172,8 +173,9 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		_, err := generator.Generate(
 			"test",
 			"123",
+			map[string][]string{},
 			make(api.VPAPropMap),
-			make(map[string]any),
+			map[string]any{},
 			[]api.Cell{},
 			[]api.DataspaceProfile{})
 
@@ -221,8 +223,9 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		_, err := generator.Generate(
 			"test",
 			"123",
+			map[string][]string{},
 			make(api.VPAPropMap),
-			make(map[string]any),
+			map[string]any{},
 			inputCells,
 			inputProfiles)
 
@@ -279,15 +282,16 @@ func TestParticipantProfileGenerator_Generate(t *testing.T) {
 		profile, err := generator.Generate(
 			"multi-profile-test",
 			"123",
+			map[string][]string{},
 			make(api.VPAPropMap),
-			make(map[string]any),
+			map[string]any{},
 			[]api.Cell{},
 			dProfiles)
 
 		require.NoError(t, err)
 		require.NotNil(t, profile)
-		assert.Len(t, profile.DataSpaceProfileIDs, 3)
-		assert.Equal(t, dProfileIDs, profile.DataSpaceProfileIDs)
+		assert.Len(t, profile.DataspaceProfileIDs, 3)
+		assert.Equal(t, dProfileIDs, profile.DataspaceProfileIDs)
 	})
 
 }

@@ -34,17 +34,8 @@ func (d dataspaceProfileService) GetProfile(ctx context.Context, profileID strin
 	})
 }
 
-func (d dataspaceProfileService) CreateProfile(ctx context.Context, artifacts []string, properties map[string]any) (*api.DataspaceProfile, error) {
+func (d dataspaceProfileService) CreateProfile(ctx context.Context, profile *api.DataspaceProfile) (*api.DataspaceProfile, error) {
 	return store.Trx[api.DataspaceProfile](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.DataspaceProfile, error) {
-		profile := &api.DataspaceProfile{
-			Entity: api.Entity{
-				ID:      uuid.New().String(),
-				Version: 0,
-			},
-			Artifacts:   artifacts,
-			Deployments: make([]api.DataspaceDeployment, 0),
-			Properties:  properties,
-		}
 		return d.profileStore.Create(ctx, profile)
 	})
 }
