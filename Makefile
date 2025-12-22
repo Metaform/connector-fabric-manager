@@ -12,6 +12,7 @@ EDCV_DIR=agent/edcv
 KEYCLOAK_DIR=agent/keycloak
 REG_DIR=agent/registration
 ONBOARDING_DIR=agent/onboarding
+KIND_CLUSTER_NAME=edcv
 
 E2E_DIR=e2e
 
@@ -215,6 +216,32 @@ docker-clean-regagent:
 
 docker-clean-obagent:
 	docker rmi $(DOCKER_REGISTRY)obagent:$(DOCKER_TAG) || true
+
+#==============================================================================
+# Load images into KinD Cluster
+#==============================================================================
+
+load-into-kind-pmanager: docker-build-pmanager
+	kind load docker-image -n $(KIND_CLUSTER_NAME) $(DOCKER_REGISTRY)pmanager:$(DOCKER_TAG)
+
+load-into-kind-tmanager: docker-build-tmanager
+	kind load docker-image -n $(KIND_CLUSTER_NAME) $(DOCKER_REGISTRY)tmanager:$(DOCKER_TAG)
+
+load-into-kind-edcvagent: docker-build-edcvagent
+	kind load docker-image -n $(KIND_CLUSTER_NAME) $(DOCKER_REGISTRY)edcvagent:$(DOCKER_TAG)
+
+load-into-kind-kcagent: docker-build-kcagent
+	kind load docker-image -n $(KIND_CLUSTER_NAME) $(DOCKER_REGISTRY)kcagent:$(DOCKER_TAG)
+
+load-into-kind-obagent: docker-build-obagent
+	kind load docker-image -n $(KIND_CLUSTER_NAME) $(DOCKER_REGISTRY)obagent:$(DOCKER_TAG)
+
+load-into-kind-regagent: docker-build-regagent
+	kind load docker-image -n $(KIND_CLUSTER_NAME) $(DOCKER_REGISTRY)regagent:$(DOCKER_TAG)
+
+# builds and loads all images into KinD cluster. Will require kind to be installed and a kind cluster named KIND_CLUSTER_NAME running.
+load-into-kind: docker-build
+	kind load docker-image -n $(KIND_CLUSTER_NAME) $$(docker images --format "{{.Repository}}:{{.Tag}}" | grep '^$(DOCKER_REGISTRY).*:$(DOCKER_TAG)')
 
 #==============================================================================
 # Combined Commands
