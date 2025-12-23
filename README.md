@@ -13,6 +13,3 @@ The following are required to build and run the system:
 - Go
 - A Docker-compatible CLI
 
-## Building
-
-The CFM is a multimodule project and requires the creation of a workspace file:
