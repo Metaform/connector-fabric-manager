@@ -93,6 +93,7 @@ type NewParticipantProfileDeployment struct {
 type ParticipantProfile struct {
 	Entity
 	Identifier       string                    `json:"identifier" required:"true"`
+	TenantID         string                    `json:"tenantId"`
 	ParticipantRoles map[string][]string       `json:"participantRoles"`
 	VPAs             []VirtualParticipantAgent `json:"vpas,omitempty"`
 	Properties       map[string]any            `json:"properties,omitempty"`

@@ -105,6 +105,11 @@ func Test_VerifyE2E(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(participantProfiles), "Expected 1 profile to be found")
 
+	var pProfileResult []v1alpha1.ParticipantProfile
+	err = client.GetTManager(fmt.Sprintf("tenants/%s/participant-profiles", tenant.ID), &pProfileResult)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(pProfileResult), "Expected 1 participant profile to be found")
+
 	// Verify round-tripping of VPA properties - these are supplied during profile creation and are added to the VPA
 	//
 	// Check for VPA that contains a key with "cfm.connector" value and verify it has "connectorkey"

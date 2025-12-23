@@ -32,6 +32,7 @@ func TestToParticipantProfile(t *testing.T) {
 			Version: 1,
 		},
 		Identifier: "test-participant",
+		TenantID:   "tenant-123",
 		VPAs: []api.VirtualParticipantAgent{
 			{
 				DeployableEntity: api.DeployableEntity{
@@ -57,6 +58,7 @@ func TestToParticipantProfile(t *testing.T) {
 
 	require.NotNil(t, result)
 	assert.Equal(t, "participant-123", result.ID)
+	assert.Equal(t, "tenant-123", result.TenantID)
 	assert.Equal(t, int64(1), result.Version)
 	assert.Equal(t, "test-participant", result.Identifier)
 	assert.True(t, result.Error)
@@ -194,6 +196,7 @@ func TestToAPIParticipantProfile(t *testing.T) {
 			Version: 4,
 		},
 		Identifier: "api-test-participant",
+		TenantID:   "api-tenant-123",
 		VPAs: []VirtualParticipantAgent{
 			{
 				DeployableEntity: DeployableEntity{
@@ -219,6 +222,7 @@ func TestToAPIParticipantProfile(t *testing.T) {
 
 	require.NotNil(t, result)
 	assert.Equal(t, "api-participant-123", result.ID)
+	assert.Equal(t, "api-tenant-123", result.TenantID)
 	assert.Equal(t, int64(4), result.Version)
 	assert.Equal(t, "api-test-participant", result.Identifier)
 	assert.Len(t, result.VPAs, 1)

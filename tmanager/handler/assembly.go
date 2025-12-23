@@ -69,13 +69,23 @@ func (h *HandlerServiceAssembly) Init(context *system.InitContext) error {
 func (h *HandlerServiceAssembly) registerV1Alpha1(router chi.Router, handler *TMHandler) {
 	h.registerTenantRoutes(router, handler)
 
+	h.registerProfileQueryRoutes(router, handler)
+
 	h.registerCellRoutes(router, handler)
 
 	h.registerDataspaceProfileRoutes(router, handler)
 }
 
-func (h *HandlerServiceAssembly) registerCellRoutes(router chi.Router, handler *TMHandler) chi.Router {
-	return router.Route("/cells", func(r chi.Router) {
+func (h *HandlerServiceAssembly) registerProfileQueryRoutes(router chi.Router, handler *TMHandler) {
+	router.Route("/participant-profiles", func(r chi.Router) {
+		r.Post("/query", func(w http.ResponseWriter, req *http.Request) {
+			handler.queryParticipantProfiles(w, req, "/participant-profiles/query")
+		})
+	})
+}
+
+func (h *HandlerServiceAssembly) registerCellRoutes(router chi.Router, handler *TMHandler) {
+	router.Route("/cells", func(r chi.Router) {
 		r.Get("/", handler.getCells)
 		r.Post("/", handler.createCell)
 		r.Route("/{cellID}", func(r chi.Router) {
@@ -90,8 +100,8 @@ func (h *HandlerServiceAssembly) registerCellRoutes(router chi.Router, handler *
 	})
 }
 
-func (h *HandlerServiceAssembly) registerDataspaceProfileRoutes(router chi.Router, handler *TMHandler) chi.Router {
-	return router.Route("/dataspace-profiles", func(r chi.Router) {
+func (h *HandlerServiceAssembly) registerDataspaceProfileRoutes(router chi.Router, handler *TMHandler) {
+	router.Route("/dataspace-profiles", func(r chi.Router) {
 		r.Get("/", handler.getDataspaceProfiles)
 		r.Post("/", handler.createDataspaceProfile)
 		r.Get("/{id}", func(w http.ResponseWriter, req *http.Request) {
@@ -125,6 +135,13 @@ func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler
 		})
 
 		r.Route("/{tenantID}", func(r chi.Router) {
+			r.Get("/", func(w http.ResponseWriter, req *http.Request) {
+				tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
+				if !found {
+					return
+				}
+				handler.getTenant(w, req, tenantID)
+			})
 			r.Delete("/", func(w http.ResponseWriter, req *http.Request) {
 				tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
 				if !found {
@@ -142,15 +159,17 @@ func (h *HandlerServiceAssembly) registerTenantRoutes(router chi.Router, handler
 			h.registerParticipantRoutes(r, handler)
 		})
 	})
-	router.Route("/participant-profiles", func(r chi.Router) {
-		r.Post("/query", func(w http.ResponseWriter, req *http.Request) {
-			handler.queryParticipantProfiles(w, req, "/participant-profiles/query")
-		})
-	})
 }
 
-func (h *HandlerServiceAssembly) registerParticipantRoutes(r chi.Router, handler *TMHandler) chi.Router {
-	return r.Route("/participant-profiles", func(r chi.Router) {
+func (h *HandlerServiceAssembly) registerParticipantRoutes(r chi.Router, handler *TMHandler) {
+	r.Route("/participant-profiles", func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, req *http.Request) {
+			tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
+			if !found {
+				return
+			}
+			handler.getProfilesForTenant(w, req, tenantID)
+		})
 		r.Post("/", func(w http.ResponseWriter, req *http.Request) {
 			tenantID, found := handler.ExtractPathVariable(w, req, "tenantID")
 			if !found {

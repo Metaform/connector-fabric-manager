@@ -16,6 +16,7 @@ import (
 	"net/http"
 
 	"github.com/metaform/connector-fabric-manager/common/handler"
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
@@ -68,6 +69,22 @@ func (h *TMHandler) getParticipantProfile(
 
 	response := v1alpha1.ToParticipantProfile(profile)
 	h.ResponseOK(w, response)
+}
+
+func (h *TMHandler) getProfilesForTenant(w http.ResponseWriter, req *http.Request, tenantID string) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+	iter := h.participantService.QueryProfiles(req.Context(), query.Eq("tenantId", tenantID), store.DefaultPaginationOptions())
+	results := make([]v1alpha1.ParticipantProfile, 0)
+	for profile, err := range iter {
+		if err != nil {
+			h.HandleError(w, err)
+		}
+		transformed := v1alpha1.ToParticipantProfile(profile)
+		results = append(results, *transformed)
+	}
+	h.ResponseOK(w, results)
 }
 
 func (h *TMHandler) deployParticipantProfile(
@@ -196,6 +213,21 @@ func (h *TMHandler) getTenants(w http.ResponseWriter, req *http.Request, path st
 			return v1alpha1.ToTenant(tenant)
 		},
 		h.txContext)
+}
+
+func (h *TMHandler) getTenant(w http.ResponseWriter, req *http.Request, tenantID string) {
+	if h.InvalidMethod(w, req, http.MethodGet) {
+		return
+	}
+
+	tenant, err := h.tenantService.GetTenant(req.Context(), tenantID)
+	if err != nil {
+		h.HandleError(w, err)
+		return
+	}
+
+	response := v1alpha1.ToTenant(tenant)
+	h.ResponseOK(w, response)
 }
 
 func (h *TMHandler) queryTenants(w http.ResponseWriter, req *http.Request, path string) {
