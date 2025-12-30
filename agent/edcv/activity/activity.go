@@ -36,6 +36,7 @@ type EDCVActivityProcessor struct {
 	IdentityAPIClient   identityhub.IdentityAPIClient
 	TokenURL            string
 	VaultURL            string
+	STSTokenURL         string
 	ManagementAPIClient controlplane.ManagementAPIClient
 }
 
@@ -58,6 +59,7 @@ func NewProcessor(config *Config) *EDCVActivityProcessor {
 		ManagementAPIClient: config.ManagementAPIClient,
 		TokenURL:            config.TokenURL,
 		VaultURL:            config.VaultURL,
+		STSTokenURL:         config.STSTokenURL,
 	}
 }
 
@@ -67,8 +69,9 @@ type Config struct {
 	system.LogMonitor
 	identityhub.IdentityAPIClient
 	controlplane.ManagementAPIClient
-	TokenURL string
-	VaultURL string
+	TokenURL    string
+	VaultURL    string
+	STSTokenURL string
 }
 
 func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
@@ -84,7 +87,6 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 	p.Monitor.Warnf("Using hardcoded debug values for CredentialServiceURL and ProtocolServiceURL. Make sure to move them over to proper config values before going live!")
 	data.CredentialServiceURL = "http://identityhub.edc-v.svc.cluster.local:7082/api/credentials/v1/participants/" + base64.RawURLEncoding.EncodeToString([]byte(participantContextId))
 	data.ProtocolServiceURL = fmt.Sprintf("http://controlplane.edc-v.svc.cluster.local:8082/api/dsp/%s/2025-1", participantContextId)
-	stsTokenURL := "http://identityhub.edc-v.svc.cluster.local:7084/api/sts/token"
 	/// DEBUG
 
 	// resolve vault client secret for the new participant
@@ -129,7 +131,7 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 
 	// create participant config in Control Plane
 	alias := participantContextId + "-sts-client-secret"
-	config := controlplane.NewParticipantContextConfig(participantContextId, createResponse.STSClientID, alias, data.ParticipantID, vaultConfig, vaultCreds, stsTokenURL)
+	config := controlplane.NewParticipantContextConfig(participantContextId, createResponse.STSClientID, alias, data.ParticipantID, vaultConfig, vaultCreds, p.STSTokenURL)
 	if err := p.ManagementAPIClient.CreateConfig(participantContextId, config); err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("cannot create participant config in control plane: %w", err)}
 	}
