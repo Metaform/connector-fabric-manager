@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/metaform/connector-fabric-manager/agent/common/identityhub"
+	"github.com/metaform/connector-fabric-manager/common/model"
 	"github.com/metaform/connector-fabric-manager/common/system"
 	"github.com/metaform/connector-fabric-manager/pmanager/api"
 )
@@ -76,25 +77,47 @@ func (p OnboardingActivityProcessor) processExistingRequest(ctx api.ActivityCont
 }
 
 func (p OnboardingActivityProcessor) processNewRequest(ctx api.ActivityContext, credentialRequest credentialRequestData) api.ActivityResult {
-	// todo: have this come in through CFM REST API -> dataspace profile
+	var data onboardingData
+	if err := ctx.ReadValues(&data); err != nil {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error processing Onboarding activity for orchestration %s: %w", ctx.OID(), err)}
+	}
+
+	if len(data.CredentialSpecs) == 0 {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("no credential specs provided")}
+	}
+
+	var credentials []identityhub.CredentialType
+
+	issuers := make(map[string]struct{})
+	issuer := ""
+	var credentialsTypes = []string{}
+	for _, spec := range data.CredentialSpecs {
+		issuer = spec.Issuer
+		issuers[issuer] = struct{}{}
+		credentials = append(credentials, identityhub.CredentialType{
+			Format: spec.Format,
+			Type:   spec.Type,
+			ID:     spec.Id,
+		})
+		credentialsTypes = append(credentialsTypes, spec.Type)
+	}
+
+	if len(issuers) > 1 {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("Multiple issuers not supported yet")}
+	}
+
 	holderPid := uuid.New().String()
 	cr := identityhub.CredentialRequest{
-		IssuerDID: "did:web:issuerservice.edc-v.svc.cluster.local%3A10016:issuer",
-		HolderPID: holderPid,
-		Credentials: []identityhub.CredentialType{
-			{
-				Format: "VC1_0_JWT",
-				Type:   "MembershipCredential",
-				ID:     "membership-credential-def",
-			},
-		},
+		IssuerDID:   issuer,
+		HolderPID:   holderPid,
+		Credentials: credentials,
 	}
 	// make credential request
 	location, err := p.IdentityApiClient.RequestCredentials(credentialRequest.ParticipantContextID, cr)
 	if err != nil {
 		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("error requesting credentials: %w", err)}
 	}
-	p.Monitor.Infof("Credentials request for participant '%s' submitted successfully, credential is at %s", credentialRequest.ParticipantContextID, location)
+	p.Monitor.Infof("Credentials request for participant '%s' and credentials '%s' submitted successfully, credential is at %s", credentialRequest.ParticipantContextID, credentialsTypes, location)
 	ctx.SetValue("participantContextId", credentialRequest.ParticipantContextID)
 	ctx.SetValue("holderPid", holderPid)
 	ctx.SetValue("credentialRequest", location)
@@ -104,4 +127,8 @@ func (p OnboardingActivityProcessor) processNewRequest(ctx api.ActivityContext, 
 		WaitOnReschedule: time.Duration(5) * time.Second,
 		Error:            nil,
 	}
+}
+
+type onboardingData struct {
+	CredentialSpecs []model.CredentialSpec `json:"cfm.vpa.credentials" validate:"required,dive"`
 }

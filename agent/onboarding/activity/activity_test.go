@@ -34,6 +34,14 @@ func TestOnboardingActivityProcessor_Process_WhenNewRequest(t *testing.T) {
 
 	var processingData = map[string]any{
 		"clientID.apiAccess": "test-participant",
+		"cfm.vpa.credentials": []any{
+			map[string]string{
+				"id":     "id",
+				"format": "format",
+				"issuer": "issuer",
+				"type":   "type",
+			},
+		},
 	}
 
 	ctx := context.Background()
@@ -67,6 +75,14 @@ func TestOnboardingActivityProcessor_Process_WhenNewRequestError(t *testing.T) {
 
 	var processingData = map[string]any{
 		"clientID.apiAccess": "test-participant",
+		"cfm.vpa.credentials": []any{
+			map[string]string{
+				"id":     "id",
+				"format": "format",
+				"issuer": "issuer",
+				"type":   "type",
+			},
+		},
 	}
 
 	ctx := context.Background()
