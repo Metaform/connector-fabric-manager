@@ -27,9 +27,9 @@ const (
 	VPADeployType  OrchestrationType = "cfm.orchestration.vpa.deploy"
 	VPADisposeType OrchestrationType = "cfm.orchestration.vpa.dispose"
 
-	VPAData      = "cfm.vpa.data"
-	CredentialData      = "cfm.vpa.credentials"
-	VPAStateData = "cfm.vpa.state"
+	VPAData        = "cfm.vpa.data"
+	CredentialData = "cfm.vpa.credentials"
+	VPAStateData   = "cfm.vpa.state"
 )
 
 var Validator = initValidator()
@@ -66,9 +66,10 @@ type VPAManifest struct {
 }
 
 type CredentialSpec struct {
-	Type            string `json:"type"`
-	Issuer          string `json:"issuer"`
-	Format          string `json:"format"`
+	Id              string `json:"id" validate:"required"`
+	Type            string `json:"type" validate:"required"`
+	Issuer          string `json:"issuer" validate:"required"`
+	Format          string `json:"format" validate:"required"`
 	ParticipantRole string `json:"role"`
 }
 
@@ -101,4 +102,3 @@ func initValidator() *validator.Validate {
 	})
 	return v
 }
-

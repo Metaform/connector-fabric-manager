@@ -44,6 +44,7 @@ func NewAPIDataspaceProfile(input *NewDataspaceProfile) *api.DataspaceProfile {
 	cspecs := make([]model.CredentialSpec, len(input.DataspaceSpec.CredentialSpecs))
 	for i, cspec := range input.DataspaceSpec.CredentialSpecs {
 		cspecs[i] = model.CredentialSpec{
+			Id:              cspec.Id,
 			Type:            cspec.Type,
 			Issuer:          cspec.Issuer,
 			Format:          cspec.Format,
@@ -245,6 +246,7 @@ func ToDataspaceProfile(input *api.DataspaceProfile) *DataspaceProfile {
 	cspecs := make([]CredentialSpec, len(input.DataspaceSpec.CredentialSpecs))
 	for i, cspec := range input.DataspaceSpec.CredentialSpecs {
 		cspecs[i] = CredentialSpec{
+			Id:              cspec.Id,
 			Type:            cspec.Type,
 			Issuer:          cspec.Issuer,
 			Format:          cspec.Format,

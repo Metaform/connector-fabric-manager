@@ -75,6 +75,7 @@ type DataspaceSpec struct {
 }
 
 type CredentialSpec struct {
+	Id              string `json:"id" required:"true"`
 	Type            string `json:"type" required:"true"`
 	Issuer          string `json:"issuer" required:"true"`
 	Format          string `json:"format" required:"true"`
