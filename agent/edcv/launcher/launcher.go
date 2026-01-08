@@ -29,14 +29,16 @@ import (
 )
 
 const (
-	urlKey               = "vault.url" // duplicate of common/vault/assembly.go
-	ActivityType         = "edcv-activity"
-	clientIDKey          = "keycloak.clientID"
-	clientSecretKey      = "keycloak.clientSecret"
-	tokenURLKey          = "keycloak.tokenUrl"
-	identityHubURLKey    = "identityhub.url"
-	identityHubStsURLKey = "identityhub.sts.url"
-	controlPlaneURLKey   = "controlplane.url"
+	urlKey                             = "vault.url" // duplicate of common/vault/assembly.go
+	ActivityType                       = "edcv-activity"
+	clientIDKey                        = "keycloak.clientID"
+	clientSecretKey                    = "keycloak.clientSecret"
+	tokenURLKey                        = "keycloak.tokenUrl"
+	identityHubURLKey                  = "identityhub.url"
+	identityHubStsURLKey               = "identityhub.sts.url"
+	identityHubCredentialServiceURLKey = "identityhub.cs.url"
+	controlPlaneURLKey                 = "controlplane.url"
+	controlPlaneProtocolURLKey         = "controlplane.protocol.url"
 )
 
 func LaunchAndWaitSignal(shutdown <-chan struct{}) {
@@ -60,6 +62,8 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 			ihStsURL := ctx.Config.GetString(identityHubStsURLKey)
 			cpURL := ctx.Config.GetString(controlPlaneURLKey)
 			vaultURL := ctx.Config.GetString(urlKey) // this may be nil or "" if the in-mem vault is used
+			cpProtocolURL := ctx.Config.GetString(controlPlaneProtocolURLKey)
+			ihCsURL := ctx.Config.GetString(identityHubCredentialServiceURLKey)
 
 			if err := runtime.CheckRequiredParams(clientIDKey, clientID, clientSecretKey, clientSecret, identityHubURLKey, ihURL, controlPlaneURLKey, cpURL, tokenURLKey, tokenURL, identityHubStsURLKey, ihStsURL); err != nil {
 				panic(err)
@@ -81,9 +85,11 @@ func LaunchAndWaitSignal(shutdown <-chan struct{}) {
 					TokenProvider: provider,
 					HttpClient:    &httpClient,
 				},
-				TokenURL:    tokenURL,
-				VaultURL:    vaultURL,
-				STSTokenURL: ihStsURL,
+				TokenURL:             tokenURL,
+				VaultURL:             vaultURL,
+				STSTokenURL:          ihStsURL,
+				CredentialServiceURL: ihCsURL,
+				ProtocolServiceURL:   cpProtocolURL,
 				ManagementAPIClient: controlplane.HttpManagementAPIClient{
 					BaseURL:       cpURL,
 					TokenProvider: provider,
