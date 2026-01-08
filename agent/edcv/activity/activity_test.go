@@ -134,6 +134,52 @@ func TestEDCVActivityProcessor_Process_MissingClientID(t *testing.T) {
 	assert.Contains(t, result.Error.Error(), "error processing EDC-V activity")
 }
 
+func TestEDCVActivityProcessor_Process_MissingCredentialServiceUrl(t *testing.T) {
+	processor := NewProcessor(validConfig())
+	ctx := context.Background()
+	processingData := copyOf(processingData)
+	delete(processingData, "cfm.participant.credentialservice")
+	outputData := make(map[string]any)
+
+	activity := api.Activity{
+		ID:            "activity-2",
+		Type:          "edcv",
+		Discriminator: api.DeployDiscriminator,
+	}
+
+	activityContext := api.NewActivityContext(ctx, "orchestration-2", activity, processingData, outputData)
+
+	result := processor.Process(activityContext)
+
+	require.NotNil(t, result)
+	assert.Equal(t, api.ActivityResultType(api.ActivityResultFatalError), result.Result)
+	assert.NotNil(t, result.Error)
+	assert.Contains(t, result.Error.Error(), "CredentialServiceURL is empty")
+}
+
+func TestEDCVActivityProcessor_Process_MissingProtocolServiceUrl(t *testing.T) {
+	processor := NewProcessor(validConfig())
+	ctx := context.Background()
+	processingData := copyOf(processingData)
+	delete(processingData, "cfm.participant.protocolservice")
+	outputData := make(map[string]any)
+
+	activity := api.Activity{
+		ID:            "activity-2",
+		Type:          "edcv",
+		Discriminator: api.DeployDiscriminator,
+	}
+
+	activityContext := api.NewActivityContext(ctx, "orchestration-2", activity, processingData, outputData)
+
+	result := processor.Process(activityContext)
+
+	require.NotNil(t, result)
+	assert.Equal(t, api.ActivityResultType(api.ActivityResultFatalError), result.Result)
+	assert.NotNil(t, result.Error)
+	assert.Contains(t, result.Error.Error(), "ProtocolServiceURL is empty")
+}
+
 func TestEDCVActivityProcessor_Process_EmptyProcessingData(t *testing.T) {
 	processor := NewProcessor(validConfig())
 	ctx := context.Background()

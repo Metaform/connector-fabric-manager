@@ -29,15 +29,17 @@ import (
 )
 
 type EDCVActivityProcessor struct {
-	VaultClient         serviceapi.VaultClient
-	HTTPClient          *http.Client
-	Monitor             system.LogMonitor
-	TokenProvider       token.TokenProvider
-	IdentityAPIClient   identityhub.IdentityAPIClient
-	TokenURL            string
-	VaultURL            string
-	STSTokenURL         string
-	ManagementAPIClient controlplane.ManagementAPIClient
+	VaultClient          serviceapi.VaultClient
+	HTTPClient           *http.Client
+	Monitor              system.LogMonitor
+	TokenProvider        token.TokenProvider
+	IdentityAPIClient    identityhub.IdentityAPIClient
+	TokenURL             string
+	VaultURL             string
+	STSTokenURL          string
+	CredentialServiceURL string
+	ProtocolServiceURL   string
+	ManagementAPIClient  controlplane.ManagementAPIClient
 }
 
 type EDCVData struct {
@@ -52,14 +54,16 @@ type EDCVData struct {
 
 func NewProcessor(config *Config) *EDCVActivityProcessor {
 	return &EDCVActivityProcessor{
-		VaultClient:         config.VaultClient,
-		HTTPClient:          config.Client,
-		Monitor:             config.LogMonitor,
-		IdentityAPIClient:   config.IdentityAPIClient,
-		ManagementAPIClient: config.ManagementAPIClient,
-		TokenURL:            config.TokenURL,
-		VaultURL:            config.VaultURL,
-		STSTokenURL:         config.STSTokenURL,
+		VaultClient:          config.VaultClient,
+		HTTPClient:           config.Client,
+		Monitor:              config.LogMonitor,
+		IdentityAPIClient:    config.IdentityAPIClient,
+		ManagementAPIClient:  config.ManagementAPIClient,
+		TokenURL:             config.TokenURL,
+		VaultURL:             config.VaultURL,
+		STSTokenURL:          config.STSTokenURL,
+		CredentialServiceURL: config.CredentialServiceURL,
+		ProtocolServiceURL:   config.ProtocolServiceURL,
 	}
 }
 
@@ -69,9 +73,11 @@ type Config struct {
 	system.LogMonitor
 	identityhub.IdentityAPIClient
 	controlplane.ManagementAPIClient
-	TokenURL    string
-	VaultURL    string
-	STSTokenURL string
+	TokenURL             string
+	VaultURL             string
+	STSTokenURL          string
+	CredentialServiceURL string
+	ProtocolServiceURL   string
 }
 
 func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResult {
@@ -83,11 +89,20 @@ func (p EDCVActivityProcessor) Process(ctx api.ActivityContext) api.ActivityResu
 
 	participantContextId := data.ApiAccessClientID
 
-	//DEBUG
-	p.Monitor.Warnf("Using hardcoded debug values for CredentialServiceURL and ProtocolServiceURL. Make sure to move them over to proper config values before going live!")
-	data.CredentialServiceURL = "http://identityhub.edc-v.svc.cluster.local:7082/api/credentials/v1/participants/" + base64.RawURLEncoding.EncodeToString([]byte(participantContextId))
-	data.ProtocolServiceURL = fmt.Sprintf("http://controlplane.edc-v.svc.cluster.local:8082/api/dsp/%s/2025-1", participantContextId)
-	/// DEBUG
+	// override if config is provided
+	if p.CredentialServiceURL != "" {
+		data.CredentialServiceURL = fmt.Sprintf(p.CredentialServiceURL, base64.RawURLEncoding.EncodeToString([]byte(participantContextId)))
+	}
+	if p.ProtocolServiceURL != "" {
+		data.ProtocolServiceURL = fmt.Sprintf(p.ProtocolServiceURL, participantContextId)
+	}
+
+	if data.CredentialServiceURL == "" {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("CredentialServiceURL is empty")}
+	}
+	if data.ProtocolServiceURL == "" {
+		return api.ActivityResult{Result: api.ActivityResultFatalError, Error: fmt.Errorf("ProtocolServiceURL is empty")}
+	}
 
 	// resolve vault client secret for the new participant
 	vaultAccessSecret, err := p.VaultClient.ResolveSecret(ctx.Context(), data.VaultAccessClientID)
