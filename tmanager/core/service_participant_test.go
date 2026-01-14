@@ -171,7 +171,7 @@ func TestDeployProfile(t *testing.T) {
 		service.provisionClient = mockClient
 
 		// Create test cell
-		cell := newTestCell("cell-1")
+		cell := newTestCell("cell-1", "external-id")
 		cell.State = api.DeploymentStateActive
 		_, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)
@@ -212,7 +212,7 @@ func TestDeployProfile(t *testing.T) {
 		service.provisionClient = mockClient
 
 		// Create test cell
-		cell := newTestCell("cell-1")
+		cell := newTestCell("cell-1", "external-id")
 		_, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)
 
@@ -249,7 +249,7 @@ func TestDeployProfile(t *testing.T) {
 		service.provisionClient = mockClient
 
 		// Create test cell
-		cell := newTestCell("cell-1")
+		cell := newTestCell("cell-1", "external-id")
 		cell.State = api.DeploymentStateActive
 		_, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)

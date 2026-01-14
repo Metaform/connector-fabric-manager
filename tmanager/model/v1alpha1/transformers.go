@@ -116,6 +116,7 @@ func ToCell(input *api.Cell) *Cell {
 			State:          input.State.String(),
 			StateTimestamp: input.StateTimestamp,
 			Properties:     input.Properties,
+			ExternalID:     input.ExternalID,
 		},
 	}
 }

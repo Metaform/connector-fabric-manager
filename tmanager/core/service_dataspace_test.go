@@ -170,7 +170,7 @@ func TestDeployDataspaceProfile(t *testing.T) {
 		service := newTestDataspaceService()
 
 		// Create test cell
-		cell := newTestCell("cell-1")
+		cell := newTestCell("cell-1", "external-id")
 		createdCell, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)
 		require.NotNil(t, createdCell)
@@ -215,7 +215,7 @@ func TestDeployDataspaceProfile(t *testing.T) {
 		service := newTestDataspaceService()
 
 		// Create test cell
-		cell := newTestCell("cell-1")
+		cell := newTestCell("cell-1", "external-id")
 		_, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)
 
@@ -230,8 +230,8 @@ func TestDeployDataspaceProfile(t *testing.T) {
 		service := newTestDataspaceService()
 
 		// Create test cells
-		cell1 := newTestCell("cell-1")
-		cell2 := newTestCell("cell-2")
+		cell1 := newTestCell("cell-1", "external-id")
+		cell2 := newTestCell("cell-2", "external-id2")
 		_, err := service.cellStore.Create(ctx, cell1)
 		require.NoError(t, err)
 		_, err = service.cellStore.Create(ctx, cell2)
@@ -264,7 +264,7 @@ func TestDeployDataspaceProfile(t *testing.T) {
 		service := newTestDataspaceService()
 
 		// Create test cell and profile
-		cell := newTestCell("cell-1")
+		cell := newTestCell("cell-1", "external-id")
 		_, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)
 
@@ -353,7 +353,7 @@ func TestListDataspaceProfiles(t *testing.T) {
 		service := newTestDataspaceService()
 
 		// Create cell and profile
-		cell := newTestCell("cell-1")
+		cell := newTestCell("cell-1", "external-id")
 		_, err := service.cellStore.Create(ctx, cell)
 		require.NoError(t, err)
 

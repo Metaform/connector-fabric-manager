@@ -171,6 +171,7 @@ func TestToCell(t *testing.T) {
 			"region":      "us-west-2",
 			"capacity":    100,
 		},
+		ExternalID: "external-id",
 	}
 
 	result := ToCell(&input)
@@ -180,6 +181,7 @@ func TestToCell(t *testing.T) {
 	assert.Equal(t, int64(5), result.Version)
 	assert.Equal(t, "locked", result.State)
 	assert.Equal(t, testTime, result.StateTimestamp)
+	assert.Equal(t, "external-id", result.ExternalID)
 	assert.Equal(t, map[string]any{
 		"environment": "production",
 		"region":      "us-west-2",

@@ -28,7 +28,7 @@ import (
 func TestRecordExternalDeployment(t *testing.T) {
 	ctx := context.Background()
 	service := newTestCellService()
-	cell := newTestCell("cell-1")
+	cell := newTestCell("cell-1", "external-id")
 
 	result, err := service.RecordExternalDeployment(ctx, cell)
 
@@ -36,7 +36,21 @@ func TestRecordExternalDeployment(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, "cell-1", result.ID)
 	assert.Equal(t, int64(1), result.Version)
+	assert.Equal(t, "external-id", result.ExternalID)
 	assert.Equal(t, "Test Cell cell-1", result.Properties["name"])
+}
+
+func TestRecordExternalDeployment_DuplicateExternalId(t *testing.T) {
+	ctx := context.Background()
+	service := newTestCellService()
+	cell := newTestCell("cell-1", "external-id")
+	cell.ExternalID = "external-id"
+
+	_, err := service.RecordExternalDeployment(ctx, cell)
+	require.NoError(t, err)
+	_, err = service.RecordExternalDeployment(ctx, cell)
+	require.NotNil(t, err)
+	require.ErrorAs(t, err, &types.ErrConflict)
 }
 
 func TestDeleteCell(t *testing.T) {
@@ -44,7 +58,7 @@ func TestDeleteCell(t *testing.T) {
 	t.Run("delete existing cell", func(t *testing.T) {
 		ctx := context.Background()
 		service := newTestCellService()
-		cell := newTestCell("cell-delete-1")
+		cell := newTestCell("cell-delete-1", "external-id")
 		created, err := service.RecordExternalDeployment(ctx, cell)
 		require.NoError(t, err)
 		require.NotNil(t, created)
@@ -72,9 +86,9 @@ func TestListCells(t *testing.T) {
 
 		// Create multiple test cells
 		cells := []*api.Cell{
-			newTestCell("cell-1"),
-			newTestCell("cell-2"),
-			newTestCell("cell-3"),
+			newTestCell("cell-1", "external-id1"),
+			newTestCell("cell-2", "external-id2"),
+			newTestCell("cell-3", "external-id3"),
 		}
 
 		for _, cell := range cells {
@@ -106,7 +120,7 @@ func TestListCells(t *testing.T) {
 	})
 }
 
-func newTestCell(id string) *api.Cell {
+func newTestCell(id string, externalId string) *api.Cell {
 	return &api.Cell{
 		DeployableEntity: api.DeployableEntity{
 			Entity: api.Entity{
@@ -116,7 +130,7 @@ func newTestCell(id string) *api.Cell {
 			State:          api.DeploymentStateInitial,
 			StateTimestamp: time.Now(),
 		},
-		ExternalID: "external-id",
+		ExternalID: externalId,
 		Properties: api.Properties{
 			"name": "Test Cell " + id,
 		},

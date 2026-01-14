@@ -16,7 +16,9 @@ import (
 	"context"
 
 	"github.com/metaform/connector-fabric-manager/common/collection"
+	"github.com/metaform/connector-fabric-manager/common/query"
 	"github.com/metaform/connector-fabric-manager/common/store"
+	"github.com/metaform/connector-fabric-manager/common/types"
 	"github.com/metaform/connector-fabric-manager/tmanager/api"
 )
 
@@ -27,6 +29,15 @@ type cellService struct {
 
 func (d cellService) RecordExternalDeployment(ctx context.Context, cell *api.Cell) (*api.Cell, error) {
 	return store.Trx[api.Cell](d.trxContext).AndReturn(ctx, func(ctx context.Context) (*api.Cell, error) {
+		if cell.ExternalID != "" {
+			count, err := d.cellStore.CountByPredicate(ctx, query.Eq("externalId", cell.ExternalID))
+			if err != nil {
+				return nil, err
+			}
+			if count > 0 {
+				return nil, types.ErrConflict
+			}
+		}
 		return d.cellStore.Create(ctx, cell)
 	})
 }
@@ -46,4 +57,3 @@ func (p cellService) ListCells(ctx context.Context) ([]api.Cell, error) {
 	})
 	return result, err
 }
-
