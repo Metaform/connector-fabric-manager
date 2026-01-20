@@ -121,7 +121,7 @@ func (p participantService) DeployProfile(
 
 		specs := generateCredentialSpecs(participantProfile.ParticipantRoles, dProfiles)
 		oManifest.Payload[model.CredentialData] = specs
-		
+
 		result, err := p.participantStore.Create(ctx, participantProfile)
 		if err != nil {
 			return nil, fmt.Errorf("error creating participant %s: %w", deployment.Identifier, err)
@@ -256,11 +256,20 @@ func generateCredentialSpecs(
 
 	credentials := make([]model.CredentialSpec, 0)
 	for _, profile := range dProfiles {
-		for _, spec := range profile.DataspaceSpec.CredentialSpecs {
-			if spec.ParticipantRole == "" {
-				credentials = append(credentials, spec)
-			} else if _, found := participantRoles[spec.ParticipantRole]; found {
-				credentials = append(credentials, spec)
+		for _, credentialSpec := range profile.DataspaceSpec.CredentialSpecs {
+			credentialRole := credentialSpec.ParticipantRole
+			if credentialRole == "" {
+				credentials = append(credentials, credentialSpec)
+			} else {
+				rolesInDataspace, found := participantRoles[profile.ID]
+				if found {
+					for _, role := range rolesInDataspace {
+						if role == credentialRole {
+							credentials = append(credentials, credentialSpec)
+							break
+						}
+					}
+				}
 			}
 		}
 	}
