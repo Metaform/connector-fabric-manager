@@ -200,6 +200,74 @@ func TestDeployProfile(t *testing.T) {
 		mockClient.AssertExpectations(t)
 	})
 
+	t.Run("deploy participant with roles successfully", func(t *testing.T) {
+		service := newTestParticipantService()
+		mockClient := new(mockProvisionClient)
+		credentialSpecs := []model.CredentialSpec{
+			{
+				Id:              "test-id",
+				Type:            "test-type",
+				Issuer:          "test-issuer",
+				Format:          "test-format",
+				ParticipantRole: "test-role",
+			},
+			{
+				Id:     "test-id-2",
+				Type:   "test-type-2",
+				Issuer: "test-issuer-2",
+				Format: "test-format-2",
+				//no participant role, this should be default
+			},
+		}
+
+		// Setup mock to accept any manifest
+		mockClient.On("Send", ctx, mock.MatchedBy(func(manifest model.OrchestrationManifest) bool {
+			vpaManifest := manifest.Payload[model.VPAData].([]model.VPAManifest)[0]
+			assert.Equal(t, "cell-1", vpaManifest.CellID)
+			assert.Equal(t, "external-id", vpaManifest.ExternalCellID)
+
+			credData := manifest.Payload[model.CredentialData].([]model.CredentialSpec)
+			assert.NotNil(t, credData)
+			assert.ElementsMatch(t, credentialSpecs, credData)
+			return manifest.OrchestrationType == model.VPADeployType
+		})).Return(nil)
+
+		service.provisionClient = mockClient
+
+		// Create test cell
+		cell := newTestCell("cell-1", "external-id")
+		cell.State = api.DeploymentStateActive
+		_, err := service.cellStore.Create(ctx, cell)
+		require.NoError(t, err)
+
+		ds1 := newTestDataspaceProfile("ds-1")
+		ds1.DataspaceSpec.CredentialSpecs = credentialSpecs
+		_, err = service.dataspaceStore.Create(ctx, ds1)
+		require.NoError(t, err)
+
+		deployment := &api.NewParticipantProfileDeployment{
+			Identifier: "participant-identifier",
+			VPAProperties: api.VPAPropMap{
+				model.ConnectorType: {"prop": "value"},
+			},
+			Properties: map[string]any{
+				"name": "Test Participant",
+			},
+			ParticipantRoles: map[string][]string{
+				"ds-1": {"test-role"},
+			},
+		}
+
+		result, err := service.DeployProfile(ctx, "tenant-1", deployment)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.NotEmpty(t, result.ID)
+		assert.Equal(t, "tenant-1", result.TenantID)
+		assert.Equal(t, "participant-identifier", result.Identifier)
+		mockClient.AssertExpectations(t)
+	})
+
 	t.Run("deploy profile handles provision client error", func(t *testing.T) {
 		service := newTestParticipantService()
 		mockClient := new(mockProvisionClient)
