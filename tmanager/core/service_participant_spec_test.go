@@ -79,7 +79,7 @@ func TestGenerateCredentialSpecs(t *testing.T) {
 
 	t.Run("includes specs matching participant roles", func(t *testing.T) {
 		participantRoles := map[string][]string{
-			"provider": {"read", "write"},
+			"ds-1": {"provider"},
 		}
 		spec := model.CredentialSpec{
 			Type:            "oauth2",
@@ -105,7 +105,7 @@ func TestGenerateCredentialSpecs(t *testing.T) {
 
 	t.Run("excludes specs with non-matching participant roles", func(t *testing.T) {
 		participantRoles := map[string][]string{
-			"provider": {"read", "write"},
+			"ds-1": {"provider", "manufacturer"},
 		}
 		matchingSpec := model.CredentialSpec{
 			Type:            "oauth2",
@@ -137,7 +137,7 @@ func TestGenerateCredentialSpecs(t *testing.T) {
 
 	t.Run("includes specs from multiple dataspace profiles", func(t *testing.T) {
 		participantRoles := map[string][]string{
-			"role1": {},
+			"ds-1": {"role1"},
 		}
 		spec1 := model.CredentialSpec{
 			Type:            "oauth2",
@@ -174,12 +174,10 @@ func TestGenerateCredentialSpecs(t *testing.T) {
 		assert.Equal(t, spec2, result[1])
 	})
 
-
 	t.Run("handles complex filtering across multiple profiles and roles", func(t *testing.T) {
 		participantRoles := map[string][]string{
-			"provider":  {"read", "write"},
-			"consumer":  {"read"},
-			"validator": {"validate"},
+			"ds-1": {"provider", "validator"},
+			"ds-2": {"unknown", "validator"},
 		}
 		// Specs that should be included
 		providerSpec := model.CredentialSpec{
@@ -264,7 +262,7 @@ func TestGenerateCredentialSpecs(t *testing.T) {
 
 	t.Run("handles mixed empty and non-empty role specs", func(t *testing.T) {
 		participantRoles := map[string][]string{
-			"provider": {"read"},
+			"ds-1": {"provider"},
 		}
 		emptyRoleSpec := model.CredentialSpec{
 			Type:            "mtls",
